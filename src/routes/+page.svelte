@@ -1,5 +1,6 @@
 <script>
   import "../lib/styles/tokens.css";
+  import BlurTitle from "../lib/components/BlurTitle.svelte";
   import { imgArrow3, imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
 
   // Gallery sizing now driven by CSS tokens for exact Figma spacing
@@ -26,10 +27,7 @@
   <main class="landing">
     <section class="hero-outer">
       <div class="hero-inner">
-        <div class="title-wrap">
-          <h1 class="title-large title-line--filled">FUORI</h1>
-          <h1 class="title-large title-line--outline">CAMPO</h1>
-        </div>
+        <BlurTitle />
       </div>
     </section>
 
