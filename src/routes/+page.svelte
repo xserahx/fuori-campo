@@ -1,12 +1,73 @@
-<script>
+<script lang="ts">
+  import { onMount } from "svelte";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import { blurReveal } from "../lib/actions/blurReveal";
   import { imgArrow3, imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
+  import IntroLoader from "../lib/components/IntroLoader.svelte";
+
+  let showIntro = $state(true);
+  let introExiting = $state(false);
+  let loaderProgress = $state(0);
+
+  const volunteers = ["/volontari/1.jpg", "/volontari/2.jpg", "/volontari/3.jpg"];
+
+  let loaderPhotoSrc = $state(volunteers[0]);
+  let activeLoaderSet = $state(0);
+
+  const loaderBlockLayouts = [
+    [
+      { left: 0, top: 0, width: 50, height: 50 },
+      { left: 50, top: 0, width: 50, height: 50 },
+      { left: 0, top: 50, width: 50, height: 50 },
+      { left: 50, top: 50, width: 50, height: 50 }
+    ],
+    [
+      { left: 0, top: 0, width: 100, height: 50 },
+      { left: 0, top: 50, width: 100, height: 50 }
+    ]
+  ];
+
+  let interval: ReturnType<typeof setInterval> | undefined;
+  let exitTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  onMount(() => {
+    interval = setInterval(() => {
+      loaderProgress += 2;
+
+      if (loaderProgress % 20 === 0) {
+        activeLoaderSet = (activeLoaderSet + 1) % loaderBlockLayouts.length;
+        loaderPhotoSrc = volunteers[Math.floor(Math.random() * volunteers.length)];
+      }
+
+      if (loaderProgress >= 100) {
+        introExiting = true;
+        exitTimeout = setTimeout(() => {
+          showIntro = false;
+        }, 600);
+
+        if (interval) clearInterval(interval);
+      }
+    }, 60);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (exitTimeout) clearTimeout(exitTimeout);
+    };
+  });
 
   const galleryCount = 12;
   const offsetCount = 6;
 </script>
+
+<IntroLoader
+  {showIntro}
+  {introExiting}
+  {loaderPhotoSrc}
+  {loaderBlockLayouts}
+  {activeLoaderSet}
+  {loaderProgress}
+/>
 
 <div class="site">
   <header class="navbar">
