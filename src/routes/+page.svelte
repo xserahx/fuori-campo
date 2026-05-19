@@ -1,13 +1,14 @@
 <script>
 	import "../lib/styles/tokens.css";
-	import { imgNavbar, heroSamples } from "../lib/design/assets";
+	import { imgNavbar, imgStatusDefault, heroSamples } from "../lib/design/assets";
 </script>
 
 <div class="site">
 	<header class="navbar">
+		<img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
 		<div class="navbar-inner">
 			<a class="logo" href="/" aria-label="Fuori campo home">
-				<img src={imgNavbar} alt="" />
+				<img src={imgStatusDefault} alt="" />
 			</a>
 
 			<nav class="nav-links" aria-label="Main navigation">

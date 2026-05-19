@@ -1,4 +1,5 @@
 // Exported image URLs from the Figma export (short-lived URLs)
+export const imgStatusDefault = "https://www.figma.com/api/mcp/asset/9eb5e57a-1f0e-483e-bb72-6dcf127816af";
 export const imgNavbar = "https://www.figma.com/api/mcp/asset/75ff5b02-126c-47f8-8833-2425c5605765";
 export const imgArrow = "https://www.figma.com/api/mcp/asset/a9c2b41a-48dd-40e0-8c62-3960c779af28";
 export const heroSamples = [
@@ -10,4 +11,4 @@ export const heroSamples = [
   "https://www.figma.com/api/mcp/asset/f78d6488-6ca6-4b10-a88b-bb963575b834",
 ];
 
-export default { imgNavbar, imgArrow, heroSamples };
+export default { imgStatusDefault, imgNavbar, imgArrow, heroSamples };
