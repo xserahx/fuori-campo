@@ -23,15 +23,17 @@
   --spacing-11: 72px;
   --spacing-13: 160px;
   --spacing-12: 96px;
+  --space-19: 500px;
   --story-numbers-gap: 300px; /* adjusted to match provided measurement */
   --hero-to-lead: 469px;
   --hero-top-gap: 160px; /* distance between navbar bottom and hero title */
   --hero-to-first-quote: 469px;
+  --hero-bottom-to-quote1: calc(var(--spacing-13) + var(--hero-to-first-quote));
 
-  /* Radii */
+  /* Radius */
   --radius-rounded-pill: 53.5px;
 
-  /* Misc */
+  /* Width */
   --max-width: 1100px;
   
   /* Figma node-specific tokens */
@@ -69,9 +71,9 @@
   --figma-quote-container-top: 2409px;
   --figma-story-container-top: 1353px;
   --question-1-top: 3529px;
-  --question-2-top: calc(var(--question-1-top) + 500px);
-  --question-3-top: calc(var(--question-1-top) + 1000px);
-  --question-4-top: calc(var(--question-1-top) + 1500px);
+  --question-2-top: calc(var(--question-1-top) + var(--space-19));
+  --question-3-top: calc(var(--question-1-top) + 2 * var(--space-19));
+  --question-4-top: calc(var(--question-1-top) + 3 * var(--space-19));
 
   /* Left offsets for question blocks (from Figma) */
   --question-left-1: 0px;
@@ -80,12 +82,12 @@
   --question-left-4: 533px;
 
   /* Additional large-page vertical tokens from Figma HOME artboard */
-  --figma-summary-top: calc(var(--question-4-top) + 500px);
-  --figma-scroll-top: calc(var(--figma-summary-top) + 500px);
-  --figma-arrow-top: calc(var(--figma-scroll-top) + 500px);
-  --quote-grid-height: 540px; /* adjusted so top/right and bottom/left quotes are ~300px apart */
+  --figma-summary-top: calc(var(--question-4-top) + var(--space-19));
+  --figma-scroll-top: calc(var(--figma-summary-top) + var(--space-19));
+  --figma-arrow-top: calc(var(--figma-scroll-top) + var(--space-19));
+  --quote-grid-height: 540px; 
 }
-
+/* Font faces */
 /* Font faces */
 @font-face{
   font-family: 'Forma DJR Display';
@@ -101,6 +103,7 @@
   font-style: normal;
   font-display: swap;
 }
+
 @font-face{
   font-family: 'Forma DJR Display';
   src: url('/fonts/FormaDJRDisplay-ExtraBold.woff2') format('woff2');
@@ -110,6 +113,7 @@
 }
 
 html,body,#svelte{height:100%;}
+
 body{
   margin:0;
   background:var(--color-background-primary);
@@ -182,7 +186,7 @@ body{
   display:flex;
   width:100%;
   margin:0 auto;
-  padding: 160px 469px;
+  padding: var(--spacing-13) 469px;
   flex-direction:column;
   justify-content:center; /* vertical center */
   align-items:center;     /* horizontal center */
@@ -190,6 +194,7 @@ body{
   min-height: calc(100vh - var(--navbar-height)); /* full viewport minus navbar */
   box-sizing: border-box;
 }
+
 .hero-inner{
   width:100%;
   max-width:1083px;
@@ -197,6 +202,7 @@ body{
   align-items:center;
   justify-content:center;
 }
+
 .title-wrap{
   width:100%;
   max-width:var(--figma-title-width);
@@ -207,6 +213,7 @@ body{
   justify-content:center;
   text-align:center;
 }
+
 .title-large{
   font-family:var(--font-display);
   font-weight:800; /* Extra bold substitute */
@@ -264,9 +271,11 @@ body{
   max-width:var(--figma-story-width);
   margin-top:var(--spacing-12);
 }
+
 .story--intro{
   margin-top:0;
 }
+
 .story--summary{
   max-width:980px;
   margin-top:287px; /* exact gap between last question and summary */
@@ -280,7 +289,7 @@ body{
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 48px 64px;
-  margin-top: var(--hero-to-first-quote); /* 469px */
+  margin-top: 500px; 
   padding: 0; 
   margin-bottom: 0;
   min-height: 0;
@@ -300,7 +309,7 @@ body{
 }
 
 .question{
-  margin-top:500px; /* exact 500px spacing between questions */
+  margin-top: var(--space-19); /* exact 500px spacing between questions */
 }
 
 /* helpers for quote placement to mimic Figma layout */
@@ -334,7 +343,7 @@ body{
 }
 
 .scroll-cue{
-  margin-top:500px;
+  margin-top: var(--space-19);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -379,14 +388,17 @@ body{
   .hero-outer{
     min-height: calc(100vh - 112px);
     padding:72px 16px 48px;
-  }
+  }  
+
   .title-large{
     font-size:140px;
     line-height:120px;
   }
+
   .hero-outer{
     min-height: calc(100svh - 112px);
   }
+
   .story,
   .quote-grid,
   .question,
