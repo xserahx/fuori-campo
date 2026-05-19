@@ -3,7 +3,6 @@
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import { imgArrow3, imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
 
-  // Gallery sizing now driven by CSS tokens for exact Figma spacing
   const galleryCount = 12;
   const offsetCount = 6;
 </script>
