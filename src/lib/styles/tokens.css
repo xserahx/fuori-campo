@@ -23,12 +23,17 @@
   --spacing-11: 72px;
   --spacing-13: 160px;
   --spacing-12: 96px;
+  --story-numbers-gap: 300px; /* adjusted to match provided measurement */
+  --hero-to-lead: 469px;
+  --hero-top-gap: 160px; /* distance between navbar bottom and hero title */
+  --hero-to-first-quote: 469px;
 
   /* Radii */
   --radius-rounded-pill: 53.5px;
 
   /* Misc */
   --max-width: 1100px;
+  
   /* Figma node-specific tokens */
   --figma-quote-width: 857px;
   --figma-quote-margin-top: 492px;
@@ -37,6 +42,7 @@
   --figma-story-left-top: 0px;
   --figma-title-size: 300px;
   --figma-title-lineheight: 250px;
+
   /* Gallery sizing tokens (from Figma) */
   --gallery-width-1: 140px;
   --gallery-width-2: 180px;
@@ -58,23 +64,26 @@
   --gallery-offset-5: 18px;
   --gallery-offset-6: 56px;
   --figma-hero-top: 224px;
-  --figma-title-width: 1083px;
-  --figma-title-height: 500px;
+  --figma-title-height: 250px;
+  --figma-title-weight: 800px;
   --figma-quote-container-top: 2409px;
   --figma-story-container-top: 1353px;
   --question-1-top: 3529px;
-  --question-2-top: 4241px;
-  --question-3-top: 4953px;
-  --question-4-top: 5665px;
+  --question-2-top: calc(var(--question-1-top) + 500px);
+  --question-3-top: calc(var(--question-1-top) + 1000px);
+  --question-4-top: calc(var(--question-1-top) + 1500px);
+
   /* Left offsets for question blocks (from Figma) */
   --question-left-1: 0px;
   --question-left-2: 335px;
   --question-left-3: 0px;
   --question-left-4: 533px;
+
   /* Additional large-page vertical tokens from Figma HOME artboard */
-  --figma-summary-top: 6164px;
-  --figma-scroll-top: 6821px;
-  --figma-arrow-top: 6896px;
+  --figma-summary-top: calc(var(--question-4-top) + 500px);
+  --figma-scroll-top: calc(var(--figma-summary-top) + 500px);
+  --figma-arrow-top: calc(var(--figma-scroll-top) + 500px);
+  --quote-grid-height: 540px; /* adjusted so top/right and bottom/left quotes are ~300px apart */
 }
 
 /* Font faces */
@@ -170,14 +179,16 @@ body{
 }
 
 .hero-outer{
-  position:relative;
-  width:100%;
-  min-height: calc(100svh - var(--navbar-height));
-  padding: var(--figma-hero-top) var(--spacing-11) var(--spacing-13);
-  box-sizing: border-box;
   display:flex;
-  align-items:center;
-  justify-content:center;
+  width:100%;
+  margin:0 auto;
+  padding: 160px 469px;
+  flex-direction:column;
+  justify-content:center; /* vertical center */
+  align-items:center;     /* horizontal center */
+  gap:10px;
+  min-height: calc(100vh - var(--navbar-height)); /* full viewport minus navbar */
+  box-sizing: border-box;
 }
 .hero-inner{
   width:100%;
@@ -207,7 +218,7 @@ body{
 .title-line--filled{color:var(--color-content-title);}
 .title-line--outline{
   color: transparent;
-  -webkit-text-stroke: 6px var(--color-content-title);
+  -webkit-text-stroke: 4px var(--color-content-title);
 }
 
 .story,
@@ -217,6 +228,14 @@ body{
   padding-left:var(--spacing-11);
   padding-right:var(--spacing-11);
   box-sizing:border-box;
+}
+
+/* lead paragraph under hero */
+.lead-paragraph{
+  max-width:980px;
+  margin: var(--hero-to-lead) auto 0; /* distance from hero as requested */
+  font-size:var(--unit-64);
+  color:var(--color-content-body);
 }
 
 .story{
@@ -238,16 +257,19 @@ body{
   margin-left:auto;
   text-align:right;
   max-width:var(--figma-story-width);
-  margin-top:var(--figma-story-right-top);
+  margin-top:var(--story-numbers-gap);
 }
 
 .story--left{
   max-width:var(--figma-story-width);
-  margin-top:var(--figma-story-left-top);
+  margin-top:var(--spacing-12);
+}
+.story--intro{
+  margin-top:0;
 }
 .story--summary{
   max-width:980px;
-  margin-top:140px;
+  margin-top:287px; /* exact gap between last question and summary */
 }
 
 .accent{
@@ -255,11 +277,14 @@ body{
 }
 
 .quote-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:96px 64px;
-  margin-top:var(--figma-quote-container-top);
-  padding:0 72px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px 64px;
+  margin-top: var(--hero-to-first-quote); /* 469px */
+  padding: 0; 
+  margin-bottom: 0;
+  min-height: 0;
+  align-items: start;
 }
 
 .quote{
@@ -271,13 +296,18 @@ body{
 }
 
 .quote--right{
-  justify-self:end;
-  text-align:right;
+  margin-top:492px; 
 }
 
 .question{
-  margin-top:180px;
+  margin-top:500px; /* exact 500px spacing between questions */
 }
+
+/* helpers for quote placement to mimic Figma layout */
+.quote-left,
+.quote--left{align-self:start}
+.quote-right,
+.quote--right{align-self:start}
 
 .question h2{
   max-width:1304px;
@@ -300,11 +330,11 @@ body{
 
 .ghost{
   color:transparent;
-  -webkit-text-stroke:6px var(--color-content-title);
+  -webkit-text-stroke:4px var(--color-content-title);
 }
 
 .scroll-cue{
-  margin-top:140px;
+  margin-top:500px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -321,6 +351,7 @@ body{
   height:auto;
   display:block;
   transform:rotate(90deg);
+  margin-top:24px;
 }
 
 .gallery{
@@ -346,7 +377,7 @@ body{
 
 @media (max-width:900px){
   .hero-outer{
-    min-height: calc(100svh - 112px);
+    min-height: calc(100vh - 112px);
     padding:72px 16px 48px;
   }
   .title-large{
@@ -369,6 +400,9 @@ body{
   .question h2{
     font-size:40px;
     line-height:1.1;
+  }
+  .story--right{
+    margin-top:32px;
   }
   .quote-grid{
     grid-template-columns:1fr;
