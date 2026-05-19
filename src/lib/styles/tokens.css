@@ -22,12 +22,59 @@
   --spacing-10: 64px;
   --spacing-11: 72px;
   --spacing-13: 160px;
+  --spacing-12: 96px;
 
   /* Radii */
   --radius-rounded-pill: 53.5px;
 
   /* Misc */
   --max-width: 1100px;
+  /* Figma node-specific tokens */
+  --figma-quote-width: 857px;
+  --figma-quote-margin-top: 492px;
+  --figma-story-width: 857px;
+  --figma-story-right-top: 428px;
+  --figma-story-left-top: 0px;
+  --figma-title-size: 300px;
+  --figma-title-lineheight: 250px;
+  /* Gallery sizing tokens (from Figma) */
+  --gallery-width-1: 140px;
+  --gallery-width-2: 180px;
+  --gallery-width-3: 160px;
+  --gallery-width-4: 200px;
+  --gallery-width-5: 130px;
+  --gallery-width-6: 170px;
+  --gallery-width-7: 120px;
+  --gallery-width-8: 190px;
+  --gallery-width-9: 150px;
+  --gallery-width-10: 160px;
+  --gallery-width-11: 130px;
+  --gallery-width-12: 180px;
+
+  --gallery-offset-1: 0px;
+  --gallery-offset-2: 32px;
+  --gallery-offset-3: 12px;
+  --gallery-offset-4: 40px;
+  --gallery-offset-5: 18px;
+  --gallery-offset-6: 56px;
+  --figma-hero-top: 224px;
+  --figma-title-width: 1083px;
+  --figma-title-height: 500px;
+  --figma-quote-container-top: 2409px;
+  --figma-story-container-top: 1353px;
+  --question-1-top: 3529px;
+  --question-2-top: 4241px;
+  --question-3-top: 4953px;
+  --question-4-top: 5665px;
+  /* Left offsets for question blocks (from Figma) */
+  --question-left-1: 0px;
+  --question-left-2: 335px;
+  --question-left-3: 0px;
+  --question-left-4: 533px;
+  /* Additional large-page vertical tokens from Figma HOME artboard */
+  --figma-summary-top: 6164px;
+  --figma-scroll-top: 6821px;
+  --figma-arrow-top: 6896px;
 }
 
 /* Font faces */
@@ -117,11 +164,16 @@ body{
   .nav-links a{font-size:14px}
 }
 
+.landing{
+  width:100%;
+  overflow:hidden;
+}
+
 .hero-outer{
   position:relative;
   width:100%;
   min-height: calc(100svh - var(--navbar-height));
-  padding: var(--spacing-13) var(--spacing-5);
+  padding: var(--figma-hero-top) var(--spacing-11) var(--spacing-13);
   box-sizing: border-box;
   display:flex;
   align-items:center;
@@ -136,7 +188,8 @@ body{
 }
 .title-wrap{
   width:100%;
-  min-height:500px;
+  max-width:var(--figma-title-width);
+  min-height:var(--figma-title-height);
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -146,47 +199,195 @@ body{
 .title-large{
   font-family:var(--font-display);
   font-weight:800; /* Extra bold substitute */
-  font-size:var(--unit-300);
+  font-size:var(--figma-title-size);
   margin:0;
-  line-height:0.833;
-  letter-spacing:-0.04em;
+  line-height:var(--figma-title-lineheight);
+  letter-spacing:0;
 }
 .title-line--filled{color:var(--color-content-title);}
 .title-line--outline{
   color: transparent;
-  -webkit-text-stroke: 3px var(--color-content-title);
+  -webkit-text-stroke: 6px var(--color-content-title);
 }
 
-.section-large-question{
+.story,
+.quote,
+.question,
+.scroll-cue{
+  padding-left:var(--spacing-11);
+  padding-right:var(--spacing-11);
+  box-sizing:border-box;
+}
+
+.story{
+  max-width:1080px;
+  margin-top:40px;
   font-family:var(--font-display);
-  font-size:var(--unit-116);
-  font-weight:700;
-  margin: var(--spacing-13) 0;
+  font-size:var(--unit-64);
+  line-height:var(--spacing-10);
+  color:var(--color-content-body);
+}
+
+.story p,
+.quote,
+.question h2{
+  margin:0;
+}
+
+.story--right{
+  margin-left:auto;
+  text-align:right;
+  max-width:var(--figma-story-width);
+  margin-top:var(--figma-story-right-top);
+}
+
+.story--left{
+  max-width:var(--figma-story-width);
+  margin-top:var(--figma-story-left-top);
+}
+.story--summary{
+  max-width:980px;
+  margin-top:140px;
+}
+
+.accent{
   color:var(--color-content-title);
 }
 
-.lead-paragraph{
-  max-width:980px;
-  margin: var(--spacing-10) auto;
+.quote-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:96px 64px;
+  margin-top:var(--figma-quote-container-top);
+  padding:0 72px;
+}
+
+.quote{
+  max-width:var(--figma-quote-width);
+  font-family:var(--font-display);
   font-size:var(--unit-64);
+  line-height:var(--spacing-10);
   color:var(--color-content-body);
+}
+
+.quote--right{
+  justify-self:end;
+  text-align:right;
+}
+
+.question{
+  margin-top:180px;
+}
+
+.question h2{
+  max-width:1304px;
+  font-family:var(--font-display);
+  font-size:var(--unit-116);
+  line-height:106px;
+  font-weight:800;
+  text-transform:uppercase;
+  color:var(--color-content-title);
+}
+
+.question--right{
+  display:flex;
+  justify-content:flex-end;
+}
+
+.question--right h2{
+  text-align:right;
+}
+
+.ghost{
+  color:transparent;
+  -webkit-text-stroke:6px var(--color-content-title);
+}
+
+.scroll-cue{
+  margin-top:140px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+  color:var(--color-content-title);
+  font-family:var(--font-display);
+  font-size:var(--unit-36);
+  line-height:1.1;
+  text-align:center;
+}
+
+.scroll-cue img{
+  width:56px;
+  height:auto;
+  display:block;
+  transform:rotate(90deg);
 }
 
 .gallery{
   display:flex;
   flex-wrap:wrap;
-  gap:8px;
+  gap:12px;
   justify-content:center;
-  padding:var(--spacing/13) 0;
+  padding:80px 72px 120px;
+  align-items:flex-start;
 }
-.gallery img{width:160px;height:auto;object-fit:cover;border-radius:6px}
+
+.gallery-item{
+  margin:0;
+  flex:0 0 auto;
+}
+
+.gallery-item img{
+  width:100%;
+  height:auto;
+  display:block;
+  object-fit:cover;
+}
 
 @media (max-width:900px){
-  .title-large{font-size:140px}
-  .section-large-question{font-size:64px}
   .hero-outer{
-    min-height: calc(100svh - 96px);
-    padding-top: var(--spacing-10);
-    padding-bottom: var(--spacing-10);
+    min-height: calc(100svh - 112px);
+    padding:72px 16px 48px;
+  }
+  .title-large{
+    font-size:140px;
+    line-height:120px;
+  }
+  .hero-outer{
+    min-height: calc(100svh - 112px);
+  }
+  .story,
+  .quote-grid,
+  .question,
+  .scroll-cue,
+  .gallery{
+    padding-left:16px;
+    padding-right:16px;
+  }
+  .story,
+  .quote,
+  .question h2{
+    font-size:40px;
+    line-height:1.1;
+  }
+  .quote-grid{
+    grid-template-columns:1fr;
+    gap:32px;
+  }
+  .quote--right,
+  .question--right{
+    justify-self:auto;
+    text-align:left;
+    justify-content:flex-start;
+  }
+  .question{
+    margin-top:96px;
+  }
+  .scroll-cue{
+    font-size:24px;
+  }
+  .gallery{
+    padding-top:80px;
+    padding-bottom:120px;
   }
 }

@@ -1,6 +1,10 @@
 <script>
 	import "../lib/styles/tokens.css";
-	import { imgNavbar, imgStatusDefault, heroSamples } from "../lib/design/assets";
+	import { imgArrow3, imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
+
+	// Gallery sizing now driven by CSS tokens for exact Figma spacing
+	const galleryCount = 12;
+	const offsetCount = 6;
 </script>
 
 <div class="site">
@@ -19,7 +23,7 @@
 		</div>
 	</header>
 
-	<main>
+	<main class="landing">
 		<section class="hero-outer">
 			<div class="hero-inner">
 				<div class="title-wrap">
@@ -29,20 +33,75 @@
 			</div>
 		</section>
 
-		<section>
-					<p class="lead-paragraph">Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo <strong style="color:var(--color-content-title)">archivio</strong>.</p>
+		<section class="story story--left">
+			<p>
+				<span class="accent">Milano Cortina 2026</span> ha coinvolto migliaia di volontari:
+			</p>
 		</section>
 
-		<section style="text-align:center;">
-			<h2 class="section-large-question">MA CHI SONO DAVVERO I VOLONTARI?</h2>
-			<h2 class="section-large-question">PERCHÈ HANNO DECISO DI CANDIDARSI?</h2>
-			<h2 class="section-large-question">COSA FACEVANO CONCRETAMENTE?</h2>
-			<h2 class="section-large-question">NE È VALSA LA PENA? LO RIFAREBBERO?</h2>
+		<section class="story story--right story--numbers">
+			<p>
+				<span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi.
+			</p>
 		</section>
 
-		<section class="gallery">
-			{#each heroSamples as src}
-				<img src={src} alt="gallery sample" />
+		<section class="quote-grid">
+			<p class="quote quote--left">
+				Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
+			</p>
+			<p class="quote quote--right">
+				Nella narrazione ufficiale erano spesso dati per scontati.
+			</p>
+		</section>
+
+		<section class="question question--left" style={`margin-top:var(--question-1-top); margin-left:var(--question-left-1)`}>
+			<h2>
+				<span class="accent">MA </span><span class="ghost">CHI SONO </span><span class="accent">DAVVERO</span><br />
+				<span class="accent">I VOLONTARI?</span>
+			</h2>
+		</section>
+
+		<section class="question question--right" style={`margin-top:var(--question-2-top); margin-left:var(--question-left-2)`}>
+			<h2>
+				<span class="ghost">PERCHÈ </span><span class="accent">HANNO DECISO</span><br />
+				<span class="accent">DI CANDIDARSI?</span>
+			</h2>
+		</section>
+
+		<section class="question question--left" style={`margin-top:var(--question-3-top); margin-left:var(--question-left-3)`}>
+			<h2>
+				<span class="ghost">COSA FACEVANO </span><br />
+				<span class="accent">CONCRETAMENTE?</span>
+			</h2>
+		</section>
+
+		<section class="question question--right" style={`margin-top:var(--question-4-top); margin-left:var(--question-left-4)`}>
+			<h2>
+				<span class="accent">NE È VALSA LA PENA?</span><br />
+				<span class="ghost">LO RIFAREBBERO?</span>
+			</h2>
+		</section>
+
+		<section class="story story--left story--summary" style={`margin-top:var(--figma-summary-top)`}> 
+			<p>
+				Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
+				<span class="accent"> archivio</span>.
+			</p>
+		</section>
+
+		<section class="scroll-cue" aria-label="Scroll cue" style={`margin-top:var(--figma-scroll-top)`}> 
+			<p>Continua a scorrere per accedere alla galleria</p>
+			<img src={imgArrow3} alt="" aria-hidden="true" style={`margin-top:var(--figma-arrow-top)`} />
+		</section>
+
+		<section class="gallery" aria-label="Gallery preview">
+			{#each galleryImages as src, index}
+				<figure
+					class="gallery-item"
+					style={`width:var(--gallery-width-${(index % galleryCount) + 1}); margin-top:var(--gallery-offset-${(index % offsetCount) + 1});`}
+				>
+					<img src={src} alt="gallery sample" />
+				</figure>
 			{/each}
 		</section>
 	</main>
