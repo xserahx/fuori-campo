@@ -1,5 +1,5 @@
 {
-	"name": "fuori-campo",
+	"name": "2026-02-sveltekit",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
@@ -12,12 +12,19 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^7.0.1",
-		"@sveltejs/kit": "^2.57.0",
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/kit": "^2.57.1",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
+		"@types/node": "^25.6.0",
+		"mdsvex": "^0.12.7",
 		"svelte": "^5.55.2",
 		"svelte-check": "^4.4.6",
 		"typescript": "^6.0.2",
 		"vite": "^8.0.7"
+	},
+	"dependencies": {
+		"esbuild": "^0.28.0",
+		"node-addon-api": "^8.7.0",
+		"sharp": "^0.34.5"
 	}
 }
