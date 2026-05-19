@@ -56,29 +56,40 @@
 
     <section class="question question--left" style={`margin-left:var(--question-left-1)`}>
       <h2>
-        <span class="accent">MA </span><span class="ghost">CHI SONO </span><span class="accent">DAVVERO</span><br />
-        <span class="accent">I VOLONTARI?</span>
+        <div style="display:block; margin-bottom:80px;">
+            <span class="accent">MA </span>
+            <span class="ghost">CHI SONO </span>
+            <span class="accent">DAVVERO</span><br />
+            <span class="accent">I VOLONTARI?</span>
+        </div>
       </h2>
     </section>
 
     <section class="question question--right" style={`margin-left:var(--question-left-2)`}>
       <h2>
-        <span class="ghost">PERCHÈ </span><span class="accent">HANNO DECISO</span><br />
-        <span class="accent">DI CANDIDARSI?</span>
+        <div style="display:block; margin-bottom:80px;">
+            <span class="ghost">PERCHÈ </span>
+            <span class="accent">HANNO DECISO</span><br />
+            <span class="accent">DI CANDIDARSI?</span>
+        </div>
       </h2>
     </section>
 
     <section class="question question--left" style={`margin-left:var(--question-left-3)`}>
       <h2>
-        <span class="ghost">COSA FACEVANO </span><br />
-        <span class="accent">CONCRETAMENTE?</span>
+        <div style="display:block; margin-bottom:80px;">
+            <span class="ghost">COSA FACEVANO </span><br />
+            <span class="accent">CONCRETAMENTE?</span>
+        </div>
       </h2>
     </section>
 
     <section class="question question--right" style={`margin-left:var(--question-left-4)`}>
       <h2>
-        <span class="accent">NE È VALSA LA PENA?</span><br />
-        <span class="ghost">LO RIFAREBBERO?</span>
+        <div style="display:block; margin-bottom:80px;">
+            <span class="accent">NE È VALSA LA PENA?</span><br />
+            <span class="ghost">LO RIFAREBBERO?</span>
+        </div>
       </h2>
     </section>
 
