@@ -25,10 +25,8 @@
   let clock: any    = null;
   let animFrameId   = 0;
 
-  // ─── infinite slot system ────────────────────────────────────────
-  // We render N_SLOTS mesh pairs. Each slot is a "window" into the
-  // infinite sequence. Texture is swapped via modulo as we scroll.
-  const N_SLOTS = 11; // must be odd — centre + 5 each side
+  // ─── infinite slot system ─────
+  const N_SLOTS = 11; 
   const HALF    = (N_SLOTS - 1) / 2; // 5
 
   type Slot = {
@@ -40,9 +38,9 @@
   let textures: THREE.Texture[] = [];
 
   // Continuous scroll position (unbounded integer target, float animation)
-  let targetPos = 0;   // integer step we're heading to
-  let animPos   = 0;   // lerped float — drives everything
-  let position  = $state(0); // for reactive label display
+  let targetPos = 0;   
+  let animPos   = 0;  
+  let position  = $state(0); 
 
   // Drag state
   let isDragging = false;
@@ -50,18 +48,10 @@
   let dragLive   = 0;  // live fractional drag offset (0 when settled)
 
   // ─── arc geometry constants ──────────────────────────────────────
-  // The key insight: all cards sit on a cylinder of radius ARC_R.
-  // Camera is at the axis. Cards face the axis (face the camera).
-  // This creates a naturally curving panorama where each card's
-  // edge seamlessly meets the next when blur extends to fill the gap.
-
   const ARC_R     = 4.1;   // cylinder radius — smaller = deeper curve
   const ARC_THETA = 0.25;  // angular step between card centres (radians)
   const CARD_W    = 4.25;  // world-units — card width (square)
   const CARD_H    = 4.25;
-  // The angular width of one card: 2*atan(CARD_W/2 / ARC_R)
-  // With ARC_R=7.5 and CARD_W=1.72 → ~0.228 rad
-  // ARC_THETA=0.30 leaves ~0.072 rad gap → filled by the blur halos
 
   // Side-mesh keeps the same footprint so the center image does not shrink
   const SIDE_W    = 4.9;
@@ -71,15 +61,14 @@
   const N = () => categories.length;
   function mod(n: number, m: number) { return ((n % m) + m) % m; }
   function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-  // smooth-step easing
+ 
   function smoothstep(x: number) {
     x = Math.max(0, Math.min(1, x));
     return x * x * (3 - 2 * x);
   }
-  // ease in-out for the lerp speed (feels more physical)
-  const LERP_K = 0.072; // base lerp coefficient per frame at 60fps
+  
+  const LERP_K = 0.072; 
 
-  // ─── GLSL: center card — crisp image + micro grain ───────────────
   const C_VERT = /* glsl */`
     varying vec2 vUv;
     void main(){
@@ -107,11 +96,6 @@
 
   // ─── GLSL: side card — zoom-blur + barrel + grain + vignette ─────
   // This shader creates the "image peeling away from center" look.
-  // Key technique: radial zoom blur whose focal point is the INNER edge
-  // (the edge closest to center). This means the blur streaks point
-  // outward, as if the card is being pulled away from the center image.
-  // Combined with barrel distortion (curling toward the outer edge)
-  // this matches the reference exactly.
   const S_VERT = /* glsl */`
     varying vec2 vUv;
     void main(){
@@ -190,7 +174,7 @@
       gl_FragColor = vec4(col.rgb, uFade);
     }`;
 
-  // ─── build Three.js scene ─────────────────────────────────────────
+  // ─── Three.js scene ─────────────────────────────────────────
   function buildScene() {
     if (!canvasEl || !containerEl) return;
 
@@ -202,7 +186,7 @@
 
     // Camera positioned at cylinder axis, looking down -Z
     camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 100);
-    camera.position.set(0, 0, ARC_R * 0.98); // closer to amplify the arc depth
+    camera.position.set(0, 0, ARC_R * 0.98); 
 
     renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -285,16 +269,12 @@
 
       // ── fractional position on the arc ──────────────────────────
       // displayRel = how many "steps" this slot is from the visual centre
-      const fracOffset = visual - Math.round(visual); // −0.5 .. +0.5
-      const displayRel  = slotOffset - fracOffset;     // continuous
+      const fracOffset = visual - Math.round(visual); 
+      const displayRel  = slotOffset - fracOffset;     
       const absD        = Math.abs(displayRel);
       const signD       = displayRel >= 0 ? 1 : -1;
 
       // ── arc placement ───────────────────────────────────────────
-      // Cards sit on cylinder of radius ARC_R.
-      // Angle θ from the front (camera-facing direction).
-      // card position = (ARC_R·sin θ, 0, ARC_R·cos θ) relative to axis origin
-      // But camera IS at (0,0,ARC_R), so card Z relative to camera = ARC_R·cosθ − ARC_R
       const theta = displayRel * ARC_THETA;
       const px    = ARC_R * Math.sin(theta);         // X on the cylinder
       const pz    = ARC_R * Math.cos(theta) - ARC_R; // Z relative to camera
@@ -307,16 +287,13 @@
       const cf     = cfRaw;
 
       // Side mesh: complementary to center — fills the space the center vacates
-      // It must be visible from ~0.2 outward and fade by ~2.5
        const sfRaw  = smoothstep(Math.max(0, absD - 0.02) * 2.1)
          * (1 - smoothstep(Math.max(0, absD - 2.15) * 1.5));
       const sf     = sfRaw;
 
-      // normalised distance for shader (0=nearest neighbour, 1=far)
       const normDist = Math.min(1, Math.max(0, (absD - 0.18) / 2.0));
 
-      // Update center mesh
-      slot.cMesh.position.set(px, 0, pz + 0.03);
++     slot.cMesh.position.set(px, 0, pz + 0.03);
       slot.cMesh.rotation.set(0, ry, 0);
       slot.cMesh.visible               = cf > 0.003;
       slot.cMat.uniforms.uFade.value    = cf;
@@ -355,7 +332,6 @@
   }
   function onPointerMove(e: PointerEvent) {
     if (!isDragging || !containerEl) return;
-    // Scale drag: full viewport width = ~2 card steps
     dragLive = (dragStartX - e.clientX) / (containerEl.clientWidth * 0.38);
   }
   function onPointerUp() {
