@@ -10,7 +10,8 @@
   let showIntro = $state(true);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
-  let navbarVisible = $state(false);
+  let navbarVisible = $state(true);
+  let navbarFixed = $state(true);
 
   const volunteers = ["/volontari/1.jpg", "/volontari/2.jpg", "/volontari/3.jpg"];
 
@@ -63,34 +64,39 @@
   });
 
   onMount(() => {
-    const isHeroActive = () => {
-      if (!heroSection) return window.scrollY < 20;
-
-      const rect = heroSection.getBoundingClientRect();
-      return rect.top <= 0 && rect.bottom > window.innerHeight * 0.35;
-    };
-
-    const syncNavbar = () => {
-      if (isHeroActive()) {
-        navbarVisible = false;
+    const updateNavbarState = () => {
+      if (!heroSection) {
+        navbarVisible = true;
+        navbarFixed = true;
         return;
       }
 
-      navbarVisible = window.scrollY > 20;
+      const rect = heroSection.getBoundingClientRect();
+      const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
+
+      navbarVisible = inHero;
+      navbarFixed = inHero;
     };
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       const scrollDelta = currentScrollY - lastScrollY;
 
-      if (isHeroActive()) {
-        navbarVisible = false;
-      } else if (currentScrollY <= 20) {
-        navbarVisible = false;
-      } else if (scrollDelta > 8) {
-        navbarVisible = false;
-      } else if (scrollDelta < -8) {
-        navbarVisible = true;
+      if (heroSection) {
+        const rect = heroSection.getBoundingClientRect();
+        const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
+
+        if (inHero) {
+          navbarVisible = true;
+          navbarFixed = true;
+        } else if (currentScrollY <= 20) {
+          navbarVisible = false;
+          navbarFixed = true;
+        } else if (scrollDelta > 8) {
+          navbarVisible = false;
+        } else if (scrollDelta < -8) {
+          navbarVisible = true;
+        }
       }
 
       lastScrollY = currentScrollY;
@@ -108,7 +114,12 @@
       const movingUp = event.clientY < lastPointerY || event.movementY < 0;
       const nearTopEdge = event.clientY <= 180;
 
-      if (!isHeroActive() && movingUp && nearTopEdge) {
+      if (!heroSection) return;
+
+      const rect = heroSection.getBoundingClientRect();
+      const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
+
+      if (!inHero && movingUp && nearTopEdge) {
         navbarVisible = true;
       }
 
@@ -116,18 +127,28 @@
     };
 
     const handleWheel = (event: WheelEvent) => {
-      if (!isHeroActive() && event.deltaY < 0 && window.scrollY > 20) {
+      if (!heroSection || event.deltaY >= 0 || window.scrollY <= 20) return;
+
+      const rect = heroSection.getBoundingClientRect();
+      const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
+
+      if (!inHero) {
         navbarVisible = true;
       }
     };
 
+    window.addEventListener("scroll", updateNavbarState, { passive: true });
+    window.addEventListener("resize", updateNavbarState, { passive: true });
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: true });
 
-    syncNavbar();
+    updateNavbarState();
+    handleScroll();
 
     return () => {
+      window.removeEventListener("scroll", updateNavbarState);
+      window.removeEventListener("resize", updateNavbarState);
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("wheel", handleWheel);
@@ -148,7 +169,7 @@
 />
 
 <div class="site">
-  <header class="navbar" class:hidden={!navbarVisible}>
+  <header class="navbar" class:hero-fixed={navbarFixed} class:hidden={!navbarVisible}>
     <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
     <div class="navbar-inner">
       <a class="logo" href="/" aria-label="Fuori campo home">
