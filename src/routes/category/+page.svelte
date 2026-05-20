@@ -62,7 +62,9 @@
   // ARC_SPREAD computed so chord = CARD_SIZE (seamless touching edges)
   // 5-card span ≈ 9.9 world units > 5.2vp → sides bleed off-screen ✓
   const ARC_RADIUS = 6.0;
-  const GALLERY_RADIUS = 14.0;
+  const GALLERY_RADIUS = 2.84; // small radius for pronounced curve (R = 2.84)
+  const SIDE_ANGLE_DEG = 39.66; // S = 39.66° dramatic lateral angle
+  const SIDE_ANGLE_RAD = (SIDE_ANGLE_DEG * Math.PI) / 180.0;
   // CARD_SIZE computed dynamically to match viewport fractions (width/height)
   let CARD_SIZE = 2.1;
   let ARC_SPREAD = 2 * Math.asin(CARD_SIZE / (2 * GALLERY_RADIUS)); // updated later
@@ -304,7 +306,8 @@
   function positionCards(ci: number) {
     // compute an x-shift so the rounded active card is exactly centered
     const rounded = Math.round(ci);
-    const effectiveSpread = ARC_SPREAD * RIBBON_TIGHTNESS;
+    // Use explicit side angle for dramatic, repeatable tilt per card
+    const effectiveSpread = SIDE_ANGLE_RAD * RIBBON_TIGHTNESS;
     const centerShift = Math.sin((rounded - ci) * effectiveSpread) * GALLERY_RADIUS;
 
     for (let i = 0; i < cards.length; i++) {
@@ -319,21 +322,33 @@
       const offset = raw;
       const absOffset = Math.abs(offset);
 
-      // Hide cards beyond ±3 slots
-      if (absOffset >= 3.5) { card.visible = false; continue; }
+      // Hide cards beyond ±2.6 slots; ±2 will slightly peek beyond edges
+      if (absOffset >= 2.6) { card.visible = false; continue; }
       card.visible = true;
 
       const angle = offset * effectiveSpread;
       const bandY = -Math.sin(Math.abs(angle) * 0.85) * RIBBON_LIFT;
 
       // True cylindrical arc: x along tangent, z recedes by (R - R·cosθ)
+      const baseX = Math.sin(angle) * GALLERY_RADIUS - centerShift;
+      // Slight inward overlap to hide seams
+      const overlapFactor = 0.12;
+      const overlap = CARD_SIZE * overlapFactor * Math.max(0, 1 - absOffset / 3);
+      const overlapShift = Math.sign(offset) * overlap;
+      // Exit offset: push side panels further out so they peek/exit the viewport
+      const exitFactor = 1.6; // how aggressively panels exit
+      const exitThreshold = 0.9; // start exiting after this offset
+      const extraOut = Math.max(0, absOffset - exitThreshold) * CARD_SIZE * exitFactor;
+      const exitShift = Math.sign(offset) * extraOut;
+      const finalX = baseX + exitShift - overlapShift;
       card.position.set(
-        Math.sin(angle) * GALLERY_RADIUS - centerShift,
+        finalX,
         bandY,
         -(GALLERY_RADIUS - GALLERY_RADIUS * Math.cos(angle))
       );
       card.rotation.y = -angle;  // always face camera
-      card.scale.setScalar(CARD_OVERLAP); // tiny overlap hides seams between panels
+      // enforce uniform scale for all cards so none appears larger/smaller
+      card.scale.setScalar(1.0);
 
       // Render order: center card on top, prevents edge-bleed on side cards
       card.renderOrder = 200 - Math.round(absOffset * 40);
@@ -345,9 +360,9 @@
       mat.uniforms.uBright.value = Math.max(0.15, 1.0 - absOffset * 0.35);
 
       // Blur: keep the center crisp, but make side panels feel softer and more atmospheric
-      mat.uniforms.uBlur.value = absOffset <= 0.6
+      mat.uniforms.uBlur.value = absOffset <= 0.7
         ? 0
-        : Math.min(36, (absOffset - 0.45) * 24);
+        : Math.min(30, (absOffset - 0.6) * 20);
     }
   }
 
@@ -402,7 +417,7 @@
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.08));
   }
 
-  .carousel-section{ background: #1A1A1A; }
+  .carousel-section{ background: var(--color-background-primary); }
 
   /* ── Titolo — bottom-left overlay ── */
   .project-meta {

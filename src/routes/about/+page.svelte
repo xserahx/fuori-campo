@@ -14,7 +14,7 @@
     <h1>FUORI CAMPO</h1>
 
     <p>
-      Vogliamo raccontare le Olimpiadi <br />attraverso gli occhi di chi le ha <br />costruite restando nell&apos;ombra.<br /> Questo progetto celebra i volontari:<br /> il motore invisibile che, con dedizione silenziosa, ha permesso a Milano <br />Cortina 2026 di brillare.
+      Vogliamo raccontare le Olimpiadi <br />attraverso gli occhi di chi le ha <br />costruite restando nell&apos;ombra.<br /> Questo progetto celebra i volontari:<br /> il motore invisibile che, con dedizione <br>silenziosa, ha permesso a Milano<br>Cortina 2026 di brillare.
     </p>
   </section>
 
@@ -57,7 +57,7 @@
     max-width: none;
     color: #000;
     font-family: "Forma DJR Display", sans-serif;
-    font-size: clamp(2.2rem, 4.2vw, 3.5rem);
+    font-size: 84px;
     font-weight: 500;
     line-height: 1;
     letter-spacing: 0;
