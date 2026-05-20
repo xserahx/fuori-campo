@@ -120,28 +120,9 @@
 }
 /* Font faces */
 /* Font faces */
-@font-face{
-  font-family: 'Forma DJR Display';
-  src: url('/fonts/FormaDJRDisplay-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face{
-  font-family: 'Forma DJR Display';
-  src: url('/fonts/FormaDJRDisplay-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face{
-  font-family: 'Forma DJR Display';
-  src: url('/fonts/FormaDJRDisplay-ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
+/* Custom display font files removed from repo; using system fallbacks.
+   If you want Forma DJR Display locally, add WOFF2 files to `static/fonts/`
+   and restore these @font-face rules with correct paths. */
 
 html,body,#svelte{height:100%;}
 
