@@ -402,12 +402,12 @@
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.08));
   }
 
-  /* ── Titolo — centered hero text ── */
+  /* ── Titolo — bottom-left overlay ── */
   .project-meta {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    left: 24px;
+    bottom: 24px;
+    transform: none;
     pointer-events: none;
     z-index: 2;
     width: max-content;
@@ -422,14 +422,18 @@
     white-space: nowrap;
     font-size: clamp(44px, 7.5vw, 108px);
     line-height: 1.08;
-    text-align: center;
+    text-align: left;
   }
   .project-title--filled {
     display: block;
+    bottom: -20px;
+    left: 20px;
     color: #BDFF5D;
   }
   .project-title--outlined {
     display: block;
+    bottom: 4px;
+    left: 360px;
     color: transparent;
     -webkit-text-stroke: 3px #BDFF5D;
   }
