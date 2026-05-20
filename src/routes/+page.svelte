@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
+  import ScrollArrow from "../lib/components/ScrollArrow.svelte";
   import { blurReveal } from "../lib/actions/blurReveal";
   import { imgArrow3, imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
   import IntroLoader from "../lib/components/IntroLoader.svelte";
@@ -158,11 +159,11 @@
         <span class="accent"> archivio</span>.
       </p>
     </section>
+    <br>
 
-    <section class="scroll-cue" aria-label="Scroll cue" use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
-      <p>Continua a scorrere per accedere alla galleria</p>
-      <img src={imgArrow3} alt="" aria-hidden="true" />
-    </section>
+    <div class="scroll-cue" use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
+    <ScrollArrow />
+    </div>
 
     <section class="gallery" aria-label="Gallery preview">
       {#each galleryImages as src, index}
