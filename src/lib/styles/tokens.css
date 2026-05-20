@@ -59,7 +59,7 @@
 
   --story-numbers-gap: var(--unit-300); /* adjusted to match provided measurement */
   --hero-to-lead: var(--spacing-13) + 469px;
-  --hero-top-gap: 160px; /* distance between navbar bottom and hero title */
+  --hero-top-gap: 144px; /* distance between navbar bottom and hero title */
 
   /* Radius */
   --radius-rounded-pill: 53.5px;
@@ -73,8 +73,8 @@
   --figma-story-width: 857px;
   --figma-story-right-top: 428px;
   --figma-story-left-top: 0px;
-  --figma-title-size: 300px;
-  --figma-title-lineheight: 250px;
+  --figma-title-size: clamp(132px, 17vw, 260px);
+  --figma-title-lineheight: clamp(110px, 14vw, 210px);
 
   /* Gallery sizing tokens */
   --gallery-width-1: 140px;
@@ -217,21 +217,23 @@ body{
   display:flex;
   width:100%;
   margin:0 auto;
-  padding: var(--spacing-13) 469px;
+  padding: var(--hero-top-gap) clamp(24px, 14vw, 469px) 0;
   flex-direction:column;
-  justify-content:center; /* vertical center */
+  justify-content:center;
   align-items:center;     /* horizontal center */
   gap:10px;
-  min-height: calc(100vh - var(--navbar-height)); /* full viewport minus navbar */
+  height: calc(100dvh - var(--navbar-height)); /* full viewport minus navbar */
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .hero-inner{
   width:100%;
-  max-width:1083px;
+  max-width:min(1083px, 100%);
   display:flex;
   align-items:center;
   justify-content:center;
+  transform: translateY(clamp(-72px, -5vw, -32px));
 }
 
 .wrap {
