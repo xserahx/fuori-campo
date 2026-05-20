@@ -12,8 +12,17 @@
   let loaderProgress = $state(0);
   let navbarVisible = $state(true);
   let navbarFixed = $state(true);
+  let activeNavIndex = $state(0);
+  let underlineLeft = $state(0);
+  let underlineWidth = $state(0);
+  let underlineVisible = $state(false);
 
   const volunteers = ["/volontari/1.jpg", "/volontari/2.jpg", "/volontari/3.jpg"];
+  const navItems = [
+    { href: "/gallery", label: "GALLERIA" },
+    { href: "/category", label: "CATEGORIE" },
+    { href: "/about", label: "ABOUT" }
+  ];
 
   let loaderPhotoSrc = $state(volunteers[0]);
   let activeLoaderSet = $state(0);
@@ -37,6 +46,50 @@
   let lastScrollY = 0;
   let lastPointerY = 0;
   let sawPointer = false;
+  let navContainer: HTMLElement | null = null;
+  let navLinkRefs: Array<HTMLAnchorElement | undefined> = [];
+
+  function navLinkAction(node: HTMLAnchorElement, index: number) {
+    navLinkRefs[index] = node;
+
+    return {
+      destroy() {
+        if (navLinkRefs[index] === node) navLinkRefs[index] = undefined;
+      }
+    };
+  }
+
+  function resolveNavIndex() {
+    const pathname = window.location.pathname;
+    const foundIndex = navItems.findIndex(
+      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
+    );
+
+    return foundIndex >= 0 ? foundIndex : 0;
+  }
+
+  function syncUnderline(index: number) {
+    const link = navLinkRefs[index];
+    if (!link || !navContainer) return;
+
+    const linkRect = link.getBoundingClientRect();
+    const containerRect = navContainer.getBoundingClientRect();
+
+    activeNavIndex = index;
+    underlineLeft = linkRect.left - containerRect.left;
+    underlineWidth = linkRect.width;
+    underlineVisible = navbarVisible;
+  }
+
+  function setNavSelection(index: number) {
+    syncUnderline(index);
+  }
+
+  function resetNavSelection() {
+    syncUnderline(routeNavIndex);
+  }
+
+  let routeNavIndex = 0;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -68,6 +121,7 @@
       if (!heroSection) {
         navbarVisible = true;
         navbarFixed = true;
+        underlineVisible = true;
         return;
       }
 
@@ -76,6 +130,7 @@
 
       navbarVisible = inHero;
       navbarFixed = inHero;
+      underlineVisible = inHero;
     };
 
     const handleScroll = () => {
@@ -89,13 +144,17 @@
         if (inHero) {
           navbarVisible = true;
           navbarFixed = true;
+          underlineVisible = true;
         } else if (currentScrollY <= 20) {
           navbarVisible = false;
           navbarFixed = true;
+          underlineVisible = false;
         } else if (scrollDelta > 8) {
           navbarVisible = false;
+          underlineVisible = false;
         } else if (scrollDelta < -8) {
           navbarVisible = true;
+          underlineVisible = true;
         }
       }
 
@@ -121,6 +180,7 @@
 
       if (!inHero && movingUp && nearTopEdge) {
         navbarVisible = true;
+        underlineVisible = true;
       }
 
       lastPointerY = event.clientY;
@@ -134,6 +194,7 @@
 
       if (!inHero) {
         navbarVisible = true;
+        underlineVisible = true;
       }
     };
 
@@ -143,8 +204,13 @@
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: true });
 
+    routeNavIndex = resolveNavIndex();
+    activeNavIndex = routeNavIndex;
+
     updateNavbarState();
     handleScroll();
+
+    requestAnimationFrame(() => syncUnderline(activeNavIndex));
 
     return () => {
       window.removeEventListener("scroll", updateNavbarState);
@@ -175,10 +241,26 @@
       <a class="logo" href="/" aria-label="Fuori campo home">
         <img src={imgStatusDefault} alt="" />
       </a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="/gallery">GALLERIA</a>
-        <a href="/category">CATEGORIE</a>
-        <a href="/about">ABOUT</a>
+      <nav class="nav-links" bind:this={navContainer} aria-label="Main navigation" onmouseleave={resetNavSelection}>
+        {#each navItems as item, index}
+          <a
+            class="nav-link"
+            class:is-active={index === activeNavIndex}
+            href={item.href}
+            use:navLinkAction={index}
+            onmouseenter={() => setNavSelection(index)}
+            onfocus={() => setNavSelection(index)}
+            onclick={() => setNavSelection(index)}
+          >
+            {item.label}
+          </a>
+        {/each}
+        <span
+          class="nav-underline"
+          class:visible={underlineVisible}
+          style={`left: ${underlineLeft}px; width: ${underlineWidth}px;`}
+          aria-hidden="true"
+        ></span>
       </nav>
     </div>
   </header>

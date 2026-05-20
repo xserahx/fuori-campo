@@ -1,5 +1,6 @@
 <script>
-  import { imgNavbar, imgStatusDefault } from '$lib/design/assets';
+  import '../../lib/styles/tokens.css';
+  import Navbar from '$lib/components/Navbar.svelte';
 </script>
 
 <svelte:head>
@@ -7,20 +8,7 @@
 </svelte:head>
 
 <main class="about-page">
-  <header class="navbar" aria-label="Main navigation">
-    <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
-    <div class="navbar-inner">
-      <a class="logo" href="/" aria-label="Fuori Campo home">
-        <img src={imgStatusDefault} alt="" />
-      </a>
-
-      <nav class="nav-links" aria-label="Sections">
-        <a href="/gallery">GALLERIA</a>
-        <a href="/category">CATEGORIE</a>
-        <a href="/about">ABOUT</a>
-      </nav>
-    </div>
-  </header>
+  <Navbar transparent />
 
   <section class="hero">
     <h1>FUORI CAMPO</h1>
@@ -50,60 +38,6 @@
     position: relative;
     overflow: hidden;
     font-family: "Forma DJR Display", sans-serif;
-  }
-
-  .navbar {
-    position: absolute;
-    font-family: "Forma DJR Display Bold", sans-serif;
-    inset: 0 0 auto 0;
-    padding: 24px;
-    z-index: 2;
-  }
-
-  .navbar-bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .navbar-inner {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 32px;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    flex: 0 0 auto;
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .logo img {
-    display: block;
-    width: 67px;
-    height: 63.784px;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-  }
-
-  .nav-links a {
-    color: #000;
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1;
   }
 
   .hero {

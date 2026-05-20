@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import "../../lib/styles/tokens.css";
   import { blurReveal } from "../../lib/actions/blurReveal";
-  import { imgNavbar, imgStatusDefault } from "../../lib/design/assets";
+  import Navbar from "../../lib/components/Navbar.svelte";
 
   const projects = [
     {
@@ -373,74 +373,6 @@
   }
   .carousel-section:active { cursor: grabbing; }
 
-  .navbar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 3;
-    pointer-events: none;
-  }
-
-  .navbar-bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .navbar-inner {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 1rem 1.5rem;
-    pointer-events: auto;
-    gap: 1.5rem;
-  }
-
-  .navbar-inner .nav-links {
-    order: 2;
-    margin-right: 0;
-  }
-
-  .navbar-inner .logo {
-    order: 1;
-    margin-left: 0;
-  }
-
-  .logo {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .logo img {
-    display: block;
-    width: 44px;
-    height: auto;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    letter-spacing: 0.08em;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-  }
-
-  .nav-links a {
-    color: rgba(255, 255, 255, 0.88);
-    text-decoration: none;
-  }
-
-  .nav-links a:hover {
-    color: #BDFF5D;
-  }
-
   .three-canvas {
     position: absolute;
     inset: 0;
@@ -552,19 +484,7 @@
 </style>
 
 <section class="carousel-section">
-  <header class="navbar">
-    <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
-    <div class="navbar-inner">
-      <a class="logo" href="/" aria-label="Fuori campo home">
-        <img src={imgStatusDefault} alt="" />
-      </a>
-      <nav class="nav-links" aria-label="Main navigation">
-        <a href="/gallery">GALLERIA</a>
-        <a href="/category">CATEGORIE</a>
-        <a href="/about">ABOUT</a>
-      </nav>
-    </div>
-  </header>
+  <Navbar />
 
   <div class="three-canvas" bind:this={container}></div>
 
