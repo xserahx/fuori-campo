@@ -161,7 +161,10 @@ body{
 }
 
 .navbar{
-  position:relative;
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
   overflow:hidden;
   padding: 24px;
   display:flex;
@@ -169,6 +172,16 @@ body{
   background: var(--color-background-primary);
   min-height: var(--navbar-height);
   box-sizing: border-box;
+  z-index: 40;
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar.hidden{
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events:none;
 }
 .navbar-bg{
   position:absolute;
@@ -222,7 +235,7 @@ body{
   justify-content:center;
   align-items:center;     /* horizontal center */
   gap:10px;
-  height: calc(100dvh - var(--navbar-height)); /* full viewport minus navbar */
+  min-height: 100dvh;
   box-sizing: border-box;
   overflow: hidden;
 }

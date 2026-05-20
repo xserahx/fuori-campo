@@ -10,6 +10,7 @@
   let showIntro = $state(true);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
+  let navbarVisible = $state(false);
 
   const volunteers = ["/volontari/1.jpg", "/volontari/2.jpg", "/volontari/3.jpg"];
 
@@ -31,6 +32,10 @@
 
   let interval: ReturnType<typeof setInterval> | undefined;
   let exitTimeout: ReturnType<typeof setTimeout> | undefined;
+  let heroSection: HTMLElement | null = null;
+  let lastScrollY = 0;
+  let lastPointerY = 0;
+  let sawPointer = false;
 
   onMount(() => {
     interval = setInterval(() => {
@@ -57,6 +62,78 @@
     };
   });
 
+  onMount(() => {
+    const isHeroActive = () => {
+      if (!heroSection) return window.scrollY < 20;
+
+      const rect = heroSection.getBoundingClientRect();
+      return rect.top <= 0 && rect.bottom > window.innerHeight * 0.35;
+    };
+
+    const syncNavbar = () => {
+      if (isHeroActive()) {
+        navbarVisible = false;
+        return;
+      }
+
+      navbarVisible = window.scrollY > 20;
+    };
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY;
+
+      if (isHeroActive()) {
+        navbarVisible = false;
+      } else if (currentScrollY <= 20) {
+        navbarVisible = false;
+      } else if (scrollDelta > 8) {
+        navbarVisible = false;
+      } else if (scrollDelta < -8) {
+        navbarVisible = true;
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+
+      if (!sawPointer) {
+        lastPointerY = event.clientY;
+        sawPointer = true;
+        return;
+      }
+
+      const movingUp = event.clientY < lastPointerY || event.movementY < 0;
+      const nearTopEdge = event.clientY <= 180;
+
+      if (!isHeroActive() && movingUp && nearTopEdge) {
+        navbarVisible = true;
+      }
+
+      lastPointerY = event.clientY;
+    };
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!isHeroActive() && event.deltaY < 0 && window.scrollY > 20) {
+        navbarVisible = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("wheel", handleWheel, { passive: true });
+
+    syncNavbar();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("wheel", handleWheel);
+    };
+  });
+
   const galleryCount = 12;
   const offsetCount = 6;
 </script>
@@ -71,7 +148,7 @@
 />
 
 <div class="site">
-  <header class="navbar">
+  <header class="navbar" class:hidden={!navbarVisible}>
     <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
     <div class="navbar-inner">
       <a class="logo" href="/" aria-label="Fuori campo home">
@@ -86,7 +163,7 @@
   </header>
 
   <main class="landing">
-    <section class="hero-outer">
+    <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
         <BlurTitle />
       </div>
