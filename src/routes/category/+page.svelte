@@ -1,56 +1,39 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import "../../lib/styles/tokens.css";
+  import { blurReveal } from "../../lib/actions/blurReveal";
 
   // --- CONFIG ---
   const projects = [
     {
       id: 1,
-      title: 'LIIKKU',
-      category: 'Motion · Fitness',
-      year: '2024',
+      titleLines: ['RELAZIONI', 'E COMUNICAZIONE'],
       image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&q=80',
     },
     {
       id: 2,
-      title: 'DEEP BLUE',
-      category: 'Brand · Identity',
-      year: '2024',
+      titleLines: ['CERIMONIE', 'E REVENUE'],
       image: 'https://images.unsplash.com/photo-1530053969600-caed2596d242?w=800&q=80',
     },
     {
       id: 3,
-      title: 'AURA',
-      category: 'Campaign · Digital',
-      year: '2023',
+      titleLines: ['SPORT', 'E DISCIPLINE'],
       image: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&q=80',
     },
     {
       id: 4,
-      title: 'FORMA',
-      category: 'Architecture · Film',
-      year: '2023',
+      titleLines: ['AREA ORGANIZZATIVA', 'E SERVIZI GENERALI'],
       image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80',
     },
     {
       id: 5,
-      title: 'NACHT',
-      category: 'Fashion · Editorial',
-      year: '2023',
+      titleLines: ['AREA ORGANIZZATIVA', 'E SERVIZI GENERALI'],
       image: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?w=800&q=80',
     },
     {
       id: 6,
-      title: 'STREET IS NOT A HOME',
-      category: 'Documentary · Social',
-      year: '2022',
+      titleLines: ['GESTIONE OPERATIVA', 'E FAN EXPERIENCE'],
       image: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=80',
-    },
-    {
-      id: 7,
-      title: 'KINETIC',
-      category: 'Sport · Brand',
-      year: '2022',
-      image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80',
     },
   ];
 
@@ -64,109 +47,135 @@
   let currentIndex = $state(0);
   let isDragging = false;
   let dragStartX = 0;
+  let dragStartIndex = 0;
   let dragDeltaX = 0;
-  let velocity = 0;
+  const goPrevious = () => {
+    targetIndex = Math.max(Math.round(targetIndex) - 1, 0);
+  };
+  const goNext = () => {
+    targetIndex = Math.min(Math.round(targetIndex) + 1, projects.length - 1);
+  };
 
-  // Arc params
-  const ARC_RADIUS = 5.5;
-  const ARC_SPREAD = 0.38; // radians between cards
-  const CARD_W = 2.2;
-  const CARD_H = 3.0;
+  // ─── ARC GEOMETRY ───────────────────────────────────────────────────────────
+  // The card width on the arc equals the chord length = 2·R·sin(spread/2).
+  // We want cards to butt together seamlessly, so chord ≈ CARD_W.
+  // We pick R then compute the angular spread that makes chord = CARD_W.
+  const ARC_RADIUS = 7.0;          // larger radius = flatter arc
+  const CARD_W     = 2.6;           // world-units wide
+  const CARD_H     = 3.4;           // world-units tall
+  // spread so that arc-chord ≈ card width (slight overlap keeps them flush)
+  const ARC_SPREAD = 2 * Math.asin((CARD_W * 0.97) / (2 * ARC_RADIUS));
 
   onMount(() => {
     let disposed = false;
+    let cleanup = () => {};
 
     const init = async () => {
       const THREE = await import('three');
+      if (!container || disposed) return;
 
-      if (!container) return;
-
-      // --- SCENE ---
+      // ── SCENE ──
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x050505);
 
-      camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 100);
-      camera.position.set(0, 0, 0.1);
+      camera = new THREE.PerspectiveCamera(
+        60,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        100
+      );
+      // Pull camera back slightly so all cards fill nicely
+      camera.position.set(0, 0, 0.5);
       camera.lookAt(0, 0, -1);
 
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.inset = '0';
+      renderer.domElement.style.zIndex = '0';
       container.appendChild(renderer.domElement);
 
-      // Subtle ambient + directional light for card sheen
-      const ambient: any = new THREE.AmbientLight(0xffffff, 0.35);
+      // Light — keep it soft so the darkening vignette is the main effect
+      const ambient = new THREE.AmbientLight(0xffffff, 0.6);
       scene.add(ambient);
-      const dir: any = new THREE.DirectionalLight(0xffffff, 0.9);
-      dir.position.set(0, 3, 4);
+      const dir: any = new THREE.DirectionalLight(0xffffff, 0.6);
+      dir.position.set(0, 2, 5);
       scene.add(dir);
 
-      // --- BUILD CARDS ---
+      // ── BUILD CARDS ──
       const loader = new THREE.TextureLoader();
       cards = [];
 
       for (let i = 0; i < projects.length; i++) {
         const p = projects[i];
 
-        // Load image texture
-          const tex = await new Promise<any>((res) => {
-            loader.load(p.image, res, () => {}, () => res(null));
+        const tex = await new Promise<any>((res) => {
+          loader.load(p.image, res, () => {}, () => res(null));
         });
+        if (disposed) return;
 
-        // Plane geometry
-        const geo = new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1);
+        // Main image plane
+        const geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
         const mat: any = new THREE.MeshStandardMaterial({
-          map: tex || null,
+          map: tex ?? null,
           color: tex ? 0xffffff : 0x1a1a2e,
-          roughness: 0.7,
-          metalness: 0.1,
+          roughness: 0.8,
+          metalness: 0.0,
         });
         const mesh: any = new THREE.Mesh(geo, mat);
 
+        // Very thin gap seam (2px equivalent in world-space)
+        const seamMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const seamGeo = new THREE.PlaneGeometry(CARD_W + 0.012, CARD_H + 0.012);
+        const seam: any = new THREE.Mesh(seamGeo, seamMat);
+        seam.position.z = -0.001;
+
         const group: any = new THREE.Group();
+        group.add(seam);
         group.add(mesh);
-        group.userData = { index: i, project: p };
+        group.userData = { index: i };
         scene.add(group);
         cards.push(group);
       }
 
       positionCards(0);
 
-      // --- POINTER EVENTS ---
+      // ── INPUT ──
       const el = renderer.domElement;
 
-      const onDown: EventListener = (e) => {
-        const event = e as MouseEvent | TouchEvent;
+      const onDown = (e: MouseEvent | TouchEvent) => {
         isDragging = true;
-        dragStartX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+        dragStartX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        dragStartIndex = targetIndex;
         dragDeltaX = 0;
-        velocity = 0;
       };
 
-      const onMove: EventListener = (e) => {
-        const event = e as MouseEvent | TouchEvent;
+      const onMove = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
-        const x = 'touches' in event ? event.touches[0].clientX : event.clientX;
+        const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
         dragDeltaX = x - dragStartX;
+        // Live-drag: shift index continuously while dragging
+        const sensitivity = 180; // px per card step
+        targetIndex = Math.max(0, Math.min(
+          projects.length - 1,
+          dragStartIndex - dragDeltaX / sensitivity
+        ));
       };
 
       const onUp = () => {
         if (!isDragging) return;
         isDragging = false;
-        const threshold = 60;
-        if (dragDeltaX < -threshold) {
-          targetIndex = Math.min(targetIndex + 1, projects.length - 1);
-        } else if (dragDeltaX > threshold) {
-          targetIndex = Math.max(targetIndex - 1, 0);
-        }
-        dragDeltaX = 0;
+        // Snap to nearest integer
+        targetIndex = Math.max(0, Math.min(projects.length - 1, Math.round(targetIndex)));
       };
 
-      const onWheel: EventListener = (e) => {
-        const event = e as WheelEvent;
+      const onWheel = (e: WheelEvent) => {
         e.preventDefault();
-        if (event.deltaY > 0) targetIndex = Math.min(targetIndex + 1, projects.length - 1);
-        else targetIndex = Math.max(targetIndex - 1, 0);
+        targetIndex = Math.max(0, Math.min(
+          projects.length - 1,
+          Math.round(targetIndex) + (e.deltaY > 0 ? 1 : -1)
+        ));
       };
 
       const onResize = () => {
@@ -176,46 +185,39 @@
         renderer.setSize(container.clientWidth, container.clientHeight);
       };
 
-      el.addEventListener('mousedown', onDown);
-      window.addEventListener('mousemove', onMove);
+      el.addEventListener('mousedown', onDown as EventListener);
+      window.addEventListener('mousemove', onMove as EventListener);
       window.addEventListener('mouseup', onUp);
-      el.addEventListener('touchstart', onDown, { passive: true });
-      window.addEventListener('touchmove', onMove, { passive: true });
+      el.addEventListener('touchstart', onDown as EventListener, { passive: true });
+      window.addEventListener('touchmove', onMove as EventListener, { passive: true });
       window.addEventListener('touchend', onUp);
       el.addEventListener('wheel', onWheel, { passive: false });
       window.addEventListener('resize', onResize);
 
-      // --- ANIMATE ---
+      // ── ANIMATE ──
       const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
       const animate = () => {
         if (disposed) return;
         animFrameId = requestAnimationFrame(animate);
-
-        // Smooth index
-        currentIndex = lerp(currentIndex, targetIndex, 0.08);
+        currentIndex = lerp(currentIndex, targetIndex, 0.09);
         positionCards(currentIndex);
-
         renderer?.render(scene, camera);
       };
-
       animate();
 
       cleanup = () => {
-        el.removeEventListener('mousedown', onDown);
-        window.removeEventListener('mousemove', onMove);
+        el.removeEventListener('mousedown', onDown as EventListener);
+        window.removeEventListener('mousemove', onMove as EventListener);
         window.removeEventListener('mouseup', onUp);
-        el.removeEventListener('touchstart', onDown);
-        window.removeEventListener('touchmove', onMove);
+        el.removeEventListener('touchstart', onDown as EventListener);
+        window.removeEventListener('touchmove', onMove as EventListener);
         window.removeEventListener('touchend', onUp);
         el.removeEventListener('wheel', onWheel);
         window.removeEventListener('resize', onResize);
       };
-
-      return cleanup;
     };
 
-    let cleanup = () => {};
     void init();
 
     return () => {
@@ -226,43 +228,43 @@
     };
   });
 
+  // ─── POSITION CARDS ON ARC ──────────────────────────────────────────────────
   function positionCards(ci: number) {
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
       if (!card) continue;
 
       const offset = i - ci;
-      const angle = offset * ARC_SPREAD;
+      const angle  = offset * ARC_SPREAD;
 
-      // Arc: cards sit on a cylinder around the camera
-      const x = Math.sin(angle) * ARC_RADIUS;
+      // Place card on cylinder surface
+      const x =  Math.sin(angle) * ARC_RADIUS;
       const z = -Math.cos(angle) * ARC_RADIUS;
-
       card.position.set(x, 0, z);
 
-      // Face the center (camera at origin)
+      // Rotate to face the camera (tangent to cylinder)
       card.rotation.y = -angle;
 
-      // Scale: center card is full size, others shrink
-      const dist = Math.abs(offset);
-      const scale = Math.max(0.55, 1 - dist * 0.13);
-      card.scale.setScalar(scale);
+      // No size scaling — all cards same size, seamless strip
+      card.scale.setScalar(1.0);
 
-      // Brightness via material color
-      const brightness = Math.max(0.3, 1 - dist * 0.22);
-      const content = card.children[1] as any;
-      if (content) {
-        content.material.color.setScalar(brightness);
+      // Darken cards away from centre (the bay-window vignette)
+      const dist = Math.abs(offset);
+      const brightness = Math.max(0.08, 1.0 - dist * 0.28);
+      const imgMesh = card.children[1] as any;
+      if (imgMesh?.material) {
+        imgMesh.material.color.setScalar(brightness);
       }
     }
   }
 
   onDestroy(() => {
     if (animFrameId) cancelAnimationFrame(animFrameId);
-    if (renderer) renderer.dispose();
+    renderer?.dispose();
   });
 
   const activeProject = $derived(projects[Math.round(currentIndex)] ?? projects[0]);
+  const nextProject   = $derived(projects[Math.round(currentIndex) + 1] ?? null);
 </script>
 
 <style>
@@ -274,174 +276,128 @@
     overflow: hidden;
     cursor: grab;
     user-select: none;
+    font-family: var(--font-display);
   }
-
-  .carousel-section:active {
-    cursor: grabbing;
-  }
+  .carousel-section:active { cursor: grabbing; }
 
   .three-canvas {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
+    z-index: 0;
   }
 
-  /* Project title overlay — bottom left like Kaide */
+  /* ── bottom-left title ── */
   .project-meta {
     position: absolute;
-    bottom: 3rem;
-    left: 3rem;
+    inset: 0;
     pointer-events: none;
+    z-index: 2;
   }
-
   .project-title {
-    font-family: 'Arial Black', 'Haettenschweiler', sans-serif;
-    font-size: clamp(3rem, 8vw, 7rem);
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    line-height: 0.92;
-    color: #ffffff;
-    text-transform: uppercase;
-    margin: 0 0 0.75rem;
-    transition: opacity 0.3s ease;
-  }
-
-  .project-sub {
-    font-family: 'Helvetica Neue', Helvetica, sans-serif;
-    font-size: 0.85rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.45);
-    margin: 0;
-  }
-
-  /* Next project — bottom right like Kaide */
-  .next-hint {
     position: absolute;
-    bottom: 3rem;
-    right: 3rem;
-    text-align: right;
-    pointer-events: none;
-  }
-
-  .next-label {
-    font-family: 'Helvetica Neue', Helvetica, sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-style: normal;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.3);
-    display: block;
-    margin-bottom: 0.3rem;
+    white-space: nowrap;
+    font-size: 115.942px;
+    line-height: 139.13px;
+  }
+  .project-title--filled {
+    left: 4.3vw;
+    top: 70.3vh;
+    color: #BDFF5D;
+  }
+  .project-title--outlined {
+    left: 25.4vw;
+    top: 83.3vh;
+    color: #000C0E;
+    -webkit-text-stroke-width: 4.03px;
+    -webkit-text-stroke-color: #BDFF5D;
   }
 
-  .next-title {
-    font-family: 'Arial Black', 'Haettenschweiler', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 900;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  /* Nav arrows */
+  /* ── side arrows ── */
   .nav {
     position: absolute;
-    bottom: 3rem;
-    right: 3rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    bottom: auto;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .nav-btn {
+    position: absolute;
     top: 50%;
     transform: translateY(-50%);
-  }
-
-  .nav-btn {
-    width: 44px;
-    height: 44px;
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 50%;
-    background: rgba(0,0,0,0.4);
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    font-size: 1.1rem;
+    pointer-events: auto;
+    font-family: var(--font-display);
+    font-size: 32px;
     line-height: 1;
   }
-
+  .nav-btn--left {
+    left: clamp(16px, 1.7vw, 30px);
+  }
+  .nav-btn--right {
+    right: clamp(16px, 1.7vw, 30px);
+  }
   .nav-btn:hover {
-    border-color: rgba(255,255,255,0.5);
-    background: rgba(255,255,255,0.1);
+    opacity: 0.9;
   }
 
-  /* Dot indicators */
+  /* ── dots ── */
   .dots {
     position: absolute;
-    bottom: 1.5rem;
+    bottom: 1.4rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 6px;
     pointer-events: none;
+    z-index: 2;
   }
-
   .dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.22);
     transition: background 0.3s, transform 0.3s;
   }
-
   .dot.active {
     background: #fff;
-    transform: scale(1.4);
+    transform: scale(1.45);
   }
 </style>
 
 <section class="carousel-section">
-  <!-- Three.js mounts here -->
   <div class="three-canvas" bind:this={container}></div>
 
-  <!-- Active project meta — bottom left -->
   <div class="project-meta">
-    <h2 class="project-title">{activeProject.title}</h2>
-    <p class="project-sub">{activeProject.category} &nbsp;·&nbsp; {activeProject.year}</p>
+    <h2 class="project-title project-title--filled">{activeProject.titleLines[0]}</h2>
+    <h2 class="project-title project-title--outlined">{activeProject.titleLines[1]}</h2>
   </div>
 
-  <!-- Next project — bottom right -->
-  {#if projects[Math.round(currentIndex) + 1]}
-    <div class="next-hint" style="bottom: 3rem; right: 7rem;">
-      <span class="next-label">Next</span>
-      <span class="next-title">{projects[Math.round(currentIndex) + 1].title}</span>
-    </div>
-  {/if}
-
-  <!-- Arrow nav — right side -->
-  <div class="nav" style="right: 2rem;">
-    <button
-      class="nav-btn"
-      aria-label="Previous project"
-      onclick={() => { targetIndex = Math.max(targetIndex - 1, 0); }}
-    >&#8593;</button>
-    <button
-      class="nav-btn"
-      aria-label="Next project"
-      onclick={() => { targetIndex = Math.min(targetIndex + 1, projects.length - 1); }}
-    >&#8595;</button>
+  <div class="nav" aria-label="Carousel navigation">
+    <button class="nav-btn nav-btn--left" aria-label="Previous" onclick={goPrevious}>&#8249;</button>
+    <button class="nav-btn nav-btn--right" aria-label="Next" onclick={goNext}>&#8250;</button>
   </div>
 
-  <!-- Dot indicators -->
-  <div class="dots" role="tablist" aria-label="Carousel position">
+  <div class="dots" role="tablist" aria-label="Carousel position"
+    use:blurReveal={{ direction: "left", variant: "slide", blur: 10, threshold: 0.1, delay: 140 }}>
     {#each projects as _, i}
-      <div
-        class="dot"
-        class:active={Math.round(currentIndex) === i}
-        role="tab"
-        aria-selected={Math.round(currentIndex) === i}
-      ></div>
+      <div class="dot" class:active={Math.round(currentIndex) === i}
+        role="tab" aria-selected={Math.round(currentIndex) === i}></div>
     {/each}
   </div>
 </section>
