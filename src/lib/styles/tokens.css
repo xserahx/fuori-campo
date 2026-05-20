@@ -154,6 +154,7 @@ body{
 
 .site{
   min-height:100vh;
+  background: var(--color-background-primary) !important;
 }
 
 :root{
@@ -179,6 +180,17 @@ body{
 }
 
 .navbar--transparent{
+  background: transparent;
+}
+
+/* hide navbar background image when navbar is transparent so page stays dark */
+.navbar--transparent .navbar-bg{
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ensure hovering links doesn't reveal or change page background */
+.nav-link:hover, .nav-link:focus {
   background: transparent;
 }
 

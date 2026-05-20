@@ -55,28 +55,17 @@
   const N = projects.length;
 
   // ─── ARC GEOMETRY ─────────────────────────────────────────────────────────
-  // Camera at z=3.0, FOV=52°, aspect≈16/9
-  //   → viewport at z=0 is ~5.2w × 2.93h world units
-  // CARD_SIZE = 2.1  → card is 72% of vh, 40% of vw — large & cinematic
-  // ARC_RADIUS = 6   → pronounced curve, noticeable bow
-  // ARC_SPREAD computed so chord = CARD_SIZE (seamless touching edges)
-  // 5-card span ≈ 9.9 world units > 5.2vp → sides bleed off-screen ✓
   const ARC_RADIUS = 6.0;
-  const GALLERY_RADIUS = 2.84; // small radius for pronounced curve (R = 2.84)
-  const SIDE_ANGLE_DEG = 39.66; // S = 39.66° dramatic lateral angle
-  const SIDE_ANGLE_RAD = (SIDE_ANGLE_DEG * Math.PI) / 180.0;
-  // CARD_SIZE computed dynamically to match viewport fractions (width/height)
+  const GALLERY_RADIUS = 14.0;
   let CARD_SIZE = 2.1;
   let ARC_SPREAD = 2 * Math.asin(CARD_SIZE / (2 * GALLERY_RADIUS)); // updated later
 
-  // big circular gallery: panels follow one wide, continuous arc
   const RIBBON_TIGHTNESS = 1.0;
   const CARD_OVERLAP = 1.0;
   const RIBBON_LIFT = 0.0;
 
-  // Desired fractions of the viewport the center card should occupy
-  const DESIRED_WIDTH_FRAC = 0.40; // 40% of viewport width
-  const DESIRED_HEIGHT_FRAC = 0.72; // 72% of viewport height
+  const DESIRED_WIDTH_FRAC = 0.40; 
+  const DESIRED_HEIGHT_FRAC = 0.72; 
 
   onMount(() => {
     let disposed = false;
@@ -96,9 +85,8 @@
 
       const computeCardSize = () => {
         if (!camera) return;
-        // world space height at z=0 seen by the camera
         const fovRad = (camera.fov * Math.PI) / 180;
-        const distance = camera.position.z; // camera z from origin
+        const distance = camera.position.z; 
         const worldHeight = 2 * distance * Math.tan(fovRad / 2);
         const cw = container ? container.clientWidth : window.innerWidth;
         const ch = container ? container.clientHeight : window.innerHeight;
@@ -126,7 +114,6 @@
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);
         }`;
 
-      // object-fit:cover + multi-pass gaussian blur + brightness
       const frag = /* glsl */`
         precision mediump float;
         uniform sampler2D uMap;
@@ -201,8 +188,6 @@
           depthTest: true,
         });
 
-        // Square card — no border plane, clean edge
-        // create a unit plane and scale it so we can update size on resize
         const meshGeom = new THREE.PlaneGeometry(1, 1);
         const mesh: any = new THREE.Mesh(meshGeom, mat);
         mesh.scale.set(CARD_SIZE, CARD_SIZE, 1);
@@ -214,7 +199,6 @@
         cards.push(group);
       }
 
-      // compute initial dynamic card size, apply to all existing meshes
       computeCardSize();
       for (const g of cards) {
         const m = g.children[0];
@@ -234,13 +218,11 @@
       const onMove = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
         const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        // allow continuous fractional index; wrapping handled in rendering
         targetIndex = dragStartIdx - (x - dragStartX) / 180;
       };
       const onUp = () => {
         if (!isDragging) return;
         isDragging  = false;
-        // snap to nearest integer index (can be outside 0..N-1)
         targetIndex = Math.round(targetIndex);
       };
       const onWheel = (e: WheelEvent) => {
@@ -252,7 +234,6 @@
         camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(container.clientWidth, container.clientHeight);
-        // recompute card size and arc spread, update meshes
         computeCardSize();
         for (const g of cards) {
           const m = g.children[0];
@@ -304,65 +285,43 @@
 
   // ─── POSITION CARDS ────────────────────────────────────────────────────────
   function positionCards(ci: number) {
-    // compute an x-shift so the rounded active card is exactly centered
     const rounded = Math.round(ci);
-    // Use explicit side angle for dramatic, repeatable tilt per card
-    const effectiveSpread = SIDE_ANGLE_RAD * RIBBON_TIGHTNESS;
+    const effectiveSpread = ARC_SPREAD * RIBBON_TIGHTNESS;
     const centerShift = Math.sin((rounded - ci) * effectiveSpread) * GALLERY_RADIUS;
 
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i];
       if (!card) continue;
 
-      // compute wrapped offset on a circular list so cards repeat around ends
       const n = cards.length;
-      // compute shortest circular offset from ci to index i
       let raw = i - ci;
       raw = ((raw + n / 2) - Math.floor((raw + n / 2) / n) * n) - n / 2;
       const offset = raw;
       const absOffset = Math.abs(offset);
 
-      // Hide cards beyond ±2.6 slots; ±2 will slightly peek beyond edges
-      if (absOffset >= 2.6) { card.visible = false; continue; }
+      if (absOffset >= 3.5) { card.visible = false; continue; }
       card.visible = true;
 
       const angle = offset * effectiveSpread;
       const bandY = -Math.sin(Math.abs(angle) * 0.85) * RIBBON_LIFT;
 
-      // True cylindrical arc: x along tangent, z recedes by (R - R·cosθ)
-      const baseX = Math.sin(angle) * GALLERY_RADIUS - centerShift;
-      // Slight inward overlap to hide seams
-      const overlapFactor = 0.12;
-      const overlap = CARD_SIZE * overlapFactor * Math.max(0, 1 - absOffset / 3);
-      const overlapShift = Math.sign(offset) * overlap;
-      // Exit offset: push side panels further out so they peek/exit the viewport
-      const exitFactor = 1.6; // how aggressively panels exit
-      const exitThreshold = 0.9; // start exiting after this offset
-      const extraOut = Math.max(0, absOffset - exitThreshold) * CARD_SIZE * exitFactor;
-      const exitShift = Math.sign(offset) * extraOut;
-      const finalX = baseX + exitShift - overlapShift;
       card.position.set(
-        finalX,
+        Math.sin(angle) * GALLERY_RADIUS - centerShift,
         bandY,
         -(GALLERY_RADIUS - GALLERY_RADIUS * Math.cos(angle))
       );
-      card.rotation.y = -angle;  // always face camera
-      // enforce uniform scale for all cards so none appears larger/smaller
-      card.scale.setScalar(1.0);
-
-      // Render order: center card on top, prevents edge-bleed on side cards
+      card.rotation.y = -angle;  
+      card.scale.setScalar(CARD_OVERLAP); 
       card.renderOrder = 200 - Math.round(absOffset * 40);
 
       const mat = card.userData?.mat;
       if (!mat) continue;
 
-      // Brightness: 1.0 at centre, dims to 0.15 at ±3
       mat.uniforms.uBright.value = Math.max(0.15, 1.0 - absOffset * 0.35);
 
-      // Blur: keep the center crisp, but make side panels feel softer and more atmospheric
-      mat.uniforms.uBlur.value = absOffset <= 0.7
+      mat.uniforms.uBlur.value = absOffset <= 0.6
         ? 0
-        : Math.min(30, (absOffset - 0.6) * 20);
+        : Math.min(36, (absOffset - 0.45) * 24);
     }
   }
 
@@ -417,7 +376,7 @@
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.08));
   }
 
-  .carousel-section{ background: var(--color-background-primary); }
+  .carousel-section{ background: #1A1A1A; }
 
   /* ── Titolo — bottom-left overlay ── */
   .project-meta {

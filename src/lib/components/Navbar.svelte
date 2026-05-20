@@ -84,7 +84,7 @@
     if (underlineInitialized) syncActiveUnderline();
   });
 
-  onMount(async () => {
+  onMount(() => {
     const handleResize = () => {
       if (underlineInitialized) syncActiveUnderline();
     };
