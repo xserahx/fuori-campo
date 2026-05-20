@@ -78,8 +78,8 @@
         <img src={imgStatusDefault} alt="" />
       </a>
       <nav class="nav-links" aria-label="Main navigation">
-        <a href="/galleria">GALLERIA</a>
-        <a href="/categorie">CATEGORIE</a>
+        <a href="/gallery">GALLERY</a>
+        <a href="/category">CATEGORY</a>
         <a href="/about">ABOUT</a>
       </nav>
     </div>
