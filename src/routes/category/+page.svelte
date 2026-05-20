@@ -1,492 +1,610 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import "../../lib/styles/tokens.css";
-  import { blurReveal } from "../../lib/actions/blurReveal";
-  import Navbar from "../../lib/components/Navbar.svelte";
+  import { onDestroy, onMount } from 'svelte';
+  import * as THREE from 'three';
+  import Navbar from '$lib/components/Navbar.svelte';
+  import '$lib/styles/tokens.css';
 
-  const projects = [
-    {
-      id: 1,
-      titleLines: ['RELAZIONI', 'E COMUNICAZIONE'],
-      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&q=80',
-    },
-    {
-      id: 2,
-      titleLines: ['CERIMONIE', 'E REVENUE'],
-      image: 'https://images.unsplash.com/photo-1530053969600-caed2596d242?w=800&q=80',
-    },
-    {
-      id: 3,
-      titleLines: ['SPORT', 'E DISCIPLINE'],
-      image: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?w=800&q=80',
-    },
-    {
-      id: 4,
-      titleLines: ['AREA ORGANIZZATIVA', 'E SERVIZI GENERALI'],
-      image: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800&q=80',
-    },
-    {
-      id: 5,
-      titleLines: ['LOGISTICA', 'E TERRITORIO'],
-      image: 'https://images.unsplash.com/photo-1503342394128-c104d54dba01?w=800&q=80',
-    },
-    {
-      id: 6,
-      titleLines: ['GESTIONE OPERATIVA', 'E FAN EXPERIENCE'],
-      image: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=80',
-    },
+  type Category = { id: number; label: string; image: string };
+
+  const defaultCategories: Category[] = [
+    { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800&q=80' },
+    { id: 2, label: 'CERIMONIE E REVENUE',       image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80' },
+    { id: 3, label: 'SPORT E DISCIPLINE',        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80' },
+    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: 'https://images.unsplash.com/photo-1542103749-8ef59b94f47e?w=800&q=80' },
+    { id: 5, label: 'LOGISTICA E TERRITORIO',    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80' },
+    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80' },
   ];
 
-  let container: HTMLDivElement | null = null;
+  let { categories = defaultCategories }: { categories?: Category[] } = $props();
+
+  let canvasEl: HTMLCanvasElement | null = null;
+  let containerEl: HTMLElement | null   = null;
   let renderer: any = null;
-  let scene: any   = null;
-  let camera: any  = null;
-  let cards: any[] = [];
-  let animFrameId: number | null = null;
-  let targetIndex  = $state(0);
-  let currentIndex = $state(0);
-  let isDragging   = false;
-  let dragStartX   = 0;
-  let dragStartIdx = 0;
+  let scene: any    = null;
+  let camera: any   = null;
+  let clock: any    = null;
+  let animFrameId   = 0;
 
-  const goPrevious = () => { targetIndex = targetIndex - 1; };
-  const goNext     = () => { targetIndex = targetIndex + 1; };
+  // ─── infinite slot system ────────────────────────────────────────
+  // We render N_SLOTS mesh pairs. Each slot is a "window" into the
+  // infinite sequence. Texture is swapped via modulo as we scroll.
+  const N_SLOTS = 11; // must be odd — centre + 5 each side
+  const HALF    = (N_SLOTS - 1) / 2; // 5
 
-  const N = projects.length;
+  type Slot = {
+    cMesh: any; sMesh: any;
+    cMat: any;  sMat: any;
+    texIdx: number;
+  };
+  let slots: Slot[]          = [];
+  let textures: THREE.Texture[] = [];
 
-  // ─── ARC GEOMETRY ─────────────────────────────────────────────────────────
-  const ARC_RADIUS = 6.0;
-  const GALLERY_RADIUS = 14.0;
-  let CARD_SIZE = 2.1;
-  let ARC_SPREAD = 2 * Math.asin(CARD_SIZE / (2 * GALLERY_RADIUS)); // updated later
+  // Continuous scroll position (unbounded integer target, float animation)
+  let targetPos = 0;   // integer step we're heading to
+  let animPos   = 0;   // lerped float — drives everything
+  let position  = $state(0); // for reactive label display
 
-  const RIBBON_TIGHTNESS = 1.0;
-  const CARD_OVERLAP = 1.0;
-  const RIBBON_LIFT = 0.0;
+  // Drag state
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragLive   = 0;  // live fractional drag offset (0 when settled)
 
-  const DESIRED_WIDTH_FRAC = 0.40; 
-  const DESIRED_HEIGHT_FRAC = 0.72; 
+  // ─── arc geometry constants ──────────────────────────────────────
+  // The key insight: all cards sit on a cylinder of radius ARC_R.
+  // Camera is at the axis. Cards face the axis (face the camera).
+  // This creates a naturally curving panorama where each card's
+  // edge seamlessly meets the next when blur extends to fill the gap.
 
-  onMount(() => {
-    let disposed = false;
-    let cleanup  = () => {};
+  const ARC_R     = 4.1;   // cylinder radius — smaller = deeper curve
+  const ARC_THETA = 0.25;  // angular step between card centres (radians)
+  const CARD_W    = 4.25;  // world-units — card width (square)
+  const CARD_H    = 4.25;
+  // The angular width of one card: 2*atan(CARD_W/2 / ARC_R)
+  // With ARC_R=7.5 and CARD_W=1.72 → ~0.228 rad
+  // ARC_THETA=0.30 leaves ~0.072 rad gap → filled by the blur halos
 
-    const init = async () => {
-      const THREE = await import('three');
-      if (!container || disposed) return;
+  // Side-mesh keeps the same footprint so the center image does not shrink
+  const SIDE_W    = 4.9;
+  const SIDE_H    = 4.9;
 
-      // ── Scene ──
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x1A1A1A);
+  // ─── helpers ─────────────────────────────────────────────────────
+  const N = () => categories.length;
+  function mod(n: number, m: number) { return ((n % m) + m) % m; }
+  function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+  // smooth-step easing
+  function smoothstep(x: number) {
+    x = Math.max(0, Math.min(1, x));
+    return x * x * (3 - 2 * x);
+  }
+  // ease in-out for the lerp speed (feels more physical)
+  const LERP_K = 0.072; // base lerp coefficient per frame at 60fps
 
-      camera = new THREE.PerspectiveCamera(52, container.clientWidth / container.clientHeight, 0.01, 100);
-      camera.position.set(0, 0, 3.0);
-      camera.lookAt(0, 0, 0);
+  // ─── GLSL: center card — crisp image + micro grain ───────────────
+  const C_VERT = /* glsl */`
+    varying vec2 vUv;
+    void main(){
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`;
 
-      const computeCardSize = () => {
-        if (!camera) return;
-        const fovRad = (camera.fov * Math.PI) / 180;
-        const distance = camera.position.z; 
-        const worldHeight = 2 * distance * Math.tan(fovRad / 2);
-        const cw = container ? container.clientWidth : window.innerWidth;
-        const ch = container ? container.clientHeight : window.innerHeight;
-        const worldWidth = worldHeight * (cw / ch);
-        const desiredW = worldWidth * DESIRED_WIDTH_FRAC;
-        const desiredH = worldHeight * DESIRED_HEIGHT_FRAC;
-        CARD_SIZE = Math.min(desiredW, desiredH);
-        ARC_SPREAD = 2 * Math.asin(Math.min(CARD_SIZE, GALLERY_RADIUS * 1.999) / (2 * GALLERY_RADIUS));
-      };
+  const C_FRAG = /* glsl */`
+    uniform sampler2D uTex;
+    uniform float     uTime;
+    uniform float     uFade;   // 0..1 alpha driven by distance
+    uniform float     uBlend;  // 0=sharp  1=fully side-like (used during transition)
+    varying vec2 vUv;
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      renderer.sortObjects = true;
-      renderer.domElement.style.cssText = 'position:absolute;inset:0;z-index:0;';
-      container.appendChild(renderer.domElement);
-
-      scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-
-      // ── Shaders ──
-      const vert = /* glsl */`
-        varying vec2 vUv;
-        void main(){
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);
-        }`;
-
-      const frag = /* glsl */`
-        precision mediump float;
-        uniform sampler2D uMap;
-        uniform float uAspect;   // image natural w/h
-        uniform float uBright;   // [0,1]
-        uniform float uBlur;     // blur radius in normalised units
-        varying vec2 vUv;
-
-        vec2 coverUV(vec2 uv, float ia){
-          vec2 c = uv - 0.5;
-          if(ia > 1.0) c.x *= 1.0 / ia;
-          else         c.y *= ia;
-          return c + 0.5;
-        }
-
-        vec4 blur(vec2 uv, float r){
-          if(r < 0.5) return texture2D(uMap, uv);
-          float s = r * 0.0018;
-          vec4 col = texture2D(uMap, uv) * 0.204;
-          col += (texture2D(uMap,uv+vec2(s,0.))  + texture2D(uMap,uv-vec2(s,0.)))  * 0.183;
-          col += (texture2D(uMap,uv+vec2(0.,s))  + texture2D(uMap,uv-vec2(0.,s)))  * 0.183;
-          col += (texture2D(uMap,uv+vec2(s*2.,0.))  + texture2D(uMap,uv-vec2(s*2.,0.)))  * 0.122;
-          col += (texture2D(uMap,uv+vec2(0.,s*2.))  + texture2D(uMap,uv-vec2(0.,s*2.)))  * 0.122;
-          col += (texture2D(uMap,uv+vec2(s*3.,0.))  + texture2D(uMap,uv-vec2(s*3.,0.)))  * 0.054;
-          col += (texture2D(uMap,uv+vec2(0.,s*3.))  + texture2D(uMap,uv-vec2(0.,s*3.)))  * 0.054;
-          col += (texture2D(uMap,uv+vec2(s*4.,0.))  + texture2D(uMap,uv-vec2(s*4.,0.)))  * 0.017;
-          col += (texture2D(uMap,uv+vec2(0.,s*4.))  + texture2D(uMap,uv-vec2(0.,s*4.)))  * 0.017;
-          return col;
-        }
-
-        void main(){
-          vec2 uv = coverUV(vUv, uAspect);
-          // clamp so cover-uv never samples outside [0,1]
-          uv = clamp(uv, 0.001, 0.999);
-          vec4 col = blur(uv, uBlur);
-          float leftFade = smoothstep(0.01, 0.10, vUv.x);
-          float rightFade = 1.0 - smoothstep(0.90, 0.99, vUv.x);
-          float edgeFade = leftFade * rightFade;
-          gl_FragColor = vec4(col.rgb * uBright, edgeFade);
-        }`;
-
-      // ── Build cards ──
-      const loader = new THREE.TextureLoader();
-      cards = [];
-
-      for (let i = 0; i < projects.length; i++) {
-        const p = projects[i];
-        const tex: any = await new Promise<any>((res) =>
-          loader.load(p.image, res, () => {}, () => res(null))
-        );
-        if (disposed) return;
-
-        if (tex) {
-          tex.minFilter = THREE.LinearFilter;
-          tex.magFilter = THREE.LinearFilter;
-          tex.generateMipmaps = false;
-        }
-
-        const aspect = tex ? tex.image.width / tex.image.height : 1.0;
-
-        const mat: any = new THREE.ShaderMaterial({
-          uniforms: {
-            uMap:    { value: tex },
-            uAspect: { value: aspect },
-            uBright: { value: 1.0 },
-            uBlur:   { value: 0.0 },
-          },
-          vertexShader: vert,
-          fragmentShader: frag,
-          transparent: true,
-          depthWrite: false,
-          depthTest: true,
-        });
-
-        const meshGeom = new THREE.PlaneGeometry(1, 1);
-        const mesh: any = new THREE.Mesh(meshGeom, mat);
-        mesh.scale.set(CARD_SIZE, CARD_SIZE, 1);
-
-        const group: any = new THREE.Group();
-        group.add(mesh);
-        group.userData = { mat, index: i };
-        scene.add(group);
-        cards.push(group);
-      }
-
-      computeCardSize();
-      for (const g of cards) {
-        const m = g.children[0];
-        if (m) m.scale.set(CARD_SIZE, CARD_SIZE, 1);
-      }
-
-      positionCards(0);
-
-      // ── Input ──
-      const el = renderer.domElement;
-
-      const onDown = (e: MouseEvent | TouchEvent) => {
-        isDragging  = true;
-        dragStartX  = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        dragStartIdx = targetIndex;
-      };
-      const onMove = (e: MouseEvent | TouchEvent) => {
-        if (!isDragging) return;
-        const x = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        targetIndex = dragStartIdx - (x - dragStartX) / 180;
-      };
-      const onUp = () => {
-        if (!isDragging) return;
-        isDragging  = false;
-        targetIndex = Math.round(targetIndex);
-      };
-      const onWheel = (e: WheelEvent) => {
-        e.preventDefault();
-        targetIndex = targetIndex + (e.deltaY > 0 ? 1 : -1);
-      };
-      const onResize = () => {
-        if (!container || !camera || !renderer) return;
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        computeCardSize();
-        for (const g of cards) {
-          const m = g.children[0];
-          if (m) m.scale.set(CARD_SIZE, CARD_SIZE, 1);
-        }
-        positionCards(currentIndex);
-      };
-
-      el.addEventListener('mousedown',  onDown   as EventListener);
-      window.addEventListener('mousemove', onMove as EventListener);
-      window.addEventListener('mouseup',   onUp);
-      el.addEventListener('touchstart', onDown as EventListener, { passive: true });
-      window.addEventListener('touchmove', onMove as EventListener, { passive: true });
-      window.addEventListener('touchend',  onUp);
-      el.addEventListener('wheel', onWheel, { passive: false });
-      window.addEventListener('resize', onResize);
-
-      // ── Animate ──
-      const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-      const animate = () => {
-        if (disposed) return;
-        animFrameId = requestAnimationFrame(animate);
-        currentIndex = lerp(currentIndex, targetIndex, 0.1);
-        positionCards(currentIndex);
-        renderer.render(scene, camera);
-      };
-      animate();
-
-      cleanup = () => {
-        el.removeEventListener('mousedown',  onDown   as EventListener);
-        window.removeEventListener('mousemove', onMove as EventListener);
-        window.removeEventListener('mouseup',   onUp);
-        el.removeEventListener('touchstart', onDown as EventListener);
-        window.removeEventListener('touchmove', onMove as EventListener);
-        window.removeEventListener('touchend',  onUp);
-        el.removeEventListener('wheel', onWheel);
-        window.removeEventListener('resize', onResize);
-      };
-    };
-
-    void init();
-    return () => {
-      disposed = true;
-      if (animFrameId !== null) cancelAnimationFrame(animFrameId);
-      cleanup();
-      renderer?.dispose();
-    };
-  });
-
-  // ─── POSITION CARDS ────────────────────────────────────────────────────────
-  function positionCards(ci: number) {
-    const rounded = Math.round(ci);
-    const effectiveSpread = ARC_SPREAD * RIBBON_TIGHTNESS;
-    const centerShift = Math.sin((rounded - ci) * effectiveSpread) * GALLERY_RADIUS;
-
-    for (let i = 0; i < cards.length; i++) {
-      const card = cards[i];
-      if (!card) continue;
-
-      const n = cards.length;
-      let raw = i - ci;
-      raw = ((raw + n / 2) - Math.floor((raw + n / 2) / n) * n) - n / 2;
-      const offset = raw;
-      const absOffset = Math.abs(offset);
-
-      if (absOffset >= 3.5) { card.visible = false; continue; }
-      card.visible = true;
-
-      const angle = offset * effectiveSpread;
-      const bandY = -Math.sin(Math.abs(angle) * 0.85) * RIBBON_LIFT;
-
-      card.position.set(
-        Math.sin(angle) * GALLERY_RADIUS - centerShift,
-        bandY,
-        -(GALLERY_RADIUS - GALLERY_RADIUS * Math.cos(angle))
-      );
-      card.rotation.y = -angle;  
-      card.scale.setScalar(CARD_OVERLAP); 
-      card.renderOrder = 200 - Math.round(absOffset * 40);
-
-      const mat = card.userData?.mat;
-      if (!mat) continue;
-
-      mat.uniforms.uBright.value = Math.max(0.15, 1.0 - absOffset * 0.35);
-
-      mat.uniforms.uBlur.value = absOffset <= 0.6
-        ? 0
-        : Math.min(36, (absOffset - 0.45) * 24);
+    float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float grain(vec2 uv, float t){
+      return (hash(uv + fract(t*0.017)) - 0.5) * 0.038;
     }
+
+    void main(){
+      vec4 c = texture2D(uTex, vUv);
+      c.rgb  += grain(vUv, uTime);
+      gl_FragColor = vec4(c.rgb, uFade);
+    }`;
+
+  // ─── GLSL: side card — zoom-blur + barrel + grain + vignette ─────
+  // This shader creates the "image peeling away from center" look.
+  // Key technique: radial zoom blur whose focal point is the INNER edge
+  // (the edge closest to center). This means the blur streaks point
+  // outward, as if the card is being pulled away from the center image.
+  // Combined with barrel distortion (curling toward the outer edge)
+  // this matches the reference exactly.
+  const S_VERT = /* glsl */`
+    varying vec2 vUv;
+    void main(){
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`;
+
+  const S_FRAG = /* glsl */`
+    uniform sampler2D uTex;
+    uniform float     uTime;
+    uniform float     uSide;   // -1=left  +1=right
+    uniform float     uFade;
+    uniform float     uDist;   // abs distance from center (0=neighbour, 1=far)
+    varying vec2 vUv;
+
+    // Zoom-blur from inner edge — streaks outward
+    vec4 zoomBlur(sampler2D t, vec2 uv, float side, float str){
+      // focal = inner edge centre
+      vec2 focus = vec2(side > 0.0 ? 0.0 : 1.0, 0.5);
+      vec4 acc = vec4(0.0);
+      const int S = 16;
+      for(int i=0;i<S;i++){
+        float f   = float(i)/float(S-1);       // 0..1
+        float w   = f;                          // weight: more at far end
+        vec2  off = (uv - focus) * f * str * 0.28;
+        acc += texture2D(t, clamp(uv - off, 0.001, 0.999)) * w;
+      }
+      return acc / (float(S) * 0.5);
+    }
+
+    // Barrel distortion — curls Y away from center
+    vec2 barrel(vec2 uv, float k, float side){
+      vec2 c = uv - 0.5;
+      // stronger barrel on the outer half (away from center)
+      float outer = side > 0.0 ? vUv.x : 1.0 - vUv.x;
+      float kk    = k * (0.5 + outer * 1.2);
+      float r2    = c.x*c.x*1.2 + c.y*c.y;
+      c *= 1.0 + kk * r2 * 2.8;
+      // slight X warp: inner edge pulled, outer edge stretched
+      c.x += c.x * k * (-0.18 * side);
+      return c + 0.5;
+    }
+
+    float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float grain(vec2 uv, float t){
+      return (hash(uv + fract(t*0.013)) - 0.5) * 0.18;
+    }
+
+    void main(){
+      float k   = 0.28 + uDist * 0.42;   // barrel strength grows with distance
+      float blr = 0.95 + uDist * 1.05;   // stronger zoom-blur for outer images
+
+      vec2  wuv = barrel(vUv, k, uSide);
+      wuv = clamp(wuv, 0.001, 0.999);
+
+      vec4 col  = zoomBlur(uTex, wuv, uSide, blr);
+      col.rgb  += grain(vUv, uTime);
+
+      // Cooler cinematic tone for the outer images
+      col.rgb *= vec3(0.88, 0.96, 1.10);
+      float lum = dot(col.rgb, vec3(0.299, 0.587, 0.114));
+      col.rgb = mix(vec3(lum), col.rgb, 0.88);
+
+      // ── vignette ──────────────────────────────────────────────────
+      // Very dark at outer edge, lighter at inner edge
+      // Also dark at top/bottom → "letterbox" feel matching reference
+      float innerX = uSide > 0.0 ? (1.0 - vUv.x) : vUv.x;
+      float topB   = smoothstep(0.0, 0.22, vUv.y) * smoothstep(0.0, 0.22, 1.0 - vUv.y);
+      float sideV  = smoothstep(0.0, 0.58, innerX) * (1.0 - smoothstep(0.55, 1.0, innerX)*0.3);
+      float vig    = topB * sideV;
+      col.rgb     *= vig * 0.78 + 0.02;
+
+      // distance-based darkening
+      col.rgb *= 0.72 - uDist * 0.18;
+
+      gl_FragColor = vec4(col.rgb, uFade);
+    }`;
+
+  // ─── build Three.js scene ─────────────────────────────────────────
+  function buildScene() {
+    if (!canvasEl || !containerEl) return;
+
+    scene = new THREE.Scene();
+    clock = new THREE.Clock();
+
+    const w = containerEl.clientWidth;
+    const h = containerEl.clientHeight;
+
+    // Camera positioned at cylinder axis, looking down -Z
+    camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 100);
+    camera.position.set(0, 0, ARC_R * 0.98); // closer to amplify the arc depth
+
+    renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h);
+    renderer.setClearColor(0x000000, 0);
+
+    // Load textures
+    const loader = new THREE.TextureLoader();
+    textures = categories.map(cat => {
+      const t = loader.load(cat.image, undefined as any, undefined as any, undefined as any);
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    });
+
+    // Create slots
+    for (let s = 0; s < N_SLOTS; s++) {
+      const initIdx = mod(s - HALF, N());
+
+      const cMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTex:   { value: textures[initIdx] },
+          uTime:  { value: 0 },
+          uFade:  { value: 0 },
+          uBlend: { value: 0 },
+        },
+        vertexShader: C_VERT, fragmentShader: C_FRAG,
+        transparent: true, depthWrite: false,
+      });
+
+      const sMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTex:  { value: textures[initIdx] },
+          uTime: { value: 0 },
+          uSide: { value: 1 },
+          uFade: { value: 0 },
+          uDist: { value: 0 },
+        },
+        vertexShader: S_VERT, fragmentShader: S_FRAG,
+        transparent: true, depthWrite: false,
+      });
+
+      const cMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1),
+        cMat
+      );
+      const sMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(SIDE_W, SIDE_H, 1, 1),
+        sMat
+      );
+
+      scene.add(cMesh);
+      scene.add(sMesh);
+      slots.push({ cMesh, sMesh, cMat, sMat, texIdx: initIdx });
+    }
+
+    animate();
   }
 
+  // ─── animation loop ──────────────────────────────────────────────
+  function animate() {
+    if (!renderer || !scene || !camera || !clock) return;
+    animFrameId = requestAnimationFrame(animate);
+
+    const t = clock.getElapsedTime();
+
+    // Smooth lerp — feels like inertia
+    animPos = lerp(animPos, targetPos, LERP_K);
+    const visual = animPos + dragLive;
+
+    slots.forEach((slot, s) => {
+      const slotOffset = s - HALF;  // −5 .. +5
+
+      // ── texture assignment (infinite wrap) ──────────────────────
+      const catIdx = mod(Math.round(visual) + slotOffset, N());
+      if (slot.texIdx !== catIdx) {
+        slot.texIdx                  = catIdx;
+        slot.cMat.uniforms.uTex.value = textures[catIdx];
+        slot.sMat.uniforms.uTex.value = textures[catIdx];
+      }
+
+      // ── fractional position on the arc ──────────────────────────
+      // displayRel = how many "steps" this slot is from the visual centre
+      const fracOffset = visual - Math.round(visual); // −0.5 .. +0.5
+      const displayRel  = slotOffset - fracOffset;     // continuous
+      const absD        = Math.abs(displayRel);
+      const signD       = displayRel >= 0 ? 1 : -1;
+
+      // ── arc placement ───────────────────────────────────────────
+      // Cards sit on cylinder of radius ARC_R.
+      // Angle θ from the front (camera-facing direction).
+      // card position = (ARC_R·sin θ, 0, ARC_R·cos θ) relative to axis origin
+      // But camera IS at (0,0,ARC_R), so card Z relative to camera = ARC_R·cosθ − ARC_R
+      const theta = displayRel * ARC_THETA;
+      const px    = ARC_R * Math.sin(theta);         // X on the cylinder
+      const pz    = ARC_R * Math.cos(theta) - ARC_R; // Z relative to camera
+      // Card faces inward (toward axis), so rotateY by −theta
+      const ry    = -theta * 1.2;
+
+      // ── fade curves — smooth, no hard edges ─────────────────────
+      // Center mesh: gaussian-like fade, peak at centre
+      const cfRaw  = Math.exp(-absD * absD * 2.9);
+      const cf     = cfRaw;
+
+      // Side mesh: complementary to center — fills the space the center vacates
+      // It must be visible from ~0.2 outward and fade by ~2.5
+       const sfRaw  = smoothstep(Math.max(0, absD - 0.02) * 2.1)
+         * (1 - smoothstep(Math.max(0, absD - 2.15) * 1.5));
+      const sf     = sfRaw;
+
+      // normalised distance for shader (0=nearest neighbour, 1=far)
+      const normDist = Math.min(1, Math.max(0, (absD - 0.18) / 2.0));
+
+      // Update center mesh
+      slot.cMesh.position.set(px, 0, pz + 0.03);
+      slot.cMesh.rotation.set(0, ry, 0);
+      slot.cMesh.visible               = cf > 0.003;
+      slot.cMat.uniforms.uFade.value    = cf;
+      slot.cMat.uniforms.uTime.value    = t;
+
+      // Update side mesh (same arc position, slightly behind)
+      slot.sMesh.position.set(px, 0, pz - 0.03);
+      slot.sMesh.rotation.set(0, ry, 0);
+      slot.sMesh.visible               = sf > 0.003;
+      slot.sMat.uniforms.uFade.value    = sf;
+      slot.sMat.uniforms.uTime.value    = t;
+      slot.sMat.uniforms.uSide.value    = signD;
+      slot.sMat.uniforms.uDist.value    = normDist;
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  // ─── navigation ──────────────────────────────────────────────────
+  function navigate(dir: number) {
+    targetPos += dir;
+    position   = mod(targetPos, N());
+  }
+
+  function onArrowPointerDown(dir: number, e: PointerEvent) {
+    e.stopPropagation();
+    navigate(dir);
+  }
+
+  // ─── pointer / drag ──────────────────────────────────────────────
+  function onPointerDown(e: PointerEvent) {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragLive   = 0;
+    (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: PointerEvent) {
+    if (!isDragging || !containerEl) return;
+    // Scale drag: full viewport width = ~2 card steps
+    dragLive = (dragStartX - e.clientX) / (containerEl.clientWidth * 0.38);
+  }
+  function onPointerUp() {
+    if (!isDragging) return;
+    isDragging = false;
+    if      (dragLive >  0.35) { targetPos++; }
+    else if (dragLive < -0.35) { targetPos--; }
+    position = mod(targetPos, N());
+    dragLive = 0;
+  }
+
+  function onResize() {
+    if (!renderer || !containerEl || !camera) return;
+    const w = containerEl.clientWidth, h = containerEl.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+
+  onMount(() => { buildScene(); window.addEventListener('resize', onResize); });
   onDestroy(() => {
-    if (animFrameId) cancelAnimationFrame(animFrameId);
+    cancelAnimationFrame(animFrameId);
     renderer?.dispose();
+    window.removeEventListener('resize', onResize);
   });
 
-  const activeProject = $derived(projects[(((Math.round(currentIndex) % N) + N) % N)] ?? projects[0]);
-  const nextProject   = $derived(projects[(((Math.round(currentIndex) + 1) % N) + N) % N] ?? null);
+  // ─── reactive labels ─────────────────────────────────────────────
+  let currentLabel = $derived(categories[mod(Math.round(position), N())]?.label ?? '');
+  let nextLabel    = $derived(categories[mod(Math.round(position) + 1, N())]?.label ?? '');
+  let titleLines   = $derived((() => {
+    const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
+    if (match) {
+      return [match[1].trim(), `E ${match[2].trim()}`].filter(Boolean);
+    }
+
+    const words = currentLabel.split(/\s+/).filter(Boolean);
+    if (words.length <= 2) return [currentLabel];
+
+    const splitAt = Math.max(1, Math.ceil(words.length / 2));
+    return [
+      words.slice(0, splitAt).join(' '),
+      words.slice(splitAt).join(' '),
+    ].filter(Boolean);
+  })());
 </script>
 
+<Navbar />
+
+<section
+  class="carousel"
+  bind:this={containerEl}
+  onpointerdown={onPointerDown}
+  onpointermove={onPointerMove}
+  onpointerup={onPointerUp}
+  onpointerleave={onPointerUp}
+  aria-label="Category carousel"
+>
+  <canvas bind:this={canvasEl}></canvas>
+
+  <button
+    class="arrow arrow-left"
+    type="button"
+    aria-label="Previous category"
+    onpointerdown={(e) => onArrowPointerDown(-1, e)}
+  >
+    <span aria-hidden="true">‹</span>
+  </button>
+
+  <button
+    class="arrow arrow-right"
+    type="button"
+    aria-label="Next category"
+    onpointerdown={(e) => onArrowPointerDown(1, e)}
+  >
+    <span aria-hidden="true">›</span>
+  </button>
+
+  <div class="curve-frame" aria-hidden="true">
+    <svg class="curve curve-top" viewBox="0 0 1000 260" preserveAspectRatio="none">
+      <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
+    </svg>
+    <svg class="curve curve-bottom" viewBox="0 0 1000 260" preserveAspectRatio="none">
+      <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
+    </svg>
+  </div>
+
+  <div class="bottom-bar">
+    <p class="title" aria-live="polite">
+      {#each titleLines as line, index}
+        {#if index === 0}
+          <span class="title-fill">{line}</span>
+        {:else}
+          <span class="title-outline">{line}</span>
+        {/if}
+      {/each}
+    </p>
+  </div>
+</section>
+
 <style>
-  .carousel-section {
-    position: relative;
-    width: 100%;
-    height: 100vh;
-    background: #050505;
+  :global(body) {
+    margin: 0;
+    background: var(--color-background-primary);
+  }
+
+  .carousel {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    background: var(--color-background-primary);
     overflow: hidden;
     cursor: grab;
     user-select: none;
-    font-family: var(--font-display);
+    touch-action: none;
   }
-  .carousel-section:active { cursor: grabbing; }
+  .carousel:active { cursor: grabbing; }
 
-  .three-canvas {
+  .carousel::before {
+    content: '';
     position: absolute;
     inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 5%, rgba(0, 0, 0, 0) 18%, rgba(0, 0, 0, 0.18) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 64px;
+    height: 64px;
+    border: 1px solid rgba(186, 255, 68, 0.16);
+    border-radius: 999px;
+    background: rgba(9, 9, 12, 0.72);
+    color: #baff44;
+    display: grid;
+    place-items: center;
+    font-size: 44px;
+    line-height: 1;
+    padding: 0 0 2px;
+    z-index: 12;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+
+  .arrow:hover {
+    background: rgba(9, 9, 12, 0.84);
+  }
+
+  .arrow:focus-visible {
+    outline: 2px solid rgba(186, 255, 68, 0.9);
+    outline-offset: 4px;
+  }
+
+  .arrow-left {
+    left: 20px;
+  }
+
+  .arrow-right {
+    right: 20px;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
     width: 100%;
     height: 100%;
     z-index: 0;
   }
 
-  .curve-guide {
-    position: absolute;
-    left: -6vw;
-    right: -6vw;
-    bottom: 15vh;
-    width: 112vw;
-    height: 26vh;
-    z-index: 0;
-    pointer-events: none;
-    overflow: visible;
-  }
-
-  .curve-guide path {
-    fill: none;
-    stroke: rgba(189, 255, 93, 0.26);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.08));
-  }
-
-  .carousel-section{ background: #1A1A1A; }
-
-  /* ── Titolo — bottom-left overlay ── */
-  .project-meta {
-    position: absolute;
-    left: 24px;
-    bottom: 24px;
-    transform: none;
-    pointer-events: none;
-    z-index: 2;
-    width: max-content;
-  }
-  .project-title {
-    position: relative;
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    font-size: clamp(44px, 7.5vw, 108px);
-    line-height: 1.08;
-    text-align: left;
-  }
-  .project-title--filled {
-    display: block;
-    bottom: -20px;
-    left: 20px;
-    color: #BDFF5D;
-  }
-  .project-title--outlined {
-    display: block;
-    bottom: 4px;
-    left: 360px;
-    color: transparent;
-    -webkit-text-stroke: 3px #BDFF5D;
-  }
-
-  /* ── Frecce laterali ── */
-  .nav {
+  .curve-frame {
     position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: 2;
   }
-  .nav-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: rgba(255,255,255,0.75);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    pointer-events: auto;
-    font-size: 38px;
-    line-height: 1;
-    transition: color .15s;
-  }
-  .nav-btn:hover { color: #fff; }
-  .nav-btn--left  { left:  clamp(10px, 1.2vw, 22px); }
-  .nav-btn--right { right: clamp(10px, 1.2vw, 22px); }
 
-  /* ── Dots ── */
-  .dots {
+  .curve {
     position: absolute;
-    bottom: 1.6rem;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    width: 100%;
+    fill: var(--color-background-primary);
+  }
+
+  .curve-top {
+    top: 0;
+    height: 34vh;
+    min-height: 170px;
+  }
+
+  .curve-bottom {
+    bottom: 0;
+    height: 31vh;
+    min-height: 160px;
+  }
+
+  /* ── bottom UI ───────────────────────────────────────── */
+  .bottom-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 0 20px 18px;
     display: flex;
-    gap: 7px;
+    align-items: flex-end;
+    justify-content: flex-start;
+    z-index: 10;
     pointer-events: none;
-    z-index: 2;
   }
-  .dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.2);
-    transition: background .3s, transform .3s;
+
+  .title {
+    font-family: 'Forma DJR Display', sans-serif;
+    font-size: 115.94px;
+    font-weight: 800;
+    font-style: normal;
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    line-height: 0.9;
+    margin: 0;
+    max-width: 72%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05em;
   }
-  .dot.active { background: #fff; transform: scale(1.5); }
+
+  .title-fill {
+    color: #baff44;
+    display: block;
+    white-space: nowrap;
+    margin-left: 74.2px;
+  }
+
+  .title-outline {
+    color: transparent;
+    -webkit-text-stroke: 2px #baff44;
+    display: block;
+    white-space: nowrap;
+    margin-left: 438px;
+    margin-right: 228px;
+  }
+
+  @media (max-width: 640px) {
+    .title { font-size: 52px; max-width: 78%; }
+    .title-fill { margin-left: 74.2px; }
+    .title-outline { margin-left: 438px; margin-right: 228px; }
+    .title-outline { -webkit-text-stroke: 1.5px #baff44; }
+  }
 </style>
-
-<section class="carousel-section">
-  <Navbar />
-
-  <div class="three-canvas" bind:this={container}></div>
-
-  <div class="project-meta">
-    <h2 class="project-title project-title--filled">{activeProject.titleLines[0]}</h2>
-    <h2 class="project-title project-title--outlined">{activeProject.titleLines[1]}</h2>
-  </div>
-
-  <div class="nav" aria-label="Navigazione carosello">
-    <button class="nav-btn nav-btn--left"  aria-label="Precedente" onclick={goPrevious}>&#8249;</button>
-    <button class="nav-btn nav-btn--right" aria-label="Successivo" onclick={goNext}>&#8250;</button>
-  </div>
-
-  <div class="dots" role="tablist" aria-label="Posizione carosello"
-    use:blurReveal={{ direction: "left", variant: "slide", blur: 10, threshold: 0.1, delay: 140 }}>
-    {#each projects as _, i}
-      <div class="dot" class:active={(((Math.round(currentIndex) % N) + N) % N) === i}
-        role="tab" aria-selected={(((Math.round(currentIndex) % N) + N) % N) === i}></div>
-    {/each}
-  </div>
-
-  <svg class="curve-guide" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M 0 180 C 180 60, 320 40, 500 150 C 680 260, 820 240, 1000 120" />
-  </svg>
-</section>
