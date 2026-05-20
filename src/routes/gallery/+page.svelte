@@ -3,9 +3,23 @@
   import Navbar from '$lib/components/Navbar.svelte';
 
   let activeToggle = $state<'photos' | 'names'>('photos');
+  let activeFilter = $state<string | null>(null);
+
+  const filters = [
+    { id: 'organizzativa', label: 'Area organizzativa e servizi generali' },
+    { id: 'logistica', label: 'Logistica e territorio' },
+    { id: 'gestione', label: 'Gestione Operativa e Fan Experience' },
+    { id: 'relazioni', label: 'Relazioni e comunicazione' },
+    { id: 'cerimonie', label: 'Cerimonie e revenue' },
+    { id: 'sport', label: 'Sport e discipline' }
+  ];
 
   function setToggle(next: 'photos' | 'names') {
     activeToggle = next;
+  }
+
+  function setFilter(next: string | null) {
+    activeFilter = next;
   }
 </script>
 
@@ -16,6 +30,20 @@
 <Navbar />
 
 <main class="gallery-page">
+  <section class="filters" aria-label="Gallery filters">
+    {#each filters as filter}
+      <button
+        class:filter-item--active={activeFilter === filter.id}
+        class="filter-item"
+        type="button"
+        aria-pressed={activeFilter === filter.id}
+        onclick={() => setFilter(activeFilter === filter.id ? null : filter.id)}
+      >
+        {filter.label}
+      </button>
+    {/each}
+  </section>
+
   <section class="toggle" aria-label="Gallery view toggle">
     <div class="toggle-track" aria-hidden="true"></div>
     <div class:toggle-selected--names={activeToggle === 'names'} class="toggle-selected" aria-hidden="true"></div>
@@ -53,6 +81,62 @@
     background: var(--color-background-primary);
     position: relative;
     overflow: hidden;
+  }
+
+  .filters {
+    position: fixed;
+    top: 46px;
+    right: 58px;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0;
+    width: 100%;
+    text-align: right;
+    text-transform: uppercase;
+    font-size: 20px;
+  }
+
+  .filter-item {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    color: var(--color-content-body);
+    text-transform: uppercase;
+    font-family: var(--font-display);
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: 0;
+    white-space: nowrap;
+    cursor: pointer;
+    text-align: right;
+    text-shadow:
+      0 0 4px rgba(0, 0, 0, 0.25),
+      0 4px 4px rgba(0, 0, 0, 0.25);
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .filter-item + .filter-item {
+    margin-top: 0;
+  }
+
+  .filter-item--active {
+    color: var(--color-link-selected);
+    font-family: 'Forma DJR Display', sans-serif;
+    font-weight: 700;
+    opacity: 1;
+    transform: none;
+  }
+
+  .filter-item:hover {
+    opacity: 0.98;
+    transform: none;
   }
 
   .toggle {
