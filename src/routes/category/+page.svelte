@@ -86,7 +86,7 @@
 
       // ── Scene ──
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x050505);
+      scene.background = new THREE.Color(0x1A1A1A);
 
       camera = new THREE.PerspectiveCamera(52, container.clientWidth / container.clientHeight, 0.01, 100);
       camera.position.set(0, 0, 3.0);
@@ -401,6 +401,8 @@
     stroke-linejoin: round;
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.08));
   }
+
+  .carousel-section{ background: #1A1A1A; }
 
   /* ── Titolo — bottom-left overlay ── */
   .project-meta {
