@@ -102,9 +102,9 @@
   --figma-quote-container-top: 2409px;
   --figma-story-container-top: 1353px;
   --question-1-top: 3529px;
-  --question-2-top: calc(var(--question-1-top) + var(--space-19));
-  --question-3-top: calc(var(--question-1-top) + 2 * var(--space-19));
-  --question-4-top: calc(var(--question-1-top) + 3 * var(--space-19));
+  --question-2-top: calc(var(--question-1-top) + var(--spacing-19));
+  --question-3-top: calc(var(--question-1-top) + 2 * var(--spacing-19));
+  --question-4-top: calc(var(--question-1-top) + 3 * var(--spacing-19));
 
   /* Left offsets for question blocks (from Figma) */
   --question-left-1: 0px;
@@ -113,9 +113,9 @@
   --question-left-4: 533px;
 
   /* Additional large-page vertical tokens from Figma HOME artboard */
-  --figma-summary-top: calc(var(--question-4-top) + var(--space-19));
-  --figma-scroll-top: calc(var(--figma-summary-top) + var(--space-19));
-  --figma-arrow-top: calc(var(--figma-scroll-top) + var(--space-19));
+  --figma-summary-top: calc(var(--question-4-top) + var(--spacing-19));
+  --figma-scroll-top: calc(var(--figma-summary-top) + var(--spacing-19));
+  --figma-arrow-top: calc(var(--figma-scroll-top) + var(--spacing-19));
   --quote-grid-height: 540px; 
 }
 /* Font faces */
@@ -419,7 +419,7 @@ body{
 }
 
 .question{
-  margin-top: var(--space-19); /* exact 500px spacing between questions */
+  margin-top: var(--spacing-19); /* exact 500px spacing between questions */
 }
 
 /* helpers for quote placement to mimic Figma layout */
@@ -453,7 +453,7 @@ body{
 }
 
 .scroll-cue{
-  margin-top: var(--space-19);
+  margin-top: var(--spacing-19);
   display:flex;
   flex-direction:column;
   align-items:center;
