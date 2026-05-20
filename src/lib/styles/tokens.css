@@ -391,42 +391,43 @@ body{
   margin-top:287px; /* exact gap between last question and summary */
 }
 
+.story--quote {
+  max-width: var(--figma-story-width); /* identico alle story */
+  font-family: var(--font-display);
+  font-size: var(--unit-64);
+  line-height: var(--spacing-10);
+  color: var(--color-content-body);
+  margin-top: var(--spacing-12); /* stesso gap delle story-left */
+}
+
+.story--quote-left {
+  margin-left: 0;
+  text-align: left;
+  padding-left: var(--spacing-11);
+}
+
+.story--quote-right {
+  margin-left: auto;
+  text-align: right;
+  padding-right: var(--spacing-11);
+}
+
+.quote {
+  margin: 0;
+  max-width: var(--figma-story-width);
+  font-family: var(--font-display);
+  font-size: var(--unit-64);
+  line-height: var(--spacing-10);
+  color: var(--color-content-body);
+}
+
 .accent{
   color:var(--color-content-title);
-}
-
-.quote-grid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px 64px;
-  margin-top: 500px; 
-  padding: 0; 
-  margin-bottom: 0;
-  min-height: 0;
-  align-items: start;
-}
-
-.quote{
-  max-width:var(--figma-quote-width);
-  font-family:var(--font-display);
-  font-size:var(--unit-64);
-  line-height:var(--spacing-10);
-  color:var(--color-content-body);
-}
-
-.quote--right{
-  margin-top:492px; 
 }
 
 .question{
   margin-top: var(--spacing-19); /* exact 500px spacing between questions */
 }
-
-/* helpers for quote placement to mimic Figma layout */
-.quote-left,
-.quote--left{align-self:start}
-.quote-right,
-.quote--right{align-self:start}
 
 .question h2{
   max-width:1304px;
@@ -509,7 +510,6 @@ body{
   }
 
   .story,
-  .quote-grid,
   .question,
   .scroll-cue,
   .gallery{
@@ -517,7 +517,6 @@ body{
     padding-right:16px;
   }
   .story,
-  .quote,
   .question h2{
     font-size:40px;
     line-height:1.1;
@@ -525,14 +524,14 @@ body{
   .story--right{
     margin-top:32px;
   }
-  .quote-grid{
-    grid-template-columns:1fr;
-    gap:32px;
-  }
-  .quote--right,
-  .question--right{
-    justify-self:auto;
+  .story--quote-left,
+  .story--quote-right{
+    margin-top:32px;
+    padding-left:0;
+    padding-right:0;
     text-align:left;
+  }
+  .question--right{
     justify-content:flex-start;
   }
   .question{

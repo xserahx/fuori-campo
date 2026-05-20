@@ -4,7 +4,7 @@
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import ScrollArrow from "../lib/components/ScrollArrow.svelte";
   import { blurReveal } from "../lib/actions/blurReveal";
-  import { imgArrow3, imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
+  import { imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   let showIntro = $state(true);
@@ -92,25 +92,31 @@
       </div>
     </section>
 
-    <section class="story story--left story--intro" use:blurReveal={{ direction: "left", variant: "slide", blur: 24 }}>
+    <section class="story story--left story--intro"
+      use:blurReveal={{ direction: "left", variant: "slide", blur: 24 }}>
       <p class="lead-paragraph">
         <span class="accent">Milano Cortina 2026</span> ha coinvolto migliaia di volontari:
       </p>
     </section>
 
-    <section class="story story--right story--numbers" use:blurReveal={{ direction: "right", variant: "skew", blur: 28 }}>
+    <section class="story story--right story--numbers"
+      use:blurReveal={{ direction: "right", variant: "skew", blur: 28 }}>
       <p>
         <span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi.
       </p>
     </section>
 
-    <section class="quote-grid">
-      <p class="quote quote--left" use:blurReveal={{ direction: "left", variant: "clip", blur: 20, threshold: 0.4 }}>
-        Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
-      </p>
+    <!-- QUOTE 1 -->
+    <section class="story story--quote story--quote-left"use:blurReveal={{ direction: "left", variant: "clip", blur: 20, threshold: 0.4 }}>
+      <p class="quote">
+    Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
+     </p>
+    </section>
 
-      <p class="quote quote--right" use:blurReveal={{ direction: "right", variant: "clip", blur: 20, threshold: 0.4, delay: 150 }}>
-        Nella narrazione ufficiale erano spesso dati per scontati.
+    <!-- QUOTE 2 -->
+    <section class="story story--quote story--quote-right"use:blurReveal={{ direction: "right", variant: "clip", blur: 20, threshold: 0.4, delay: 150 }}>
+      <p class="quote">
+    Nella narrazione ufficiale erano spesso dati per scontati.
       </p>
     </section>
 
@@ -125,7 +131,8 @@
       </h2>
     </section>
 
-    <section class="question question--right" style={`margin-left:var(--question-left-2)`} use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
+    <section class="question question--right" style={`margin-left:var(--question-left-2)`}
+      use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
       <h2>
         <div style="display:block; margin-bottom:80px;">
           <span class="ghost">PERCHÈ </span>
@@ -135,7 +142,8 @@
       </h2>
     </section>
 
-    <section class="question question--left" style={`margin-left:var(--question-left-3)`} use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
+    <section class="question question--left" style={`margin-left:var(--question-left-3)`}
+      use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
       <h2>
         <div style="display:block; margin-bottom:80px;">
           <span class="ghost">COSA FACEVANO </span><br />
@@ -144,7 +152,8 @@
       </h2>
     </section>
 
-    <section class="question question--right" style={`margin-left:var(--question-left-4)`} use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
+    <section class="question question--right" style={`margin-left:var(--question-left-4)`}
+      use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
       <h2>
         <div style="display:block; margin-bottom:80px;">
           <span class="accent">NE È VALSA LA PENA?</span><br />
@@ -153,16 +162,17 @@
       </h2>
     </section>
 
-    <section class="story story--left story--summary" use:blurReveal={{ direction: "left", threshold: 0.3 }}>
+    <section class="story story--left story--summary"
+      use:blurReveal={{ direction: "left", threshold: 0.3 }}>
       <p>
         Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
         <span class="accent"> archivio</span>.
       </p>
     </section>
-    <br>
 
-    <div class="scroll-cue" use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
-    <ScrollArrow />
+    <div class="scroll-cue"
+      use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
+      <ScrollArrow />
     </div>
 
     <section class="gallery" aria-label="Gallery preview">
@@ -170,8 +180,7 @@
         <figure
           class="gallery-item"
           style={`width:var(--gallery-width-${(index % galleryCount) + 1}); margin-top:var(--gallery-offset-${(index % offsetCount) + 1});`}
-          use:blurReveal={{ direction: index % 2 === 0 ? "left" : "right", threshold: 0.1, blur: 12, translateX: 30, duration: 700 }}
-        >
+          use:blurReveal={{ direction: index % 2 === 0 ? "left" : "right", threshold: 0.1, blur: 12, translateX: 30, duration: 700 }}>
           <img src={src} alt="gallery sample" />
         </figure>
       {/each}

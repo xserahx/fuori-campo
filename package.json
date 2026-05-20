@@ -25,6 +25,7 @@
 	"dependencies": {
 		"esbuild": "^0.28.0",
 		"node-addon-api": "^8.7.0",
-		"sharp": "^0.34.5"
+		"sharp": "^0.34.5",
+		"three": "^0.184.0"
 	}
 }
