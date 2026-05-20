@@ -470,15 +470,18 @@
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.08));
   }
 
-  /* ── Titolo — bottom-left, stile Kaide ── */
+  /* ── Titolo — centered hero text ── */
   .project-meta {
     position: absolute;
-    inset: 0;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 2;
+    width: max-content;
   }
   .project-title {
-    position: absolute;
+    position: relative;
     margin: 0;
     font-family: var(--font-display);
     font-weight: 800;
@@ -487,15 +490,14 @@
     white-space: nowrap;
     font-size: clamp(44px, 7.5vw, 108px);
     line-height: 1.08;
+    text-align: center;
   }
   .project-title--filled {
-    left: 4vw;
-    bottom: 14vh;
+    display: block;
     color: #BDFF5D;
   }
   .project-title--outlined {
-    left: 22.2vw;
-    bottom: 3.5vh;
+    display: block;
     color: transparent;
     -webkit-text-stroke: 3px #BDFF5D;
   }
