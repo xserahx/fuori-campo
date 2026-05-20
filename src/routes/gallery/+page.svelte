@@ -1,13 +1,13 @@
-<script>
-  let { data } = $props();
+<script lang="ts">
+  import Navbar from '$lib/components/Navbar.svelte';
 </script>
 
 <svelte:head>
   <title>Gallery — Fuori Campo</title>
 </svelte:head>
 
+<Navbar />
+
 <main>
   <h1>Gallery</h1>
-  <p>Placeholder gallery page. Replace with your gallery component or grid.</p>
-  <p><a href="/">Home</a></p>
 </main>
