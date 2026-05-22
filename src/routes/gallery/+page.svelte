@@ -10,6 +10,9 @@
   let collageRef: HTMLDivElement;
   let innerRef: HTMLDivElement;
   let scale = $state<number>(1);
+  let selectedImageIndex = $state<number | null>(null);
+  let selectedNameIndex = $state<number>(0);
+  let isAlphabetActive = $state(false);
 
   const designWidth = 1920;
   const designHeight = 1080;
@@ -87,94 +90,141 @@
     { id: 'sport', label: 'Sport e discipline' }
   ];
 
-  const setToggle = (v: 'photos' | 'names') => activeToggle = v;
-  const setFilter = (v: string | null) => activeFilter = v;
+  const setToggle = (v: 'photos' | 'names') => {
+    activeToggle = v;
+    selectedImageIndex = null;
 
-  const COL_W = 220;   // larghezza card
-  const ROW_H = 160;   // altezza card
-  const GAP   = 8;     // spazio tra card
-  const STEP  = COL_W + GAP;
-  const VSTEP = ROW_H + GAP;
-  const OFFSET_X = 10;
-  const OFFSET_Y = 10;
+    if (v === 'names') {
+      selectedNameIndex = 0;
+    }
+  };
+  const setFilter = (v: string | null) => activeFilter = v;
+  function selectImage(index: number) {
+    selectedImageIndex = index;
+  }
+
+  function clearSelection() {
+    selectedImageIndex = null;
+  }
+
+  type Person = {
+    name: string;
+    tags: string[];
+  };
+
+  function buildPeople(rawImages: typeof imagesRaw): Person[] {
+    const peopleByName = new Map<string, Set<string>>();
+
+    for (const image of rawImages) {
+      if (!image.name) continue;
+
+      const currentTags = peopleByName.get(image.name) ?? new Set<string>();
+
+      for (const tag of image.tags ?? []) {
+        currentTags.add(tag);
+      }
+
+      peopleByName.set(image.name, currentTags);
+    }
+
+    return Array.from(peopleByName.entries())
+      .map(([name, tags]) => ({
+        name,
+        tags: Array.from(tags)
+      }))
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }
 
   const imagesRaw = [
-    // ROW 1
-    { src: '/images/placeholder.jpg', name: 'Mario Rossi',      tags: ['organizzativa'], left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Laura Bianchi',    tags: ['logistica'],     left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Giulia Verdi',     tags: ['gestione'],      left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Marco Ferrari',    tags: ['relazioni'],     left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Sara Colombo',     tags: ['cerimonie'],     left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Luca Ricci',       tags: ['sport'],         left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Anna Marino',      tags: ['organizzativa'], left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Paolo Greco',      tags: ['logistica'],     left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
-    // ROW 2
-    { src: '/images/placeholder.jpg', name: 'Elena Conti',      tags: ['gestione'],      left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Roberto Esposito', tags: ['relazioni'],     left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Chiara Bruno',     tags: ['cerimonie'],     left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Fabio Romano',     tags: ['sport'],         left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Valentina Gallo',  tags: ['organizzativa'], left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Simone Costa',     tags: ['logistica'],     left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Martina Fontana',  tags: ['gestione'],      left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Davide Lombardi',  tags: ['relazioni'],     left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
-    // ROW 3
-    { src: '/images/placeholder.jpg', name: 'Silvia Moretti',   tags: ['cerimonie'],     left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Andrea Barbieri',  tags: ['sport'],         left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Francesca Poli',   tags: ['organizzativa'], left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Matteo Santoro',   tags: ['logistica'],     left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Alessia Gentile',  tags: ['gestione'],      left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Claudio Marini',   tags: ['relazioni'],     left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Serena Ferretti',  tags: ['cerimonie'],     left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Gianluca Leone',   tags: ['sport'],         left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
-    // ROW 4
-    { src: '/images/placeholder.jpg', name: 'Paola Vitale',     tags: ['organizzativa'], left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Stefano Caruso',   tags: ['logistica'],     left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Irene De Luca',    tags: ['gestione'],      left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Nicola Serra',     tags: ['relazioni'],     left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Monica Riva',      tags: ['cerimonie'],     left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Emanuele Grassi',  tags: ['sport'],         left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Rossella Fiore',   tags: ['organizzativa'], left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
-    { src: '/images/placeholder.jpg', name: 'Vincenzo Palma',   tags: ['logistica'],     left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: 'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb', left: 1384.95, top: 494.84, width: 223.864, height: 298.485, tags: ['organizzativa'], name: 'Michele Tomolillo' },
+    { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06 },
+    { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06, tags: ['logistica'], name: 'Michele Tomolillo' },
+    { src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e', left: 628.47, top: 155.8, width: 161.035, height: 286.285, tags: ['gestione'], name: 'Elisa Filippi' },
+    { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425 },
+    { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425, tags: ['relazioni'], name: 'Adriano Lacchin' },
+    { src: 'https://www.figma.com/api/mcp/asset/9dc12179-c0fb-4d55-988b-c055d87fecb1', left: 320.99, top: 1041.6, width: 184.303, height: 138.452, tags: ['cerimonie'], name: 'Guido Marzorati' },
+    { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938 },
+    { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938, tags: ['sport'], name: 'Rudy Bre' },
+    { src: 'https://www.figma.com/api/mcp/asset/005b2d2c-0afe-4335-9bff-7580699b45c3', left: 1509.16, top: 889.88, width: 263.09, height: 199.246, tags: ['organizzativa'], name: 'Chiara Terraneo' },
+    { src: 'https://www.figma.com/api/mcp/asset/8fe95570-1827-4cd2-8aef-1d6997c1b9b0', left: 317.94, top: 155.8, width: 164.939, height: 219.919 },
+    { src: 'https://www.figma.com/api/mcp/asset/8fe95570-1827-4cd2-8aef-1d6997c1b9b0', left: 317.94, top: 155.8, width: 164.939, height: 219.919, tags: ['logistica'], name: 'Guido Marzorati' },
+    { src: 'https://www.figma.com/api/mcp/asset/331fa98b-1d4f-4c52-84df-2f4e0da7c169', left: 159.12, top: 774.83, width: 158.83, height: 211.773, tags: ['gestione'], name: 'Valentina Guerrini' },
+    { src: 'https://www.figma.com/api/mcp/asset/dd9acb8f-0201-4e62-80e6-e82d8677b77d', left: 1002.05, top: 721.88, width: 134.013, height: 178.684 },
+    { src: 'https://www.figma.com/api/mcp/asset/dd9acb8f-0201-4e62-80e6-e82d8677b77d', left: 1002.05, top: 721.88, width: 134.013, height: 178.684, tags: ['relazioni'], name: "Gualtiero D'Amiano" },
+    { src: 'https://www.figma.com/api/mcp/asset/1f8a6af0-1ed8-4150-9b19-e988572ea609', left: 648.83, top: 811.48, width: 185.429, height: 247.239, tags: ['cerimonie'], name: 'Valentina Guerrini' },
+    { src: 'https://www.figma.com/api/mcp/asset/d0b6856b-ca04-4dac-92d2-728a4d150ca5', left: 1121.25, top: 96.74, width: 173.211, height: 230.948 },
+    { src: 'https://www.figma.com/api/mcp/asset/d0b6856b-ca04-4dac-92d2-728a4d150ca5', left: 1121.25, top: 96.74, width: 173.211, height: 230.948, tags: ['sport'], name: 'Lisa Liz' },
+    { src: 'https://www.figma.com/api/mcp/asset/57845de6-3257-4345-b245-5582dcd71fed', left: 413.64, top: 554.91, width: 165.865, height: 221.153, tags: ['organizzativa'], name: 'Valentina Guerrini' },
+    { src: 'https://www.figma.com/api/mcp/asset/b4a67335-f55e-4137-9ea2-86361587bd77', left: 895.39, top: 282.84, width: 142.285, height: 189.714 },
+    { src: 'https://www.figma.com/api/mcp/asset/b4a67335-f55e-4137-9ea2-86361587bd77', left: 895.39, top: 282.84, width: 142.285, height: 189.714, tags: ['logistica'], name: 'Valentina Guerrini' },
+    { src: 'https://www.figma.com/api/mcp/asset/08aad09d-f709-4304-b39f-2a12aad3373f', left: 1207.8, top: 935.69, width: 157.939, height: 210.586, tags: ['gestione'], name: "Gualtiero D'Amiano" },
+    { src: 'https://www.figma.com/api/mcp/asset/f4a03545-322c-4df0-aff3-8bdfadbd2f21', left: 1141.62, top: 462.26, width: 153.208, height: 203.479 },
+    { src: 'https://www.figma.com/api/mcp/asset/f4a03545-322c-4df0-aff3-8bdfadbd2f21', left: 1141.62, top: 462.26, width: 153.208, height: 203.479, tags: ['relazioni'], name: 'Chiara Terraneo' },
+    { src: 'https://www.figma.com/api/mcp/asset/f11ba762-b329-4551-a3d6-ef7950a6bb8d', left: 736.39, top: 564.07, width: 214.461, height: 160.846, tags: ['cerimonie'], name: 'Chiara Terraneo' },
+    { src: 'https://www.figma.com/api/mcp/asset/c53d80c5-6549-4ad2-87aa-4715b5f5e48d', left: 43.04, top: 504, width: 212.127, height: 159.095 },
+    { src: 'https://www.figma.com/api/mcp/asset/c53d80c5-6549-4ad2-87aa-4715b5f5e48d', left: 43.04, top: 504, width: 212.127, height: 159.095, tags: ['sport'], name: 'Guido Marzorati' },
+    { src: 'https://www.figma.com/api/mcp/asset/ded9c5f3-a6e9-4d84-be2c-7b125c11b710', left: -131.05, top: 793.15, width: 102.25, height: 136.334, tags: ['logistica'], name: 'Romano Cecchin' },
+    { src: 'https://www.figma.com/api/mcp/asset/6af4e78a-2f35-4668-9df7-22785806e913', left: 1390.04, top: 176.16, width: 289.152, height: 216.864 },
+    { src: 'https://www.figma.com/api/mcp/asset/6af4e78a-2f35-4668-9df7-22785806e913', left: 1390.04, top: 176.16, width: 289.152, height: 216.864, tags: ['gestione'], name: 'Mariagrazia Toscano' },
+    { src: 'https://www.figma.com/api/mcp/asset/bd2e4233-abf8-4255-b73b-9c2060bdbf2d', left: -198.26, top: 309.54, width: 203.567, height: 152.675, tags: ['organizzativa'], name: 'Valentina Guerrini' },
+    { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963 },
+    { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963, tags: ['logistica'], name: 'Michele Tomolillo' },
+    { src: 'https://www.figma.com/api/mcp/asset/fd4440df-10b0-46de-9533-973bb268cf89', left: 626.66, top: 388.45, width: 155.829, height: 161.1, tags: ['relazioni'], name: 'Michele Tomolillo' },
+    { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633 },
+    { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633, tags: ['cerimonie'], name: 'Michele Tomolillo' },
+    { src: 'https://www.figma.com/api/mcp/asset/721f6cef-83d5-4035-be4d-9652b82b9c81', left: 1049.7, top: 780.99, width: 359.169, height: 215.501, tags: ['relazioni'], name: 'Laura Giovanessi' },
+    { src: 'https://www.figma.com/api/mcp/asset/e99ac53f-6fba-4a2e-ba86-d6f12f9eb068', left: 244.8, top: 810.1, width: 248.122, height: 186.092, tags: ['organizzativa'], name: 'Lisa Liz' },
+    { src: 'https://www.figma.com/api/mcp/asset/c42edf09-a934-400c-bae9-0eaf96a509bd', left: 390, top: 593, width: 250.15, height: 187.612, tags: ['gestione'], name: 'Guido Marzorati' },
+    { src: 'https://www.figma.com/api/mcp/asset/f47cc2c2-c580-4acf-ad82-83302c739cc7', left: 749.52, top: 565.56, width: 361.128, height: 192.267, tags: ['sport'], name: 'Anna Passarella' }
   ];
 
-  const collageSlots = [
-    { left: 48, top: 152, width: 220, height: 150 },
-    { left: 260, top: 68, width: 150, height: 110 },
-    { left: 470, top: 108, width: 200, height: 140 },
-    { left: 700, top: 52, width: 260, height: 170 },
-    { left: 980, top: 150, width: 210, height: 145 },
-    { left: 1260, top: 120, width: 150, height: 110 },
-    { left: 118, top: 332, width: 270, height: 180 },
-    { left: 450, top: 296, width: 330, height: 210 },
-    { left: 860, top: 276, width: 245, height: 160 },
-    { left: 1100, top: 206, width: 140, height: 104 },
-    { left: 1328, top: 320, width: 108, height: 82 },
-    { left: 24, top: 598, width: 255, height: 170 },
-    { left: 392, top: 626, width: 190, height: 130 },
-    { left: 614, top: 606, width: 208, height: 140 },
-    { left: 885, top: 582, width: 322, height: 185 },
-    { left: 1260, top: 558, width: 150, height: 106 }
-  ];
+  const positionedImages = imagesRaw;
+  const people = buildPeople(imagesRaw);
 
-  const COLLAGE_SCALE = 1.28;
-  const COLLAGE_TIER_SCALE = 0.88;
-  const COLLAGE_TIER_SHIFT_X = 120;
-  const COLLAGE_TIER_SHIFT_Y = 72;
+  function getVisiblePeople() {
+    const visible = activeFilter
+      ? people.filter((person) => person.tags.includes(activeFilter))
+      : people;
 
-  const positionedImages = imagesRaw.map((image, index) => {
-    const slot = collageSlots[index % collageSlots.length];
-    const tier = Math.floor(index / collageSlots.length);
-    const scaleFactor = tier === 0 ? 1 : COLLAGE_TIER_SCALE;
-    const xShift = tier === 0 ? 0 : COLLAGE_TIER_SHIFT_X;
-    const yShift = tier === 0 ? 0 : COLLAGE_TIER_SHIFT_Y;
+    return visible;
+  }
 
-    return {
-      ...image,
-      left: Math.round((slot.left + xShift) * COLLAGE_SCALE),
-      top: Math.round((slot.top + yShift) * COLLAGE_SCALE),
-      width: Math.round(slot.width * scaleFactor * COLLAGE_SCALE),
-      height: Math.round(slot.height * scaleFactor * COLLAGE_SCALE)
-    };
+  function getSelectedPerson() {
+    const visiblePeople = getVisiblePeople();
+    return visiblePeople[Math.min(selectedNameIndex, Math.max(visiblePeople.length - 1, 0))] ?? null;
+  }
+
+  function selectName(index: number) {
+    selectedNameIndex = index;
+  }
+
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+  function personStartsWithLetter(personName: string, letter: string) {
+    return personName.trim().toUpperCase().startsWith(letter);
+  }
+
+  function hasPeopleForLetter(letter: string) {
+    return getVisiblePeople().some((person) => personStartsWithLetter(person.name, letter));
+  }
+
+  function selectByLetter(letter: string) {
+    const index = getVisiblePeople().findIndex((person) => personStartsWithLetter(person.name, letter));
+
+    if (index !== -1) {
+      selectedNameIndex = index;
+    }
+  }
+
+  $effect(() => {
+    activeFilter;
+    activeToggle;
+
+    const visiblePeople = getVisiblePeople();
+
+    if (selectedNameIndex >= visiblePeople.length) {
+      selectedNameIndex = 0;
+    }
   });
 </script>
 
@@ -210,47 +260,122 @@
     {/each}
   </section>
 
-  <!-- COLLAGE -->
-  <div
-    bind:this={collageRef}
-    class="collage"
-    on:pointerdown={pointerDown}
-    on:wheel|preventDefault={wheelMove}
-  >
+  {#if activeToggle === 'photos'}
+    <!-- COLLAGE -->
     <div
-      bind:this={innerRef}
-      class="collage-inner"
-      style="
-        width:{designWidth}px;
-        height:{designHeight}px;
-        transform:scale({scale});
-        transform-origin:center center;
-        left:calc(50vw - {designWidth / 2}px);
-        top:calc(50vh - {designHeight / 2}px);
-      "
+      bind:this={collageRef}
+      class:collage--selection-active={selectedImageIndex !== null}
+      class="collage"
+      on:pointerdown={pointerDown}
+      on:wheel|preventDefault={wheelMove}
     >
-      {#each positionedImages as img, i (img.src + '-' + i + '-' + img.name)}
-        {@const isUnmatched = !!(activeFilter && !(img.tags && img.tags.includes(activeFilter)))}
-        <div
-          class="collage-item"
-          class:img-unmatched={isUnmatched}
-          style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
-        >
-          <div class="img-bw-layer">
-            <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
+      <div
+        bind:this={innerRef}
+        class="collage-inner"
+        style="
+          width:{designWidth}px;
+          height:{designHeight}px;
+          transform:scale({scale});
+          transform-origin:center center;
+          left:calc(50vw - {designWidth / 2}px);
+          top:calc(50vh - {designHeight / 2}px);
+        "
+      >
+        {#each positionedImages as img, i (img.src + '-' + i + '-' + img.name)}
+          {@const isUnmatched = !!(activeFilter && !(img.tags && img.tags.includes(activeFilter)))}
+          {@const isSelected = selectedImageIndex === i}
+          <div
+            class="collage-item"
+            class:is-selected={isSelected}
+            class:img-unmatched={isUnmatched}
+            style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
+            on:click={() => selectImage(i)}
+          >
+            <div class="img-bw-layer">
+              <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
+            </div>
+            <div class="img-color-layer">
+              <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" class:img--names={activeToggle === 'names'} draggable="false" />
+            </div>
+            <div class="img-noise"></div>
+            <div class="img-vignette"></div>
+            {#if activeToggle === 'names' && (!activeFilter || (img.tags && img.tags.includes(activeFilter)))}
+              <div class="img-name">{img.name ?? 'Name'}</div>
+            {/if}
+            {#if isSelected}
+              <div class="selected-glow"></div>
+              {#if img.name}
+                <div class="selected-caption">{img.name}</div>
+              {/if}
+            {/if}
           </div>
-          <div class="img-color-layer">
-            <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" class:img--names={activeToggle === 'names'} draggable="false" />
-          </div>
-          <div class="img-noise"></div>
-          <div class="img-vignette"></div>
-          {#if activeToggle === 'names' && (!activeFilter || (img.tags && img.tags.includes(activeFilter)))}
-            <div class="img-name">{img.name ?? 'Name'}</div>
-          {/if}
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
-  </div>
+
+    {#if selectedImageIndex !== null}
+      <button class="selection-backdrop" aria-label="Clear selection" type="button" on:click={clearSelection}></button>
+    {/if}
+  {:else}
+    <div class="names-view">
+      <div class="names-quote">
+        <p>“HO PARLATO DI CURLING CON LA PRINCIPESSA D’INGHILTERRA CHE FIGATA.”</p>
+        <div class="names-meta">
+          <span>BORMIO - STELVIO SKI CENTER</span>
+          <span>EVENT SERVICES VOLUNTEER</span>
+        </div>
+      </div>
+
+      <div class="names-stage">
+        <div class="names-stack" aria-label="People names">
+          <div class="names-focus-line" style={`top:${selectedNameIndex * 74 + 62}px;`}></div>
+          {#each getVisiblePeople() as person, index}
+            {@const distance = index - selectedNameIndex}
+            <button
+              class:is-selected={distance === 0}
+              class="name-row"
+              type="button"
+              style={`transform: translateY(${index * 74}px);`}
+              on:click={() => selectName(index)}
+            >
+              <span class="name-row__text">{person.name.toUpperCase()}</span>
+              {#if distance === 0}
+                <span class="name-row__arrow">⌄</span>
+              {/if}
+            </button>
+          {/each}
+        </div>
+
+        {#if getSelectedPerson()}
+          <div class="names-current">
+            <span class="names-current__label">GALLERY</span>
+            <span class="names-current__pill">NAMES</span>
+          </div>
+        {/if}
+
+        <div
+          class="alphabet-hover-zone"
+          on:mouseenter={() => isAlphabetActive = true}
+          on:mouseleave={() => isAlphabetActive = false}
+        >
+          <div class:alphabet-rail--visible={isAlphabetActive} class="alphabet-rail" aria-label="Alphabet quick index">
+            {#each alphabet as letter}
+              {@const hasLetter = hasPeopleForLetter(letter)}
+              <button
+                class:is-disabled={!hasLetter}
+                class="alphabet-letter"
+                type="button"
+                on:mouseenter={() => hasLetter && selectByLetter(letter)}
+                on:click={() => hasLetter && selectByLetter(letter)}
+              >
+                {letter}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- EDGE FADES -->
   <div class="edge-fade edge-fade--top"></div>
@@ -319,16 +444,27 @@
   @keyframes gd2 { 0%{transform:translate(0,0)} 100%{transform:translate(-50px,-60px)} }
 
   .edge-fade { position:fixed; pointer-events:none; z-index:10; }
-  .edge-fade--top    { top:0;    left:0; right:0;  height:110px; background:linear-gradient(to bottom,#060606,transparent); }
   .edge-fade--top    { top:0;    left:0; right:0;  height:110px; background:linear-gradient(to bottom,#1a1a1a,transparent); }
   .edge-fade--bottom { bottom:0; left:0; right:0;  height:130px; background:linear-gradient(to top,   #1a1a1a,transparent); }
   .edge-fade--left   { left:0;   top:0;  bottom:0; width:70px;   background:linear-gradient(to right, #1a1a1a,transparent); }
   .edge-fade--right  { right:0;  top:0;  bottom:0; width:70px;   background:linear-gradient(to left,  #1a1a1a,transparent); }
 
   /* COLLAGE */
-  .collage { position:absolute; inset:0; z-index:2; cursor:grab; }
+  .collage { position:absolute; inset:0; z-index:2; cursor:grab; pointer-events:auto; }
   .collage:active { cursor:grabbing; }
   .collage-inner { position:absolute; will-change:transform; }
+  .collage--selection-active .collage-item:not(.is-selected) {
+    opacity:0.22;
+    filter: blur(8px) saturate(0.45);
+    transform: scale(0.97);
+  }
+  .collage--selection-active .collage-item:not(.is-selected) .img-bw-layer,
+  .collage--selection-active .collage-item:not(.is-selected) .img-color-layer,
+  .collage--selection-active .collage-item:not(.is-selected) .img-noise,
+  .collage--selection-active .collage-item:not(.is-selected) .img-vignette,
+  .collage--selection-active .collage-item:not(.is-selected) .img-name {
+    opacity:0.5;
+  }
 
   /* CARD */
   .collage-item {
@@ -339,6 +475,22 @@
   .collage-item:hover {
     z-index:50;
     box-shadow:0 8px 48px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.07);
+  }
+  .collage-item.is-selected {
+    z-index:60;
+    box-shadow:
+      0 0 0 2px #bdff5d,
+      0 0 20px rgba(189,255,93,0.35),
+      0 10px 48px rgba(0,0,0,0.75);
+  }
+  .collage-item.is-selected .img-bw-layer { opacity:0; }
+  .collage-item.is-selected .img-color-layer { opacity:1; }
+  .collage-item.is-selected .img-vignette {
+    opacity:1;
+    background:linear-gradient(to bottom, rgba(0,0,0,0.02), rgba(0,0,0,0.42));
+  }
+  .collage-item.is-selected .collage-img {
+    transform:scale(1.01);
   }
 
   /* GRAYSCALE ↔ COLOR LAYERS */
@@ -368,14 +520,10 @@
 
   /* UNMATCHED */
   .img-unmatched { opacity:0.45; }
+  .img-unmatched { pointer-events:none; }
   .img-unmatched .img-color-layer { opacity:0; transition:opacity .5s ease; }
   .img-unmatched .img-bw-layer    { opacity:1; }
   .img-unmatched .collage-img--bw { filter:grayscale(100%) contrast(0.82) brightness(0.42); }
-
-  /* Hover on unmatched: colour reveal */
-  .img-unmatched:hover .img-color-layer { opacity:1; }
-  .img-unmatched:hover .img-bw-layer    { opacity:0; }
-  .img-unmatched:hover                  { opacity:1; }
 
   /* OVERLAYS */
   .img-noise {
@@ -399,21 +547,321 @@
     letter-spacing:0.09em; text-transform:uppercase; pointer-events:none;
   }
 
+  .selected-glow {
+    position:absolute;
+    inset:0;
+    border:2px solid #bdff5d;
+    box-shadow:0 0 19px rgba(189,255,93,0.6);
+    pointer-events:none;
+    z-index:6;
+  }
+
+  .selected-caption {
+    position:absolute;
+    left:14px;
+    bottom:14px;
+    z-index:7;
+    color:#fafafa;
+    font-size:14px;
+    line-height:1;
+    font-family:'Forma DJR Display',sans-serif;
+    font-weight:700;
+    text-transform:uppercase;
+    text-shadow:0 0 4px rgba(0,0,0,0.25), 0 4px 4px rgba(0,0,0,0.25);
+    pointer-events:none;
+  }
+
+  .selection-backdrop {
+    position:fixed;
+    inset:143px 0 0 0;
+    border:0;
+    background:rgba(26,26,26,0.5);
+    backdrop-filter:blur(4.977px) saturate(0.55);
+    z-index:15;
+    cursor:default;
+  }
+
+  .names-view {
+    position:absolute;
+    inset:143px 0 0 0;
+    z-index:6;
+    overflow:hidden;
+  }
+
+  .names-view::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(90deg, rgba(26,26,26,0.96) 0 28%, rgba(26,26,26,0.82) 46%, rgba(26,26,26,0.78) 100%),
+      radial-gradient(circle at center, rgba(255,255,255,0.02), transparent 60%);
+    backdrop-filter: blur(10.9px) saturate(0.9);
+    pointer-events:none;
+  }
+
+  .names-quote {
+    position:absolute;
+    left:42px;
+    top:286px;
+    width:210px;
+    z-index:2;
+    color:#fafafa;
+    text-transform:uppercase;
+    font-family:'Forma DJR Display',sans-serif;
+  }
+
+  .names-quote p {
+    margin:0;
+    font-size:24px;
+    line-height:1.02;
+    letter-spacing:-0.01em;
+    text-shadow:0 0 4px rgba(0,0,0,0.25), 0 4px 4px rgba(0,0,0,0.25);
+  }
+
+  .names-meta {
+    margin-top:36px;
+    padding-top:14px;
+    border-top:1px solid rgba(250,250,250,0.75);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-size:14px;
+    line-height:1;
+    letter-spacing:0;
+  }
+
+  .names-stage {
+    position:absolute;
+    inset:0;
+    z-index:2;
+  }
+
+  .names-stack {
+    position:absolute;
+    left:226px;
+    top:147px;
+    right:84px;
+    bottom:44px;
+    overflow:hidden;
+  }
+
+  .names-focus-line {
+    position:absolute;
+    left:0;
+    right:22px;
+    height:1px;
+    background:rgba(250,250,250,0.78);
+    box-shadow:0 0 22px rgba(255,255,255,0.2);
+    pointer-events:none;
+    z-index:1;
+  }
+
+  .names-focus-line::after {
+    content:'';
+    position:absolute;
+    right:-1px;
+    top:50%;
+    width:26px;
+    height:2px;
+    transform:translateY(-50%);
+    background:linear-gradient(90deg, rgba(250,250,250,0.15), #bdff5d);
+    box-shadow:0 0 12px rgba(189,255,93,0.35);
+  }
+
+  .name-row {
+    position:absolute;
+    left:0;
+    width:100%;
+    border:0;
+    background:transparent;
+    padding:0;
+    text-align:left;
+    cursor:pointer;
+    color:#fafafa;
+    font-family:'Forma DJR Display',sans-serif;
+    font-size:64px;
+    line-height:1.04;
+    font-weight:700;
+    letter-spacing:-0.03em;
+    text-transform:uppercase;
+    transform-origin:left center;
+    transition:
+      color 180ms ease,
+      opacity 180ms ease,
+      filter 180ms ease;
+  }
+
+  .name-row .name-row__text {
+    display:inline-block;
+    max-width:calc(100% - 72px);
+  }
+
+  .name-row:not(.is-selected) {
+    opacity:0.72;
+    color:rgba(250,250,250,0.9);
+    filter:blur(7px);
+  }
+
+  .name-row.is-selected {
+    color:#bdff5d;
+    filter:none;
+    z-index:3;
+    text-shadow:0 0 4px rgba(0,0,0,0.25), 0 4px 4px rgba(0,0,0,0.25);
+  }
+
+  .name-row__arrow {
+    display:inline-block;
+    margin-left:16px;
+    color:#bdff5d;
+    font-size:72px;
+    line-height:0.75;
+    transform:translateY(4px);
+  }
+
+  .alphabet-hover-zone {
+    position:absolute;
+    top:142px;
+    right:4px;
+    bottom:56px;
+    width:86px;
+    z-index:4;
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+  }
+
+  .alphabet-rail {
+    position:relative;
+    width:38px;
+    height:100%;
+    max-height:560px;
+    padding:16px 11px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:space-between;
+    border-radius:999px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    backdrop-filter:blur(7px) saturate(0.9);
+    opacity:0;
+    transform:translateX(18px) scaleY(0.92);
+    transition:opacity 180ms ease, transform 220ms cubic-bezier(0.22,1,0.36,1);
+    pointer-events:none;
+  }
+
+  .alphabet-rail--visible {
+    opacity:1;
+    transform:translateX(0) scaleY(1);
+    pointer-events:auto;
+  }
+
+  .alphabet-rail::before {
+    content:'';
+    position:absolute;
+    left:50%;
+    top:14px;
+    bottom:14px;
+    width:1px;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.7), rgba(255,255,255,0.2));
+  }
+
+  .alphabet-rail::after {
+    content:'';
+    position:absolute;
+    left:50%;
+    top:50%;
+    width:18px;
+    height:142px;
+    transform:translate(-50%, -50%);
+    background:linear-gradient(180deg, rgba(189,255,93,0), rgba(189,255,93,0.6), rgba(189,255,93,0));
+    filter:blur(1px);
+    opacity:0.7;
+  }
+
+  .alphabet-letter {
+    position:relative;
+    z-index:1;
+    border:0;
+    background:transparent;
+    color:rgba(250,250,250,0.78);
+    font-family:'Forma DJR Display',sans-serif;
+    font-size:10px;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    cursor:pointer;
+    padding:0;
+    transition:color 140ms ease, transform 140ms ease, text-shadow 140ms ease;
+  }
+
+  .alphabet-letter:hover,
+  .alphabet-letter:focus-visible {
+    color:#bdff5d;
+    transform:scale(1.2);
+    text-shadow:0 0 10px rgba(189,255,93,0.5);
+    outline:none;
+  }
+
+  .alphabet-letter.is-disabled {
+    opacity:0.25;
+    cursor:default;
+    pointer-events:none;
+  }
+
+  .names-current {
+    position:absolute;
+    left:52px;
+    bottom:28px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    z-index:3;
+    color:#fafafa;
+    font-family:'Forma DJR Display',sans-serif;
+    text-transform:uppercase;
+  }
+
+  .names-current__label {
+    font-size:12px;
+    letter-spacing:0.01em;
+  }
+
+  .names-current__pill {
+    display:inline-flex;
+    align-items:center;
+    min-height:18px;
+    padding:0 11px;
+    border-radius:999px;
+    background:#bdff5d;
+    color:#1a1a1a;
+    font-size:12px;
+    font-weight:700;
+    line-height:18px;
+    letter-spacing:0;
+  }
+
   /* FILTERS */
   .filters {
-    position:fixed; top:12px; right:10px;
+    position:fixed; top:10px; right:14px;
     z-index:100; display:flex; flex-direction:column; align-items:flex-end;
-    gap:2px; max-width:220px; text-align:right;
+    gap:1px; width:max-content; max-width:none; text-align:right;
+  }
+  .names-view .filters {
+    top:10px;
+    right:14px;
   }
   .filter-item {
     border:0; background:transparent;
-    color:rgba(255,255,255,0.72);
-    font-size:9px; font-weight:600; line-height:1;
-    text-transform:uppercase; letter-spacing:0.02em;
+    color:rgba(255,255,255,0.84);
+    font-size:11px; font-weight:700; line-height:1.02;
+    text-transform:uppercase; letter-spacing:0;
     cursor:pointer; padding:0;
+    white-space:nowrap;
     transition:color .2s ease;
   }
-  .filter-item:hover { color:rgba(255,255,255,0.92); }
+  .filter-item:hover { color:rgba(255,255,255,0.96); }
   .filter-item--active { color:#bdff5d; }
 
   /* TOGGLE */
@@ -473,5 +921,29 @@
     z-index:100; writing-mode:vertical-rl; text-orientation:mixed;
     font-size:9px; font-weight:400; letter-spacing:0.18em;
     color:rgba(255,255,255,0.15); text-transform:uppercase; pointer-events:none;
+  }
+
+  @media (max-width: 980px) {
+    .names-quote {
+      display:none;
+    }
+
+    .names-stack {
+      left:30px;
+      right:40px;
+      top:90px;
+    }
+
+    .name-row {
+      font-size:42px;
+    }
+
+    .name-row__arrow {
+      font-size:54px;
+    }
+
+    .alphabet-hover-zone {
+      display:none;
+    }
   }
 </style>
