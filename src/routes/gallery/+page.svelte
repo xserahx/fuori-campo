@@ -2,58 +2,65 @@
   import '../../lib/styles/tokens.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import { onMount } from 'svelte';
+  import gsap from 'gsap';
 
   let activeToggle = $state<'photos' | 'names'>('photos');
   let activeFilter = $state<string | null>(null);
 
-  // Collage images 
-  const imagesRaw = [
-    { src: 'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb', left: 1384.95, top: 494.84, width: 223.864, height: 298.485, tags: ['organizzativa'], name: 'Michele Tomolillo' },
-    { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06 },
-    { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06, tags: ['logistica'], name: 'Michele Tomolillo' },
-    { src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e', left: 628.47, top: 155.8, width: 161.035, height: 286.285, tags: ['gestione'], name: 'Elisa Filippi' },
-    { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425 },
-    { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425, tags: ['relazioni'], name: 'Adriano Lacchin' },
-    { src: 'https://www.figma.com/api/mcp/asset/9dc12179-c0fb-4d55-988b-c055d87fecb1', left: 320.99, top: 1041.6, width: 184.303, height: 138.452, tags: ['cerimonie'], name: 'Guido Marzorati' },
-    { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938 },
-    { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938, tags: ['sport'], name: 'Rudy Bre' },
-    { src: 'https://www.figma.com/api/mcp/asset/005b2d2c-0afe-4335-9bff-7580699b45c3', left: 1509.16, top: 889.88, width: 263.09, height: 199.246, tags: ['organizzativa'], name: 'Chiara Terraneo' },
-    { src: 'https://www.figma.com/api/mcp/asset/8fe95570-1827-4cd2-8aef-1d6997c1b9b0', left: 317.94, top: 155.8, width: 164.939, height: 219.919 },
-    { src: 'https://www.figma.com/api/mcp/asset/8fe95570-1827-4cd2-8aef-1d6997c1b9b0', left: 317.94, top: 155.8, width: 164.939, height: 219.919, tags: ['logistica'], name: 'Guido Marzorati' },
-    { src: 'https://www.figma.com/api/mcp/asset/331fa98b-1d4f-4c52-84df-2f4e0da7c169', left: 159.12, top: 774.83, width: 158.83, height: 211.773, tags: ['gestione'], name: 'Valentina Guerrini' },
-    { src: 'https://www.figma.com/api/mcp/asset/dd9acb8f-0201-4e62-80e6-e82d8677b77d', left: 1002.05, top: 721.88, width: 134.013, height: 178.684 },
-    { src: 'https://www.figma.com/api/mcp/asset/dd9acb8f-0201-4e62-80e6-e82d8677b77d', left: 1002.05, top: 721.88, width: 134.013, height: 178.684, tags: ['relazioni'], name: 'Gualtiero D\'Amiano' },
-    { src: 'https://www.figma.com/api/mcp/asset/1f8a6af0-1ed8-4150-9b19-e988572ea609', left: 648.83, top: 811.48, width: 185.429, height: 247.239, tags: ['cerimonie'], name: 'Valentina Guerrini' },
-    { src: 'https://www.figma.com/api/mcp/asset/d0b6856b-ca04-4dac-92d2-728a4d150ca5', left: 1121.25, top: 96.74, width: 173.211, height: 230.948 },
-    { src: 'https://www.figma.com/api/mcp/asset/d0b6856b-ca04-4dac-92d2-728a4d150ca5', left: 1121.25, top: 96.74, width: 173.211, height: 230.948, tags: ['sport'], name: 'Lisa Liz' },
-    { src: 'https://www.figma.com/api/mcp/asset/57845de6-3257-4345-b245-5582dcd71fed', left: 413.64, top: 554.91, width: 165.865, height: 221.153, tags: ['organizzativa'], name: 'Valentina Guerrini' },
-    { src: 'https://www.figma.com/api/mcp/asset/b4a67335-f55e-4137-9ea2-86361587bd77', left: 895.39, top: 282.84, width: 142.285, height: 189.714 },
-    { src: 'https://www.figma.com/api/mcp/asset/b4a67335-f55e-4137-9ea2-86361587bd77', left: 895.39, top: 282.84, width: 142.285, height: 189.714, tags: ['logistica'], name: 'Valentina Guerrini' },
-    { src: 'https://www.figma.com/api/mcp/asset/08aad09d-f709-4304-b39f-2a12aad3373f', left: 1207.8, top: 935.69, width: 157.939, height: 210.586, tags: ['gestione'], name: 'Gualtiero D\'Amiano' },
-    { src: 'https://www.figma.com/api/mcp/asset/f4a03545-322c-4df0-aff3-8bdfadbd2f21', left: 1141.62, top: 462.26, width: 153.208, height: 203.479 },
-    { src: 'https://www.figma.com/api/mcp/asset/f4a03545-322c-4df0-aff3-8bdfadbd2f21', left: 1141.62, top: 462.26, width: 153.208, height: 203.479, tags: ['relazioni'], name: 'Chiara Terraneo' },
-    { src: 'https://www.figma.com/api/mcp/asset/f11ba762-b329-4551-a3d6-ef7950a6bb8d', left: 736.39, top: 564.07, width: 214.461, height: 160.846, tags: ['cerimonie'], name: 'Chiara Terraneo' },
-    { src: 'https://www.figma.com/api/mcp/asset/c53d80c5-6549-4ad2-87aa-4715b5f5e48d', left: 43.04, top: 504, width: 212.127, height: 159.095 },
-    { src: 'https://www.figma.com/api/mcp/asset/c53d80c5-6549-4ad2-87aa-4715b5f5e48d', left: 43.04, top: 504, width: 212.127, height: 159.095, tags: ['sport'], name: 'Guido Marzorati' },
-    { src: 'https://www.figma.com/api/mcp/asset/ded9c5f3-a6e9-4d84-be2c-7b125c11b710', left: -131.05, top: 793.15, width: 102.25, height: 136.334, tags: ['logistica'], name: 'Romano Cecchin' },
-    { src: 'https://www.figma.com/api/mcp/asset/6af4e78a-2f35-4668-9df7-22785806e913', left: 1390.04, top: 176.16, width: 289.152, height: 216.864 },
-    { src: 'https://www.figma.com/api/mcp/asset/6af4e78a-2f35-4668-9df7-22785806e913', left: 1390.04, top: 176.16, width: 289.152, height: 216.864, tags: ['gestione'], name: 'Mariagrazia Toscano' },
-    { src: 'https://www.figma.com/api/mcp/asset/bd2e4233-abf8-4255-b73b-9c2060bdbf2d', left: -198.26, top: 309.54, width: 203.567, height: 152.675, tags: ['organizzativa'], name: 'Valentina Guerrini' },
-    { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963 },
-    { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963, tags: ['logistica'], name: 'Michele Tomolillo' },
-    { src: 'https://www.figma.com/api/mcp/asset/fd4440df-10b0-46de-9533-973bb268cf89', left: 626.66, top: 388.45, width: 155.829, height: 161.1, tags: ['relazioni'], name: 'Michele Tomolillo' },
-    { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633 },
-    { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633, tags: ['cerimonie'], name: 'Michele Tomolillo' },
-    { src: 'https://www.figma.com/api/mcp/asset/721f6cef-83d5-4035-be4d-9652b82b9c81', left: 1049.7, top: 780.99, width: 359.169, height: 215.501, tags: ['relazioni'], name: 'Laura Giovanessi' },
-    { src: 'https://www.figma.com/api/mcp/asset/e99ac53f-6fba-4a2e-ba86-d6f12f9eb068', left: 244.8, top: 810.1, width: 248.122, height: 186.092, tags: ['organizzativa'], name: 'Lisa Liz' },
-    { src: 'https://www.figma.com/api/mcp/asset/c42edf09-a934-400c-bae9-0eaf96a509bd', left: 390, top: 593, width: 250.15, height: 187.612, tags: ['gestione'], name: 'Guido Marzorati' },
-    { src: 'https://www.figma.com/api/mcp/asset/f47cc2c2-c580-4acf-ad82-83302c739cc7', left: 749.52, top: 565.56, width: 361.128, height: 192.267, tags: ['sport'], name: 'Anna Passarella' }
-  ];
-
+  let collageRef: HTMLDivElement;
+  let innerRef: HTMLDivElement;
   let scale = $state<number>(1);
 
   const designWidth = 1920;
   const designHeight = 1080;
+
+  let currentX = 0, currentY = 0;
+  let targetX = 0, targetY = 0;
+  let velX = 0, velY = 0;
+  let isDragging = false;
+  let lastX = 0, lastY = 0, lastTime = 0;
+  let rafId: number;
+
+  const FRICTION = 0.92;
+  const LERP = 0.1;
+
+  function animate() {
+    if (!isDragging) {
+      velX *= FRICTION; velY *= FRICTION;
+      targetX += velX; targetY += velY;
+    }
+    currentX += (targetX - currentX) * LERP;
+    currentY += (targetY - currentY) * LERP;
+    gsap.set(innerRef, { x: currentX, y: currentY, force3D: true });
+    rafId = requestAnimationFrame(animate);
+  }
+
+  function pointerDown(e: PointerEvent) {
+    isDragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    lastTime = performance.now();
+    velX = 0; velY = 0;
+    collageRef?.setPointerCapture(e.pointerId);
+  }
+
+  function pointerMove(e: PointerEvent) {
+    if (!isDragging) return;
+    const dt = Math.max(performance.now() - lastTime, 1);
+    targetX += (e.clientX - lastX) * 1.2;
+    targetY += (e.clientY - lastY) * 1.2;
+    velX = ((e.clientX - lastX) / dt) * 16;
+    velY = ((e.clientY - lastY) / dt) * 16;
+    lastX = e.clientX; lastY = e.clientY;
+    lastTime = performance.now();
+  }
+
+  function pointerUp() { isDragging = false; }
+
+  function wheelMove(e: WheelEvent) {
+    e.preventDefault();
+    targetX -= e.deltaX * 0.85;
+    targetY -= e.deltaY * 0.85;
+  }
 
   function updateScale() {
     scale = Math.min(window.innerWidth / designWidth, window.innerHeight / designHeight);
@@ -61,8 +68,14 @@
 
   onMount(() => {
     updateScale();
+    animate();
     window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    window.addEventListener('pointerup', pointerUp);
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      window.removeEventListener('pointerup', pointerUp);
+      cancelAnimationFrame(rafId);
+    };
   });
 
   const filters = [
@@ -74,22 +87,115 @@
     { id: 'sport', label: 'Sport e discipline' }
   ];
 
-  function setToggle(next: 'photos' | 'names') {
-    activeToggle = next;
-  }
+  const setToggle = (v: 'photos' | 'names') => activeToggle = v;
+  const setFilter = (v: string | null) => activeFilter = v;
 
-  function setFilter(next: string | null) {
-    activeFilter = next;
-  }
+  const COL_W = 220;   // larghezza card
+  const ROW_H = 160;   // altezza card
+  const GAP   = 8;     // spazio tra card
+  const STEP  = COL_W + GAP;
+  const VSTEP = ROW_H + GAP;
+  const OFFSET_X = 10;
+  const OFFSET_Y = 10;
+
+  const imagesRaw = [
+    // ROW 1
+    { src: '/images/placeholder.jpg', name: 'Mario Rossi',      tags: ['organizzativa'], left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Laura Bianchi',    tags: ['logistica'],     left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Giulia Verdi',     tags: ['gestione'],      left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Marco Ferrari',    tags: ['relazioni'],     left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Sara Colombo',     tags: ['cerimonie'],     left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Luca Ricci',       tags: ['sport'],         left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Anna Marino',      tags: ['organizzativa'], left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Paolo Greco',      tags: ['logistica'],     left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 0, width: COL_W, height: ROW_H },
+    // ROW 2
+    { src: '/images/placeholder.jpg', name: 'Elena Conti',      tags: ['gestione'],      left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Roberto Esposito', tags: ['relazioni'],     left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Chiara Bruno',     tags: ['cerimonie'],     left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Fabio Romano',     tags: ['sport'],         left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Valentina Gallo',  tags: ['organizzativa'], left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Simone Costa',     tags: ['logistica'],     left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Martina Fontana',  tags: ['gestione'],      left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Davide Lombardi',  tags: ['relazioni'],     left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 1, width: COL_W, height: ROW_H },
+    // ROW 3
+    { src: '/images/placeholder.jpg', name: 'Silvia Moretti',   tags: ['cerimonie'],     left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Andrea Barbieri',  tags: ['sport'],         left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Francesca Poli',   tags: ['organizzativa'], left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Matteo Santoro',   tags: ['logistica'],     left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Alessia Gentile',  tags: ['gestione'],      left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Claudio Marini',   tags: ['relazioni'],     left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Serena Ferretti',  tags: ['cerimonie'],     left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Gianluca Leone',   tags: ['sport'],         left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 2, width: COL_W, height: ROW_H },
+    // ROW 4
+    { src: '/images/placeholder.jpg', name: 'Paola Vitale',     tags: ['organizzativa'], left: OFFSET_X + STEP * 0, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Stefano Caruso',   tags: ['logistica'],     left: OFFSET_X + STEP * 1, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Irene De Luca',    tags: ['gestione'],      left: OFFSET_X + STEP * 2, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Nicola Serra',     tags: ['relazioni'],     left: OFFSET_X + STEP * 3, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Monica Riva',      tags: ['cerimonie'],     left: OFFSET_X + STEP * 4, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Emanuele Grassi',  tags: ['sport'],         left: OFFSET_X + STEP * 5, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Rossella Fiore',   tags: ['organizzativa'], left: OFFSET_X + STEP * 6, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+    { src: '/images/placeholder.jpg', name: 'Vincenzo Palma',   tags: ['logistica'],     left: OFFSET_X + STEP * 7, top: OFFSET_Y + VSTEP * 3, width: COL_W, height: ROW_H },
+  ];
+
+  const collageSlots = [
+    { left: 48, top: 152, width: 220, height: 150 },
+    { left: 260, top: 68, width: 150, height: 110 },
+    { left: 470, top: 108, width: 200, height: 140 },
+    { left: 700, top: 52, width: 260, height: 170 },
+    { left: 980, top: 150, width: 210, height: 145 },
+    { left: 1260, top: 120, width: 150, height: 110 },
+    { left: 118, top: 332, width: 270, height: 180 },
+    { left: 450, top: 296, width: 330, height: 210 },
+    { left: 860, top: 276, width: 245, height: 160 },
+    { left: 1100, top: 206, width: 140, height: 104 },
+    { left: 1328, top: 320, width: 108, height: 82 },
+    { left: 24, top: 598, width: 255, height: 170 },
+    { left: 392, top: 626, width: 190, height: 130 },
+    { left: 614, top: 606, width: 208, height: 140 },
+    { left: 885, top: 582, width: 322, height: 185 },
+    { left: 1260, top: 558, width: 150, height: 106 }
+  ];
+
+  const COLLAGE_SCALE = 1.28;
+  const COLLAGE_TIER_SCALE = 0.88;
+  const COLLAGE_TIER_SHIFT_X = 120;
+  const COLLAGE_TIER_SHIFT_Y = 72;
+
+  const positionedImages = imagesRaw.map((image, index) => {
+    const slot = collageSlots[index % collageSlots.length];
+    const tier = Math.floor(index / collageSlots.length);
+    const scaleFactor = tier === 0 ? 1 : COLLAGE_TIER_SCALE;
+    const xShift = tier === 0 ? 0 : COLLAGE_TIER_SHIFT_X;
+    const yShift = tier === 0 ? 0 : COLLAGE_TIER_SHIFT_Y;
+
+    return {
+      ...image,
+      left: Math.round((slot.left + xShift) * COLLAGE_SCALE),
+      top: Math.round((slot.top + yShift) * COLLAGE_SCALE),
+      width: Math.round(slot.width * scaleFactor * COLLAGE_SCALE),
+      height: Math.round(slot.height * scaleFactor * COLLAGE_SCALE)
+    };
+  });
 </script>
 
 <svelte:head>
   <title>Gallery — Fuori Campo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Forma+DJR+Display:wght@300;400;500;600&display=swap" rel="stylesheet">
 </svelte:head>
+
+<svelte:window on:pointermove={pointerMove} />
 
 <Navbar />
 
 <main class="gallery-page">
+
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-noise"></div>
+
+  <!-- FILTERS -->
   <section class="filters" aria-label="Gallery filters">
     {#each filters as filter}
       <button
@@ -97,31 +203,47 @@
         class="filter-item"
         type="button"
         aria-pressed={activeFilter === filter.id}
-        onclick={() => setFilter(activeFilter === filter.id ? null : filter.id)}
+        on:click={() => setFilter(activeFilter === filter.id ? null : filter.id)}
       >
         {filter.label}
       </button>
     {/each}
   </section>
 
-  <div class="collage" aria-hidden="false">
+  <!-- COLLAGE -->
+  <div
+    bind:this={collageRef}
+    class="collage"
+    on:pointerdown={pointerDown}
+    on:wheel|preventDefault={wheelMove}
+  >
     <div
+      bind:this={innerRef}
       class="collage-inner"
-      style="width: {designWidth}px; height: {designHeight}px; transform: scale({scale}); transform-origin: top left;"
+      style="
+        width:{designWidth}px;
+        height:{designHeight}px;
+        transform:scale({scale});
+        transform-origin:center center;
+        left:calc(50vw - {designWidth / 2}px);
+        top:calc(50vh - {designHeight / 2}px);
+      "
     >
-      {#each imagesRaw as img, i (img.src + '-' + i)}
+      {#each positionedImages as img, i (img.src + '-' + i + '-' + img.name)}
+        {@const isUnmatched = !!(activeFilter && !(img.tags && img.tags.includes(activeFilter)))}
         <div
           class="collage-item"
-          style="left: {img.left}px; top: {img.top}px; width: {img.width}px; height: {img.height}px;"
-          class:img-unmatched={activeFilter && !(img.tags && img.tags.includes(activeFilter))}
+          class:img-unmatched={isUnmatched}
+          style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
         >
-          <img
-            src={img.src}
-            alt={img.name ?? 'photo'}
-            class="collage-img"
-            class:img--names={activeToggle === 'names'}
-          />
-
+          <div class="img-bw-layer">
+            <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
+          </div>
+          <div class="img-color-layer">
+            <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" class:img--names={activeToggle === 'names'} draggable="false" />
+          </div>
+          <div class="img-noise"></div>
+          <div class="img-vignette"></div>
           {#if activeToggle === 'names' && (!activeFilter || (img.tags && img.tags.includes(activeFilter)))}
             <div class="img-name">{img.name ?? 'Name'}</div>
           {/if}
@@ -130,254 +252,226 @@
     </div>
   </div>
 
-  <section class="toggle" aria-label="Gallery view toggle">
-    <div class="toggle-track" aria-hidden="true"></div>
-    <div class:toggle-selected--names={activeToggle === 'names'} class="toggle-selected" aria-hidden="true"></div>
-    <button
-      class:toggle-label--active={activeToggle === 'photos'}
-      class="toggle-label toggle-label--photos"
-      type="button"
-      aria-pressed={activeToggle === 'photos'}
-      onclick={() => setToggle('photos')}
-    >
-      PHOTOS
-    </button>
-    <button
-      class:toggle-label--active={activeToggle === 'names'}
-      class="toggle-label toggle-label--names"
-      type="button"
-      aria-pressed={activeToggle === 'names'}
-      onclick={() => setToggle('names')}
-    >
-      NAMES
-    </button>
+  <!-- EDGE FADES -->
+  <div class="edge-fade edge-fade--top"></div>
+  <div class="edge-fade edge-fade--bottom"></div>
+  <div class="edge-fade edge-fade--left"></div>
+  <div class="edge-fade edge-fade--right"></div>
+
+  <!-- TOGGLE -->
+  <section class="toggle" aria-label="View toggle">
+    <div class:toggle--names={activeToggle === 'names'} class="toggle-track">
+      <span class="toggle-selected"></span>
+      <button class="toggle-option toggle-option--photos" type="button" aria-pressed={activeToggle === 'photos'} on:click={() => setToggle('photos')}>
+        <span class="toggle-label">FOTO</span>
+      </button>
+      <button class="toggle-option toggle-option--names" type="button" aria-pressed={activeToggle === 'names'} on:click={() => setToggle('names')}>
+        <span class="toggle-label">NOMI</span>
+      </button>
+    </div>
   </section>
+
+  <div class="item-count">{imagesRaw.length} MEMBERS</div>
+
 </main>
 
 <style>
-  :global(html),
-  :global(body) {
+  :global(html), :global(body) {
     margin: 0;
-    background: var(--color-background-primary);
+    overflow: hidden;
+    background: #060606;
+  }
+
+  :global(*) {
+    font-family: 'Forma DJR Display', 'FormaDJRDisplay', ui-sans-serif, sans-serif;
+    box-sizing: border-box;
   }
 
   .gallery-page {
-    width: 100%;
+    width: 100vw;
     height: 100vh;
-    background: var(--color-background-primary);
-    position: relative;
     overflow: hidden;
-  }
-
-  .filters {
-    position: fixed;
-    top: 46px;
-    right: 58px;
-    z-index: 120;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0;
-    width: 100%;
-    text-align: right;
-    text-transform: uppercase;
-    font-size: 20px;
-  }
-
-  .filter-item {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    margin: 0;
-    padding: 0;
-    color: var(--color-content-body);
-    text-transform: uppercase;
-    font-family: var(--font-display);
-    font-size: 20px;
-    line-height: 24px;
-    letter-spacing: 0;
-    white-space: nowrap;
-    cursor: pointer;
-    text-align: right;
-    text-shadow:
-      0 0 4px rgba(0, 0, 0, 0.25),
-      0 4px 4px rgba(0, 0, 0, 0.25);
-    transition:
-      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-      color 180ms ease,
-      opacity 180ms ease;
-  }
-
-  .filter-item + .filter-item {
-    margin-top: 0;
-  }
-
-  .filter-item--active {
-    color: var(--color-link-selected);
-    font-family: 'Forma DJR Display', sans-serif;
-    font-weight: 700;
-    opacity: 1;
-    transform: none;
-  }
-
-  .filter-item:hover {
-    opacity: 0.98;
-    transform: none;
-  }
-
-  .toggle {
-    position: absolute;
-    left: 54px;
-    bottom: 24px;
-    width: 180px;
-    height: 35px;
-    border-radius: 53.5px;
-    isolation: isolate;
-  }
-
-  .toggle-track,
-  .toggle-selected {
-    position: absolute;
-    inset: 0;
-    border-radius: 53.5px;
-  }
-
-  .toggle-track {
-    background: var(--color-background-primary);
-    box-shadow: inset 0 0 0 1px rgba(250, 250, 250, 0.08);
-  }
-
-  .toggle-selected {
-    left: 4px;
-    top: 4px;
-    width: 89px;
-    height: 27px;
-    background: var(--color-link-selected);
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.08),
-      0 8px 18px rgba(189, 255, 93, 0.26),
-      0 0 18px rgba(189, 255, 93, 0.2);
-    transform: translateX(0);
-    transition:
-      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
-  }
-
-  .toggle-selected--names {
-    transform: translateX(85px);
-  }
-
-  .toggle-label {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    padding: 0;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-family: var(--font-display);
-    font-size: 15px;
-    line-height: 1;
-    white-space: nowrap;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    z-index: 1;
-    transition:
-      color 220ms ease,
-      opacity 220ms ease,
-      transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .toggle-label--photos {
-    left: 20px;
-    color: var(--color-content-body);
-  }
-
-  .toggle-label--names {
-    right: 18px;
-    color: var(--color-content-body);
-  }
-
-  .toggle-label--active.toggle-label--photos {
-    color: var(--color-content-primary);
-    transform: translateY(-50%) scale(1.02);
-  }
-
-  .toggle-label--active.toggle-label--names {
-    color: var(--color-content-primary);
-    opacity: 0.92;
-    transform: translateY(-50%) scale(1.02);
-  }
-
-  .toggle-label:not(.toggle-label--active) {
-    opacity: 0.88;
-  }
-
-  .toggle:hover .toggle-selected {
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.08),
-      0 10px 24px rgba(189, 255, 93, 0.3),
-      0 0 22px rgba(189, 255, 93, 0.26);
-  }
-
-  .collage {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 10;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .collage-inner {
     position: relative;
-    transform-origin: top left;
-    pointer-events: none;
+    background: #1a1a1a;
   }
+
+  .bg-noise {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 1; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+  }
+
+  .bg-glow { position:absolute; border-radius:50%; filter:blur(160px); pointer-events:none; z-index:0; }
+  .bg-glow-1 {
+    width:700px; height:700px;
+    background:radial-gradient(circle, rgba(189,255,93,0.09) 0%, transparent 70%);
+    top:-200px; left:-180px;
+    animation: gd1 20s ease-in-out infinite alternate;
+  }
+  .bg-glow-2 {
+    width:500px; height:500px;
+    background:radial-gradient(circle, rgba(76,126,255,0.07) 0%, transparent 70%);
+    right:-150px; bottom:-150px;
+    animation: gd2 25s ease-in-out infinite alternate;
+  }
+  @keyframes gd1 { 0%{transform:translate(0,0)} 100%{transform:translate(60px,80px)} }
+  @keyframes gd2 { 0%{transform:translate(0,0)} 100%{transform:translate(-50px,-60px)} }
+
+  .edge-fade { position:fixed; pointer-events:none; z-index:10; }
+  .edge-fade--top    { top:0;    left:0; right:0;  height:110px; background:linear-gradient(to bottom,#060606,transparent); }
+  .edge-fade--top    { top:0;    left:0; right:0;  height:110px; background:linear-gradient(to bottom,#1a1a1a,transparent); }
+  .edge-fade--bottom { bottom:0; left:0; right:0;  height:130px; background:linear-gradient(to top,   #1a1a1a,transparent); }
+  .edge-fade--left   { left:0;   top:0;  bottom:0; width:70px;   background:linear-gradient(to right, #1a1a1a,transparent); }
+  .edge-fade--right  { right:0;  top:0;  bottom:0; width:70px;   background:linear-gradient(to left,  #1a1a1a,transparent); }
+
+  /* COLLAGE */
+  .collage { position:absolute; inset:0; z-index:2; cursor:grab; }
+  .collage:active { cursor:grabbing; }
+  .collage-inner { position:absolute; will-change:transform; }
+
+  /* CARD */
+  .collage-item {
+    position:absolute; overflow:hidden; border-radius:5px;
+    box-shadow:0 2px 16px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03);
+    transition:box-shadow .4s ease, opacity .45s ease;
+  }
+  .collage-item:hover {
+    z-index:50;
+    box-shadow:0 8px 48px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.07);
+  }
+
+  /* GRAYSCALE ↔ COLOR LAYERS */
+  .img-bw-layer, .img-color-layer {
+    position:absolute; inset:0; width:100%; height:100%;
+  }
+  .img-bw-layer    { z-index:1; transition:opacity .5s cubic-bezier(.25,.46,.45,.94); }
+  .img-color-layer { z-index:2; transition:opacity .5s cubic-bezier(.25,.46,.45,.94); }
 
   .collage-img {
-    position: absolute;
-    object-fit: cover;
-    display: block;
-    pointer-events: none;
-    border-radius: 4px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-    -webkit-user-drag: none;
+    width:100%; height:100%; object-fit:cover; display:block;
+    user-select:none; -webkit-user-drag:none;
+    will-change:transform,filter;
+    transform:scale(1.04);
+    transition:transform .65s cubic-bezier(.25,.46,.45,.94), filter .5s ease;
+  }
+  .collage-img--bw {
+    filter:grayscale(100%) contrast(1.05) brightness(0.82);
+  }
+  .collage-img--color.img--names {
+    filter:grayscale(80%) brightness(0.55);
   }
 
-  .collage-item {
-    position: absolute;
-    overflow: hidden;
-    border-radius: 6px;
-  }
+  /* Hover on matched: show colour */
+  .collage-item:hover .img-bw-layer { opacity:0; }
+  .collage-item:hover .collage-img  { transform:scale(1.09); }
 
-  .img--names {
-    filter: grayscale(100%) brightness(0.7) contrast(0.9);
-    transform-origin: center;
-  }
+  /* UNMATCHED */
+  .img-unmatched { opacity:0.45; }
+  .img-unmatched .img-color-layer { opacity:0; transition:opacity .5s ease; }
+  .img-unmatched .img-bw-layer    { opacity:1; }
+  .img-unmatched .collage-img--bw { filter:grayscale(100%) contrast(0.82) brightness(0.42); }
 
-  .img-unmatched .collage-img,
-  .collage-item.img-unmatched > .collage-img {
-    filter: grayscale(100%) brightness(0.6) contrast(0.95);
-    opacity: 0.7;
+  /* Hover on unmatched: colour reveal */
+  .img-unmatched:hover .img-color-layer { opacity:1; }
+  .img-unmatched:hover .img-bw-layer    { opacity:0; }
+  .img-unmatched:hover                  { opacity:1; }
+
+  /* OVERLAYS */
+  .img-noise {
+    position:absolute; inset:0; z-index:3;
+    background-image:radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size:3px 3px; mix-blend-mode:overlay; opacity:0.12; pointer-events:none;
   }
+  .img-vignette {
+    position:absolute; inset:0; z-index:4;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%);
+    pointer-events:none; opacity:0; transition:opacity .4s ease;
+  }
+  .collage-item:hover .img-vignette { opacity:1; }
 
   .img-name {
-    position: absolute;
-    left: 10px;
-    bottom: 10px;
-    color: white;
-    font-family: var(--font-display);
-    font-size: 14px;
-    background: rgba(0,0,0,0.5);
-    padding: 6px 8px;
-    border-radius: 4px;
-    pointer-events: none;
-    text-transform: none;
-    z-index: 2;
-    white-space: nowrap;
+    position:absolute; left:8px; bottom:8px; z-index:5;
+    color:white; font-size:10px; font-weight:400;
+    padding:5px 9px; border-radius:999px;
+    background:rgba(0,0,0,0.52); backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,0.07);
+    letter-spacing:0.09em; text-transform:uppercase; pointer-events:none;
+  }
+
+  /* FILTERS */
+  .filters {
+    position:fixed; top:12px; right:10px;
+    z-index:100; display:flex; flex-direction:column; align-items:flex-end;
+    gap:2px; max-width:220px; text-align:right;
+  }
+  .filter-item {
+    border:0; background:transparent;
+    color:rgba(255,255,255,0.72);
+    font-size:9px; font-weight:600; line-height:1;
+    text-transform:uppercase; letter-spacing:0.02em;
+    cursor:pointer; padding:0;
+    transition:color .2s ease;
+  }
+  .filter-item:hover { color:rgba(255,255,255,0.92); }
+  .filter-item--active { color:#bdff5d; }
+
+  /* TOGGLE */
+  .toggle {
+    position:fixed; left:32px; bottom:32px; z-index:100;
+    width:143px; height:35px;
+  }
+  .toggle-track {
+    position:relative;
+    width:143px; height:35px;
+    border-radius:24px;
+    background:#1a1a1a;
+    overflow:hidden;
+  }
+  .toggle-selected {
+    position:absolute; top:4px; left:4px;
+    width:69px; height:27px; border-radius:16px;
+    background:#bdff5d;
+    transition:transform .38s cubic-bezier(.22,1,.36,1); pointer-events:none;
+  }
+  .toggle--names .toggle-selected { transform:translateX(66px); }
+  .toggle-option {
+    position:absolute;
+    top:0;
+    width:69px;
+    height:35px;
+    border:0;
+    background:transparent;
+    padding:0;
+    cursor:pointer;
+    z-index:2;
+  }
+  .toggle-option--photos { left:0; }
+  .toggle-option--names { right:0; }
+  .toggle-label {
+    position:absolute; top:50%; transform:translateY(-50%);
+    font-family:'Forma DJR Display',sans-serif;
+    font-size:16px; 
+    font-weight:700; 
+    line-height:1; 
+    letter-spacing:0;
+    text-transform:uppercase;
+    transition:color .2s ease;
+  }
+  .toggle-option--photos .toggle-label {
+    left:19px; color:#1a1a1a;
+  }
+  .toggle-option--names .toggle-label {
+    right:19px; color:#fafafa;
+  }
+  .toggle--names .toggle-option--photos .toggle-label { color:#fafafa; }
+  .toggle--names .toggle-option--names .toggle-label { color:#1a1a1a; }
+
+  /* COUNT */
+  .item-count {
+    position:fixed; left:32px; top:50%; transform:translateY(-50%);
+    z-index:100; writing-mode:vertical-rl; text-orientation:mixed;
+    font-size:9px; font-weight:400; letter-spacing:0.18em;
+    color:rgba(255,255,255,0.15); text-transform:uppercase; pointer-events:none;
   }
 </style>
