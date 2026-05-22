@@ -13,9 +13,14 @@
   let selectedImageIndex = $state<number | null>(null);
   let selectedNameIndex = $state<number>(0);
   let isAlphabetActive = $state(false);
+  let namesWheelAccumulator = 0;
+  let isNamesDragging = false;
+  let namesLastY = 0;
+  let namesDragAccumulator = 0;
+  const NAME_ROW_STEP = 126;
 
   const designWidth = 1920;
-  const designHeight = 1080;
+  let designHeight = $state<number>(1080);
 
   let currentX = 0, currentY = 0;
   let targetX = 0, targetY = 0;
@@ -57,7 +62,10 @@
     lastTime = performance.now();
   }
 
-  function pointerUp() { isDragging = false; }
+  function pointerUp() {
+    isDragging = false;
+    isNamesDragging = false;
+  }
 
   function wheelMove(e: WheelEvent) {
     e.preventDefault();
@@ -112,6 +120,16 @@
     tags: string[];
   };
 
+  type GalleryImage = {
+    src: string;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    tags?: string[];
+    name?: string;
+  };
+
   function buildPeople(rawImages: typeof imagesRaw): Person[] {
     const peopleByName = new Map<string, Set<string>>();
 
@@ -133,6 +151,74 @@
         tags: Array.from(tags)
       }))
       .sort((left, right) => left.name.localeCompare(right.name));
+  }
+
+  function buildSpacedImages(rawImages: GalleryImage[]) {
+    const columnCount = 8;
+    const sidePadding = 70;
+    const horizontalGap = 28;
+    const verticalGap = 28;
+    const topPadding = 70;
+    const bottomPadding = 90;
+
+    const availableWidth = designWidth - (sidePadding * 2) - (horizontalGap * (columnCount - 1));
+    const columnWidth = availableWidth / columnCount;
+    const columnHeights = Array.from({ length: columnCount }, () => topPadding);
+
+    const spacedImages = rawImages.map((image) => {
+      const aspectRatio = image.height / image.width;
+      const imageWidth = Math.min(image.width, columnWidth);
+      const imageHeight = imageWidth * aspectRatio;
+
+      let targetColumn = 0;
+      let minHeight = columnHeights[0];
+
+      for (let i = 1; i < columnHeights.length; i += 1) {
+        if (columnHeights[i] < minHeight) {
+          minHeight = columnHeights[i];
+          targetColumn = i;
+        }
+      }
+
+      const left = sidePadding + (targetColumn * (columnWidth + horizontalGap)) + ((columnWidth - imageWidth) / 2);
+      const top = columnHeights[targetColumn];
+
+      columnHeights[targetColumn] = top + imageHeight + verticalGap;
+
+      return {
+        ...image,
+        left,
+        top,
+        width: imageWidth,
+        height: imageHeight
+      };
+    });
+
+    const contentHeight = Math.max(...columnHeights) + bottomPadding;
+
+    return {
+      images: spacedImages,
+      canvasHeight: Math.max(1080, contentHeight)
+    };
+  }
+
+  function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
+    const expanded: GalleryImage[] = [];
+
+    for (let wave = 0; wave < waves; wave += 1) {
+      for (let i = 0; i < rawImages.length; i += 1) {
+        const image = rawImages[(i + wave * 3) % rawImages.length];
+        const scaleVariant = 0.86 + (((wave + i) % 5) * 0.06);
+
+        expanded.push({
+          ...image,
+          width: image.width * scaleVariant,
+          height: image.height * scaleVariant
+        });
+      }
+    }
+
+    return expanded;
   }
 
   const imagesRaw = [
@@ -178,7 +264,10 @@
     { src: 'https://www.figma.com/api/mcp/asset/f47cc2c2-c580-4acf-ad82-83302c739cc7', left: 749.52, top: 565.56, width: 361.128, height: 192.267, tags: ['sport'], name: 'Anna Passarella' }
   ];
 
-  const positionedImages = imagesRaw;
+  const infiniteImagesRaw = buildInfiniteImages(imagesRaw, 9);
+  const photoLayout = buildSpacedImages(infiniteImagesRaw);
+  const positionedImages = photoLayout.images;
+  designHeight = photoLayout.canvasHeight;
   const people = buildPeople(imagesRaw);
 
   function getVisiblePeople() {
@@ -196,6 +285,60 @@
 
   function selectName(index: number) {
     selectedNameIndex = index;
+  }
+
+  function shiftSelectedName(delta: number) {
+    const visiblePeople = getVisiblePeople();
+
+    if (!visiblePeople.length) return;
+
+    selectedNameIndex = Math.max(0, Math.min(visiblePeople.length - 1, selectedNameIndex + delta));
+  }
+
+  function handleNamesWheel(e: WheelEvent) {
+    e.preventDefault();
+    namesWheelAccumulator += e.deltaY;
+
+    const threshold = 40;
+
+    while (Math.abs(namesWheelAccumulator) >= threshold) {
+      shiftSelectedName(namesWheelAccumulator > 0 ? 1 : -1);
+      namesWheelAccumulator += namesWheelAccumulator > 0 ? -threshold : threshold;
+    }
+  }
+
+  function handleNamesPointerDown(e: PointerEvent) {
+    isNamesDragging = true;
+    namesLastY = e.clientY;
+    namesDragAccumulator = 0;
+    (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
+  }
+
+  function handleNamesPointerMove(e: PointerEvent) {
+    if (!isNamesDragging) return;
+
+    namesDragAccumulator += (namesLastY - e.clientY);
+    namesLastY = e.clientY;
+
+    const threshold = 34;
+
+    while (Math.abs(namesDragAccumulator) >= threshold) {
+      shiftSelectedName(namesDragAccumulator > 0 ? 1 : -1);
+      namesDragAccumulator += namesDragAccumulator > 0 ? -threshold : threshold;
+    }
+  }
+
+  function handleNamesKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      shiftSelectedName(1);
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      shiftSelectedName(-1);
+    }
   }
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -327,15 +470,23 @@
       </div>
 
       <div class="names-stage">
-        <div class="names-stack" aria-label="People names">
-          <div class="names-focus-line" style={`top:${selectedNameIndex * 74 + 62}px;`}></div>
+        <div
+          class="names-stack"
+          aria-label="People names"
+          tabindex="0"
+          on:wheel|preventDefault={handleNamesWheel}
+          on:pointerdown={handleNamesPointerDown}
+          on:pointermove={handleNamesPointerMove}
+          on:keydown={handleNamesKeydown}
+        >
+          <div class="names-focus-line"></div>
           {#each getVisiblePeople() as person, index}
             {@const distance = index - selectedNameIndex}
             <button
               class:is-selected={distance === 0}
               class="name-row"
               type="button"
-              style={`transform: translateY(${index * 74}px);`}
+              style={`transform: translateY(${distance * NAME_ROW_STEP}px);`}
               on:click={() => selectName(index)}
             >
               <span class="name-row__text">{person.name.toUpperCase()}</span>
@@ -396,7 +547,7 @@
     </div>
   </section>
 
-  <div class="item-count">{imagesRaw.length} MEMBERS</div>
+  <div class="item-count">{positionedImages.length} MEMBERS</div>
 
 </main>
 
@@ -643,12 +794,23 @@
     right:84px;
     bottom:44px;
     overflow:hidden;
+    cursor:grab;
+    touch-action:none;
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 11%, #000 88%, transparent 100%);
+    mask-image:linear-gradient(to bottom, transparent 0%, #000 11%, #000 88%, transparent 100%);
   }
+
+  .names-stack:active {
+    cursor:grabbing;
+  }
+
+  .names-stack:focus-visible { outline:none; }
 
   .names-focus-line {
     position:absolute;
     left:0;
     right:22px;
+    top:84px;
     height:1px;
     background:rgba(250,250,250,0.78);
     box-shadow:0 0 22px rgba(255,255,255,0.2);
@@ -671,7 +833,8 @@
   .name-row {
     position:absolute;
     left:0;
-    width:100%;
+    width:min(100%, 1120px);
+    min-height:112px;
     border:0;
     background:transparent;
     padding:0;
@@ -692,14 +855,19 @@
   }
 
   .name-row .name-row__text {
-    display:inline-block;
-    max-width:calc(100% - 72px);
+    display:-webkit-box;
+    max-width:calc(100% - 88px);
+    overflow:hidden;
+    text-wrap:balance;
+    white-space:normal;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
   }
 
   .name-row:not(.is-selected) {
-    opacity:0.72;
-    color:rgba(250,250,250,0.9);
-    filter:blur(7px);
+    opacity:0.66;
+    color:rgba(250,250,250,0.86);
+    filter:blur(4.8px);
   }
 
   .name-row.is-selected {
@@ -711,11 +879,13 @@
 
   .name-row__arrow {
     display:inline-block;
+    position:relative;
+    z-index:4;
     margin-left:16px;
     color:#bdff5d;
     font-size:72px;
     line-height:0.75;
-    transform:translateY(4px);
+    transform:translateY(-10px);
   }
 
   .alphabet-hover-zone {
