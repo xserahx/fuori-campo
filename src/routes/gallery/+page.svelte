@@ -2,6 +2,7 @@
   import '../../lib/styles/tokens.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import gsap from 'gsap';
 
   let activeToggle = $state<'photos' | 'names'>('photos');
@@ -18,6 +19,7 @@
   let namesLastY = 0;
   let namesDragAccumulator = 0;
   const NAME_ROW_STEP = 126;
+  let namesStackRef: HTMLElement;
 
   const designWidth = 1920;
   let designHeight = $state<number>(1080);
@@ -111,6 +113,14 @@
     selectedImageIndex = index;
   }
 
+  function slugify(name: string | undefined, index: number) {
+    if (!name) return `member-${index}`;
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
   function clearSelection() {
     selectedImageIndex = null;
   }
@@ -154,36 +164,51 @@
   }
 
   function buildSpacedImages(rawImages: GalleryImage[]) {
-    const columnCount = 8;
-    const sidePadding = 70;
-    const horizontalGap = 28;
-    const verticalGap = 28;
-    const topPadding = 70;
-    const bottomPadding = 90;
+    const columnCount = 12;
+    const sidePadding = 86;
+    const horizontalGap = 22;
+    const verticalGap = 26;
+    const topPadding = 84;
+    const bottomPadding = 120;
+    const blockPattern = [3, 2, 2, 3, 1, 2, 3, 2, 1, 3, 2, 2];
+    const sizePattern = [0.86, 1.02, 0.93, 1.08, 0.78, 0.97, 1.04, 0.84, 0.91];
 
     const availableWidth = designWidth - (sidePadding * 2) - (horizontalGap * (columnCount - 1));
     const columnWidth = availableWidth / columnCount;
     const columnHeights = Array.from({ length: columnCount }, () => topPadding);
 
-    const spacedImages = rawImages.map((image) => {
+    const spacedImages = rawImages.map((image, index) => {
+      const span = blockPattern[index % blockPattern.length];
+      const scale = sizePattern[index % sizePattern.length];
       const aspectRatio = image.height / image.width;
-      const imageWidth = Math.min(image.width, columnWidth);
+
+      const slotWidth = (columnWidth * span) + (horizontalGap * (span - 1));
+      const imageWidth = slotWidth * scale;
       const imageHeight = imageWidth * aspectRatio;
 
       let targetColumn = 0;
-      let minHeight = columnHeights[0];
+      let bestScore = Number.POSITIVE_INFINITY;
 
-      for (let i = 1; i < columnHeights.length; i += 1) {
-        if (columnHeights[i] < minHeight) {
-          minHeight = columnHeights[i];
-          targetColumn = i;
+      for (let start = 0; start <= columnCount - span; start += 1) {
+        const laneHeight = Math.max(...columnHeights.slice(start, start + span));
+        const rhythmBias = ((start % 3) * 14) + ((index % 6) * 5);
+        const score = laneHeight + rhythmBias;
+
+        if (score < bestScore) {
+          bestScore = score;
+          targetColumn = start;
         }
       }
 
-      const left = sidePadding + (targetColumn * (columnWidth + horizontalGap)) + ((columnWidth - imageWidth) / 2);
-      const top = columnHeights[targetColumn];
+      const laneTop = Math.max(...columnHeights.slice(targetColumn, targetColumn + span));
+      const bandOffset = ((index % 4) - 1.5) * 11;
+      const left = sidePadding + (targetColumn * (columnWidth + horizontalGap)) + ((slotWidth - imageWidth) / 2);
+      const top = laneTop + bandOffset;
+      const nextHeight = top + imageHeight + verticalGap;
 
-      columnHeights[targetColumn] = top + imageHeight + verticalGap;
+      for (let i = targetColumn; i < targetColumn + span; i += 1) {
+        columnHeights[i] = nextHeight;
+      }
 
       return {
         ...image,
@@ -284,7 +309,10 @@
   }
 
   function selectName(index: number) {
-    selectedNameIndex = index;
+    const visible = getVisiblePeople();
+    selectedNameIndex = Math.max(0, Math.min(visible.length - 1, index));
+    // focus the names container for keyboard interaction
+    namesStackRef?.focus?.();
   }
 
   function shiftSelectedName(delta: number) {
@@ -424,16 +452,16 @@
           top:calc(50vh - {designHeight / 2}px);
         "
       >
-        {#each positionedImages as img, i (img.src + '-' + i + '-' + img.name)}
+          {#each positionedImages as img, i (img.src + '-' + i + '-' + img.name)}
           {@const isUnmatched = !!(activeFilter && !(img.tags && img.tags.includes(activeFilter)))}
           {@const isSelected = selectedImageIndex === i}
-          <div
-            class="collage-item"
-            class:is-selected={isSelected}
-            class:img-unmatched={isUnmatched}
-            style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
-            on:click={() => selectImage(i)}
-          >
+            <div
+              class="collage-item"
+              class:is-selected={isSelected}
+              class:img-unmatched={isUnmatched}
+              style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
+              on:click={() => goto(`/volunteer/${slugify(img.name, i)}`)}
+            >
             <div class="img-bw-layer">
               <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
             </div>
@@ -474,6 +502,7 @@
           class="names-stack"
           aria-label="People names"
           tabindex="0"
+          bind:this={namesStackRef}
           on:wheel|preventDefault={handleNamesWheel}
           on:pointerdown={handleNamesPointerDown}
           on:pointermove={handleNamesPointerMove}
@@ -490,9 +519,7 @@
               on:click={() => selectName(index)}
             >
               <span class="name-row__text">{person.name.toUpperCase()}</span>
-              {#if distance === 0}
-                <span class="name-row__arrow">⌄</span>
-              {/if}
+              <span class="name-row__arrow" aria-hidden="true">⌄</span>
             </button>
           {/each}
         </div>
@@ -546,8 +573,6 @@
       </button>
     </div>
   </section>
-
-  <div class="item-count">{positionedImages.length} MEMBERS</div>
 
 </main>
 
@@ -622,6 +647,8 @@
     position:absolute; overflow:hidden; border-radius:5px;
     box-shadow:0 2px 16px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.03);
     transition:box-shadow .4s ease, opacity .45s ease;
+    cursor:pointer;
+    pointer-events:auto;
   }
   .collage-item:hover {
     z-index:50;
@@ -668,6 +695,28 @@
   /* Hover on matched: show colour */
   .collage-item:hover .img-bw-layer { opacity:0; }
   .collage-item:hover .collage-img  { transform:scale(1.09); }
+
+  /* GREEN HOVER EFFECT (camera-zoom accent) */
+  .img-color-layer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: 5px;
+    box-shadow: inset 0 0 40px rgba(189,255,93,0.18), 0 0 28px rgba(189,255,93,0.12);
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 220ms ease, transform 220ms ease;
+    z-index: 6;
+  }
+
+  .collage-item:hover .img-color-layer::after {
+    opacity: 1;
+  }
+
+  .collage-item:hover .img-color-layer .collage-img {
+    filter: brightness(1.06) saturate(1.08) contrast(1.02);
+  }
 
   /* UNMATCHED */
   .img-unmatched { opacity:0.45; }
@@ -849,6 +898,7 @@
     text-transform:uppercase;
     transform-origin:left center;
     transition:
+      transform 280ms cubic-bezier(.22,1,.36,1),
       color 180ms ease,
       opacity 180ms ease,
       filter 180ms ease;
@@ -878,14 +928,37 @@
   }
 
   .name-row__arrow {
-    display:inline-block;
-    position:relative;
-    z-index:4;
-    margin-left:16px;
+    position:absolute;
+    right:22px;
+    top:50%;
+    transform:translateY(-50%);
+    z-index:5;
+    color:rgba(250,250,250,0.22);
+    font-size:56px;
+    line-height:1;
+    pointer-events:none;
+    transition:color 160ms ease, transform 160ms ease, opacity 160ms ease;
+    opacity:0.95;
+  }
+
+  .name-row.is-selected .name-row__arrow {
+    color:#bdff5d;
+    transform:translateY(-50%) translateX(2px) scale(1.02);
+    opacity:1;
+  }
+
+  .names-focus-arrow {
+    position:absolute;
+    right:18px;
+    z-index:6;
     color:#bdff5d;
     font-size:72px;
-    line-height:0.75;
-    transform:translateY(-10px);
+    line-height:0.5;
+    text-shadow:0 6px 12px rgba(0,0,0,0.45), 0 0 18px rgba(189,255,93,0.22);
+    pointer-events:none;
+    transform:translateY(-50%);
+    transition:transform 180ms ease, opacity 180ms ease;
+    opacity:1;
   }
 
   .alphabet-hover-zone {
@@ -1084,14 +1157,6 @@
   }
   .toggle--names .toggle-option--photos .toggle-label { color:#fafafa; }
   .toggle--names .toggle-option--names .toggle-label { color:#1a1a1a; }
-
-  /* COUNT */
-  .item-count {
-    position:fixed; left:32px; top:50%; transform:translateY(-50%);
-    z-index:100; writing-mode:vertical-rl; text-orientation:mixed;
-    font-size:9px; font-weight:400; letter-spacing:0.18em;
-    color:rgba(255,255,255,0.15); text-transform:uppercase; pointer-events:none;
-  }
 
   @media (max-width: 980px) {
     .names-quote {
