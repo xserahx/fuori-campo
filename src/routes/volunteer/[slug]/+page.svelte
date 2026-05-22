@@ -52,7 +52,6 @@
     return volunteerImages[activePhotoIndex]?.src ?? volunteer?.src ?? fallbackHero;
   }
 
-  // whether the volunteer has real photos (not just the shared fallback)
   function hasPhotos() {
     return volunteerImages.length > 0 || (volunteer?.src && volunteer.src !== fallbackHero);
   }
@@ -101,10 +100,10 @@
     </div>
 
     <div class="hero-meta">
-      <p>BORMIO - STELVIO SKI CENTER</p>
-      <p>EVENT SERVICES VOLUNTEER</p>
-      <p>59 ANNI, LOMBARDIA</p>
-      <p>BBBB</p>
+      <p class="hero-name">{volunteer?.name ?? `${firstName} ${lastName}`}</p>
+      <p>{volunteer?.city ?? 'Bormio'} {volunteer?.region ? `- ${volunteer.region}` : '- STELVIO SKI CENTER'}</p>
+      <p>{volunteer?.role ?? 'EVENT SERVICES VOLUNTEER'}</p>
+      <p>{volunteer?.age ? `${volunteer.age} ANNI` : '— ANNI'}, {volunteer?.region ?? 'LOMBARDIA'}</p>
     </div>
 
     {#if hasPhotos()}
@@ -113,10 +112,9 @@
           <span aria-hidden="true">‹</span>
         </button>
 
-          <div class="hero-image-shell">
-            <img src={currentHeroImage()} alt={volunteer?.name ?? 'Volunteer photo'} class="hero-image" />
-            <div class="hero-counter" aria-hidden="true">{(activePhotoIndex + 1)}/{Math.max(1, volunteerImages.length || (volunteer?.src ? 1 : 0))}</div>
-          </div>
+        <div class="hero-image-shell">
+          <img src={currentHeroImage()} alt={volunteer?.name ?? 'Volunteer photo'} class="hero-image" />
+        </div>
 
         <button class="hero-arrow hero-arrow--right" type="button" aria-label="Next photo" on:click={nextPhoto}>
           <span aria-hidden="true">›</span>
@@ -125,7 +123,6 @@
     {:else}
       <div class="hero-no-photo">
         <div class="no-photo-art" aria-hidden="true">
-          <!-- simple decorative placeholder inspired by the Figma no-photo layout -->
           <svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img">
             <defs>
               <radialGradient id="g" cx="50%" cy="40%">
@@ -157,12 +154,14 @@
   </section>
 
   <section class="questions" aria-label="Volunteer questions">
+    <div class="questions-bg" aria-hidden="true" class:visible={openIndex !== -1}></div>
+
     {#each questionTitles as title, index}
       <button
         type="button"
         class:is-active={index === openIndex}
         class="question-row"
-        on:click={() => openIndex = index}
+        on:click={() => openIndex = index === openIndex ? -1 : index}
       >
         <span>{title}</span>
       </button>
@@ -170,6 +169,9 @@
       {#if index === openIndex}
         <div class="question-panel">
           <button type="button" class="question-panel__close" aria-label="Close section" on:click={() => openIndex = -1}>×</button>
+          <div class="question-panel__content">
+            <p>{volunteer?.responses?.[index] ?? 'Risposta non disponibile. Questa è una descrizione di esempio che sostituisce la risposta del volontario.'}</p>
+          </div>
         </div>
       {/if}
     {/each}
@@ -207,11 +209,14 @@
   }
 
   .hero-title {
-    position: relative;
+    position: absolute;
+    left: 50%;
+    top: 205px;
+    transform: translateX(-50%);
     width: min(1210px, calc(100vw - 80px));
-    margin: 0 auto;
+    margin: 0;
     display: flex;
-    align-items: flex-end;
+    align-items: baseline;
     justify-content: center;
     gap: 10px;
     text-transform: uppercase;
@@ -220,26 +225,30 @@
 
   .hero-title p {
     margin: 0;
-    font-size: clamp(54px, 6.3vw, 90px);
-    line-height: 1;
-    letter-spacing: -0.03em;
+    font-family: var(--font-display);
+    font-size: var(--figma-title-size, 90px);
+    line-height: var(--figma-title-lineheight, 100px);
+    letter-spacing: -0.02em;
     white-space: nowrap;
+    font-weight: 800;
+    text-transform: uppercase;
   }
 
   .hero-title__solid {
-    color: #bdff5d;
-    font-weight: 700;
+    color: var(--color-content-title);
+    font-weight: 800;
   }
 
   .hero-title__outline {
     color: transparent;
-    -webkit-text-stroke: 1.5px #bdff5d;
-    font-weight: 700;
+    -webkit-text-stroke: 4px var(--color-content-title);
+    text-stroke: 4px var(--color-content-title);
+    font-weight: 800;
   }
 
   .hero-meta {
     position: absolute;
-    left: 36px;
+    left: 40px;
     top: 303px;
     display: flex;
     flex-direction: column;
@@ -256,32 +265,26 @@
     margin: 0;
   }
 
+  .hero-name {
+    font-size: clamp(22px, 2.4vw, 28px);
+    font-weight: 700;
+    color: #bdff5d;
+    margin-bottom: 8px;
+  }
+
   .hero-media {
     position: relative;
-    width: min(953px, calc(100vw - 120px));
+    width: 953px;
     margin: 44px auto 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 48px;
-  }
-
-  .hero-counter {
-    position: absolute;
-    right: 12px;
-    bottom: 12px;
-    background: rgba(0,0,0,0.45);
-    color: #fff;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 14px;
-    z-index: 4;
+    gap: 18px;
   }
 
   .hero-image-shell {
-    width: 100%;
-    max-width: 953px;
-    aspect-ratio: 953 / 508;
+    width: 953px;
+    height: 508px;
     overflow: hidden;
     box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
     background: #111;
@@ -313,16 +316,31 @@
   }
 
   .hero-arrow--left {
-    left: -54px;
+    left: -64px;
   }
 
   .hero-arrow--right {
-    right: -54px;
+    right: -64px;
   }
 
   .questions {
-    width: 100%;
-    margin-top: 26px;
+    position: relative;
+  }
+
+  .questions-bg {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 263px;
+    background: var(--color-content-title);
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .questions-bg.visible {
+    opacity: 1;
   }
 
   .question-row {
@@ -330,22 +348,18 @@
     min-height: 86px;
     display: flex;
     align-items: center;
-    padding: 0 28px 0 28px;
+    padding: 0 28px;
     border: 0;
     border-top: 1px solid rgba(250, 250, 250, 0.35);
     background: transparent;
     color: #fafafa;
     text-align: left;
-    font-size: clamp(28px, 3vw, 48px);
-    line-height: 1;
+    font-size: 48px;
+    line-height: 42px;
     letter-spacing: -0.02em;
     text-transform: uppercase;
     cursor: pointer;
     transition: color 180ms ease, background 180ms ease;
-  }
-
-  .question-row.is-active {
-    color: #bdff5d;
   }
 
   .question-row span {
@@ -355,16 +369,29 @@
 
   .question-panel {
     position: relative;
-    min-height: 263px;
     width: 100%;
     background: #bdff5d;
     border-top: 1px solid rgba(0, 0, 0, 0.45);
-    padding: 28px 40px;
+    padding: 22px 28px;
     color: #111;
     font-family: 'Inter', sans-serif;
     font-size: 18px;
     line-height: 1.4;
-    transition: opacity 220ms ease, transform 220ms ease;
+    transition: max-height 260ms ease, padding 220ms ease, opacity 200ms ease;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .question-row.is-active + .question-panel {
+    max-height: 600px;
+    opacity: 1;
+    background: #bdff5d;
+    color: #111;
+    padding: 22px 32px;
+    border-top: 0;
+    box-shadow: 0 -6px 18px rgba(0,0,0,0.28);
+    transform-origin: top center;
   }
 
   .question-panel__close {
@@ -380,7 +407,6 @@
     padding: 0;
   }
 
-  /* No-photo layout styles */
   .hero-no-photo {
     width: min(953px, calc(100vw - 120px));
     margin: 44px auto 0;
@@ -445,11 +471,11 @@
     }
 
     .hero-arrow--left {
-      left: -30px;
+      left: -48px;
     }
 
     .hero-arrow--right {
-      right: -30px;
+      right: -48px;
     }
 
     .question-row {
@@ -480,13 +506,6 @@
     .hero-media {
       width: calc(100vw - 32px);
       margin-top: 24px;
-    }
-
-    .hero-counter {
-      right: 8px;
-      bottom: 8px;
-      font-size: 12px;
-      padding: 4px 8px;
     }
 
     .hero-arrow--left {
