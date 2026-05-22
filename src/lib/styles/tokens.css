@@ -4,6 +4,13 @@
   --color-content-body: #fafafa; /* main body text */
   --color-link-selected: #bdff5d;
   --color-content-primary: #202426; /* used in toolbar elements */
+  --gallery-background: #1a1a1a;
+  --gallery-overlay: rgba(26, 26, 26, 0.5);
+  --gallery-text: #fafafa;
+  --gallery-accent: #bdff5d;
+  --gallery-navbar-offset: 143px;
+  --gallery-edge-width: 70px;
+  --gallery-shell-z: 2;
 
   /* Font stacks */
   --font-display: 'Forma DJR Display', sans-serif;

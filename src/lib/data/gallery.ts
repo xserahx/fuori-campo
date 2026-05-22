@@ -1,5 +1,20 @@
 
-export const imagesRaw = [
+export type GalleryImage = {
+  src: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  tags?: string[];
+  name?: string;
+};
+
+export type Person = {
+  name: string;
+  tags: string[];
+};
+
+export const imagesRaw: GalleryImage[] = [
   { src: 'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb', left: 1384.95, top: 494.84, width: 223.864, height: 298.485, tags: ['organizzativa'], name: 'Michele Tomolillo' },
   { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06 },
   { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06, tags: ['logistica'], name: 'Michele Tomolillo' },
@@ -41,3 +56,118 @@ export const imagesRaw = [
   { src: 'https://www.figma.com/api/mcp/asset/c42edf09-a934-400c-bae9-0eaf96a509bd', left: 390, top: 593, width: 250.15, height: 187.612, tags: ['gestione'], name: 'Guido Marzorati' },
   { src: 'https://www.figma.com/api/mcp/asset/f47cc2c2-c580-4acf-ad82-83302c739cc7', left: 749.52, top: 565.56, width: 361.128, height: 192.267, tags: ['sport'], name: 'Anna Passarella' }
 ];
+
+export function slugify(name: string | undefined, index: number) {
+  if (!name) return `member-${index}`;
+
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+export function buildPeople(rawImages: GalleryImage[]): Person[] {
+  const peopleByName = new Map<string, Set<string>>();
+
+  for (const image of rawImages) {
+    if (!image.name) continue;
+
+    const currentTags = peopleByName.get(image.name) ?? new Set<string>();
+
+    for (const tag of image.tags ?? []) {
+      currentTags.add(tag);
+    }
+
+    peopleByName.set(image.name, currentTags);
+  }
+
+  return Array.from(peopleByName.entries())
+    .map(([name, tags]) => ({
+      name,
+      tags: Array.from(tags)
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export function buildSpacedImages(rawImages: GalleryImage[], designWidth = 1920) {
+  const columnCount = 12;
+  const sidePadding = 86;
+  const horizontalGap = 22;
+  const verticalGap = 26;
+  const topPadding = 84;
+  const bottomPadding = 120;
+  const blockPattern = [3, 2, 2, 3, 1, 2, 3, 2, 1, 3, 2, 2];
+  const sizePattern = [0.86, 1.02, 0.93, 1.08, 0.78, 0.97, 1.04, 0.84, 0.91];
+
+  const availableWidth = designWidth - (sidePadding * 2) - (horizontalGap * (columnCount - 1));
+  const columnWidth = availableWidth / columnCount;
+  const columnHeights = Array.from({ length: columnCount }, () => topPadding);
+
+  const images = rawImages.map((image, index) => {
+    const span = blockPattern[index % blockPattern.length];
+    const scale = sizePattern[index % sizePattern.length];
+    const aspectRatio = image.height / image.width;
+
+    const slotWidth = (columnWidth * span) + (horizontalGap * (span - 1));
+    const imageWidth = slotWidth * scale;
+    const imageHeight = imageWidth * aspectRatio;
+
+    let targetColumn = 0;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (let start = 0; start <= columnCount - span; start += 1) {
+      const laneHeight = Math.max(...columnHeights.slice(start, start + span));
+      const rhythmBias = ((start % 3) * 14) + ((index % 6) * 5);
+      const score = laneHeight + rhythmBias;
+
+      if (score < bestScore) {
+        bestScore = score;
+        targetColumn = start;
+      }
+    }
+
+    const laneTop = Math.max(...columnHeights.slice(targetColumn, targetColumn + span));
+    const bandOffset = ((index % 4) - 1.5) * 11;
+    const left = sidePadding + (targetColumn * (columnWidth + horizontalGap)) + ((slotWidth - imageWidth) / 2);
+    const top = laneTop + bandOffset;
+    const nextHeight = top + imageHeight + verticalGap;
+
+    for (let i = targetColumn; i < targetColumn + span; i += 1) {
+      columnHeights[i] = nextHeight;
+    }
+
+    return {
+      ...image,
+      left,
+      top,
+      width: imageWidth,
+      height: imageHeight
+    };
+  });
+
+  const contentHeight = Math.max(...columnHeights) + bottomPadding;
+
+  return {
+    images,
+    canvasHeight: Math.max(1080, contentHeight)
+  };
+}
+
+export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
+  const expanded: GalleryImage[] = [];
+
+  for (let wave = 0; wave < waves; wave += 1) {
+    for (let i = 0; i < rawImages.length; i += 1) {
+      const image = rawImages[(i + wave * 3) % rawImages.length];
+      const scaleVariant = 0.86 + (((wave + i) % 5) * 0.06);
+
+      expanded.push({
+        ...image,
+        width: image.width * scaleVariant,
+        height: image.height * scaleVariant
+      });
+    }
+  }
+
+  return expanded;
+}

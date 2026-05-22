@@ -14,6 +14,12 @@
   let slug: string | null = null;
   let volunteer: any = null;
 
+  function imagesForVolunteer() {
+    if (!volunteer) return [];
+
+    return imagesRaw.filter((img, i) => slugify(img.name, i) === slug);
+  }
+
   const unsub = page.subscribe(($page) => {
     slug = $page.params.slug ?? null;
 
@@ -58,10 +64,3 @@
     <p style="opacity:0.8; max-width:680px;">Nessuna informazione trovata per questo volontario.</p>
   {/if}
 </main>
-
-<script lang="ts">
-  function imagesForVolunteer() {
-    if (!volunteer) return [];
-    return imagesRaw.filter((img, i) => slugify(img.name, i) === slug);
-  }
-</script>
