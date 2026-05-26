@@ -226,6 +226,7 @@ body{
   gap:32px;
   align-items:center;
   padding-bottom: 14px;
+  margin-left: auto; /* ensure links sit on the right */
 }
 .nav-link{
   color:var(--color-content-body);
