@@ -120,24 +120,29 @@
               <button
                 type="button"
                 class="question-row"
+                class:is-open={openIndex === i}
+                class:muted={openIndex !== -1 && openIndex !== i}
                 onmouseenter={() => (hoveredQuestion = i)}
                 onmouseleave={() => (hoveredQuestion = -1)}
                 onfocus={() => (hoveredQuestion = i)}
                 onblur={() => (hoveredQuestion = -1)}
+                onclick={() => (openIndex = openIndex === i ? -1 : i)}
+                aria-expanded={openIndex === i}
               >
                 <span>{title}</span>
+                <span class="toggle-icon" aria-hidden="true">{openIndex === i ? '−' : '+'}</span>
               </button>
             {/each}
           </div>
 
-          <div class="question-answer" aria-hidden={hoveredQuestion === -1}>
-            {#if hoveredQuestion !== -1}
-              {@const response = volunteer?.responses?.[hoveredQuestion] ?? 'NESSUNA RISPOSTA DISPONIBILE.'}
-              <div class="answer-inner">
+          {#if openIndex !== -1}
+            {@const response = volunteer?.responses?.[openIndex] ?? 'NESSUNA RISPOSTA DISPONIBILE.'}
+            <div class="expanded-answer" role="region" aria-live="polite">
+              <div class="expanded-inner">
                 <p>{response}</p>
               </div>
-            {/if}
-          </div>
+            </div>
+          {/if}
       </div>
     {:else}
       {#if hasPhotos()}
@@ -232,12 +237,12 @@
     position: absolute;
     left: 50%;
     top: 205px;
-    transform: translateX(-50%);
+    transform: translateX(-20%);
     width: min(1210px, calc(100vw - 80px));
     margin: 0;
     display: flex;
     align-items: baseline;
-    justify-content: center;
+    justify-content: left;
     gap: 10px;
     text-transform: uppercase;
     pointer-events: none;
@@ -249,28 +254,36 @@
     font-size: var(--figma-title-size, 90px);
     line-height: var(--figma-title-lineheight, 100px);
     letter-spacing: -0.02em;
+    align-items: baseline;
+    justify-content: left;
     white-space: nowrap;
     font-weight: 800;
     text-transform: uppercase;
   }
 
-  /* question hover answer */
-  .question-answer {
+  /* question list & expanded answer */
+  .questions-list { display:flex; flex-direction:column; gap:10px; }
+
+  .question-row { text-align:left; padding:14px 20px; border:0; background:transparent; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:48px; line-height:1; letter-spacing:-0.02em; }
+  .question-row:hover, .question-row:focus { color:var(--gallery-accent,#bdff5d); transform:translateX(6px); }
+  .question-row.is-open { color:var(--gallery-accent,#bdff5d); transform:translateX(6px); }
+  .question-row.muted { filter: blur(2px) opacity(0.45); transform:none; pointer-events: none; }
+
+  .toggle-icon { color:var(--gallery-accent,#bdff5d); font-size:32px; line-height:1; min-width:36px; text-align:right; }
+
+  .expanded-answer {
     position: absolute;
     right: 40px;
-    top: 320px;
-    width: 420px;
-    color: #e9ffe0;
-    font-size: 18px;
-    line-height: 1.2;
+    top: 559px;
+    background: var(--gallery-accent, #bdff5d);
+    color: #0a0a0a;
+    padding: 26px;
+    border-radius: 6px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.08);
+    max-width: min(760px, calc(100% - 420px));
     z-index: 3;
   }
-
-  .answer-inner { padding: 14px; background: rgba(0,0,0,0.45); border-radius:6px; }
-
-  .questions-list { display:flex; flex-direction:column; gap:10px; }
-  .question-row { text-align:left; padding:14px 20px; border:0; background:transparent; color:#fff; cursor:pointer; }
-  .question-row:hover, .question-row:focus { color:var(--gallery-accent,#bdff5d); transform:translateX(6px); }
+  .expanded-inner p { margin: 0; font-size: 18px; line-height: 1.45; font-weight: 400; }
 
   .hero-thumbs { display:flex; gap:10px; margin-left: 12px; align-items:center; }
   .hero-thumbs .thumb { width:80px; height:56px; border:0; padding:0; background:transparent; cursor:pointer; }
@@ -520,10 +533,10 @@
 
   .info-grid {
     display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-columns: 340px minmax(0, 1fr);
     gap: 34px;
     align-items: start;
-    margin-top: 280px;
+    margin-top: 559px;
     padding: 0 40px;
   }
 
@@ -555,20 +568,20 @@
 
   .question-row {
     width: 100%;
-    min-height: 44px;
+    min-height: 64px;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     padding: 0 0 8px;
     border: 0;
-    border-bottom: 1px solid rgba(250, 250, 250, 0.75);
+    border-bottom: 4px solid rgba(250, 250, 250, 0.92);
     background: transparent;
     color: #fafafa;
     text-align: left;
-    font-size: 36px;
-    line-height: 1;
+    font-size: 64px;
+    line-height: 64px;
     letter-spacing: -0.02em;
     text-transform: uppercase;
-    cursor: default;
+    cursor: pointer;
   }
 
   .question-row span {
