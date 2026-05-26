@@ -46,7 +46,7 @@
         class="filter-item"
         type="button"
         aria-pressed={activeFilter === filter.id}
-        on:click={() => setFilter(activeFilter === filter.id ? null : filter.id)}
+        onclick={() => setFilter(activeFilter === filter.id ? null : filter.id)}
       >
         {filter.label}
       </button>
@@ -67,10 +67,10 @@
   <section class="toggle" aria-label="View toggle">
     <div class:toggle--names={activeToggle === 'names'} class="toggle-track">
       <span class="toggle-selected"></span>
-      <button class="toggle-option toggle-option--photos" type="button" aria-pressed={activeToggle === 'photos'} on:click={() => setToggle('photos')}>
+      <button class="toggle-option toggle-option--photos" type="button" aria-pressed={activeToggle === 'photos'} onclick={() => setToggle('photos')}>
         <span class="toggle-label">FOTO</span>
       </button>
-      <button class="toggle-option toggle-option--names" type="button" aria-pressed={activeToggle === 'names'} on:click={() => setToggle('names')}>
+      <button class="toggle-option toggle-option--names" type="button" aria-pressed={activeToggle === 'names'} onclick={() => setToggle('names')}>
         <span class="toggle-label">NOMI</span>
       </button>
     </div>

@@ -14,19 +14,19 @@
 
   const fallbackHero = 'https://www.figma.com/api/mcp/asset/a593d582-cfd0-47a0-ad9c-c058031c20d7';
   const questionTitles = [
-    'LA MIA GIORNATA (QUASI) NORMALE.',
     'COME MI VEDEVANO GLI ALTRI.',
     'IL MIO MOMENTO PREFERITO.',
-    'QUELLO CHE PREFERIREI DIMENTICARE.',
+    'QUELLO CHE VORREI DIMENTICARE.',
     'COSA MI PORTO A CASA.',
-    'QUELLO CHE (NON) MI AVETE CHIESTO.',
+    'COSA (NON) MI AVETE CHIESTO.',
     'LA MIA RISPOSTA ONESTA.'
   ];
 
   let slug: string | null = null;
   let volunteer = $state<VolunteerImage | null>(null);
-  let volunteerImages: VolunteerImage[] = [];
+  let volunteerImages = $state<VolunteerImage[]>([]);
   let activePhotoIndex = 0;
+  let activeMode = $state<'info' | 'foto'>('info');
   let openIndex = $state(0);
 
   function splitDisplayName(name: string | undefined) {
@@ -52,6 +52,7 @@
       : [];
 
     activePhotoIndex = 0;
+    activeMode = 'info';
     openIndex = 0;
   }
 
@@ -75,12 +76,6 @@
     activePhotoIndex = (activePhotoIndex + 1) % volunteerImages.length;
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (!hasPhotos()) return;
-    if (e.key === 'ArrowLeft') previousPhoto();
-    if (e.key === 'ArrowRight') nextPhoto();
-  }
-
   const unsub = page.subscribe(($page) => {
     selectVolunteerBySlug($page.params.slug ?? null);
   });
@@ -89,6 +84,8 @@
 
   let firstName = $state('');
   let lastName = $state('');
+  let hoveredQuestion = $state<number>(-1);
+  let hoveredThumbnail = $state<number>(-1);
   $effect(() => {
     [firstName, lastName] = splitDisplayName(volunteer?.name ?? 'Aquila Muraca Francesca');
   });
@@ -97,91 +94,107 @@
 <svelte:head>
   <title>Volunteer — {volunteer?.name ?? 'Aquila Muraca Francesca'}</title>
 </svelte:head>
-<svelte:window on:keydown={handleKeydown} />
 
 <main class="volunteer-page">
   <section class="hero">
+    <button class="back-button" type="button" onclick={() => history.back()} aria-label="Go back">
+      <span class="back-button__icon" aria-hidden="true">←</span>
+      <span>BACK</span>
+    </button>
+
     <div class="hero-title" aria-label={volunteer?.name ?? 'Aquila Muraca Francesca'}>
       <p class="hero-title__solid">{firstName.toUpperCase()}</p>
       <p class="hero-title__outline">{lastName.toUpperCase()}</p>
     </div>
 
-    <div class="hero-meta">
-      <p class="hero-name">{volunteer?.name ?? `${firstName} ${lastName}`}</p>
-      <p>{volunteer?.city ?? 'Bormio'} {volunteer?.region ? `- ${volunteer.region}` : '- STELVIO SKI CENTER'}</p>
-      <p>{volunteer?.role ?? 'EVENT SERVICES VOLUNTEER'}</p>
-      <p>{volunteer?.age ? `${volunteer.age} ANNI` : '— ANNI'}, {volunteer?.region ?? 'LOMBARDIA'}</p>
-    </div>
+    {#if activeMode === 'info'}
+      <div class="info-grid">
+          <div class="hero-meta">
+            <p class="hero-meta__role">{volunteer?.role ?? 'EVENT SERVICES VOLUNTEER'}</p>
+            <p>{volunteer?.city ?? 'BORMIO'}{volunteer?.region ? ` - ${volunteer.region.toUpperCase()}` : ' - STELVIO SKI CENTER'}</p>
+            <p>{volunteer?.region ? `${volunteer.region}, ${volunteer.age ?? 59} anni` : 'Lombardia, 59 anni'}</p>
+          </div>
 
-    {#if hasPhotos()}
-      <div class="hero-media">
-        <button class="hero-arrow hero-arrow--left" type="button" aria-label="Previous photo" onclick={previousPhoto}>
-          <span aria-hidden="true">‹</span>
-        </button>
+          <div class="questions-list" aria-label="Volunteer questions">
+            {#each questionTitles as title, i}
+              <button
+                type="button"
+                class="question-row"
+                onmouseenter={() => (hoveredQuestion = i)}
+                onmouseleave={() => (hoveredQuestion = -1)}
+                onfocus={() => (hoveredQuestion = i)}
+                onblur={() => (hoveredQuestion = -1)}
+              >
+                <span>{title}</span>
+              </button>
+            {/each}
+          </div>
 
-        <div class="hero-image-shell">
-          <img src={currentHeroImage()} alt={volunteer?.name ?? 'Volunteer photo'} class="hero-image" />
-        </div>
-
-        <button class="hero-arrow hero-arrow--right" type="button" aria-label="Next photo" onclick={nextPhoto}>
-          <span aria-hidden="true">›</span>
-        </button>
+          <div class="question-answer" aria-hidden={hoveredQuestion === -1}>
+            {#if hoveredQuestion !== -1}
+              {@const response = volunteer?.responses?.[hoveredQuestion] ?? 'NESSUNA RISPOSTA DISPONIBILE.'}
+              <div class="answer-inner">
+                <p>{response}</p>
+              </div>
+            {/if}
+          </div>
       </div>
     {:else}
-      <div class="hero-no-photo">
-        <div class="no-photo-art" aria-hidden="true">
-          <svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img">
-            <defs>
-              <radialGradient id="g" cx="50%" cy="40%">
-                <stop offset="0%" stop-color="#2b2b2b" />
-                <stop offset="100%" stop-color="#111" />
-              </radialGradient>
-            </defs>
-            <rect width="320" height="320" rx="20" fill="url(#g)" />
-            <g transform="translate(40,34)" fill="#bdff5d" fill-opacity="0.08">
-              <circle cx="40" cy="40" r="6" />
-              <circle cx="80" cy="20" r="4" />
-              <circle cx="120" cy="60" r="5" />
-              <circle cx="60" cy="100" r="3" />
-            </g>
-            <g transform="translate(110,80)" fill="#bdff5d">
-              <circle cx="50" cy="40" r="40" fill-opacity="0.12" />
-              <circle cx="50" cy="30" r="18" />
-            </g>
-          </svg>
-        </div>
+      {#if hasPhotos()}
+        <div class="hero-media">
+          <button class="hero-arrow hero-arrow--left" type="button" aria-label="Previous photo" onclick={previousPhoto}>
+            <span aria-hidden="true">‹</span>
+          </button>
 
-        <div class="hero-meta hero-meta--no-photo">
-          <p>{volunteer?.city ?? 'Bormio'} - {volunteer?.region ?? 'Stelvio'}</p>
-          <p>{volunteer?.role ?? 'Event Services Volunteer'}</p>
-          <p>{volunteer?.age ?? '—'} ANNI, {volunteer?.region ?? 'Lombardia'}</p>
-        </div>
-      </div>
-    {/if}
-  </section>
+          <div class="hero-image-shell">
+            <img src={currentHeroImage()} alt={volunteer?.name ?? 'Volunteer photo'} class="hero-image" />
+          </div>
 
-  <section class="questions" aria-label="Volunteer questions">
-    <div class="questions-bg" aria-hidden="true" class:visible={openIndex !== -1}></div>
-
-    {#each questionTitles as title, index}
-      <button
-        type="button"
-        class:is-active={index === openIndex}
-        class="question-row"
-        onclick={() => openIndex = index === openIndex ? -1 : index}
-      >
-        <span>{title}</span>
-      </button>
-
-      {#if index === openIndex}
-        <div class="question-panel">
-          <button type="button" class="question-panel__close" aria-label="Close section" onclick={() => openIndex = -1}>×</button>
-          <div class="question-panel__content">
-            <p>{volunteer?.responses?.[index] ?? 'Risposta non disponibile. Questa è una descrizione di esempio che sostituisce la risposta del volontario.'}</p>
+          <button class="hero-arrow hero-arrow--right" type="button" aria-label="Next photo" onclick={nextPhoto}>
+            <span aria-hidden="true">›</span>
+          </button>
+          <div class="hero-thumbs">
+            {#each volunteerImages as img, idx}
+              <button
+                class="thumb"
+                type="button"
+                onmouseenter={() => (hoveredThumbnail = idx)}
+                onmouseleave={() => (hoveredThumbnail = -1)}
+                onclick={() => (activePhotoIndex = idx)}
+                aria-label={`Show photo ${idx + 1}`}
+              >
+                <img src={img.src} alt={img.name ?? 'thumb'} />
+              </button>
+            {/each}
           </div>
         </div>
+      {:else}
+        <div class="hero-no-photo" aria-hidden="true">
+          <div class="hero-no-photo__art"></div>
+        </div>
       {/if}
-    {/each}
+    {/if}
+
+    <div class="mode-toggle" aria-label="View toggle">
+      <button
+        type="button"
+        class="mode-toggle__info"
+        class:is-active={activeMode === 'info'}
+        aria-pressed={activeMode === 'info'}
+        onclick={() => (activeMode = 'info')}
+      >
+        INFO
+      </button>
+      <button
+        type="button"
+        class="mode-toggle__foto"
+        class:is-active={activeMode === 'foto'}
+        aria-pressed={activeMode === 'foto'}
+        onclick={() => (activeMode = 'foto')}
+      >
+        FOTO
+      </button>
+    </div>
   </section>
 </main>
 
@@ -241,6 +254,29 @@
     text-transform: uppercase;
   }
 
+  /* question hover answer */
+  .question-answer {
+    position: absolute;
+    right: 40px;
+    top: 320px;
+    width: 420px;
+    color: #e9ffe0;
+    font-size: 18px;
+    line-height: 1.2;
+    z-index: 3;
+  }
+
+  .answer-inner { padding: 14px; background: rgba(0,0,0,0.45); border-radius:6px; }
+
+  .questions-list { display:flex; flex-direction:column; gap:10px; }
+  .question-row { text-align:left; padding:14px 20px; border:0; background:transparent; color:#fff; cursor:pointer; }
+  .question-row:hover, .question-row:focus { color:var(--gallery-accent,#bdff5d); transform:translateX(6px); }
+
+  .hero-thumbs { display:flex; gap:10px; margin-left: 12px; align-items:center; }
+  .hero-thumbs .thumb { width:80px; height:56px; border:0; padding:0; background:transparent; cursor:pointer; }
+  .hero-thumbs img { width:100%; height:100%; object-fit:cover; display:block; filter:grayscale(100%) contrast(0.9); }
+  .hero-thumbs .thumb:hover img, .hero-thumbs .thumb:focus img { filter:none; }
+
   .hero-title__solid {
     color: var(--color-content-title);
     font-weight: 800;
@@ -271,11 +307,9 @@
     margin: 0;
   }
 
-  .hero-name {
-    font-size: clamp(22px, 2.4vw, 28px);
-    font-weight: 700;
-    color: #bdff5d;
-    margin-bottom: 8px;
+  .hero-meta__role {
+    color: var(--gallery-accent, #bdff5d);
+    font-weight: 600;
   }
 
   .hero-media {
@@ -327,121 +361,6 @@
 
   .hero-arrow--right {
     right: -64px;
-  }
-
-  .questions {
-    position: relative;
-  }
-
-  .questions-bg {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    height: 263px;
-    background: var(--color-content-title);
-    z-index: 0;
-    opacity: 0;
-    transition: opacity 200ms ease;
-  }
-
-  .questions-bg.visible {
-    opacity: 1;
-  }
-
-  .question-row {
-    width: 100%;
-    min-height: 86px;
-    display: flex;
-    align-items: center;
-    padding: 0 28px;
-    border: 0;
-    border-top: 1px solid rgba(250, 250, 250, 0.35);
-    background: transparent;
-    color: #fafafa;
-    text-align: left;
-    font-size: 48px;
-    line-height: 42px;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: color 180ms ease, background 180ms ease;
-  }
-
-  .question-row span {
-    display: block;
-    width: 100%;
-  }
-
-  .question-panel {
-    position: relative;
-    width: 100%;
-    background: #bdff5d;
-    border-top: 1px solid rgba(0, 0, 0, 0.45);
-    padding: 22px 28px;
-    color: #111;
-    font-family: 'Inter', sans-serif;
-    font-size: 18px;
-    line-height: 1.4;
-    transition: max-height 260ms ease, padding 220ms ease, opacity 200ms ease;
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-  }
-
-  .question-row.is-active + .question-panel {
-    max-height: 600px;
-    opacity: 1;
-    background: #bdff5d;
-    color: #111;
-    padding: 22px 32px;
-    border-top: 0;
-    box-shadow: 0 -6px 18px rgba(0,0,0,0.28);
-    transform-origin: top center;
-  }
-
-  .question-panel__close {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    border: 0;
-    background: transparent;
-    color: #1a1a1a;
-    font-size: 28px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .hero-no-photo {
-    width: min(953px, calc(100vw - 120px));
-    margin: 44px auto 0;
-    display: flex;
-    align-items: center;
-    gap: 36px;
-    justify-content: center;
-  }
-
-  .no-photo-art {
-    width: 320px;
-    height: 320px;
-    display: grid;
-    place-items: center;
-    border-radius: 20px;
-    overflow: hidden;
-    background: linear-gradient(180deg, #111 0%, #0b0b0b 100%);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  }
-
-  .hero-meta--no-photo {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    color: #fafafa;
-    font-size: 20px;
-    line-height: 1.05;
-    text-transform: uppercase;
-    width: min(360px, calc(100% - 340px));
   }
 
   @media (max-width: 1100px) {
@@ -525,6 +444,320 @@
     .question-row {
       font-size: 22px;
       min-height: 72px;
+    }
+  }
+
+  .volunteer-page {
+    min-height: 100dvh;
+    background: #111;
+    padding-bottom: 32px;
+  }
+
+  .hero {
+    min-height: 100dvh;
+    padding: 20px 0 32px;
+  }
+
+  .back-button {
+    position: absolute;
+    top: 20px;
+    left: 38px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 31px;
+    padding: 0 14px 0 12px;
+    border: 1px solid #bdff5d;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, 0.95);
+    color: #fafafa;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .back-button__icon {
+    font-size: 18px;
+    line-height: 1;
+    color: #fafafa;
+  }
+
+  .hero-title {
+    position: absolute;
+    top: 58px;
+    left: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .hero-title p {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 116px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .hero-title__solid {
+    color: #bdff5d;
+  }
+
+  .hero-title__outline {
+    color: transparent;
+    -webkit-text-stroke: 3px #bdff5d;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 34px;
+    align-items: start;
+    margin-top: 280px;
+    padding: 0 40px;
+  }
+
+  .hero-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    color: #fafafa;
+    font-size: 24px;
+    align-items: center;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .hero-meta p {
+    margin: 0;
+  }
+
+  .hero-meta__role {
+    color: #bdff5d;
+    margin-bottom: 4px;
+  }
+
+  .questions-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .question-row {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: flex-start;
+    padding: 0 0 8px;
+    border: 0;
+    border-bottom: 1px solid rgba(250, 250, 250, 0.75);
+    background: transparent;
+    color: #fafafa;
+    text-align: left;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  .question-row span {
+    display: block;
+    width: 100%;
+  }
+
+  .hero-media {
+    width: min(953px, calc(100vw - 120px));
+    margin: 180px auto 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-image-shell {
+    width: 953px;
+    height: 508px;
+    overflow: hidden;
+    background: #111;
+    box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
+  }
+
+  .hero-image {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  .hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 41px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: #bdff5d;
+    font-size: 56px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    z-index: 3;
+  }
+
+  .hero-arrow--left {
+    left: -64px;
+  }
+
+  .hero-arrow--right {
+    right: -64px;
+  }
+
+  .hero-no-photo {
+    width: min(953px, calc(100vw - 120px));
+    margin: 180px auto 0;
+    height: 508px;
+    background: #0d0d0d;
+  }
+
+  .hero-no-photo__art {
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(189, 255, 93, 0.06);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.15));
+  }
+
+  .mode-toggle {
+    position: fixed;
+    left: 36px;
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 4;
+  }
+
+  .mode-toggle button {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #fafafa;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .mode-toggle__info {
+    min-width: 31px;
+    height: 15px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #bdff5d;
+    color: #111;
+  }
+
+  .mode-toggle__foto {
+    color: #fafafa;
+  }
+
+  @media (max-width: 1100px) {
+    .hero-title {
+      left: 24px;
+      top: 46px;
+    }
+
+    .hero-title p {
+      font-size: 92px;
+    }
+
+    .info-grid {
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 24px;
+      margin-top: 250px;
+      padding: 0 24px;
+    }
+
+    .hero-meta,
+    .question-row {
+      font-size: 24px;
+    }
+
+    .hero-media,
+    .hero-no-photo {
+      width: calc(100vw - 48px);
+      margin-top: 140px;
+    }
+
+    .hero-arrow--left {
+      left: -48px;
+    }
+
+    .hero-arrow--right {
+      right: -48px;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .hero {
+      min-height: auto;
+    }
+
+    .hero-title {
+      position: static;
+      padding: 56px 20px 0;
+    }
+
+    .hero-title p {
+      font-size: 52px;
+      white-space: normal;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+      margin-top: 28px;
+      padding: 0 20px;
+    }
+
+    .hero-meta {
+      font-size: 18px;
+    }
+
+    .question-row {
+      font-size: 22px;
+      min-height: 36px;
+    }
+
+    .mode-toggle {
+      left: 20px;
+      bottom: 16px;
+    }
+
+    .hero-media,
+    .hero-no-photo {
+      width: calc(100vw - 40px);
+      margin-top: 24px;
+      height: auto;
+    }
+
+    .hero-image-shell {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 953 / 508;
     }
   }
 </style>

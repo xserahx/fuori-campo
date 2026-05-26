@@ -11,7 +11,7 @@
   let scale = 1;
 
   const designWidth = 1920;
-  let designHeight = 1080;
+  let designHeight = $state<number>(1080);
 
   let currentX = 0;
   let currentY = 0;
@@ -106,9 +106,9 @@
   });
 </script>
 
-<svelte:window on:pointermove={pointerMove} />
+<svelte:window onpointermove={pointerMove} />
 
-<div bind:this={collageRef} class="collage" on:pointerdown={pointerDown} on:wheel|preventDefault={wheelMove}>
+<div bind:this={collageRef} class="collage" role="region" aria-label="Image collage" onpointerdown={pointerDown} onwheel={(e) => { e.preventDefault(); wheelMove(e as WheelEvent); }}>
   <div
     bind:this={innerRef}
     class="collage-inner"
@@ -127,8 +127,8 @@
         class:img-unmatched={isUnmatched}
         type="button"
         style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
-        on:pointerdown|stopPropagation
-        on:click={() => openVolunteer(img, i)}
+        onpointerdown={(e) => e.stopPropagation()}
+        onclick={() => openVolunteer(img, i)}
       >
         <div class="img-bw-layer">
           <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
