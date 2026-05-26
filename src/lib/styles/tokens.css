@@ -168,7 +168,7 @@ body{
 }
 
 .navbar--transparent{
-  background: transparent;
+  background: linear-gradient(to bottom, rgba(14, 14, 14, 1) 0%, rgba(14, 14, 14, 0.15) 100%);
 }
 
 /* hide navbar background image when navbar is transparent so page stays dark */
@@ -183,18 +183,18 @@ body{
 }
 
 .navbar--transparent .nav-link{
-  color: #000;
-  opacity: 0.8;
+  color: #fafafa;
+  opacity: 1;
 }
 
 .navbar--transparent .nav-link.is-active{
-  color: #000;
+  color: #fafafa;
   opacity: 1;
 }
 
 .navbar--transparent .nav-underline{
-  background: #000;
-  box-shadow: 0 0 14px rgba(0, 0, 0, 0.28);
+  background: #fafafa;
+  box-shadow: 0 0 14px rgba(250, 250, 250, 0.28);
 }
 
 .navbar.hidden{

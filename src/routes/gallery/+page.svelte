@@ -184,7 +184,7 @@
 
   .filters {
     position:fixed;
-    top:10px;
+    top:calc(var(--navbar-height) + 10px);
     right:14px;
     z-index:100;
     display:flex;

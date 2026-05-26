@@ -1,6 +1,5 @@
 <script>
   import '../../lib/styles/tokens.css';
-  import Navbar from '$lib/components/Navbar.svelte';
 </script>
 
 <svelte:head>
@@ -8,8 +7,6 @@
 </svelte:head>
 
 <main class="about-page">
-  <Navbar transparent />
-
   <section class="hero">
     <h1>FUORI CAMPO</h1>
 
@@ -32,52 +29,61 @@
   }
 
   .about-page {
-    min-height: 100vh;
+    min-height: calc(100dvh - var(--navbar-height));
     background: #bdff5d;
     color: #000;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     font-family: "Forma DJR Display", sans-serif;
+    padding-bottom: 24px;
+    display: flex;
+    flex-direction: column;
   }
 
   .hero {
-    padding: 96px 24px 0;
+    padding: 110px 24px 0 80px;
+    flex: 1 0 auto;
   }
 
   .hero h1 {
-    margin: 20px 0 0 48px;
-    font-size: clamp(4rem, 8vw, 5.2rem);
-    line-height: 0.92;
+    margin: 0;
+    font-size: 116px;
+    line-height: 1;
     font-weight: 800;
     letter-spacing: 0;
   }
 
   .hero p {
-    margin: 50px 208.5px 56px;
-    max-width: none;
+    margin: 18px 0 0 260px;
+    max-width: 1311px;
     color: #000;
     font-family: "Forma DJR Display", sans-serif;
     font-size: 84px;
     font-weight: 500;
-    line-height: 1;
+    line-height: 0.95;
     letter-spacing: 0;
     white-space: normal;
   }
 
   .team {
-    position: absolute;
+    position: relative;
     left: 0;
     right: 0;
-    bottom: 0;
-    padding: 0 24px 10px;
+    padding: 0 72px 10px;
     color: #000;
     font-size: 24px;
     line-height: 1;
     font-weight: 500;
+    margin-top: 40px;
+    display: flex;
+    justify-content: flex-start;
   }
 
   .team-copy {
     white-space: normal;
+    text-align: left;
+    max-width: 100%;
   }
 
   .team-copy p {
@@ -86,8 +92,8 @@
 
   @media (min-width: 900px) {
     .hero {
-      padding-top: 96px;
-      padding-left: 24px;
+      padding-top: 110px;
+      padding-left: 80px;
       padding-right: 24px;
     }
   }

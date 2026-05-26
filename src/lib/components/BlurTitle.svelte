@@ -3,7 +3,6 @@
 
   let titleWrap: HTMLElement | null = null;
   let sharpLayer: HTMLElement | null = null;
-  let blurredLayer: HTMLElement | null = null;
 
   const SPOT_RADIUS = 120;
   const FADE_DURATION = 600;
@@ -23,13 +22,9 @@
   }
 
   function applyMask() {
-    if (!sharpLayer || !blurredLayer) return;
-    // Disable dynamic masking so the sharp layer is always fully visible
+    if (!sharpLayer) return;
     sharpLayer.style.webkitMaskImage = 'none';
     sharpLayer.style.maskImage = 'none';
-
-    // Keep a moderate blurred halo but do not hide the sharp layer
-    blurredLayer.style.opacity = '0.45';
 
     animFrame = null;
   }
@@ -130,11 +125,6 @@
   onpointerleave={onPointerLeave}
   onpointerenter={onPointerEnter}
 >
-  <!-- BLURRED -->
-  <div class="title-text layer-blurred" bind:this={blurredLayer} aria-hidden="true">
-    <span class="fuori">FUORI</span><span class="campo">CAMPO</span>
-  </div>
-
   <!-- SHARP -->
   <div class="title-text layer-sharp" bind:this={sharpLayer} aria-hidden="true">
     <span class="fuori">FUORI</span><span class="campo">CAMPO</span>
@@ -196,7 +186,6 @@
   text-align: center;
 }
 
-.layer-blurred,
 .layer-sharp {
   position: absolute;
   inset: 0;
@@ -205,19 +194,9 @@
   justify-content: center;
 }
 
-.layer-blurred {
-  filter: blur(36px);
-  opacity: 0.45;
-  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 1;
-}
-
 .layer-sharp {
   pointer-events: none;
-  transition:
-    mask-image 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    -webkit-mask-image 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 2;
+  z-index: 1;
 }
 
 .spacer {
