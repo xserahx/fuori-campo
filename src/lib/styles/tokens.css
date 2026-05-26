@@ -227,6 +227,9 @@ body{
   align-items:center;
   padding-bottom: 14px;
   margin-left: auto; /* ensure links sit on the right */
+  justify-content: flex-end;
+  width: 357px; /* match Figma top-bar link container width */
+  margin-right: var(--spacing-11); /* ensure right gap equals spacing-11 */
 }
 .nav-link{
   color:var(--color-content-body);
