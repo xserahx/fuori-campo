@@ -155,7 +155,7 @@ body{
   left:0;
   right:0;
   overflow:hidden;
-  padding: 24px;
+  padding: var(--spacing-5) var(--spacing-11);
   display:flex;
   align-items:center;
   background: var(--color-background-primary);
@@ -216,9 +216,10 @@ body{
   display:flex;
   align-items:center;
   justify-content:flex-start;
-  gap:32px;
+  gap:0; /* remove extra inner gap so left logo spacing equals right nav spacing */
 }
 .logo{display:flex;align-items:center;flex:0 0 auto}
+.logo{margin-left:0}
 .logo img{height:63.784px;width:67px;display:block}
 .nav-links{
   position:relative;
@@ -269,7 +270,7 @@ body{
 
 /* Responsive: collapse navigation under 900px */
 @media (max-width:900px){
-  .navbar{padding:16px}
+  .navbar{padding: var(--spacing-4) var(--spacing-5)}
   .logo img{height:48px;width:auto}
   .nav-links{gap:24px}
   .nav-link{font-size:14px}
@@ -284,14 +285,15 @@ body{
   display:flex;
   width:100%;
   margin:0 auto;
-  padding: var(--hero-top-gap) clamp(24px, 14vw, 469px) 0;
+  padding: 0;
   flex-direction:column;
   justify-content:center;
-  align-items:center;     /* horizontal center */
+  align-items:center;
   gap:10px;
   min-height: 100dvh;
   box-sizing: border-box;
   overflow: hidden;
+  background: var(--color-background-primary);
 }
 
 .hero-inner{

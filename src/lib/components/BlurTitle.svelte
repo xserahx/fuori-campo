@@ -24,12 +24,12 @@
 
   function applyMask() {
     if (!sharpLayer || !blurredLayer) return;
-    const mask = buildMask();
-    sharpLayer.style.webkitMaskImage = mask;
-    sharpLayer.style.maskImage = mask;
+    // Disable dynamic masking so the sharp layer is always fully visible
+    sharpLayer.style.webkitMaskImage = 'none';
+    sharpLayer.style.maskImage = 'none';
 
-    const coverage = Math.min(spots.length / 6, 1);
-    blurredLayer.style.opacity = String((0.35 * (1 - coverage * 0.7)).toFixed(3));
+    // Keep a moderate blurred halo but do not hide the sharp layer
+    blurredLayer.style.opacity = '0.45';
 
     animFrame = null;
   }
@@ -148,28 +148,37 @@
 
 <style>
 .title-wrap {
-  position: relative;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   justify-content: center;
   align-items: center;
-  width: auto;
+  width: min(1200px, 90vw);
+  max-width: 100vw;
   cursor: none;
   user-select: none;
-  background: var(--color-background-primary);
+  pointer-events: none; /* allow interactions with topbar underneath */
+  background: transparent;
+  box-sizing: border-box;
+  z-index: 9999; /* ensure title visually sits above the topbar */
+  max-height: 100vh;
+  overflow: visible;
 }
 
 .title-text {
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.05em;
+  gap: 0.02em;
 
   font-family: var(--font-display);
-  font-size: var(--figma-title-size);        
-  line-height: var(--figma-title-lineheight); 
+  font-size: 300px;
+  line-height: 0.95;
   font-weight: 800;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -182,7 +191,7 @@
 .campo {
   color: transparent;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke-width: 6px;
+  -webkit-text-stroke-width: 10px;
   -webkit-text-stroke-color: var(--color-content-title); /* #BDFF5D */
   text-align: center;
 }
@@ -197,9 +206,10 @@
 }
 
 .layer-blurred {
-  filter: blur(14px);
-  opacity: 0.35;
+  filter: blur(36px);
+  opacity: 0.45;
   transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 1;
 }
 
 .layer-sharp {
@@ -207,6 +217,7 @@
   transition:
     mask-image 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     -webkit-mask-image 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 2;
 }
 
 .spacer {

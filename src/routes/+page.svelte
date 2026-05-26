@@ -235,36 +235,6 @@
 />
 
 <div class="site">
-  <header class="navbar" class:hero-fixed={navbarFixed} class:hidden={!navbarVisible}>
-    <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
-    <div class="navbar-inner">
-      <a class="logo" href="/" aria-label="Fuori campo home">
-        <img src={imgStatusDefault} alt="" />
-      </a>
-      <nav class="nav-links" bind:this={navContainer} aria-label="Main navigation" onmouseleave={resetNavSelection}>
-        {#each navItems as item, index}
-          <a
-            class="nav-link"
-            class:is-active={index === activeNavIndex}
-            href={item.href}
-            use:navLinkAction={index}
-            onmouseenter={() => setNavSelection(index)}
-            onfocus={() => setNavSelection(index)}
-            onclick={() => setNavSelection(index)}
-          >
-            {item.label}
-          </a>
-        {/each}
-        <span
-          class="nav-underline"
-          class:visible={underlineVisible}
-          style={`left: ${underlineLeft}px; width: ${underlineWidth}px;`}
-          aria-hidden="true"
-        ></span>
-      </nav>
-    </div>
-  </header>
-
   <main class="landing">
     <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
