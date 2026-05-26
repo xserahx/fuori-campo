@@ -2,8 +2,15 @@
   import { page } from '$app/stores';
   import { onDestroy } from 'svelte';
   import { imagesRaw, slugify } from '$lib/data/gallery';
+  import type { GalleryImage } from '$lib/data/gallery';
 
-  type VolunteerImage = (typeof imagesRaw)[number];
+  type VolunteerImage = GalleryImage & {
+    city?: string;
+    region?: string;
+    role?: string;
+    age?: number;
+    responses?: string[];
+  };
 
   const fallbackHero = 'https://www.figma.com/api/mcp/asset/a593d582-cfd0-47a0-ad9c-c058031c20d7';
   const questionTitles = [
@@ -17,10 +24,10 @@
   ];
 
   let slug: string | null = null;
-  let volunteer: VolunteerImage | null = null;
+  let volunteer = $state<VolunteerImage | null>(null);
   let volunteerImages: VolunteerImage[] = [];
   let activePhotoIndex = 0;
-  let openIndex = 0;
+  let openIndex = $state(0);
 
   function splitDisplayName(name: string | undefined) {
     const fallback = ['Aquila Muraca', 'Francesca'];
@@ -80,8 +87,8 @@
 
   onDestroy(() => unsub());
 
-  let firstName = '';
-  let lastName = '';
+  let firstName = $state('');
+  let lastName = $state('');
   $effect(() => {
     [firstName, lastName] = splitDisplayName(volunteer?.name ?? 'Aquila Muraca Francesca');
   });
@@ -108,7 +115,7 @@
 
     {#if hasPhotos()}
       <div class="hero-media">
-        <button class="hero-arrow hero-arrow--left" type="button" aria-label="Previous photo" on:click={previousPhoto}>
+        <button class="hero-arrow hero-arrow--left" type="button" aria-label="Previous photo" onclick={previousPhoto}>
           <span aria-hidden="true">‹</span>
         </button>
 
@@ -116,7 +123,7 @@
           <img src={currentHeroImage()} alt={volunteer?.name ?? 'Volunteer photo'} class="hero-image" />
         </div>
 
-        <button class="hero-arrow hero-arrow--right" type="button" aria-label="Next photo" on:click={nextPhoto}>
+        <button class="hero-arrow hero-arrow--right" type="button" aria-label="Next photo" onclick={nextPhoto}>
           <span aria-hidden="true">›</span>
         </button>
       </div>
@@ -161,14 +168,14 @@
         type="button"
         class:is-active={index === openIndex}
         class="question-row"
-        on:click={() => openIndex = index === openIndex ? -1 : index}
+        onclick={() => openIndex = index === openIndex ? -1 : index}
       >
         <span>{title}</span>
       </button>
 
       {#if index === openIndex}
         <div class="question-panel">
-          <button type="button" class="question-panel__close" aria-label="Close section" on:click={() => openIndex = -1}>×</button>
+          <button type="button" class="question-panel__close" aria-label="Close section" onclick={() => openIndex = -1}>×</button>
           <div class="question-panel__content">
             <p>{volunteer?.responses?.[index] ?? 'Risposta non disponibile. Questa è una descrizione di esempio che sostituisce la risposta del volontario.'}</p>
           </div>
@@ -242,7 +249,6 @@
   .hero-title__outline {
     color: transparent;
     -webkit-text-stroke: 4px var(--color-content-title);
-    text-stroke: 4px var(--color-content-title);
     font-weight: 800;
   }
 
