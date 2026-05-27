@@ -1,9 +1,9 @@
 :root{
-  --color-background-primary: #1A1A1A; /* main page background */
-  --color-content-title: #bdff5d; /* bright lime  */
-  --color-content-body: #fafafa; /* main body text */
+  --color-background-primary: #1A1A1A; 
+  --color-content-title: #bdff5d; 
+  --color-content-body: #fafafa; 
   --color-link-selected: #bdff5d;
-  --color-content-primary: #202426; /* used in toolbar elements */
+  --color-content-primary: #202426; 
   --gallery-background: #1a1a1a;
   --gallery-overlay: rgba(26, 26, 26, 0.5);
   --gallery-text: #fafafa;
@@ -64,9 +64,9 @@
   --spacing-18: var(--unit-395);
   --spacing-19: var(--unit-500);
 
-  --story-numbers-gap: var(--unit-300); /* adjusted to match provided measurement */
+  --story-numbers-gap: var(--unit-300); 
   --hero-to-lead: var(--spacing-13) + 469px;
-  --hero-top-gap: 144px; /* distance between navbar bottom and hero title */
+  --hero-top-gap: 144px; 
 
   /* Radius */
   --radius-rounded-pill: 53.5px;
@@ -142,8 +142,8 @@ body{
 
 /* Hide visual scrollbars while preserving scroll functionality */
 html, body, * {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none;    /* Firefox */
+  -ms-overflow-style: none; 
+  scrollbar-width: none;    
 }
 
 /* WebKit browsers */
@@ -237,12 +237,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
   display:flex;
   gap: var(--spacing-6);
   align-items:center;
-  padding-right:- var(--spacing-11); /* ensure right gap equals spacing-11 */
+  padding-right:- var(--spacing-11); 
   padding-bottom: 14px;
-  margin-left: auto; /* ensure links sit on the right */
+  margin-left: auto;
   justify-content: flex-end;
-  width: 357px; /* match Figma top-bar link container width */
-  margin-right: var(--spacing-11); /* ensure right gap equals spacing-11 */
+  width: 357px; 
+  margin-right: var(--spacing-11); 
 }
 .nav-link{
   color:var(--color-content-body);

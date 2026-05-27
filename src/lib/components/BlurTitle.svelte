@@ -1,205 +1,225 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  let titleWrap: HTMLElement | null = null;
-  let sharpLayer: HTMLElement | null = null;
+  let titleWrap:   HTMLElement | null = null;
+  let layerBlur:   HTMLElement | null = null;
+  let animId:      number | null = null;
 
-  const SPOT_RADIUS = 120;
-  const FADE_DURATION = 600;
-  const RESET_DELAY = 2200;
+  const rng = (a: number, b: number) => a + Math.random() * (b - a);
 
-  interface Spot { x: number; y: number; radius: number }
-  let spots: Spot[] = [];
-  let resetTimer: ReturnType<typeof setTimeout> | null = null;
-  let animFrame: number | null = null;
-
-  function buildMask(): string {
-    if (spots.length === 0)
-      return "radial-gradient(circle 0px at 50% 50%, black 0%, transparent 0%)";
-    return spots
-      .map(s => `radial-gradient(circle ${s.radius}px at ${s.x}% ${s.y}%, black 0%, black 55%, transparent 100%)`)
-      .join(", ");
+  function sNoise(x: number, y: number, t: number): number {
+    return (
+      Math.sin(x*1.7 + t*0.7) * Math.cos(y*1.3 - t*0.5) +
+      Math.sin(x*0.8 - y*1.1 + t*0.4) * 0.5
+    ) / 1.5;
   }
 
-  function applyMask() {
-    if (!sharpLayer) return;
-    sharpLayer.style.webkitMaskImage = 'none';
-    sharpLayer.style.maskImage = 'none';
+  class Blob {
+    ox: number; oy: number;
+    x:  number; y:  number;
+    baseR: number; r: number;
+    ph: number;
+    dA: number; dF: number;
+    bA: number; bF: number;
+    aB: number; aPh: number; aF: number; al: number;
+    sX: number; sY: number;
+    rot: number; rS: number;
 
-    animFrame = null;
-  }
-
-  function scheduleUpdate() {
-    if (!animFrame) animFrame = requestAnimationFrame(applyMask);
-  }
-
-  function addSpot(xPct: number, yPct: number) {
-    if (spots.some(s => Math.hypot(s.x - xPct, s.y - yPct) < 8)) return;
-
-    const spot: Spot = { x: xPct, y: yPct, radius: 0 };
-    spots = [...spots, spot];
-
-    let start: number | null = null;
-    function grow(ts: number) {
-      if (!start) start = ts;
-      const t = Math.min((ts - start) / 700, 1);
-      spot.radius = SPOT_RADIUS * (1 - Math.pow(1 - t, 3));
-      scheduleUpdate();
-      if (t < 1) requestAnimationFrame(grow);
-    }
-    requestAnimationFrame(grow);
-  }
-
-  function doReset() {
-    const snapshots = spots.map(s => ({ ...s }));
-    let start: number | null = null;
-
-    function shrink(ts: number) {
-      if (!start) start = ts;
-      const t = Math.min((ts - start) / FADE_DURATION, 1);
-      const ease = Math.pow(1 - t, 2);
-
-      for (let i = 0; i < spots.length; i++)
-        spots[i].radius = snapshots[i].radius * ease;
-
-      scheduleUpdate();
-
-      if (t < 1) requestAnimationFrame(shrink);
-      else { spots = []; scheduleUpdate(); }
+    constructor(i: number, total: number) {
+      const ring = Math.floor(i / 4);
+      const slot = i % 4;
+      const ang  = (slot / 4) * Math.PI * 2 + rng(-0.4, 0.4) + ring * 0.5;
+      const d    = ring === 0 ? rng(0.0, 0.10) : rng(0.10, 0.28);
+      this.ox = 0.5 + Math.cos(ang) * d;
+      this.oy = 0.5 + Math.sin(ang) * d * 0.48;
+      this.x = this.ox; this.y = this.oy;
+      this.baseR = ring === 0 ? rng(130, 220) : rng(75, 155);
+      this.r   = this.baseR;
+      this.ph  = rng(0, Math.PI * 2);
+      this.dA  = rng(0.025, 0.08);  this.dF = rng(0.001, 0.0028);
+      this.bA  = rng(0.07, 0.22);   this.bF = rng(0.0014, 0.006);
+      this.aB  = ring === 0 ? rng(0.72, 0.95) : rng(0.50, 0.78);
+      this.aPh = rng(0, Math.PI * 2); this.aF = rng(0.0008, 0.003);
+      this.al  = this.aB;
+      this.sX  = rng(0.75, 1.55); this.sY = rng(0.46, 0.95);
+      this.rot = rng(0, Math.PI * 2); this.rS = rng(-0.00028, 0.00028);
     }
 
-    requestAnimationFrame(shrink);
-    resetTimer = null;
-  }
-
-  function onPointerMove(e: PointerEvent) {
-    if (!titleWrap) return;
-
-    const rect = titleWrap.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-    if (resetTimer) {
-      clearTimeout(resetTimer);
-      resetTimer = null;
+    update(t: number) {
+      const nx = sNoise(this.ox*3,   this.oy*3,   t*0.00042);
+      const ny = sNoise(this.ox*3+5, this.oy*3+5, t*0.00042);
+      this.x  = this.ox + Math.sin(t*this.dF + this.ph)*this.dA + nx*0.04;
+      this.y  = this.oy + Math.cos(t*this.dF*0.65 + this.ph+1)*this.dA*0.5 + ny*0.025;
+      this.r  = this.baseR * (1 + Math.sin(t*this.bF + this.ph)*this.bA);
+      this.al = this.aB * (0.68 + 0.32*Math.sin(t*this.aF + this.aPh));
+      this.rot += this.rS;
     }
 
-    if (!spots.some(s => Math.hypot(s.x - x, s.y - y) < 14))
-      addSpot(x, y);
-  }
-
-  function onPointerLeave() {
-    resetTimer = setTimeout(doReset, RESET_DELAY);
-  }
-
-  function onPointerEnter() {
-    if (resetTimer) {
-      clearTimeout(resetTimer);
-      resetTimer = null;
+    draw(ctx: CanvasRenderingContext2D, W: number, H: number) {
+      const cx = this.x * W, cy = this.y * H;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(this.rot);
+      ctx.scale(this.sX, this.sY);
+      for (let l = 0; l < 9; l++) {
+        const f  = (l + 1) / 9;
+        const lr = this.r * Math.pow(f, 0.72);
+        const a  = this.al * (1 - Math.pow(f, 1.8));
+        const g  = ctx.createRadialGradient(0, 0, 0, 0, 0, lr);
+        g.addColorStop(0,    `rgba(255,255,255,${a.toFixed(3)})`);
+        g.addColorStop(0.30, `rgba(255,255,255,${(a*0.78).toFixed(3)})`);
+        g.addColorStop(0.62, `rgba(255,255,255,${(a*0.26).toFixed(3)})`);
+        g.addColorStop(0.86, `rgba(255,255,255,${(a*0.05).toFixed(3)})`);
+        g.addColorStop(1,    `rgba(255,255,255,0)`);
+        ctx.beginPath();
+        ctx.arc(0, 0, lr, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      ctx.restore();
     }
   }
 
-  function handleScroll() {
-    if (!titleWrap) return;
-
-    const rect = titleWrap.getBoundingClientRect();
-    const visible = Math.max(
-      0,
-      Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
-    );
-
-    if (rect.height > 0 && visible / rect.height < 0.5)
-      doReset();
-  }
+  const NUM_BLOBS = 13;
+  let blobs: Blob[] = [];
+  let tick = 0;
 
   onMount(() => {
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    if (!layerBlur || !titleWrap) return;
+
+    let W = 0, H = 0;
+    const off  = document.createElement('canvas');
+    const offCtx = off.getContext('2d')!;
+
+    function resize() {
+      W = titleWrap!.offsetWidth;
+      H = titleWrap!.offsetHeight;
+    }
+
+    blobs = Array.from({ length: NUM_BLOBS }, (_, i) => new Blob(i, NUM_BLOBS));
+    resize();
+    blobs.forEach(b => b.update(0));
+
+    const ro = new ResizeObserver(resize);
+    ro.observe(titleWrap);
+
+    function frame() {
+      tick++;
+      off.width = W; off.height = H;
+      offCtx.clearRect(0, 0, W, H);
+
+      for (let i = NUM_BLOBS - 1; i >= 0; i--) {
+        blobs[i].update(tick);
+        blobs[i].draw(offCtx, W, H);
+      }
+
+      const url = off.toDataURL();
+      layerBlur!.style.webkitMaskImage = `url('${url}')`;
+      layerBlur!.style.maskImage       = `url('${url}')`;
+
+      animId = requestAnimationFrame(frame);
+    }
+
+    animId = requestAnimationFrame(frame);
+
+    return () => {
+      if (animId !== null) cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
   });
 </script>
 
 <h1
   class="title-wrap"
   bind:this={titleWrap}
-  onpointermove={onPointerMove}
-  onpointerleave={onPointerLeave}
-  onpointerenter={onPointerEnter}
+  aria-label="FUORI CAMPO"
 >
-  <!-- SHARP -->
-  <div class="title-text layer-sharp" bind:this={sharpLayer} aria-hidden="true">
-    <span class="fuori">FUORI</span><span class="campo">CAMPO</span>
+  <!-- layer 1: sharp, always fully visible -->
+  <div class="title-text layer-sharp" aria-hidden="true">
+    <span class="fuori">FUORI</span>
+    <span class="campo">CAMPO</span>
   </div>
 
-  <!-- SPACER -->
-  <div class="title-text spacer" aria-label="FUORI CAMPO">
-    <span class="fuori">FUORI</span><span class="campo">CAMPO</span>
+  <!-- layer 2: blurred copy, masked by cloud shape → covers sharp only in cloud zones -->
+  <div
+    class="title-text layer-blurred"
+    bind:this={layerBlur}
+    aria-hidden="true"
+  >
+    <span class="fuori">FUORI</span>
+    <span class="campo">CAMPO</span>
+  </div>
+
+  <!-- spacer for natural h1 height -->
+  <div class="title-text spacer" aria-hidden="true">
+    <span class="fuori">FUORI</span>
+    <span class="campo">CAMPO</span>
   </div>
 </h1>
 
 <style>
-.title-wrap {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: min(1200px, 90vw);
-  max-width: 100vw;
-  cursor: none;
-  user-select: none;
-  pointer-events: none; /* allow interactions with topbar underneath */
-  background: transparent;
-  box-sizing: border-box;
-  z-index: 9999; /* ensure title visually sits above the topbar */
-  max-height: 100vh;
-  overflow: visible;
-}
+  .title-wrap {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: min(1200px, 90vw);
+    max-width: 100vw;
+    cursor: none;
+    user-select: none;
+    pointer-events: none;
+    background: transparent;
+    box-sizing: border-box;
+    z-index: 9999;
+    max-height: 100vh;
+    overflow: visible;
+  }
 
-.title-text {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.02em;
+  .title-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.02em;
+    font-family: var(--font-display);
+    font-size: 300px;
+    line-height: 0.95;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
 
-  font-family: var(--font-display);
-  font-size: 300px;
-  line-height: 0.95;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
+  .spacer {
+    position: relative;
+    visibility: hidden;
+  }
 
-.fuori {
-  color: var(--color-content-title); /* #BDFF5D */
-  text-align: center;
-}
+  .layer-sharp {
+    z-index: 1;
+  }
 
-.campo {
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke-width: 10px;
-  -webkit-text-stroke-color: var(--color-content-title); /* #BDFF5D */
-  text-align: center;
-}
+  .layer-blurred {
+    z-index: 2;
+    filter: blur(28px);
+  }
 
-.layer-sharp {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .fuori {
+    color: var(--color-content-title);
+    text-align: center;
+  }
 
-.layer-sharp {
-  pointer-events: none;
-  z-index: 1;
-}
-
-.spacer {
-  visibility: hidden;
-}
+  .campo {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 10px;
+    -webkit-text-stroke-color: var(--color-content-title);
+    text-align: center;
+  }
 </style>
