@@ -40,11 +40,13 @@
   }
 
   function resolveNavIndex(currentPathname: string) {
+    if (!currentPathname || currentPathname === '/') return -1;
+
     const foundIndex = navItems.findIndex(
       (item) => currentPathname === item.href || currentPathname.startsWith(`${item.href}/`)
     );
 
-    return foundIndex >= 0 ? foundIndex : 0;
+    return foundIndex >= 0 ? foundIndex : -1;
   }
 
   function syncUnderline(index: number) {

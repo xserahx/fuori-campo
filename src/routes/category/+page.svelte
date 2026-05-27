@@ -352,9 +352,12 @@
 
   onMount(() => { buildScene(); window.addEventListener('resize', onResize); });
   onDestroy(() => {
-    cancelAnimationFrame(animFrameId);
-    renderer?.dispose();
-    window.removeEventListener('resize', onResize);
+    if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(animFrameId);
+    try {
+      renderer?.dispose();
+    } catch (e) {
+    }
+    if (typeof window !== 'undefined') window.removeEventListener('resize', onResize);
   });
 
   // ─── reactive labels ─────────────────────────────────────────────
