@@ -369,7 +369,7 @@
     <div class="question-panel">
       <div class="question-track">
         <section class="question question--left"
-          use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
+          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15 }}>
           <h2>
             <span class="accent">MA </span>
             <span class="ghost">CHI SONO </span>
@@ -379,7 +379,7 @@
         </section>
 
         <section class="question question--right"
-          use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
+          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15, delay: 80 }}>
           <h2>
             <span class="ghost">PERCHÈ </span>
             <span class="accent">HANNO DECISO</span><br />
@@ -388,7 +388,7 @@
         </section>
 
         <section class="question question--left"
-          use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
+          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15 }}>
           <h2>
             <span class="ghost">COSA FACEVANO </span><br />
             <span class="accent">CONCRETAMENTE?</span>
@@ -396,7 +396,7 @@
         </section>
 
         <section class="question question--right"
-          use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
+          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15, delay: 80 }}>
           <h2>
             <span class="accent">NE È VALSA LA PENA?</span><br />
             <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>

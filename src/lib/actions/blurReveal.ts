@@ -1,4 +1,4 @@
-export type BlurRevealVariant = "slide" | "clip" | "skew" | "letterspace";
+export type BlurRevealVariant = "slide" | "clip" | "skew" | "letterspace" | "fade";
 
 export interface BlurRevealOptions {
   direction?: "left" | "right";
@@ -28,6 +28,10 @@ function buildTransition(duration: number, hideDuration: number, variant: BlurRe
   }
   if (variant === "letterspace") {
     base.push(`letter-spacing ${dur * 1.1}ms ${ease}`);
+  }
+
+  if (variant === "fade") {
+    // only opacity + filter + subtle translateY — no horizontal shift, no layout changes
   }
 
   return base.join(", ");
@@ -61,6 +65,11 @@ function getHiddenStyles(direction: "left" | "right", translateX: number, blur: 
     base.letterSpacing = "0.5em";
   }
 
+  if (variant === "fade") {
+    base.filter = `blur(${blur}px)`;
+    base.transform = "translateY(20px)";
+  }
+
   return base;
 }
 
@@ -83,6 +92,10 @@ function getVisibleStyles(variant: BlurRevealVariant): Partial<CSSStyleDeclarati
 
   if (variant === "letterspace") {
     base.letterSpacing = "-0.01em";
+  }
+
+  if (variant === "fade") {
+    base.transform = "translateY(0px)";
   }
 
   return base;
