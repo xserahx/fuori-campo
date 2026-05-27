@@ -277,7 +277,7 @@
     position:absolute;
     top:50%;
     transform:translateY(-50%);
-    font-family:'Forma DJR Display',sans-serif;
+    font-family:'Forma DJR Display Regular',sans-serif;
     font-size:16px;
     font-weight:700;
     line-height:1;

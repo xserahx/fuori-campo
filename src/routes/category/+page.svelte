@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import * as THREE from 'three';
   import Navbar from '$lib/components/Navbar.svelte';
   import '$lib/styles/tokens.css';
@@ -23,6 +24,7 @@
 
   let canvasEl: HTMLCanvasElement | null = null;
   let containerEl: HTMLElement | null   = null;
+  let titleEl: HTMLElement | null = null;
   let renderer: any = null;
   let scene: any    = null;
   let camera: any   = null;
@@ -69,6 +71,14 @@
   function smoothstep(x: number) {
     x = Math.max(0, Math.min(1, x));
     return x * x * (3 - 2 * x);
+  }
+
+  function slugifyLabel(label: string) {
+    return label
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
   }
   
   const LERP_K = 0.072; 
@@ -347,6 +357,25 @@
     renderer.setSize(w, h);
   }
 
+  // Click handler that animates the title upward before navigating
+  async function handleTitleClick() {
+    // Determine the currently centered index from the animated position
+    const idx = mod(Math.round(animPos || 0), N());
+    const label = categories?.[idx]?.label ?? '';
+    const slug = slugifyLabel(label || '');
+
+    // Start exit animation
+    titleEl?.classList.add('is-exit');
+
+    // Wait for animation to play
+    await new Promise((r) => setTimeout(r, 320));
+
+    if (slug) {
+      // add query param so receiving page can opt-in to entry positioning
+      await goto(`/category/${slug}?from=carousel`);
+    }
+  }
+
   onMount(() => { buildScene(); window.addEventListener('resize', onResize); });
   onDestroy(() => {
     if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(animFrameId);
@@ -433,7 +462,7 @@
   </div>
 
   <div class="bottom-bar">
-    <p class="title" aria-live="polite">
+    <div class="title" class:is-exit={false} aria-live="polite" bind:this={titleEl} role="button" tabindex="0" onclick={handleTitleClick} onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
       {#each titleLines as line, index}
         {#if index === 0}
           <span class="title-fill">{line}</span>
@@ -441,7 +470,7 @@
           <span class="title-outline">{line}</span>
         {/if}
       {/each}
-    </p>
+    </div>
   </div>
 </section>
 
@@ -611,13 +640,16 @@
     display: flex;
     flex-direction: column;
     gap: 0.05em;
+    pointer-events: auto; /* allow clicking despite bottom-bar none */
+    cursor: pointer;
+    transition: transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 320ms ease;
   }
 
   .title-fill {
     color: #baff44;
     display: block;
     white-space: nowrap;
-    margin-left: 72px;
+    margin-left: var(--spacing-11, 72px);
   }
 
   .title-outline {
@@ -625,14 +657,20 @@
     -webkit-text-stroke: 2px #baff44;
     display: block;
     white-space: nowrap;
-    margin-left: 340px;
+    margin-left: var(--spacing-17, 340px);
     margin-right: 0;
+  }
+
+  /* exit animation when clicking title */
+  .title.is-exit {
+    transform: translateY(-32vh) scale(0.98);
+    opacity: 0;
   }
 
   @media (max-width: 640px) {
     .title { font-size: 52px; max-width: 78%; }
-    .title-fill { margin-left: 72px; }
-    .title-outline { margin-left: 340px; margin-right: 0; }
+    .title-fill { margin-left: var(--spacing-11, 72px); }
+    .title-outline { margin-left: var(--spacing-17, 340px); margin-right: 0; }
     .title-outline { -webkit-text-stroke: 1.5px #baff44; }
   }
 </style>
