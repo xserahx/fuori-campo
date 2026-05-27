@@ -90,6 +90,22 @@
     if (underlineInitialized) syncActiveUnderline();
   });
 
+  // Update browser title to match active nav section (client-only)
+  $effect(() => {
+    activeNavIndex;
+    if (typeof document === 'undefined') return;
+    try {
+      if (activeNavIndex >= 0 && navItems[activeNavIndex]) {
+        const label = String(navItems[activeNavIndex].label).toUpperCase();
+        document.title = `${label} — Fuori Campo`;
+      } else {
+        document.title = 'Fuori Campo';
+      }
+    } catch (e) {
+      // ignore in environments where document isn't writable
+    }
+  });
+
   onMount(() => {
     if (pinned) {
       visible = true;
