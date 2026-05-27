@@ -524,26 +524,29 @@
     position: absolute;
     top: 12vh;
     bottom: 13vh;
-    width: min(18vw, 260px);
+    width: min(22vw, 340px);
     pointer-events: none;
     z-index: 2;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    filter: blur(14px) saturate(1.04);
-    -webkit-filter: blur(14px) saturate(1.04);
-    transform: scale(1.04);
+    filter: blur(12px) saturate(1.06);
+    -webkit-filter: blur(12px) saturate(1.06);
     opacity: 1;
   }
 
   .edge-panel--left {
     left: 0;
     border-radius: 0 32px 32px 0;
+    transform-origin: left center;
+    transform: scaleX(1.18);
   }
 
   .edge-panel--right {
     right: 0;
     border-radius: 32px 0 0 32px;
+    transform-origin: right center;
+    transform: scaleX(1.18);
   }
 
   .edge-panel--left::after,
@@ -552,7 +555,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 58%;
+    width: 10%;
     pointer-events: none;
   }
   
