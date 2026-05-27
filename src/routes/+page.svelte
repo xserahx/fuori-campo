@@ -48,7 +48,7 @@
   let sawPointer = false;
   let navContainer: HTMLElement | null = null;
   let navLinkRefs: Array<HTMLAnchorElement | undefined> = [];
-  let questionPanel: HTMLElement | null = null;
+  let questionPanel: HTMLDivElement | null = null;
   let questionPanelMaxScroll = 0;
   let consumingHorizontal = false;
   let wheelDebounce: ReturnType<typeof setTimeout> | undefined;
@@ -265,8 +265,10 @@
 
     const resizeObserver = new ResizeObserver(updateQuestionPanelBounds);
 
-    if (questionPanel) {
-      resizeObserver.observe(questionPanel);
+    const panel = questionPanel as HTMLDivElement | null;
+
+    if (panel) {
+      resizeObserver.observe(panel);
       updateQuestionPanelBounds();
 
       questionObserver = new IntersectionObserver((entries) => {
@@ -284,8 +286,8 @@
         }
       }, { threshold: [QUESTION_INTERSECT_THRESHOLD] });
 
-      questionObserver.observe(questionPanel);
-      questionPanel.addEventListener('scroll', handleQuestionPanelScroll, { passive: true });
+      questionObserver.observe(panel);
+      panel.addEventListener('scroll', handleQuestionPanelScroll, { passive: true });
     }
 
     routeNavIndex = resolveNavIndex();
@@ -307,8 +309,8 @@
         questionObserver.disconnect();
         questionObserver = null;
       }
-      if (questionPanel) {
-        questionPanel.removeEventListener('scroll', handleQuestionPanelScroll);
+      if (panel) {
+        panel.removeEventListener('scroll', handleQuestionPanelScroll);
       }
       if (wheelDebounce) clearTimeout(wheelDebounce);
       document.documentElement.style.overflowY = '';
