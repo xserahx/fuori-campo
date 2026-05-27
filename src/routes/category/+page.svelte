@@ -6,7 +6,6 @@
 
   type Category = { id: number; label: string; image: string };
 
-  // Local cached copies of Figma assets
   const IMG_FIGMA_204 = '/figma/cat-1.jpg';
   const IMG_FIGMA_58  = '/figma/cat-5.jpg';
   const IMG_FIGMA_232 = '/figma/cat-8.jpg';
@@ -551,12 +550,14 @@
 
 .edge-panel--left::after {
   left: 0;
-  background: linear-gradient(90deg,rgba(0, 0, 0, 0.35) 0%,rgba(0, 0, 0, 0.15) 20%, 0%,rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35) 70%,  rgba(0, 0, 0, 0.82) 100% );
-}
+  width: 24%; 
+  background: linear-gradient(90deg,rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.32) 18%, rgba(0, 0, 0, 0.12) 38%, rgba(0, 0, 0, 0) 58%,rgba(0, 0, 0, 0.35) 78%,rgba(0, 0, 0, 0.82) 100%);
+  }
 
 .edge-panel--right::after {
   right: 0;
-   background: linear-gradient(270deg,rgba(0, 0, 0, 0.35) 0%,rgba(0, 0, 0, 0.15) 20%, 0%,rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35) 70%,  rgba(0, 0, 0, 0.82) 100% );
+  width: 24%; 
+  background: linear-gradient(270deg,rgba(0, 0, 0, 0.55) 0%,rgba(0, 0, 0, 0.32) 18%,rgba(0, 0, 0, 0.12) 38%,rgba(0, 0, 0, 0) 58%,rgba(0, 0, 0, 0.35) 78%,rgba(0, 0, 0, 0.82) 100%);
 }
 
   .curve-frame {
