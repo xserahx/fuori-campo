@@ -155,7 +155,7 @@ body{
   left:0;
   right:0;
   overflow:hidden;
-  padding: var(--spacing-5) var(--spacing-11);
+  padding: var(--Spacing-5, 24px) var(--Spacing-11, 72px);
   display:flex;
   align-items:center;
   background: var(--color-background-primary);

@@ -116,31 +116,26 @@
     uniform float     uDist;   // abs distance from center (0=neighbour, 1=far)
     varying vec2 vUv;
 
-    // Zoom-blur from inner edge — streaks outward (stronger/more samples for pronounced blur)
+    // Zoom-blur from inner edge — streaks outward.
     vec4 zoomBlur(sampler2D t, vec2 uv, float side, float str){
-      // focal = inner edge centre
       vec2 focus = vec2(side > 0.0 ? 0.0 : 1.0, 0.5);
       vec4 acc = vec4(0.0);
-      const int S = 24; // increased samples for smoother, stronger blur
+      const int S = 30;
       for(int i=0;i<S;i++){
-        float f   = float(i)/float(S-1);       // 0..1
-        float w   = f * f;                      // weight: bias more to far samples for longer streaks
-        vec2  off = (uv - focus) * f * str * 0.36; // slightly stronger offset
+        float f   = float(i)/float(S-1);
+        float w   = f * f;
+        vec2  off = (uv - focus) * f * str * 0.36;
         acc += texture2D(t, clamp(uv - off, 0.001, 0.999)) * w;
       }
-      // normalize by sum of weights (approx S * 0.33)
       return acc / (float(S) * 0.33);
     }
 
-    // Barrel distortion — curls Y away from center
     vec2 barrel(vec2 uv, float k, float side){
       vec2 c = uv - 0.5;
-      // stronger barrel on the outer half (away from center)
       float outer = side > 0.0 ? vUv.x : 1.0 - vUv.x;
       float kk    = k * (0.5 + outer * 1.2);
       float r2    = c.x*c.x*1.2 + c.y*c.y;
       c *= 1.0 + kk * r2 * 2.8;
-      // slight X warp: inner edge pulled, outer edge stretched
       c.x += c.x * k * (-0.18 * side);
       return c + 0.5;
     }
@@ -151,8 +146,8 @@
     }
 
     void main(){
-      float k   = 0.32 + uDist * 0.52;   // barrel strength grows with distance (slightly stronger)
-      float blr = 1.2 + uDist * 1.6;     // stronger zoom-blur for outer images
+      float k   = 0.34 + uDist * 0.56;
+      float blr = 1.55 + uDist * 2.05;
 
       vec2  wuv = barrel(vUv, k, uSide);
       wuv = clamp(wuv, 0.001, 0.999);
@@ -160,22 +155,17 @@
       vec4 col  = zoomBlur(uTex, wuv, uSide, blr);
       col.rgb  += grain(vUv, uTime);
 
-      // Cooler cinematic tone for the outer images
-      col.rgb *= vec3(0.88, 0.96, 1.10);
+      col.rgb *= vec3(0.84, 0.93, 1.05);
       float lum = dot(col.rgb, vec3(0.299, 0.587, 0.114));
       col.rgb = mix(vec3(lum), col.rgb, 0.88);
 
-      // ── vignette ──────────────────────────────────────────────────
-      // Very dark at outer edge, lighter at inner edge
-      // Also dark at top/bottom → "letterbox" feel matching reference
       float innerX = uSide > 0.0 ? (1.0 - vUv.x) : vUv.x;
       float topB   = smoothstep(0.0, 0.22, vUv.y) * smoothstep(0.0, 0.22, 1.0 - vUv.y);
       float sideV  = smoothstep(0.0, 0.58, innerX) * (1.0 - smoothstep(0.55, 1.0, innerX)*0.3);
       float vig    = topB * sideV;
-      col.rgb     *= vig * 0.78 + 0.02;
+      col.rgb     *= vig * 0.72 + 0.015;
 
-      // distance-based darkening
-      col.rgb *= 0.72 - uDist * 0.18;
+      col.rgb *= 0.64 - uDist * 0.12;
 
       gl_FragColor = vec4(col.rgb, uFade);
     }`;
@@ -310,7 +300,7 @@
       // Ensure side meshes remain visible as blurred previews at the edges
       slot.sMesh.visible               = true;
       // keep a minimum fade so side items never fully disappear
-      slot.sMat.uniforms.uFade.value    = Math.max(sf, 0.16);
+      slot.sMat.uniforms.uFade.value    = Math.max(sf, 0.24);
       slot.sMat.uniforms.uTime.value    = t;
       slot.sMat.uniforms.uSide.value    = signD;
       slot.sMat.uniforms.uDist.value    = normDist;
@@ -369,8 +359,11 @@
   });
 
   // ─── reactive labels ─────────────────────────────────────────────
+  let currentIndex = $derived(mod(Math.round(position), N()));
   let currentLabel = $derived(categories[mod(Math.round(position), N())]?.label ?? '');
-  let nextLabel    = $derived(categories[mod(Math.round(position) + 1, N())]?.label ?? '');
+  let previousCategory = $derived(categories[mod(currentIndex - 1, N())]);
+  let nextCategory    = $derived(categories[mod(currentIndex + 1, N())]);
+  let nextLabel    = $derived(nextCategory?.label ?? '');
   let titleLines   = $derived((() => {
     const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
     if (match) {
@@ -387,32 +380,6 @@
     ].filter(Boolean);
   })());
 
-  // Map of images (left, center, right) per category index — taken from Figma exports
-  const FIGMA_CATEGORY_IMAGES: string[][] = [
-    // Relazioni e comunicazione
-    [ '/figma/cat-1.jpg', '/figma/cat-2.jpg', '/figma/cat-3.jpg' ],
-    // Cerimonie e revenue
-    [ '/figma/cat-4.jpg', '/figma/cat-5.jpg', '/figma/cat-6.jpg' ],
-    // Sport e discipline
-    [ '/figma/cat-7.jpg', '/figma/cat-8.jpg', '/figma/cat-9.jpg' ],
-    // Area organizzativa e servizi generali (node 4018:8276)
-    [ '/figma/cat-17.jpg', '/figma/cat-18.jpg', '/figma/cat-19.jpg' ],
-    // Logistica e territorio (node 4018:8333)
-    [ '/figma/cat-10.jpg', '/figma/cat-11.jpg', '/figma/cat-12.jpg' ],
-    // Gestione operativa e fan experience (node 4018:7981)
-    [ '/figma/cat-13.jpg', '/figma/cat-14.jpg', '/figma/cat-15.jpg' ]
-  ];
-
-  function getCurrentFigmaImages() {
-    const idx = Math.abs(Math.round(position)) % N();
-    return FIGMA_CATEGORY_IMAGES[idx] ?? [categories[idx]?.image ?? '', categories[idx]?.image ?? '', categories[idx]?.image ?? ''];
-  }
-
-  let currentFigmaImages = $state(getCurrentFigmaImages());
-
-  $effect(() => {
-    currentFigmaImages = getCurrentFigmaImages();
-  });
 </script>
 
 <Navbar pinned />
@@ -428,16 +395,16 @@
 >
   <canvas bind:this={canvasEl}></canvas>
 
-  <!-- Figma image overlay: three columns (left blurred, center crisp, right blurred) -->
-  <div class="figma-hero" aria-hidden="true">
-    <div class="figma-images">
-      <div class="figma-img figma-img--left" style={`background-image:url(${currentFigmaImages[0]});`}></div>
-      <div class="figma-img figma-img--center">
-        <img src={currentFigmaImages[1]} alt="" />
-      </div>
-      <div class="figma-img figma-img--right" style={`background-image:url(${currentFigmaImages[2]});`}></div>
-    </div>
-  </div>
+  <div
+    class="edge-panel edge-panel--left"
+    aria-hidden="true"
+    style={`background-image: url('${previousCategory?.image ?? ''}')`}
+  ></div>
+  <div
+    class="edge-panel edge-panel--right"
+    aria-hidden="true"
+    style={`background-image: url('${nextCategory?.image ?? ''}')`}
+  ></div>
 
   <button
     class="arrow arrow-left"
@@ -553,11 +520,57 @@
     z-index: 0;
   }
 
+  .edge-panel {
+    position: absolute;
+    top: 12vh;
+    bottom: 13vh;
+    width: min(18vw, 260px);
+    pointer-events: none;
+    z-index: 2;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(14px) saturate(1.04);
+    -webkit-filter: blur(14px) saturate(1.04);
+    transform: scale(1.04);
+    opacity: 1;
+  }
+
+  .edge-panel--left {
+    left: 0;
+    border-radius: 0 32px 32px 0;
+  }
+
+  .edge-panel--right {
+    right: 0;
+    border-radius: 32px 0 0 32px;
+  }
+
+  .edge-panel--left::after,
+  .edge-panel--right::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 58%;
+    pointer-events: none;
+  }
+  
+.edge-panel--left::after {
+  left: 0;
+  background: linear-gradient(90deg,rgba(0, 0, 0, 0) 0%,rgba(0, 0, 0, 0.35) 44%, rgba(0, 0, 0, 0.82) 100% );
+}
+
+.edge-panel--right::after {
+  right: 0;
+  background: linear-gradient(270deg,rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.35) 44%,rgba(0, 0, 0, 0.82) 100% );
+}
+
   .curve-frame {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 2;
+    z-index: 3;
   }
 
   .curve {
@@ -577,77 +590,6 @@
     bottom: 0;
     height: 31vh;
     min-height: 160px;
-  }
-
-  /* Figma hero overlay */
-  .figma-hero {
-    position: absolute;
-    inset: 0; /* fill the carousel container so overflow:hidden clips anything outside */
-    pointer-events: none;
-    z-index: 1; /* place under the curve overlay (curve-frame is z-index:2) */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .figma-images{
-    position: relative;
-    width: 100%;
-    max-width: 2200px;
-    margin: 0 auto;
-    height: calc(100% - 160px); /* leave room for top/bottom curves so they visually crop the images */
-    box-sizing: border-box;
-  }
-
-  .figma-img{
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    overflow: hidden;
-    border-radius: 0;
-    height: 100%;
-    transform: translateZ(0);
-  }
-  .figma-img--left,
-  .figma-img--right{
-    width: 36%;
-    background-size:cover;
-    background-position:center top;
-    filter: blur(26px) saturate(118%);
-    opacity:0.96;
-    z-index: 1;
-  }
-
-  .figma-img--left{
-    left: 0;
-  }
-
-  .figma-img--right{
-    right: 0;
-  }
-
-  .figma-img--center{
-    left: 50%;
-    width: 42%;
-    display:flex;
-    align-items:flex-start;
-    justify-content:center;
-    transform: translateX(-50%);
-    z-index: 2;
-  }
-
-  .figma-img--center img{
-    height: calc(100% + 30px);
-    width: auto;
-    display: block;
-    object-fit: cover;
-    transform: translateY(-10px);
-    position: relative;
-    z-index: 2;
-  }
-
-  @media (max-width:1100px){
-    .figma-hero{ display:none; }
   }
 
   /* ── bottom UI ───────────────────────────────────────── */
