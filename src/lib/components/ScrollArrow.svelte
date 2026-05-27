@@ -68,10 +68,10 @@
   .drop--3 { animation: drop-fall 2.8s cubic-bezier(0.4,0,1,1) 2.05s infinite; }
 
   .label {
-    font-size: 36px;
+    font-size: 20px;
     font-family: "Forma DJR Display", sans-serif;
     text-transform: none;
-    color: var-(--color-content-title);
+    color: var(--color-content-title);
     opacity: 0;
     animation: label-in 0.6s cubic-bezier(0.16,1,0.3,1) 1.8s forwards;
   }

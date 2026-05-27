@@ -48,6 +48,13 @@
   let sawPointer = false;
   let navContainer: HTMLElement | null = null;
   let navLinkRefs: Array<HTMLAnchorElement | undefined> = [];
+  let questionPanel: HTMLElement | null = null;
+  let questionPanelMaxScroll = 0;
+  let consumingHorizontal = false;
+  let wheelDebounce: ReturnType<typeof setTimeout> | undefined;
+  const QUESTION_WHEEL_DEBOUNCE_MS = 250;
+  let questionObserver: IntersectionObserver | null = null;
+  const QUESTION_INTERSECT_THRESHOLD = 0.4;
 
   function navLinkAction(node: HTMLAnchorElement, index: number) {
     navLinkRefs[index] = node;
@@ -87,6 +94,58 @@
 
   function resetNavSelection() {
     syncUnderline(routeNavIndex);
+  }
+
+  function updateQuestionPanelBounds() {
+    if (!questionPanel) return;
+
+    questionPanelMaxScroll = Math.max(0, questionPanel.scrollWidth - questionPanel.clientWidth);
+  }
+
+  function questionPanelAtEnd() {
+    if (!questionPanel) return true;
+    return questionPanel.scrollLeft >= questionPanelMaxScroll - 1;
+  }
+
+  function handleQuestionPanelScroll() {
+    // if user has scrolled to the right end, restore vertical scrolling
+    if (questionPanelAtEnd()) {
+      consumingHorizontal = false;
+      if (wheelDebounce) clearTimeout(wheelDebounce);
+      document.documentElement.style.overflowY = '';
+    }
+  }
+
+  function handleQuestionPanelWheel(event: WheelEvent) {
+    if (!questionPanel || questionPanelMaxScroll <= 0) return;
+
+    const dx = event.deltaX;
+    const dy = event.deltaY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    // Prefer the dominant axis; translate vertical wheel into horizontal scroll
+    const move = absDx > absDy ? dx : dy;
+    const nextScrollLeft = questionPanel.scrollLeft + move;
+
+    const atStart = questionPanel.scrollLeft <= 0;
+    const atEnd = questionPanel.scrollLeft >= questionPanelMaxScroll - 0.5;
+
+    const willConsume = (move > 0 && !atEnd) || (move < 0 && !atStart);
+
+    if (willConsume) {
+      event.preventDefault();
+      questionPanel.scrollLeft = Math.min(questionPanelMaxScroll, Math.max(0, nextScrollLeft));
+      consumingHorizontal = true;
+      // disable page vertical scrolling while interacting
+      document.documentElement.style.overflowY = 'hidden';
+
+      if (wheelDebounce) clearTimeout(wheelDebounce);
+      wheelDebounce = setTimeout(() => {
+        consumingHorizontal = false;
+        document.documentElement.style.overflowY = '';
+      }, QUESTION_WHEEL_DEBOUNCE_MS);
+    }
   }
 
   let routeNavIndex = 0;
@@ -204,6 +263,31 @@
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: true });
 
+    const resizeObserver = new ResizeObserver(updateQuestionPanelBounds);
+
+    if (questionPanel) {
+      resizeObserver.observe(questionPanel);
+      updateQuestionPanelBounds();
+
+      questionObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const visible = entry.intersectionRatio >= QUESTION_INTERSECT_THRESHOLD;
+          if (visible && questionPanelMaxScroll > 0 && !questionPanelAtEnd()) {
+            // lock vertical scrolling while inside the horizontal panel area
+            document.documentElement.style.overflowY = 'hidden';
+          } else if (!consumingHorizontal && questionPanelAtEnd()) {
+            // restore only when at end (and not actively consuming)
+            document.documentElement.style.overflowY = '';
+          } else if (!visible && !consumingHorizontal) {
+            document.documentElement.style.overflowY = '';
+          }
+        }
+      }, { threshold: [QUESTION_INTERSECT_THRESHOLD] });
+
+      questionObserver.observe(questionPanel);
+      questionPanel.addEventListener('scroll', handleQuestionPanelScroll, { passive: true });
+    }
+
     routeNavIndex = resolveNavIndex();
     activeNavIndex = routeNavIndex;
 
@@ -218,6 +302,16 @@
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("wheel", handleWheel);
+      resizeObserver.disconnect();
+      if (questionObserver) {
+        questionObserver.disconnect();
+        questionObserver = null;
+      }
+      if (questionPanel) {
+        questionPanel.removeEventListener('scroll', handleQuestionPanelScroll);
+      }
+      if (wheelDebounce) clearTimeout(wheelDebounce);
+      document.documentElement.style.overflowY = '';
     };
   });
 
@@ -270,7 +364,8 @@
       </p>
     </section>
 
-    <div class="question-panel">
+    <div class="question-panel" bind:this={questionPanel} onwheel={handleQuestionPanelWheel}>
+      <div class="question-track">
       <section class="question question--left" style={`margin-left:var(--question-left-1)`} use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
         <h2>
           <div>
@@ -312,6 +407,7 @@
           </div>
         </h2>
       </section>
+      </div>
     </div>
 
     <section class="story story--left story--summary"
