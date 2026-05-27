@@ -626,7 +626,7 @@
     color: #baff44;
     display: block;
     white-space: nowrap;
-    margin-left: 74.2px;
+    margin-left: 72px;
   }
 
   .title-outline {
@@ -634,14 +634,14 @@
     -webkit-text-stroke: 2px #baff44;
     display: block;
     white-space: nowrap;
-    margin-left: 438px;
-    margin-right: 228px;
+    margin-left: 340px;
+    margin-right: 0;
   }
 
   @media (max-width: 640px) {
     .title { font-size: 52px; max-width: 78%; }
-    .title-fill { margin-left: 74.2px; }
-    .title-outline { margin-left: 438px; margin-right: 228px; }
+    .title-fill { margin-left: 72px; }
+    .title-outline { margin-left: 340px; margin-right: 0; }
     .title-outline { -webkit-text-stroke: 1.5px #baff44; }
   }
 </style>
