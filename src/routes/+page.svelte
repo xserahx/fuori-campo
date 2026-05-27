@@ -353,16 +353,16 @@
     </section>
 
     <!-- QUOTE 1 -->
-    <section class="story story--quote story--quote-left"use:blurReveal={{ direction: "left", variant: "clip", blur: 20, threshold: 0.4 }}>
+    <section class="story story--quote story--quote-left" use:blurReveal={{ direction: "left", variant: "slide", blur: 20, threshold: 0.15 }}>
       <p class="quote">
-      Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
-     </p>
+        Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
+      </p>
     </section>
 
     <!-- QUOTE 2 -->
-    <section class="story story--quote story--quote-right"use:blurReveal={{ direction: "right", variant: "clip", blur: 20, threshold: 0.4, delay: 150 }}>
+    <section class="story story--quote story--quote-right" use:blurReveal={{ direction: "right", variant: "slide", blur: 20, threshold: 0.15, delay: 150 }}>
       <p class="quote">
-      Nella narrazione ufficiale erano spesso dati per scontati.
+        Nella narrazione ufficiale erano spesso dati per scontati.
       </p>
     </section>
 
