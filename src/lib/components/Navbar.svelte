@@ -173,9 +173,6 @@
           class:is-active={index === activeNavIndex}
           href={item.href}
           use:navLinkAction={index}
-          onmouseenter={() => setHover(index)}
-          onfocus={() => setHover(index)}
-          onclick={() => setHover(index)}
         >
           {item.label}
         </a>

@@ -293,13 +293,12 @@
 
       const normDist = Math.min(1, Math.max(0, (absD - 0.18) / 2.0));
 
-+     slot.cMesh.position.set(px, 0, pz + 0.03);
+  slot.cMesh.position.set(px, 0, pz + 0.03);
       slot.cMesh.rotation.set(0, ry, 0);
       slot.cMesh.visible               = cf > 0.003;
       slot.cMat.uniforms.uFade.value    = cf;
       slot.cMat.uniforms.uTime.value    = t;
 
-      // Update side mesh (same arc position, slightly behind)
       slot.sMesh.position.set(px, 0, pz - 0.03);
       slot.sMesh.rotation.set(0, ry, 0);
       slot.sMesh.visible               = sf > 0.003;
