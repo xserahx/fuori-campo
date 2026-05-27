@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import { imgNavbar } from '$lib/design/assets';
 
-  let { transparent = false } = $props<{ transparent?: boolean }>();
+  let { transparent = false, pinned = false } = $props<{ transparent?: boolean; pinned?: boolean }>();
   const logoColor = '#BDFF5D';
 
   type NavItem = {
@@ -89,6 +89,11 @@
   });
 
   onMount(() => {
+    if (pinned) {
+      visible = true;
+      return;
+    }
+
     const handleResize = () => {
       if (underlineInitialized) syncActiveUnderline();
     };
@@ -98,6 +103,8 @@
     let sawPointer = false;
 
     const pointerMove = (e: PointerEvent) => {
+      if (pinned) return;
+
       if (e.pointerType === 'touch') return;
 
       if (!sawPointer) {
@@ -118,6 +125,8 @@
 
     // HIDE ON SCROLL DOWN
     const onWheel = (ev: WheelEvent) => {
+      if (pinned) return;
+
       if (ev.deltaY > 0) {
         visible = false;
       }

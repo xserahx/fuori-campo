@@ -73,12 +73,6 @@
     isDragging = false;
   }
 
-  function wheelMove(e: WheelEvent) {
-    e.preventDefault();
-    targetX -= e.deltaX * 0.85;
-    targetY -= e.deltaY * 0.85;
-  }
-
   function updateScale() {
     scale = Math.min(window.innerWidth / designWidth, window.innerHeight / designHeight);
   }
@@ -108,7 +102,7 @@
 
 <svelte:window onpointermove={pointerMove} />
 
-<div bind:this={collageRef} class="collage" role="region" aria-label="Image collage" onpointerdown={pointerDown} onwheel={(e) => { e.preventDefault(); wheelMove(e as WheelEvent); }}>
+<div bind:this={collageRef} class="collage" role="region" aria-label="Image collage" onpointerdown={pointerDown}>
   <div
     bind:this={innerRef}
     class="collage-inner"

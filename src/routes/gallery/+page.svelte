@@ -32,7 +32,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Forma+DJR+Display:wght@300;400;500;600&display=swap" rel="stylesheet">
 </svelte:head>
 
-<Navbar />
+<Navbar pinned />
 
 <main class="gallery-page">
   <div class="bg-glow bg-glow-1"></div>

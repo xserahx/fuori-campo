@@ -378,7 +378,7 @@
   })());
 </script>
 
-<Navbar />
+<Navbar pinned />
 
 <section
   class="carousel"
