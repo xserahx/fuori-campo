@@ -8,8 +8,8 @@
 
   // Local cached copies of Figma assets
   const IMG_FIGMA_204 = '/figma/cat-1.jpg';
-  const IMG_FIGMA_58  = '/figma/cat-2.jpg';
-  const IMG_FIGMA_232 = '/figma/cat-3.jpg';
+  const IMG_FIGMA_58  = '/figma/cat-5.jpg';
+  const IMG_FIGMA_232 = '/figma/cat-8.jpg';
 
   const defaultCategories: Category[] = [
     { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: IMG_FIGMA_204 },
@@ -591,30 +591,60 @@
   }
 
   .figma-images{
-    display:flex;
-    gap:24px;
-    align-items:stretch;
-    width:100%;
+    position: relative;
+    width: 100%;
     max-width: 2200px;
     margin: 0 auto;
     height: calc(100% - 160px); /* leave room for top/bottom curves so they visually crop the images */
     box-sizing: border-box;
   }
 
-  .figma-img{ position:relative; overflow:hidden; border-radius:0; height:100%; }
-  .figma-img--left,
-  .figma-img--right{
-    flex:0 0 28%;
-    min-width:280px;
-    background-size:cover;
-    background-position:center top;
-    filter: blur(28px) saturate(120%);
-    opacity:0.98;
+  .figma-img{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    border-radius: 0;
+    height: 100%;
     transform: translateZ(0);
   }
+  .figma-img--left,
+  .figma-img--right{
+    width: 36%;
+    background-size:cover;
+    background-position:center top;
+    filter: blur(26px) saturate(118%);
+    opacity:0.96;
+    z-index: 1;
+  }
 
-  .figma-img--center{ flex:0 0 36%; display:flex; align-items:flex-start; justify-content:center; }
-  .figma-img--center img{ height:calc(100% + 30px); width:auto; display:block; object-fit:cover; transform:translateY(-10px); }
+  .figma-img--left{
+    left: 0;
+  }
+
+  .figma-img--right{
+    right: 0;
+  }
+
+  .figma-img--center{
+    left: 50%;
+    width: 42%;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  .figma-img--center img{
+    height: calc(100% + 30px);
+    width: auto;
+    display: block;
+    object-fit: cover;
+    transform: translateY(-10px);
+    position: relative;
+    z-index: 2;
+  }
 
   @media (max-width:1100px){
     .figma-hero{ display:none; }
@@ -634,7 +664,7 @@
 
   .title {
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: 115.94px;
+    font-size: 116px;
     font-weight: 800;
     font-style: normal;
     text-transform: uppercase;

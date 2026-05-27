@@ -224,8 +224,9 @@ body{
 .nav-links{
   position:relative;
   display:flex;
-  gap:32px;
+  gap: var(--spacing-6);
   align-items:center;
+  padding-right:- var(--spacing-11); /* ensure right gap equals spacing-11 */
   padding-bottom: 14px;
   margin-left: auto; /* ensure links sit on the right */
   justify-content: flex-end;
