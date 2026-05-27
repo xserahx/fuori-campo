@@ -549,24 +549,14 @@
     transform: scaleX(1.18);
   }
 
-  .edge-panel--left::after,
-  .edge-panel--right::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 10%;
-    pointer-events: none;
-  }
-  
 .edge-panel--left::after {
   left: 0;
-  background: linear-gradient(90deg,rgba(0, 0, 0, 0) 0%,rgba(0, 0, 0, 0.35) 44%, rgba(0, 0, 0, 0.82) 100% );
+  background: linear-gradient(90deg,rgba(0, 0, 0, 0.35) 0%,rgba(0, 0, 0, 0.15) 20%, 0%,rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35) 70%,  rgba(0, 0, 0, 0.82) 100% );
 }
 
 .edge-panel--right::after {
   right: 0;
-  background: linear-gradient(270deg,rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.35) 44%,rgba(0, 0, 0, 0.82) 100% );
+   background: linear-gradient(270deg,rgba(0, 0, 0, 0.35) 0%,rgba(0, 0, 0, 0.15) 20%, 0%,rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.35) 70%,  rgba(0, 0, 0, 0.82) 100% );
 }
 
   .curve-frame {
