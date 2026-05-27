@@ -1,11 +1,12 @@
 :root{
-  --color-background-primary: #1A1A1A; 
-  --color-content-title: #bdff5d; 
-  --color-content-body: #fafafa; 
+  --color-background-primary: #0e0e0e;
+  --color-content-title: #bdff5d;
+  --color-content-body: #fafafa;
+  --color-content-body-black: #0e0e0e;
   --color-link-selected: #bdff5d;
-  --color-content-primary: #202426; 
-  --gallery-background: #1a1a1a;
-  --gallery-overlay: rgba(26, 26, 26, 0.5);
+  --color-content-primary: #202426;
+  --gallery-background: #0e0e0e;
+  --gallery-overlay: rgba(14, 14, 14, 0.5);
   --gallery-text: #fafafa;
   --gallery-accent: #bdff5d;
   --gallery-navbar-offset: 143px;
@@ -54,7 +55,7 @@
   --spacing-6:  var(--unit-32);
   --spacing-7:  var(--unit-40);
   --spacing-8:  var(--unit-48);
-  --spacing-9:  var(--unit-56);
+  --spacing-9:  var(--unit-72);
   --spacing-10: var(--unit-64);
   --spacing-11: var(--unit-72);
   --spacing-12: var(--unit-80);
@@ -65,7 +66,7 @@
   --spacing-19: var(--unit-500);
 
   --story-numbers-gap: var(--unit-300); 
-  --hero-to-lead: var(--spacing-13) + 469px;
+  --hero-to-lead: calc(var(--spacing-13) + 469px);
   --hero-top-gap: 144px; 
 
   /* Radius */
@@ -157,7 +158,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 }
 
 :root{
-  --navbar-height: 112px;
+  --navbar-height: 125px;
 }
 
 .navbar{
@@ -166,10 +167,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
   left:0;
   right:0;
   overflow:hidden;
-  padding: var(--Spacing-5, 24px) var(--Spacing-11, 72px);
+  padding: var(--spacing-5) var(--spacing-11);
   display:flex;
   align-items:center;
-  background: var(--color-background-primary);
+  background: linear-gradient(to bottom, var(--color-background-primary) 0%, rgba(14, 14, 14, 0.15) 100%);
   min-height: var(--navbar-height);
   box-sizing: border-box;
   z-index: 40;
@@ -232,27 +233,25 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 .logo{display:flex;align-items:center;flex:0 0 auto}
 .logo{margin-left:0}
 .logo img{height:63.784px;width:67px;display:block}
+.logo svg{width:35px;height:77px;display:block}
 .nav-links{
   position:relative;
   display:flex;
   gap: var(--spacing-6);
   align-items:center;
-  padding-right:- var(--spacing-11); 
-  padding-bottom: 14px;
   margin-left: auto;
   justify-content: flex-end;
-  width: 357px; 
-  margin-right: var(--spacing-11); 
+  width: 357px;
 }
 .nav-link{
   color:var(--color-content-body);
   text-transform:uppercase;
   font-family:var(--font-display);
   font-weight:500;
-  letter-spacing:0.02em;
+  letter-spacing:0;
   text-decoration:none;
-  line-height:1;
-  font-size:16px;
+  line-height:26px;
+  font-size:24px;
   opacity:0.78;
   transition: color 220ms cubic-bezier(.2,1,.3,1), transform 220ms cubic-bezier(.2,1,.3,1), opacity 160ms ease;
   transform: translateY(0);
@@ -463,7 +462,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 
 .story--summary{
   max-width:980px;
-  margin-top:287px; /* exact gap between last question and summary */
+  margin-top:192px; /* Figma: 287px dal content→summary, sottratto padding-bottom 95px */
 }
 
 .story--quote {
@@ -477,12 +476,14 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 
 .story--quote-left {
   margin-left: 0;
+  margin-top: var(--spacing-19); /* 500px — Figma: gap numeri→citazione1 */
   text-align: left;
   padding-left: var(--spacing-11);
 }
 
 .story--quote-right {
   margin-left: auto;
+  margin-top: var(--spacing-15); /* 300px — Figma: gap citazione1→citazione2 */
   text-align: right;
   padding-right: var(--spacing-11);
 }
@@ -503,8 +504,9 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 .question-panel{
   background: var(--color-content-title);
   color:#000;
-  padding-top: var(--spacing-12);
-  padding-bottom: var(--spacing-12);
+  margin-top: 346px; /* Figma: gap citazione2→sfondo lime */
+  padding-top: 154px; /* Figma: offset interno prima della prima domanda */
+  padding-bottom: 95px; /* Figma: Rectangle1 estende 95px oltre le domande */
   overflow:hidden;
 }
 
@@ -530,9 +532,9 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 .question h2{
   max-width:983px;
   font-family:"Forma DJR Display Extrabold", sans-serif;
-  font-size:var(--unit-64);
-  line-height:var(--spacing-10);
-  font-weight:500;
+  font-size:var(--unit-116);
+  line-height:106px;
+  font-weight:800;
   text-transform:uppercase;
   color:#000;
 }
@@ -553,7 +555,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 .ghost{
   color:transparent;
   opacity:1;
-  -webkit-text-stroke:2px #000;
+  -webkit-text-stroke:3px #000;
 }
 
 .scroll-cue{

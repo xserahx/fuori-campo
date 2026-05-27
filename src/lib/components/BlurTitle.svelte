@@ -192,7 +192,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: min(1200px, 90vw);
+    width: min(1083px, 90vw);
     max-width: 100vw;
     cursor: auto;
     user-select: none;
@@ -211,10 +211,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.02em;
+    gap: 0;
     font-family: var(--font-display);
     font-size: 300px;
-    line-height: 0.95;
+    line-height: 250px;
     font-weight: 800;
     letter-spacing: -0.02em;
     text-transform: uppercase;

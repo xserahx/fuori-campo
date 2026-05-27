@@ -175,7 +175,7 @@
 
   <div class="navbar-inner">
     <a class="logo" href="/" aria-label="Fuori campo home">
-      <svg width="36" height="49" viewBox="0 0 36 49" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <svg width="35" height="77" viewBox="0 0 36 49" fill="none" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <mask id="path-1-outside-1_3960_5180" maskUnits="userSpaceOnUse" x="-0.728027" y="-0.199951" width="37" height="49" fill="black">
           <rect fill="white" x="-0.728027" y="-0.199951" width="37" height="49"/>
           <path d="M2.57597 46.8C2.22397 46.8 1.99997 46.608 1.99997 46.192L2.28797 24.368L1.99997 2.57605C1.99997 2.19205 2.22397 2.00005 2.57597 2.00005H33.296C33.648 2.00005 33.872 2.22405 33.872 2.57605V9.96805C33.872 10.352 33.648 10.576 33.296 10.576H14.064L13.872 20.976H32.464C32.816 20.976 33.04 21.2 33.04 21.552V28.944C33.04 29.328 32.816 29.552 32.464 29.552H13.872L14.064 46.192C14.064 46.608 13.84 46.8 13.456 46.8H2.57597Z"/>

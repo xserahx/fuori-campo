@@ -403,7 +403,7 @@
         <h2>
           <div>
             <span class="accent">NE È VALSA LA PENA?</span><br />
-            <span class="ghost">LO RIFAREBBERO?</span>
+            <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
           </div>
         </h2>
       </section>
@@ -414,7 +414,7 @@
       use:blurReveal={{ direction: "left", threshold: 0.3 }}>
       <p>
         Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
-        <span class="accent"> archivio</span>.
+        <a href="/gallery" class="accent archivio-link">archivio</a>.
       </p>
     </section>
 
@@ -435,3 +435,13 @@
     </section>
   </main>
 </div>
+
+<style>
+  .archivio-link {
+    text-decoration: none;
+  }
+  .archivio-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+</style>
