@@ -4,6 +4,7 @@
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import ScrollArrow from "../lib/components/ScrollArrow.svelte";
   import { blurReveal } from "../lib/actions/blurReveal";
+  import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import { imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
@@ -319,6 +320,21 @@
 
   const galleryCount = 12;
   const offsetCount = 6;
+
+  const fadeReveal: BlurRevealOptions = {
+    variant: "fade" as unknown as BlurRevealOptions["variant"],
+    blur: 24,
+    duration: 1000,
+    threshold: 0.15
+  };
+
+  const fadeRevealDelayed: BlurRevealOptions = {
+    variant: "fade" as unknown as BlurRevealOptions["variant"],
+    blur: 24,
+    duration: 1000,
+    threshold: 0.15,
+    delay: 80
+  };
 </script>
 
 <IntroLoader
@@ -369,7 +385,7 @@
     <div class="question-panel">
       <div class="question-track">
         <section class="question question--left"
-          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15 }}>
+              use:blurReveal={fadeReveal}>
           <h2>
             <span class="accent">MA </span>
             <span class="ghost">CHI SONO </span>
@@ -379,7 +395,7 @@
         </section>
 
         <section class="question question--right"
-          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15, delay: 80 }}>
+              use:blurReveal={fadeRevealDelayed}>
           <h2>
             <span class="ghost">PERCHÈ </span>
             <span class="accent">HANNO DECISO</span><br />
@@ -388,7 +404,7 @@
         </section>
 
         <section class="question question--left"
-          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15 }}>
+              use:blurReveal={fadeReveal}>
           <h2>
             <span class="ghost">COSA FACEVANO </span><br />
             <span class="accent">CONCRETAMENTE?</span>
@@ -396,7 +412,7 @@
         </section>
 
         <section class="question question--right"
-          use:blurReveal={{ variant: "fade", blur: 24, duration: 1000, threshold: 0.15, delay: 80 }}>
+              use:blurReveal={fadeRevealDelayed}>
           <h2>
             <span class="accent">NE È VALSA LA PENA?</span><br />
             <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>

@@ -166,7 +166,13 @@
     <span class="campo">CAMPO</span>
   </div>
 
-  <!-- layer 2: blurred copy, masked by cloud shape → covers sharp only in cloud zones -->
+  <!-- layer 2: ambient glow — full-area blur matching Figma FOREGROUND_BLUR r:25 -->
+  <div class="title-text layer-ambient" aria-hidden="true">
+    <span class="fuori">FUORI</span>
+    <span class="campo">CAMPO</span>
+  </div>
+
+  <!-- layer 3: blurred copy, masked by cloud shape → covers sharp only in cloud zones -->
   <div
     class="title-text layer-blurred"
     bind:this={layerBlur}
