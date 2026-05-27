@@ -364,49 +364,42 @@
       </p>
     </section>
 
-    <div class="question-panel" bind:this={questionPanel} onwheel={handleQuestionPanelWheel}>
+    <div class="question-panel">
       <div class="question-track">
-      <section class="question question--left" style={`margin-left:var(--question-left-1)`} use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
-        <h2>
-          <div>
+        <section class="question question--left"
+          use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
+          <h2>
             <span class="accent">MA </span>
             <span class="ghost">CHI SONO </span>
             <span class="accent">DAVVERO</span><br />
             <span class="accent">I VOLONTARI?</span>
-          </div>
-        </h2>
-      </section>
+          </h2>
+        </section>
 
-      <section class="question question--right" style={`margin-left:var(--question-left-2)`}
-        use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
-        <h2>
-          <div>
+        <section class="question question--right"
+          use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
+          <h2>
             <span class="ghost">PERCHÈ </span>
             <span class="accent">HANNO DECISO</span><br />
             <span class="accent">DI CANDIDARSI?</span>
-          </div>
-        </h2>
-      </section>
+          </h2>
+        </section>
 
-      <section class="question question--left" style={`margin-left:var(--question-left-3)`}
-        use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
-        <h2>
-          <div>
+        <section class="question question--left"
+          use:blurReveal={{ direction: "left", variant: "letterspace", blur: 30, duration: 1100 }}>
+          <h2>
             <span class="ghost">COSA FACEVANO </span><br />
             <span class="accent">CONCRETAMENTE?</span>
-          </div>
-        </h2>
-      </section>
+          </h2>
+        </section>
 
-      <section class="question question--right" style={`margin-left:var(--question-left-4)`}
-        use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
-        <h2>
-          <div>
+        <section class="question question--right"
+          use:blurReveal={{ direction: "right", variant: "letterspace", blur: 30, duration: 1100 }}>
+          <h2>
             <span class="accent">NE È VALSA LA PENA?</span><br />
             <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
-          </div>
-        </h2>
-      </section>
+          </h2>
+        </section>
       </div>
     </div>
 

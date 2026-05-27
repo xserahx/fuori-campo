@@ -504,39 +504,37 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 .question-panel{
   background: var(--color-content-title);
   color:#000;
-  margin-top: 346px; /* Figma: gap citazione2→sfondo lime */
-  padding-top: 154px; /* Figma: offset interno prima della prima domanda */
-  padding-bottom: 95px; /* Figma: Rectangle1 estende 95px oltre le domande */
-  overflow:hidden;
-}
-
-.question{
-  margin-top: var(--spacing-19); 
+  margin-top: 346px;
+  padding-top: 154px;
+  padding-bottom: 95px;
+  overflow-x: hidden;
 }
 
 .question-track{
   display:flex;
-  gap:var(--spacing-19);
-  padding:0 var(--spacing-11);
-  overflow-x:auto;
-  scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;
-  touch-action: pan-x;
+  flex-direction:column;
+  gap: var(--spacing-19);
 }
 
 .question-track .question{
-  flex:0 0 min(60%, 900px);
-  scroll-snap-align:center;
+  margin-top: 0;
+}
+
+.question{
+  padding-left: var(--spacing-11);
+  padding-right: var(--spacing-11);
+  box-sizing: border-box;
 }
 
 .question h2{
-  max-width:983px;
-  font-family:"Forma DJR Display Extrabold", sans-serif;
-  font-size:var(--unit-116);
-  line-height:106px;
-  font-weight:800;
-  text-transform:uppercase;
-  color:#000;
+  font-family: var(--font-display);
+  font-size: var(--unit-116);
+  line-height: 106px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+  margin: 0;
+  max-width: none;
 }
 
 .question .accent{
