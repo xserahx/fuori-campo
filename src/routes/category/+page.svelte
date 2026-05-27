@@ -6,13 +6,18 @@
 
   type Category = { id: number; label: string; image: string };
 
+  // Local cached copies of Figma assets
+  const IMG_FIGMA_204 = '/figma/cat-1.jpg';
+  const IMG_FIGMA_58  = '/figma/cat-2.jpg';
+  const IMG_FIGMA_232 = '/figma/cat-3.jpg';
+
   const defaultCategories: Category[] = [
-    { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=800&q=80' },
-    { id: 2, label: 'CERIMONIE E REVENUE',       image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80' },
-    { id: 3, label: 'SPORT E DISCIPLINE',        image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80' },
-    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: 'https://images.unsplash.com/photo-1542103749-8ef59b94f47e?w=800&q=80' },
-    { id: 5, label: 'LOGISTICA E TERRITORIO',    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80' },
-    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=80' },
+    { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: IMG_FIGMA_204 },
+    { id: 2, label: 'CERIMONIE E REVENUE',       image: IMG_FIGMA_58 },
+    { id: 3, label: 'SPORT E DISCIPLINE',        image: IMG_FIGMA_232 },
+    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: IMG_FIGMA_204 },
+    { id: 5, label: 'LOGISTICA E TERRITORIO',    image: IMG_FIGMA_58 },
+    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: IMG_FIGMA_232 },
   ];
 
   let { categories = defaultCategories }: { categories?: Category[] } = $props();
@@ -111,19 +116,20 @@
     uniform float     uDist;   // abs distance from center (0=neighbour, 1=far)
     varying vec2 vUv;
 
-    // Zoom-blur from inner edge — streaks outward
+    // Zoom-blur from inner edge — streaks outward (stronger/more samples for pronounced blur)
     vec4 zoomBlur(sampler2D t, vec2 uv, float side, float str){
       // focal = inner edge centre
       vec2 focus = vec2(side > 0.0 ? 0.0 : 1.0, 0.5);
       vec4 acc = vec4(0.0);
-      const int S = 16;
+      const int S = 24; // increased samples for smoother, stronger blur
       for(int i=0;i<S;i++){
         float f   = float(i)/float(S-1);       // 0..1
-        float w   = f;                          // weight: more at far end
-        vec2  off = (uv - focus) * f * str * 0.28;
+        float w   = f * f;                      // weight: bias more to far samples for longer streaks
+        vec2  off = (uv - focus) * f * str * 0.36; // slightly stronger offset
         acc += texture2D(t, clamp(uv - off, 0.001, 0.999)) * w;
       }
-      return acc / (float(S) * 0.5);
+      // normalize by sum of weights (approx S * 0.33)
+      return acc / (float(S) * 0.33);
     }
 
     // Barrel distortion — curls Y away from center
@@ -145,8 +151,8 @@
     }
 
     void main(){
-      float k   = 0.28 + uDist * 0.42;   // barrel strength grows with distance
-      float blr = 0.95 + uDist * 1.05;   // stronger zoom-blur for outer images
+      float k   = 0.32 + uDist * 0.52;   // barrel strength grows with distance (slightly stronger)
+      float blr = 1.2 + uDist * 1.6;     // stronger zoom-blur for outer images
 
       vec2  wuv = barrel(vUv, k, uSide);
       wuv = clamp(wuv, 0.001, 0.999);
@@ -291,7 +297,7 @@
          * (1 - smoothstep(Math.max(0, absD - 2.15) * 1.5));
       const sf     = sfRaw;
 
-      const normDist = Math.min(1, Math.max(0, (absD - 0.18) / 2.0));
+      const normDist = Math.min(1, Math.max(0, (absD - 0.18) / 1.2));
 
   slot.cMesh.position.set(px, 0, pz + 0.03);
       slot.cMesh.rotation.set(0, ry, 0);
@@ -301,8 +307,10 @@
 
       slot.sMesh.position.set(px, 0, pz - 0.03);
       slot.sMesh.rotation.set(0, ry, 0);
-      slot.sMesh.visible               = sf > 0.003;
-      slot.sMat.uniforms.uFade.value    = sf;
+      // Ensure side meshes remain visible as blurred previews at the edges
+      slot.sMesh.visible               = true;
+      // keep a minimum fade so side items never fully disappear
+      slot.sMat.uniforms.uFade.value    = Math.max(sf, 0.16);
       slot.sMat.uniforms.uTime.value    = t;
       slot.sMat.uniforms.uSide.value    = signD;
       slot.sMat.uniforms.uDist.value    = normDist;
@@ -378,6 +386,33 @@
       words.slice(splitAt).join(' '),
     ].filter(Boolean);
   })());
+
+  // Map of images (left, center, right) per category index — taken from Figma exports
+  const FIGMA_CATEGORY_IMAGES: string[][] = [
+    // Relazioni e comunicazione
+    [ '/figma/cat-1.jpg', '/figma/cat-2.jpg', '/figma/cat-3.jpg' ],
+    // Cerimonie e revenue
+    [ '/figma/cat-4.jpg', '/figma/cat-5.jpg', '/figma/cat-6.jpg' ],
+    // Sport e discipline
+    [ '/figma/cat-7.jpg', '/figma/cat-8.jpg', '/figma/cat-9.jpg' ],
+    // Area organizzativa e servizi generali (node 4018:8276)
+    [ '/figma/cat-17.jpg', '/figma/cat-18.jpg', '/figma/cat-19.jpg' ],
+    // Logistica e territorio (node 4018:8333)
+    [ '/figma/cat-10.jpg', '/figma/cat-11.jpg', '/figma/cat-12.jpg' ],
+    // Gestione operativa e fan experience (node 4018:7981)
+    [ '/figma/cat-13.jpg', '/figma/cat-14.jpg', '/figma/cat-15.jpg' ]
+  ];
+
+  function getCurrentFigmaImages() {
+    const idx = Math.abs(Math.round(position)) % N();
+    return FIGMA_CATEGORY_IMAGES[idx] ?? [categories[idx]?.image ?? '', categories[idx]?.image ?? '', categories[idx]?.image ?? ''];
+  }
+
+  let currentFigmaImages = $state(getCurrentFigmaImages());
+
+  $effect(() => {
+    currentFigmaImages = getCurrentFigmaImages();
+  });
 </script>
 
 <Navbar pinned />
@@ -392,6 +427,17 @@
   aria-label="Category carousel"
 >
   <canvas bind:this={canvasEl}></canvas>
+
+  <!-- Figma image overlay: three columns (left blurred, center crisp, right blurred) -->
+  <div class="figma-hero" aria-hidden="true">
+    <div class="figma-images">
+      <div class="figma-img figma-img--left" style={`background-image:url(${currentFigmaImages[0]});`}></div>
+      <div class="figma-img figma-img--center">
+        <img src={currentFigmaImages[1]} alt="" />
+      </div>
+      <div class="figma-img figma-img--right" style={`background-image:url(${currentFigmaImages[2]});`}></div>
+    </div>
+  </div>
 
   <button
     class="arrow arrow-left"
@@ -468,24 +514,21 @@
     transform: translateY(-50%);
     width: 64px;
     height: 64px;
-    border: 1px solid rgba(186, 255, 68, 0.16);
-    border-radius: 999px;
-    background: rgba(9, 9, 12, 0.72);
-    color: #baff44;
+    background: transparent;
+    color: #ffffff; /* default white */
     display: grid;
     place-items: center;
     font-size: 44px;
     line-height: 1;
-    padding: 0 0 2px;
+    padding: 0;
     z-index: 12;
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 10px 24px rgba(0, 0, 0, 0.28);
+    border: none;
+    box-shadow: none;
   }
 
   .arrow:hover {
-    background: rgba(9, 9, 12, 0.84);
+    color: var(--color-content-title);
   }
 
   .arrow:focus-visible {
@@ -534,6 +577,47 @@
     bottom: 0;
     height: 31vh;
     min-height: 160px;
+  }
+
+  /* Figma hero overlay */
+  .figma-hero {
+    position: absolute;
+    inset: 0; /* fill the carousel container so overflow:hidden clips anything outside */
+    pointer-events: none;
+    z-index: 1; /* place under the curve overlay (curve-frame is z-index:2) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .figma-images{
+    display:flex;
+    gap:24px;
+    align-items:stretch;
+    width:100%;
+    max-width: 2200px;
+    margin: 0 auto;
+    height: calc(100% - 160px); /* leave room for top/bottom curves so they visually crop the images */
+    box-sizing: border-box;
+  }
+
+  .figma-img{ position:relative; overflow:hidden; border-radius:0; height:100%; }
+  .figma-img--left,
+  .figma-img--right{
+    flex:0 0 28%;
+    min-width:280px;
+    background-size:cover;
+    background-position:center top;
+    filter: blur(28px) saturate(120%);
+    opacity:0.98;
+    transform: translateZ(0);
+  }
+
+  .figma-img--center{ flex:0 0 36%; display:flex; align-items:flex-start; justify-content:center; }
+  .figma-img--center img{ height:calc(100% + 30px); width:auto; display:block; object-fit:cover; transform:translateY(-10px); }
+
+  @media (max-width:1100px){
+    .figma-hero{ display:none; }
   }
 
   /* ── bottom UI ───────────────────────────────────────── */
