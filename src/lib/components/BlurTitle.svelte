@@ -105,7 +105,14 @@
 
     function frame() {
       tick++;
-      off.width = W; off.height = H;
+      const dpr = window.devicePixelRatio || 1;
+      // size the backing canvas for HiDPI displays and keep CSS size stable
+      off.width = Math.max(1, Math.round(W * dpr));
+      off.height = Math.max(1, Math.round(H * dpr));
+      off.style.width = W + 'px';
+      off.style.height = H + 'px';
+      // scale drawing operations to device pixels
+      offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       offCtx.clearRect(0, 0, W, H);
 
       for (let i = NUM_BLOBS - 1; i >= 0; i--) {
@@ -113,14 +120,33 @@
         blobs[i].draw(offCtx, W, H);
       }
 
-      const url = off.toDataURL();
-      layerBlur!.style.webkitMaskImage = `url('${url}')`;
-      layerBlur!.style.maskImage       = `url('${url}')`;
+      // Throttle expensive toDataURL calls to every other frame for smoother framerate
+      if ((tick & 1) === 0) {
+        const url = off.toDataURL();
+        layerBlur!.style.webkitMaskImage = `url('${url}')`;
+        layerBlur!.style.maskImage       = `url('${url}')`;
+      }
 
       animId = requestAnimationFrame(frame);
     }
 
     animId = requestAnimationFrame(frame);
+
+    // subtle parallax: move the blurred layer slightly with pointer movement
+    function onPointer(e: PointerEvent) {
+      if (!titleWrap || !layerBlur) return;
+      const rect = titleWrap.getBoundingClientRect();
+      const mx = (e.clientX - rect.left - rect.width / 2) / rect.width;
+      const my = (e.clientY - rect.top - rect.height / 2) / rect.height;
+      const tx = (mx * 6).toFixed(2);
+      const ty = (my * 6).toFixed(2);
+      layerBlur.style.transform = `translate(${tx}px, ${ty}px) scale(1.02)`;
+    }
+
+    titleWrap.addEventListener('pointermove', onPointer);
+    titleWrap.addEventListener('pointerleave', () => {
+      if (layerBlur) layerBlur.style.transform = 'translateZ(0)';
+    });
 
     return () => {
       if (animId !== null) cancelAnimationFrame(animId);
@@ -168,9 +194,9 @@
     align-items: center;
     width: min(1200px, 90vw);
     max-width: 100vw;
-    cursor: none;
+    cursor: auto;
     user-select: none;
-    pointer-events: none;
+    pointer-events: auto;
     background: transparent;
     box-sizing: border-box;
     z-index: 9999;
@@ -207,7 +233,34 @@
 
   .layer-blurred {
     z-index: 2;
-    filter: blur(28px);
+    /* stronger, more visible blur + a bit more color pop */
+    filter: blur(44px) saturate(140%) contrast(110%);
+    opacity: 0.96;
+    will-change: filter, opacity;
+    transform: translateZ(0);
+    transition: transform 420ms cubic-bezier(.22,.98,.3,1), opacity 420ms ease;
+  }
+
+  /* Make the blurred layer render as a filled, glowing version of the text
+     (keep the sharp layer as the outlined/sharp text). */
+  .layer-blurred .fuori,
+  .layer-blurred .campo {
+    color: var(--color-content-title);
+    -webkit-text-fill-color: var(--color-content-title);
+    -webkit-text-stroke-width: 0;
+  }
+
+  /* extra soft glow behind the blurred layer */
+  .layer-blurred::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.12), transparent 25%);
+    filter: blur(80px) saturate(140%);
+    opacity: 0.45;
+    mix-blend-mode: screen;
   }
 
   .fuori {
