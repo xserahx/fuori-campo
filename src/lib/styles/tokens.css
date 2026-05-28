@@ -501,19 +501,39 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
   color:var(--color-content-title);
 }
 
-.question-panel{
+.question-shell{
   background: var(--color-content-title);
   color:#000;
   margin-top: 346px;
   padding-top: 154px;
-  padding-bottom: 95px;
-  overflow-x: hidden;
+  min-height: 100svh;
+  position: relative;
+}
+
+.question-stage{
+  position: relative;
+  height: 100svh;
+}
+
+.question-viewport{
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  -ms-overflow-style: none;
+}
+
+.question-viewport::-webkit-scrollbar{
+  display: none;
 }
 
 .question-track{
   display:flex;
-  flex-direction:column;
-  gap: var(--spacing-19);
+  flex-direction:row;
+  height: 100%;
+  width: max-content;
 }
 
 .question-track .question{
@@ -521,9 +541,19 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
 }
 
 .question{
+  flex: 0 0 100vw;
+  min-height: 100svh;
   padding-left: var(--spacing-11);
   padding-right: var(--spacing-11);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+}
+
+.question--intro{
+  align-items: flex-start;
 }
 
 .question h2{
@@ -624,6 +654,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
     font-size:40px;
     line-height:1.1;
   }
+  .question{
+    padding-left:16px;
+    padding-right:16px;
+  }
   .story--right{
     margin-top:32px;
   }
@@ -636,9 +670,6 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
   }
   .question--right{
     justify-content:flex-start;
-  }
-  .question{
-    margin-top:96px;
   }
   .scroll-cue{
     font-size:24px;

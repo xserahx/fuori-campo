@@ -49,13 +49,15 @@
   let sawPointer = false;
   let navContainer: HTMLElement | null = null;
   let navLinkRefs: Array<HTMLAnchorElement | undefined> = [];
-  let questionPanel: HTMLDivElement | null = null;
-  let questionPanelMaxScroll = 0;
-  let consumingHorizontal = false;
-  let wheelDebounce: ReturnType<typeof setTimeout> | undefined;
-  const QUESTION_WHEEL_DEBOUNCE_MS = 250;
+  let questionSection: HTMLElement | null = null;
+  let questionViewport: HTMLDivElement | null = null;
+  let questionTrack: HTMLDivElement | null = null;
+  let questionMaxScroll = $state(0);
+  let questionInView = $state(false);
   let questionObserver: IntersectionObserver | null = null;
-  const QUESTION_INTERSECT_THRESHOLD = 0.4;
+  let questionResizeObserver: ResizeObserver | null = null;
+  let questionRevealArmed = $state(false);
+  const QUESTION_INTERSECT_THRESHOLD = 0.15;
 
   function navLinkAction(node: HTMLAnchorElement, index: number) {
     navLinkRefs[index] = node;
@@ -97,56 +99,37 @@
     syncUnderline(routeNavIndex);
   }
 
-  function updateQuestionPanelBounds() {
-    if (!questionPanel) return;
+  function updateQuestionSectionBounds() {
+    if (!questionViewport || !questionTrack) return;
 
-    questionPanelMaxScroll = Math.max(0, questionPanel.scrollWidth - questionPanel.clientWidth);
+    questionMaxScroll = Math.max(0, questionTrack.scrollWidth - questionViewport.clientWidth);
   }
 
-  function questionPanelAtEnd() {
-    if (!questionPanel) return true;
-    return questionPanel.scrollLeft >= questionPanelMaxScroll - 1;
+  function setVerticalScrollLock(locked: boolean) {
+    document.documentElement.style.overflowY = locked ? "hidden" : "";
+    document.body.style.overflowY = locked ? "hidden" : "";
   }
 
-  function handleQuestionPanelScroll() {
-    // if user has scrolled to the right end, restore vertical scrolling
-    if (questionPanelAtEnd()) {
-      consumingHorizontal = false;
-      if (wheelDebounce) clearTimeout(wheelDebounce);
-      document.documentElement.style.overflowY = '';
+  function handleQuestionWheel(event: WheelEvent) {
+    if (!questionViewport || questionMaxScroll <= 0 || !questionInView) return;
+
+    const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (dominantDelta === 0) return;
+
+    const atStart = questionViewport.scrollLeft <= 0;
+    const atEnd = questionViewport.scrollLeft >= questionMaxScroll - 1;
+
+    if ((dominantDelta < 0 && atStart) || (dominantDelta > 0 && atEnd)) {
+      setVerticalScrollLock(false);
+      return;
     }
-  }
 
-  function handleQuestionPanelWheel(event: WheelEvent) {
-    if (!questionPanel || questionPanelMaxScroll <= 0) return;
-
-    const dx = event.deltaX;
-    const dy = event.deltaY;
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
-
-    // Prefer the dominant axis; translate vertical wheel into horizontal scroll
-    const move = absDx > absDy ? dx : dy;
-    const nextScrollLeft = questionPanel.scrollLeft + move;
-
-    const atStart = questionPanel.scrollLeft <= 0;
-    const atEnd = questionPanel.scrollLeft >= questionPanelMaxScroll - 0.5;
-
-    const willConsume = (move > 0 && !atEnd) || (move < 0 && !atStart);
-
-    if (willConsume) {
-      event.preventDefault();
-      questionPanel.scrollLeft = Math.min(questionPanelMaxScroll, Math.max(0, nextScrollLeft));
-      consumingHorizontal = true;
-      // disable page vertical scrolling while interacting
-      document.documentElement.style.overflowY = 'hidden';
-
-      if (wheelDebounce) clearTimeout(wheelDebounce);
-      wheelDebounce = setTimeout(() => {
-        consumingHorizontal = false;
-        document.documentElement.style.overflowY = '';
-      }, QUESTION_WHEEL_DEBOUNCE_MS);
-    }
+    event.preventDefault();
+    setVerticalScrollLock(true);
+    questionViewport.scrollLeft = Math.min(
+      questionMaxScroll,
+      Math.max(0, questionViewport.scrollLeft + dominantDelta)
+    );
   }
 
   let routeNavIndex = 0;
@@ -191,6 +174,10 @@
       navbarVisible = inHero;
       navbarFixed = inHero;
       underlineVisible = inHero;
+    };
+
+    const updateQuestionState = () => {
+      updateQuestionSectionBounds();
     };
 
     const handleScroll = () => {
@@ -263,32 +250,36 @@
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: true });
+    window.addEventListener("resize", updateQuestionState, { passive: true });
 
-    const resizeObserver = new ResizeObserver(updateQuestionPanelBounds);
+    questionResizeObserver = new ResizeObserver(updateQuestionState);
 
-    const panel = questionPanel as HTMLDivElement | null;
+    const shell = questionSection as HTMLElement | null;
+    const viewport = questionViewport as HTMLDivElement | null;
+    const track = questionTrack as HTMLDivElement | null;
 
-    if (panel) {
-      resizeObserver.observe(panel);
-      updateQuestionPanelBounds();
+    if (shell && viewport && track) {
+      questionResizeObserver.observe(viewport);
+      questionResizeObserver.observe(track);
+      updateQuestionState();
 
       questionObserver = new IntersectionObserver((entries) => {
         for (const entry of entries) {
           const visible = entry.intersectionRatio >= QUESTION_INTERSECT_THRESHOLD;
-          if (visible && questionPanelMaxScroll > 0 && !questionPanelAtEnd()) {
-            // lock vertical scrolling while inside the horizontal panel area
-            document.documentElement.style.overflowY = 'hidden';
-          } else if (!consumingHorizontal && questionPanelAtEnd()) {
-            // restore only when at end (and not actively consuming)
-            document.documentElement.style.overflowY = '';
-          } else if (!visible && !consumingHorizontal) {
-            document.documentElement.style.overflowY = '';
+          questionInView = visible;
+
+          if (!visible) {
+            setVerticalScrollLock(false);
+          }
+
+          if (visible && !questionRevealArmed) {
+            questionRevealArmed = true;
           }
         }
       }, { threshold: [QUESTION_INTERSECT_THRESHOLD] });
 
-      questionObserver.observe(panel);
-      panel.addEventListener('scroll', handleQuestionPanelScroll, { passive: true });
+      questionObserver.observe(shell);
+      shell.addEventListener("wheel", handleQuestionWheel, { passive: false });
     }
 
     routeNavIndex = resolveNavIndex();
@@ -305,16 +296,16 @@
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("wheel", handleWheel);
-      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateQuestionState);
+      questionResizeObserver?.disconnect();
       if (questionObserver) {
         questionObserver.disconnect();
         questionObserver = null;
       }
-      if (panel) {
-        panel.removeEventListener('scroll', handleQuestionPanelScroll);
+      if (shell) {
+        shell.removeEventListener("wheel", handleQuestionWheel);
       }
-      if (wheelDebounce) clearTimeout(wheelDebounce);
-      document.documentElement.style.overflowY = '';
+      setVerticalScrollLock(false);
     };
   });
 
@@ -382,42 +373,50 @@
       </p>
     </section>
 
-    <div class="question-panel">
-      <div class="question-track">
-        <section class="question question--left"
-              use:blurReveal={fadeReveal}>
-          <h2>
-            <span class="accent">MA </span>
-            <span class="ghost">CHI SONO </span>
-            <span class="accent">DAVVERO</span><br />
-            <span class="accent">I VOLONTARI?</span>
-          </h2>
-        </section>
+    <div
+      class="question-shell"
+      bind:this={questionSection}
+      class:armed={questionRevealArmed}
+    >
+      <div class="question-stage">
+        <div class="question-viewport" bind:this={questionViewport}>
+          <div class="question-track" bind:this={questionTrack}>
+          <section class="question question--left"
+                use:blurReveal={fadeReveal}>
+            <h2>
+              <span class="accent">MA </span>
+              <span class="ghost">CHI SONO </span>
+              <span class="accent">DAVVERO</span><br />
+              <span class="accent">I VOLONTARI?</span>
+            </h2>
+          </section>
 
-        <section class="question question--right"
-              use:blurReveal={fadeRevealDelayed}>
-          <h2>
-            <span class="ghost">PERCHÈ </span>
-            <span class="accent">HANNO DECISO</span><br />
-            <span class="accent">DI CANDIDARSI?</span>
-          </h2>
-        </section>
+          <section class="question question--right"
+                use:blurReveal={fadeRevealDelayed}>
+            <h2>
+              <span class="ghost">PERCHÈ </span>
+              <span class="accent">HANNO DECISO</span><br />
+              <span class="accent">DI CANDIDARSI?</span>
+            </h2>
+          </section>
 
-        <section class="question question--left"
-              use:blurReveal={fadeReveal}>
-          <h2>
-            <span class="ghost">COSA FACEVANO </span><br />
-            <span class="accent">CONCRETAMENTE?</span>
-          </h2>
-        </section>
+          <section class="question question--left"
+                use:blurReveal={fadeReveal}>
+            <h2>
+              <span class="ghost">COSA FACEVANO </span><br />
+              <span class="accent">CONCRETAMENTE?</span>
+            </h2>
+          </section>
 
-        <section class="question question--right"
-              use:blurReveal={fadeRevealDelayed}>
-          <h2>
-            <span class="accent">NE È VALSA LA PENA?</span><br />
-            <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
-          </h2>
-        </section>
+          <section class="question question--right"
+                use:blurReveal={fadeRevealDelayed}>
+            <h2>
+              <span class="accent">NE È VALSA LA PENA?</span><br />
+              <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
+            </h2>
+          </section>
+          </div>
+        </div>
       </div>
     </div>
 
