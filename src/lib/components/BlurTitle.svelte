@@ -1,130 +1,138 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  let titleWrap:   HTMLElement | null = null;
-  let layerBlur:   HTMLElement | null = null;
-  let animId:      number | null = null;
+  let titleWrap: HTMLElement | null = null;
+  let animId:    number | null = null;
 
-  const rng = (a: number, b: number) => a + Math.random() * (b - a);
-
-  function sNoise(x: number, y: number, t: number): number {
+  /* ── smooth noise ── */
+  function noise(x: number, y: number, t: number): number {
     return (
-      Math.sin(x*1.7 + t*0.7) * Math.cos(y*1.3 - t*0.5) +
-      Math.sin(x*0.8 - y*1.1 + t*0.4) * 0.5
-    ) / 1.5;
+      Math.sin(x * 1.1 + t * 0.00032) * Math.cos(y * 0.9 - t * 0.00025) * 0.55 +
+      Math.sin(x * 0.5 - y * 0.8 + t * 0.00018) * 0.45
+    );
   }
 
-  class Blob {
+  /* ── each fog zone is just a <div> with radial-gradient + filter:blur ── */
+  interface FogZone {
+    el: HTMLDivElement;
+    /* base position as fraction of container */
     ox: number; oy: number;
-    x:  number; y:  number;
-    baseR: number; r: number;
-    ph: number;
-    dA: number; dF: number;
-    bA: number; bF: number;
-    aB: number; aPh: number; aF: number; al: number;
-    sX: number; sY: number;
-    rot: number; rS: number;
-
-    constructor(i: number, total: number) {
-      const ring = Math.floor(i / 4);
-      const slot = i % 4;
-      const ang  = (slot / 4) * Math.PI * 2 + rng(-0.4, 0.4) + ring * 0.5;
-      const d    = ring === 0 ? rng(0.0, 0.10) : rng(0.10, 0.28);
-      this.ox = 0.5 + Math.cos(ang) * d;
-      this.oy = 0.5 + Math.sin(ang) * d * 0.48;
-      this.x = this.ox; this.y = this.oy;
-      this.baseR = ring === 0 ? rng(130, 220) : rng(75, 155);
-      this.r   = this.baseR;
-      this.ph  = rng(0, Math.PI * 2);
-      this.dA  = rng(0.025, 0.08);  this.dF = rng(0.001, 0.0028);
-      this.bA  = rng(0.07, 0.22);   this.bF = rng(0.0014, 0.006);
-      this.aB  = ring === 0 ? rng(0.72, 0.95) : rng(0.50, 0.78);
-      this.aPh = rng(0, Math.PI * 2); this.aF = rng(0.0008, 0.003);
-      this.al  = this.aB;
-      this.sX  = rng(0.75, 1.55); this.sY = rng(0.46, 0.95);
-      this.rot = rng(0, Math.PI * 2); this.rS = rng(-0.00028, 0.00028);
-    }
-
-    update(t: number) {
-      const nx = sNoise(this.ox*3,   this.oy*3,   t*0.00042);
-      const ny = sNoise(this.ox*3+5, this.oy*3+5, t*0.00042);
-      this.x  = this.ox + Math.sin(t*this.dF + this.ph)*this.dA + nx*0.04;
-      this.y  = this.oy + Math.cos(t*this.dF*0.65 + this.ph+1)*this.dA*0.5 + ny*0.025;
-      this.r  = this.baseR * (1 + Math.sin(t*this.bF + this.ph)*this.bA);
-      this.al = this.aB * (0.68 + 0.32*Math.sin(t*this.aF + this.aPh));
-      this.rot += this.rS;
-    }
-
-    draw(ctx: CanvasRenderingContext2D, W: number, H: number) {
-      const cx = this.x * W, cy = this.y * H;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(this.rot);
-      ctx.scale(this.sX, this.sY);
-      for (let l = 0; l < 9; l++) {
-        const f  = (l + 1) / 9;
-        const lr = this.r * Math.pow(f, 0.72);
-        const a  = this.al * (1 - Math.pow(f, 1.8));
-        const g  = ctx.createRadialGradient(0, 0, 0, 0, 0, lr);
-        g.addColorStop(0,    `rgba(255,255,255,${a.toFixed(3)})`);
-        g.addColorStop(0.30, `rgba(255,255,255,${(a*0.78).toFixed(3)})`);
-        g.addColorStop(0.62, `rgba(255,255,255,${(a*0.26).toFixed(3)})`);
-        g.addColorStop(0.86, `rgba(255,255,255,${(a*0.05).toFixed(3)})`);
-        g.addColorStop(1,    `rgba(255,255,255,0)`);
-        ctx.beginPath();
-        ctx.arc(0, 0, lr, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-      }
-      ctx.restore();
-    }
+    x: number;  y: number;
+    /* drift */
+    ph: number; dF: number; dAx: number; dAy: number;
+    /* size breathing */
+    baseW: number; baseH: number; bF: number; bA: number;
+    /* opacity */
+    aBase: number; aPh: number; aF: number;
+    /* blur */
+    blurBase: number; blurAmp: number; blurPh: number; blurF: number;
   }
 
-  const NUM_BLOBS = 13;
-  let blobs: Blob[] = [];
+  const NUM = 7;
+  let zones: FogZone[] = [];
   let tick = 0;
+  let blurProgress = 0; /* 0 = in view, 1 = scrolled away */
 
   onMount(() => {
-    if (!layerBlur || !titleWrap) return;
+    if (!titleWrap) return;
 
-    let W = 0, H = 0;
-    const off  = document.createElement('canvas');
-    const offCtx = off.getContext('2d')!;
+    /* build the fog zones as absolutely-positioned divs inside titleWrap */
+    zones = Array.from({ length: NUM }, (_, i) => {
+      const el = document.createElement("div");
+      el.style.cssText = `
+        position:absolute;
+        border-radius:50%;
+        pointer-events:none;
+        mix-blend-mode:screen;
+        will-change:transform,opacity,filter;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(180,180,180,0.28) 0%,
+          rgba(140,140,140,0.12) 35%,
+          rgba(100,100,100,0.04) 65%,
+          transparent 100%
+        );
+      `;
+      titleWrap!.appendChild(el);
 
-    function resize() {
-      W = titleWrap!.offsetWidth;
-      H = titleWrap!.offsetHeight;
+      const ox = 0.12 + (i / (NUM - 1)) * 0.76;
+      const oy = 0.20 + Math.random() * 0.60;
+
+      return {
+        el,
+        ox, oy, x: ox, y: oy,
+        ph:    Math.random() * Math.PI * 2,
+        dF:    0.00035 + Math.random() * 0.00055,
+        dAx:   0.055 + Math.random() * 0.07,
+        dAy:   0.025 + Math.random() * 0.04,
+        baseW: 55 + Math.random() * 45,   /* % of container width */
+        baseH: 55 + Math.random() * 45,
+        bF:    0.0006 + Math.random() * 0.002,
+        bA:    0.10 + Math.random() * 0.18,
+        aBase: 0.55 + Math.random() * 0.35,
+        aPh:   Math.random() * Math.PI * 2,
+        aF:    0.0004 + Math.random() * 0.0014,
+        blurBase: 60 + Math.random() * 50,
+        blurAmp:  25 + Math.random() * 35,
+        blurPh:   Math.random() * Math.PI * 2,
+        blurF:    0.0004 + Math.random() * 0.0016,
+      } as FogZone;
+    });
+
+    /* scroll → blur */
+    function onScroll() {
+      if (!titleWrap) return;
+      const heroH = window.innerHeight;
+      const scrolled = window.scrollY;
+      blurProgress = Math.min(1, Math.max(0, (scrolled - heroH * 0.15) / (heroH * 0.55)));
     }
+    window.addEventListener("scroll", onScroll, { passive: true });
 
-    blobs = Array.from({ length: NUM_BLOBS }, (_, i) => new Blob(i, NUM_BLOBS));
-    resize();
-    blobs.forEach(b => b.update(0));
-
-    const ro = new ResizeObserver(resize);
+    const ro = new ResizeObserver(() => {});
     ro.observe(titleWrap);
+
+    let smoothBlurExtra = 0;
 
     function frame() {
       tick++;
-      const dpr = window.devicePixelRatio || 1;
-      // size the backing canvas for HiDPI displays and keep CSS size stable
-      off.width = Math.max(1, Math.round(W * dpr));
-      off.height = Math.max(1, Math.round(H * dpr));
-      off.style.width = W + 'px';
-      off.style.height = H + 'px';
-      // scale drawing operations to device pixels
-      offCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      offCtx.clearRect(0, 0, W, H);
 
-      for (let i = NUM_BLOBS - 1; i >= 0; i--) {
-        blobs[i].update(tick);
-        blobs[i].draw(offCtx, W, H);
-      }
+      /* smooth scroll-blur */
+      smoothBlurExtra += (blurProgress * 70 - smoothBlurExtra) * 0.05;
 
-      // Throttle expensive toDataURL calls to every other frame for smoother framerate
-      if ((tick & 1) === 0) {
-        const url = off.toDataURL();
-        layerBlur!.style.webkitMaskImage = `url('${url}')`;
-        layerBlur!.style.maskImage       = `url('${url}')`;
+      const W = titleWrap!.offsetWidth;
+      const H = titleWrap!.offsetHeight;
+
+      for (const z of zones) {
+        /* drift position with layered noise */
+        const nx = noise(z.ox * 3,     z.oy * 3,     tick);
+        const ny = noise(z.ox * 3 + 7, z.oy * 3 + 7, tick);
+        z.x = z.ox + Math.sin(tick * z.dF + z.ph) * z.dAx + nx * 0.025;
+        z.y = z.oy + Math.cos(tick * z.dF * 0.6 + z.ph + 1.3) * z.dAy + ny * 0.018;
+
+        /* breathe size */
+        const bMod = 1 + Math.sin(tick * z.bF + z.ph) * z.bA;
+        const w = z.baseW * bMod;
+        const h = z.baseH * bMod;
+
+        /* opacity */
+        const a = z.aBase * (0.6 + 0.4 * Math.sin(tick * z.aF + z.aPh));
+
+        /* per-zone blur oscillation + scroll blur */
+        const blur = z.blurBase
+          + Math.sin(tick * z.blurF + z.blurPh) * z.blurAmp
+          + smoothBlurExtra;
+
+        /* position: centre the ellipse on (x,y) */
+        const left = (z.x * W) - (w / 100 * W) / 2;
+        const top  = (z.y * H) - (h / 100 * H) / 2;
+
+        const s = z.el.style;
+        s.width   = `${w}%`;
+        s.height  = `${h}%`;
+        s.left    = `${left}px`;
+        s.top     = `${top}px`;
+        s.opacity = a.toFixed(3);
+        s.filter  = `blur(${blur.toFixed(1)}px)`;
       }
 
       animId = requestAnimationFrame(frame);
@@ -132,25 +140,11 @@
 
     animId = requestAnimationFrame(frame);
 
-    // subtle parallax: move the blurred layer slightly with pointer movement
-    function onPointer(e: PointerEvent) {
-      if (!titleWrap || !layerBlur) return;
-      const rect = titleWrap.getBoundingClientRect();
-      const mx = (e.clientX - rect.left - rect.width / 2) / rect.width;
-      const my = (e.clientY - rect.top - rect.height / 2) / rect.height;
-      const tx = (mx * 6).toFixed(2);
-      const ty = (my * 6).toFixed(2);
-      layerBlur.style.transform = `translate(${tx}px, ${ty}px) scale(1.02)`;
-    }
-
-    titleWrap.addEventListener('pointermove', onPointer);
-    titleWrap.addEventListener('pointerleave', () => {
-      if (layerBlur) layerBlur.style.transform = 'translateZ(0)';
-    });
-
     return () => {
       if (animId !== null) cancelAnimationFrame(animId);
       ro.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      zones.forEach(z => z.el.remove());
     };
   });
 </script>
@@ -160,29 +154,21 @@
   bind:this={titleWrap}
   aria-label="FUORI CAMPO"
 >
-  <!-- layer 1: sharp, always fully visible -->
+  <!-- fog zones injected by JS live here (position:absolute) -->
+
+  <!-- layer 1: sharp text -->
   <div class="title-text layer-sharp" aria-hidden="true">
     <span class="fuori">FUORI</span>
     <span class="campo">CAMPO</span>
   </div>
 
-  <!-- layer 2: ambient glow — full-area blur matching Figma FOREGROUND_BLUR r:25 -->
-  <div class="title-text layer-ambient" aria-hidden="true">
+  <!-- layer 2: blurred text copy — no mask, just CSS blur -->
+  <div class="title-text layer-blurred" aria-hidden="true">
     <span class="fuori">FUORI</span>
     <span class="campo">CAMPO</span>
   </div>
 
-  <!-- layer 3: blurred copy, masked by cloud shape → covers sharp only in cloud zones -->
-  <div
-    class="title-text layer-blurred"
-    bind:this={layerBlur}
-    aria-hidden="true"
-  >
-    <span class="fuori">FUORI</span>
-    <span class="campo">CAMPO</span>
-  </div>
-
-  <!-- spacer for natural h1 height -->
+  <!-- spacer -->
   <div class="title-text spacer" aria-hidden="true">
     <span class="fuori">FUORI</span>
     <span class="campo">CAMPO</span>
@@ -200,13 +186,11 @@
     align-items: center;
     width: min(1083px, 90vw);
     max-width: 100vw;
-    cursor: auto;
     user-select: none;
-    pointer-events: auto;
+    pointer-events: none;
     background: transparent;
     box-sizing: border-box;
-    z-index: 9999;
-    max-height: 100vh;
+    z-index: 10;
     overflow: visible;
   }
 
@@ -234,39 +218,21 @@
   }
 
   .layer-sharp {
-    z-index: 1;
-  }
-
-  .layer-blurred {
     z-index: 2;
-    /* stronger, more visible blur + a bit more color pop */
-    filter: blur(44px) saturate(140%) contrast(110%);
-    opacity: 0.96;
-    will-change: filter, opacity;
-    transform: translateZ(0);
-    transition: transform 420ms cubic-bezier(.22,.98,.3,1), opacity 420ms ease;
   }
 
-  /* Make the blurred layer render as a filled, glowing version of the text
-     (keep the sharp layer as the outlined/sharp text). */
+  /* blurred copy sits behind the sharp layer */
+  .layer-blurred {
+    z-index: 1;
+    filter: blur(38px);
+    opacity: 0.55;
+  }
+
   .layer-blurred .fuori,
   .layer-blurred .campo {
     color: var(--color-content-title);
     -webkit-text-fill-color: var(--color-content-title);
     -webkit-text-stroke-width: 0;
-  }
-
-  /* extra soft glow behind the blurred layer */
-  .layer-blurred::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.12), transparent 25%);
-    filter: blur(80px) saturate(140%);
-    opacity: 0.45;
-    mix-blend-mode: screen;
   }
 
   .fuori {

@@ -25,9 +25,11 @@
   let underlineVisible = $state(false);
   let underlineInitialized = $state(false);
   let hoveredNavIndex = $state(-1);
+  const isHomePage = $derived(page.url.pathname === '/');
 
   // NAVBAR VISIBILITY STATE
   let visible = $state(true);
+  let lastScrollY = 0;
 
   function navLinkAction(node: HTMLAnchorElement, index: number) {
     navLinkRefs[index] = node;
@@ -112,8 +114,35 @@
       return;
     }
 
+    const isInHeroViewport = () => {
+      if (!isHomePage) return false;
+      return window.scrollY < window.innerHeight * 0.92;
+    };
+
     const handleResize = () => {
       if (underlineInitialized) syncActiveUnderline();
+    };
+
+    const handleScroll = () => {
+      if (isHomePage) {
+        if (isInHeroViewport()) {
+          visible = true;
+          underlineVisible = true;
+        } else {
+          const currentScrollY = window.scrollY;
+          const scrollDelta = currentScrollY - lastScrollY;
+
+          if (scrollDelta > 8) {
+            visible = false;
+            underlineVisible = false;
+          } else if (scrollDelta < -8) {
+            visible = true;
+            underlineVisible = true;
+          }
+        }
+      }
+
+      lastScrollY = window.scrollY;
     };
 
     // POINTER-BASED REVEAL (REFERENCE BEHAVIOR)
@@ -134,8 +163,9 @@
       const movingUp = e.clientY < lastPointerY || e.movementY < 0;
       const nearTop = e.clientY <= 80;
 
-      if (nearTop && movingUp) {
+      if (nearTop && movingUp && (!isHomePage || !isInHeroViewport())) {
         visible = true;
+        underlineVisible = true;
       }
 
       lastPointerY = e.clientY;
@@ -144,18 +174,29 @@
     // HIDE ON SCROLL DOWN
     const onWheel = (ev: WheelEvent) => {
       if (pinned) return;
+      if (isInHeroViewport()) {
+        visible = true;
+        underlineVisible = true;
+        return;
+      }
 
-      if (ev.deltaY > 0) {
+      if (ev.deltaY < 0) {
+        visible = true;
+        underlineVisible = true;
+      } else if (ev.deltaY > 0) {
         visible = false;
+        underlineVisible = false;
       }
     };
 
     window.addEventListener('pointermove', pointerMove, { passive: true });
     window.addEventListener('wheel', onWheel, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('pointermove', pointerMove);
       window.removeEventListener('wheel', onWheel);
     };
