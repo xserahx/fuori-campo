@@ -49,15 +49,6 @@
   let sawPointer = false;
   let navContainer: HTMLElement | null = null;
   let navLinkRefs: Array<HTMLAnchorElement | undefined> = [];
-  let questionSection: HTMLElement | null = null;
-  let questionViewport: HTMLDivElement | null = null;
-  let questionTrack: HTMLDivElement | null = null;
-  let questionMaxScroll = $state(0);
-  let questionInView = $state(false);
-  let questionObserver: IntersectionObserver | null = null;
-  let questionResizeObserver: ResizeObserver | null = null;
-  let questionRevealArmed = $state(false);
-  const QUESTION_INTERSECT_THRESHOLD = 0.15;
 
   function navLinkAction(node: HTMLAnchorElement, index: number) {
     navLinkRefs[index] = node;
@@ -97,39 +88,6 @@
 
   function resetNavSelection() {
     syncUnderline(routeNavIndex);
-  }
-
-  function updateQuestionSectionBounds() {
-    if (!questionViewport || !questionTrack) return;
-
-    questionMaxScroll = Math.max(0, questionTrack.scrollWidth - questionViewport.clientWidth);
-  }
-
-  function setVerticalScrollLock(locked: boolean) {
-    document.documentElement.style.overflowY = locked ? "hidden" : "";
-    document.body.style.overflowY = locked ? "hidden" : "";
-  }
-
-  function handleQuestionWheel(event: WheelEvent) {
-    if (!questionViewport || questionMaxScroll <= 0 || !questionInView) return;
-
-    const dominantDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    if (dominantDelta === 0) return;
-
-    const atStart = questionViewport.scrollLeft <= 0;
-    const atEnd = questionViewport.scrollLeft >= questionMaxScroll - 1;
-
-    if ((dominantDelta < 0 && atStart) || (dominantDelta > 0 && atEnd)) {
-      setVerticalScrollLock(false);
-      return;
-    }
-
-    event.preventDefault();
-    setVerticalScrollLock(true);
-    questionViewport.scrollLeft = Math.min(
-      questionMaxScroll,
-      Math.max(0, questionViewport.scrollLeft + dominantDelta)
-    );
   }
 
   let routeNavIndex = 0;
@@ -174,10 +132,6 @@
       navbarVisible = inHero;
       navbarFixed = inHero;
       underlineVisible = inHero;
-    };
-
-    const updateQuestionState = () => {
-      updateQuestionSectionBounds();
     };
 
     const handleScroll = () => {
@@ -250,37 +204,6 @@
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: true });
-    window.addEventListener("resize", updateQuestionState, { passive: true });
-
-    questionResizeObserver = new ResizeObserver(updateQuestionState);
-
-    const shell = questionSection as HTMLElement | null;
-    const viewport = questionViewport as HTMLDivElement | null;
-    const track = questionTrack as HTMLDivElement | null;
-
-    if (shell && viewport && track) {
-      questionResizeObserver.observe(viewport);
-      questionResizeObserver.observe(track);
-      updateQuestionState();
-
-      questionObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          const visible = entry.intersectionRatio >= QUESTION_INTERSECT_THRESHOLD;
-          questionInView = visible;
-
-          if (!visible) {
-            setVerticalScrollLock(false);
-          }
-
-          if (visible && !questionRevealArmed) {
-            questionRevealArmed = true;
-          }
-        }
-      }, { threshold: [QUESTION_INTERSECT_THRESHOLD] });
-
-      questionObserver.observe(shell);
-      shell.addEventListener("wheel", handleQuestionWheel, { passive: false });
-    }
 
     routeNavIndex = resolveNavIndex();
     activeNavIndex = routeNavIndex;
@@ -296,16 +219,6 @@
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("resize", updateQuestionState);
-      questionResizeObserver?.disconnect();
-      if (questionObserver) {
-        questionObserver.disconnect();
-        questionObserver = null;
-      }
-      if (shell) {
-        shell.removeEventListener("wheel", handleQuestionWheel);
-      }
-      setVerticalScrollLock(false);
     };
   });
 
@@ -313,14 +226,14 @@
   const offsetCount = 6;
 
   const fadeReveal: BlurRevealOptions = {
-    variant: "fade" as unknown as BlurRevealOptions["variant"],
+    variant: "fade",
     blur: 24,
     duration: 1000,
     threshold: 0.15
   };
 
   const fadeRevealDelayed: BlurRevealOptions = {
-    variant: "fade" as unknown as BlurRevealOptions["variant"],
+    variant: "fade",
     blur: 24,
     duration: 1000,
     threshold: 0.15,
@@ -373,50 +286,43 @@
       </p>
     </section>
 
-    <div
-      class="question-shell"
-      bind:this={questionSection}
-      class:armed={questionRevealArmed}
-    >
-      <div class="question-stage">
-        <div class="question-viewport" bind:this={questionViewport}>
-          <div class="question-track" bind:this={questionTrack}>
-          <section class="question question--left"
-                use:blurReveal={fadeReveal}>
-            <h2>
-              <span class="accent">MA </span>
-              <span class="ghost">CHI SONO </span>
-              <span class="accent">DAVVERO</span><br />
-              <span class="accent">I VOLONTARI?</span>
-            </h2>
-          </section>
+    <!-- QUESTION PANEL — lime background -->
+    <div class="question-panel">
+      <div class="question-track">
+        <section class="question question--left"
+              use:blurReveal={fadeReveal}>
+          <h2>
+            <span class="accent">MA </span>
+            <span class="ghost">CHI SONO </span>
+            <span class="accent">DAVVERO</span><br />
+            <span class="accent">I VOLONTARI?</span>
+          </h2>
+        </section>
 
-          <section class="question question--right"
-                use:blurReveal={fadeRevealDelayed}>
-            <h2>
-              <span class="ghost">PERCHÈ </span>
-              <span class="accent">HANNO DECISO</span><br />
-              <span class="accent">DI CANDIDARSI?</span>
-            </h2>
-          </section>
+        <section class="question question--right"
+              use:blurReveal={fadeRevealDelayed}>
+          <h2>
+            <span class="ghost">PERCHÈ </span>
+            <span class="accent">HANNO DECISO</span><br />
+            <span class="accent">DI CANDIDARSI?</span>
+          </h2>
+        </section>
 
-          <section class="question question--left"
-                use:blurReveal={fadeReveal}>
-            <h2>
-              <span class="ghost">COSA FACEVANO </span><br />
-              <span class="accent">CONCRETAMENTE?</span>
-            </h2>
-          </section>
+        <section class="question question--left"
+              use:blurReveal={fadeReveal}>
+          <h2>
+            <span class="ghost">COSA FACEVANO </span><br />
+            <span class="accent">CONCRETAMENTE?</span>
+          </h2>
+        </section>
 
-          <section class="question question--right"
-                use:blurReveal={fadeRevealDelayed}>
-            <h2>
-              <span class="accent">NE È VALSA LA PENA?</span><br />
-              <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
-            </h2>
-          </section>
-          </div>
-        </div>
+        <section class="question question--right"
+              use:blurReveal={fadeRevealDelayed}>
+          <h2>
+            <span class="accent">NE È VALSA LA PENA?</span><br />
+            <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
+          </h2>
+        </section>
       </div>
     </div>
 

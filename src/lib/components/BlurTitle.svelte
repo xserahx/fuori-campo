@@ -221,11 +221,25 @@
     z-index: 2;
   }
 
-  /* blurred copy sits behind the sharp layer */
+  /* blurred copy sits behind the sharp layer
+     blur(25px) matches Figma FOREGROUND_BLUR radius:25 (node 3773:4324) */
   .layer-blurred {
     z-index: 1;
-    filter: blur(38px);
+    filter: blur(25px);
     opacity: 0.55;
+  }
+
+  /* Grain texture — Figma GRAIN radius:8 */
+  .title-wrap::after {
+    content: "";
+    position: absolute;
+    inset: -12%;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
   }
 
   .layer-blurred .fuori,
@@ -240,11 +254,13 @@
     text-align: center;
   }
 
+  /* CAMPO is transparent — no explicit stroke.
+     The blurred layer behind it spreads a lime glow into this area,
+     matching Figma's FOREGROUND_BLUR effect (no visible contour). */
   .campo {
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke-width: 10px;
-    -webkit-text-stroke-color: var(--color-content-title);
+    -webkit-text-stroke-width: 0;
     text-align: center;
   }
 </style>

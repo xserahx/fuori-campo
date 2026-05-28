@@ -1,43 +1,99 @@
-:root{
-  --color-background-primary: #0e0e0e;
-  --color-content-title: #bdff5d;
-  --color-content-body: #fafafa;
-  --color-content-body-black: #0e0e0e;
-  --color-link-selected: #bdff5d;
-  --color-content-primary: #202426;
-  --gallery-background: #0e0e0e;
-  --gallery-overlay: rgba(14, 14, 14, 0.5);
-  --gallery-text: #fafafa;
-  --gallery-accent: #bdff5d;
-  --gallery-navbar-offset: 143px;
-  --gallery-edge-width: 70px;
-  --gallery-shell-z: 2;
+:root {
+  /* Background */
+  --color-background-primary:     #0e0e0e;              /* Color/Background/Primary     */
+  --color-background-transparent: rgba(26, 26, 26, 0);  /* Color/Background/Transparent */
+  --color-background-secondary:   #ebeeef;              /* Color/Background/secondary   */
 
-  /* Font stacks */
-  --font-display: 'Forma DJR Display', sans-serif;
+  /* Content */
+  --color-content-accent:     #bdff5d;  /* Color/Content/Accent     — neon lime   */
+  --color-content-body:       #fafafa;  /* Color/Content/Body                     */
+  --color-content-body-black: #0e0e0e;  /* Color/Content/Body-black               */
+  --color-content-primary:    #202426;  /* Color/Content/primary                  */
+
+  /* Links */
+  --color-link-selected: #bdff5d;  /* Color/Link/Selected */
+  --color-link-default:  #fafafa;  /* Color/Link/Default  */
+  --color-link-hover:    #fafafa;  /* Color/Link/Hover    */
+
+  /* Backward-compat aliases */
+  --color-content-title: var(--color-content-accent);   
+  --gallery-background:  var(--color-background-primary);
+  --gallery-overlay:     rgba(14, 14, 14, 0.5);
+  --gallery-text:        var(--color-content-body);
+  --gallery-accent:      var(--color-content-accent);
+
+   /* TYPOGRAPHY  (Figma: Font/Main font + named text styles) */ 
   
-  /* Unit scale */
+   --font-display: 'Forma DJR Display', sans-serif;  /* Main font */
+
+  /* Scrolling — body / story paragraphs
+    Medium 500 · 64 px · lh 64 px · ls 0 */
+  --ts-scrolling-size:           64px;
+  --ts-scrolling-weight:         500;
+  --ts-scrolling-line-height:    64px;
+  --ts-scrolling-letter-spacing: 0em;
+
+  /* H3 | Quotes + Answers + mini categorie
+    Medium 500 · 36 px · lh 100% · ls 2% (0.72 px) */
+  --ts-h3-size:           36px;
+  --ts-h3-weight:         500;
+  --ts-h3-line-height:    1;
+  --ts-h3-letter-spacing: 0.72px;
+
+  /* Scrollitelling — question headings on lime panel
+    Extra Bold 800 · 116 px · lh 106 px · ls 0 */
+  --ts-scrollitelling-size:           116px;
+  --ts-scrollitelling-weight:         800;
+  --ts-scrollitelling-line-height:    106px;
+  --ts-scrollitelling-letter-spacing: 0em;
+
+  /* Filter + Domande — category filters, small labels
+    Medium 500 · 20 px · lh 100% · ls 0 */
+  --ts-filter-size:           20px;
+  --ts-filter-weight:         500;
+  --ts-filter-line-height:    1;
+  --ts-filter-letter-spacing: 0em;
+
+  /* Navigation — FOTO / NOMI toggle labels
+    Bold 700 · 16 px · lh 100% · ls 0 */
+  --ts-navigation-size:           16px;
+  --ts-navigation-weight:         700;
+  --ts-navigation-line-height:    1;
+  --ts-navigation-letter-spacing: 0em;
+
+  /* Top-bar nav links — from TopBar component (Medium · 24 px · lh 26 px)
+    Note: overrides the "Navigation" text style; unit is Unit/24 */
+  --ts-nav-link-size:           24px;
+  --ts-nav-link-weight:         500;
+  --ts-nav-link-line-height:    26px;
+  --ts-nav-link-letter-spacing: 0em;
+
+  /* ----------------------------------------------------------
+   * UNIT SCALE  (Figma: Unit/*)
+   * ---------------------------------------------------------- */
+  --unit-16:  16px;   /* Unit/16  */
+  --unit-20:  20px;   /* Unit/20  */
+  --unit-24:  24px;   /* Unit/24  */
+  --unit-36:  36px;   /* Unit/36  */
+  --unit-64:  64px;   /* Unit/64  */
+  --unit-116: 116px;  /* Unit/116 */
+
+  /* Extended — implementation use only */
   --unit-0:   0px;
   --unit-1:   1px;
   --unit-2:   2px;
   --unit-4:   4px;
   --unit-8:   8px;
   --unit-12:  12px;
-  --unit-16:  16px;
-  --unit-20:  20px;
-  --unit-24:  24px;
   --unit-32:  32px;
-  --unit-36:  36px;
   --unit-40:  40px;
   --unit-48:  48px;
   --unit-56:  56px;
-  --unit-64:  64px;
   --unit-68:  68px;
   --unit-72:  72px;
   --unit-76:  76px;
   --unit-80:  80px;
   --unit-84:  84px;
-  --unit-116: 116px;
   --unit-160: 160px;
   --unit-200: 200px;
   --unit-300: 300px;
@@ -45,55 +101,104 @@
   --unit-500: 500px;
   --unit-999: 999px;
 
-  /* Spacing scale */
-  --spacing-0:  var(--unit-0);
-  --spacing-1:  var(--unit-4);
-  --spacing-2:  var(--unit-8);
-  --spacing-3:  var(--unit-12);
-  --spacing-4:  var(--unit-16);
-  --spacing-5:  var(--unit-24);
-  --spacing-6:  var(--unit-32);
-  --spacing-7:  var(--unit-40);
-  --spacing-8:  var(--unit-48);
-  --spacing-9:  var(--unit-72);
-  --spacing-10: var(--unit-64);
-  --spacing-11: var(--unit-72);
-  --spacing-12: var(--unit-80);
-  --spacing-13: var(--unit-160);
-  --spacing-14: var(--unit-200);
-  --spacing-15: var(--unit-300);
-  --spacing-18: var(--unit-395);
-  --spacing-19: var(--unit-500);
+  /* ----------------------------------------------------------
+   * SPACING SCALE  (Figma: Spacing/*)
+   * ---------------------------------------------------------- */
 
-  --story-numbers-gap: var(--unit-300); 
-  --hero-to-lead: calc(var(--spacing-13) + 469px);
-  --hero-top-gap: 144px; 
+  /* Figma-defined */
+  --spacing-0:  0px;   /* Spacing/0  */
+  --spacing-1:  4px;   /* Spacing/1  */
+  --spacing-5:  24px;  /* Spacing/5  */
+  --spacing-6:  32px;  /* Spacing/6  */
+  --spacing-7:  40px;  /* Spacing/7  */
+  --spacing-8:  48px;  /* Spacing/8  */
+  --spacing-9:  72px;  /* Spacing/9  */
+  --spacing-10: 64px;  /* Spacing/10 */
+  --spacing-11: 72px;  /* Spacing/11 */
 
-  /* Radius */
-  --radius-rounded-pill: 53.5px;
+  /* Extended — implementation use only */
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-12: 80px;
+  --spacing-13: 160px;
+  --spacing-14: 200px;
+  --spacing-15: 300px;
+  --spacing-18: 395px;
+  --spacing-19: 500px;
 
-  /* Width */
-  --max-width: 1100px;
-  
-  /* Figma node-specific tokens */
-  --figma-quote-width: 857px;
+  /* ----------------------------------------------------------
+   * RADIUS  (Figma: Radius/*)
+   * ---------------------------------------------------------- */
+
+  --radius-l:            24px;    /* Radius/L — pill container */
+  --radius-m:            16px;    /* Radius/M — pill active    */
+  --radius-rounded-pill: 53.5px;  /* toggle outer — implementation */
+
+  /* ----------------------------------------------------------
+   * STROKE  (Figma: Stroke/*)
+   * ---------------------------------------------------------- */
+
+  --stroke-1: 2px;  /* Stroke/1 */
+
+  /* ----------------------------------------------------------
+   * LAYOUT & COMPONENT TOKENS  (derived from Figma artboard)
+   * ---------------------------------------------------------- */
+
+  --navbar-height:         125px;
+  --max-width:             1100px;
+  --gallery-navbar-offset: 143px;
+  --gallery-edge-width:    70px;
+  --gallery-shell-z:       2;
+
+  /* Artboard-derived layout distances */
+  --story-numbers-gap: var(--unit-300);
+  --hero-to-lead:      calc(var(--spacing-13) + 469px);
+  --hero-top-gap:      144px;
+
+  /* Story / quote section widths */
+  --figma-story-width:      857px;
+  --figma-quote-width:      857px;
   --figma-quote-margin-top: 492px;
-  --figma-story-width: 857px;
-  --figma-story-right-top: 428px;
-  --figma-story-left-top: 0px;
-  --figma-title-size: clamp(132px, 17vw, 260px);
+  --figma-story-right-top:  428px;
+  --figma-story-left-top:   0px;
+
+  /* Title geometry (Figma: Title node 3773:4324 — w:1083 h:500) */
+  --figma-hero-top:         224px;
+  --figma-title-height:     500px;
+  --figma-title-weight:     800;
+  --figma-title-size:       clamp(132px, 17vw, 260px);
   --figma-title-lineheight: clamp(110px, 14vw, 210px);
 
-  /* Gallery sizing tokens */
-  --gallery-width-1: 140px;
-  --gallery-width-2: 180px;
-  --gallery-width-3: 160px;
-  --gallery-width-4: 200px;
-  --gallery-width-5: 130px;
-  --gallery-width-6: 170px;
-  --gallery-width-7: 120px;
-  --gallery-width-8: 190px;
-  --gallery-width-9: 150px;
+  /* Question section artboard positions */
+  --figma-quote-container-top: 2409px;
+  --figma-story-container-top: 1353px;
+  --question-1-top:            3529px;
+  --question-2-top:            4241px;
+  --question-3-top:            4953px;
+  --question-4-top:            5665px;
+
+  /* Question horizontal offsets (Figma) */
+  --question-left-1: 0px;
+  --question-left-2: 335px;
+  --question-left-3: 0px;
+  --question-left-4: 533px;
+
+  /* Post-question artboard positions */
+  --figma-summary-top: 6164px;
+  --figma-scroll-top:  6821px;
+  --quote-grid-height: 540px;
+
+  /* Gallery masonry sizing */
+  --gallery-width-1:  140px;
+  --gallery-width-2:  180px;
+  --gallery-width-3:  160px;
+  --gallery-width-4:  200px;
+  --gallery-width-5:  130px;
+  --gallery-width-6:  170px;
+  --gallery-width-7:  120px;
+  --gallery-width-8:  190px;
+  --gallery-width-9:  150px;
   --gallery-width-10: 160px;
   --gallery-width-11: 130px;
   --gallery-width-12: 180px;
@@ -104,579 +209,427 @@
   --gallery-offset-4: 40px;
   --gallery-offset-5: 18px;
   --gallery-offset-6: 56px;
-  --figma-hero-top: 224px;
-  --figma-title-height: 250px;
-  --figma-title-weight: 800px;
-  --figma-quote-container-top: 2409px;
-  --figma-story-container-top: 1353px;
-  --question-1-top: 3529px;
-  --question-2-top: calc(var(--question-1-top) + var(--spacing-19));
-  --question-3-top: calc(var(--question-1-top) + 2 * var(--spacing-19));
-  --question-4-top: calc(var(--question-1-top) + 3 * var(--spacing-19));
-
-  /* Left offsets for question blocks (from Figma) */
-  --question-left-1: 0px;
-  --question-left-2: 335px;
-  --question-left-3: 0px;
-  --question-left-4: 533px;
-
-  /* Additional large-page vertical tokens from Figma HOME artboard */
-  --figma-summary-top: calc(var(--question-4-top) + var(--spacing-19));
-  --figma-scroll-top: calc(var(--figma-summary-top) + var(--spacing-19));
-  --figma-arrow-top: calc(var(--figma-scroll-top) + var(--spacing-19));
-  --quote-grid-height: 540px; 
-}
-/* Font faces */
-/* Font faces */
-/* Custom display font files removed from repo; using system fallbacks.
-   If you want Forma DJR Display locally, add WOFF2 files to `static/fonts/`
-   and restore these @font-face rules with correct paths. */
-
-html,body,#svelte{height:100%;}
-
-body{
-  margin:0;
-  background:var(--color-background-primary);
-  color:var(--color-content-body);
-  font-family:var(--font-display);
 }
 
-/* Hide visual scrollbars while preserving scroll functionality */
+/* ================================================================
+ * FONT FACES
+ * Add WOFF2 files to static/fonts/ and restore @font-face rules.
+ * ================================================================ */
+
+/* ================================================================
+ * GLOBAL RESET & BASE
+ * ================================================================ */
+
+html, body, #svelte { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--color-background-primary);
+  color: var(--color-content-body);
+  font-family: var(--font-display);
+}
+
+/* Hide visual scrollbars, preserve scroll functionality */
 html, body, * {
-  -ms-overflow-style: none; 
-  scrollbar-width: none;    
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-/* WebKit browsers */
-html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar {
-  display: none; width: 0; height: 0;
-}
-
-.site{
-  min-height:100vh;
+.site {
+  min-height: 100vh;
   background: var(--color-background-primary) !important;
 }
 
-:root{
-  --navbar-height: 125px;
-}
+/* ================================================================
+ * NAVBAR
+ * ================================================================ */
 
-.navbar{
-  position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  overflow:hidden;
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
   padding: var(--spacing-5) var(--spacing-11);
-  display:flex;
-  align-items:center;
-  background: linear-gradient(to bottom, var(--color-background-primary) 0%, rgba(14, 14, 14, 0.15) 100%);
+  display: flex;
+  align-items: center;
+  background: linear-gradient(
+    to bottom,
+    var(--color-background-primary) 0%,
+    rgba(14, 14, 14, 0.15) 100%
+  );
   min-height: var(--navbar-height);
   box-sizing: border-box;
   z-index: 40;
   transition:
     transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity   240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.navbar--transparent{
-  background: linear-gradient(to bottom, rgba(14, 14, 14, 1) 0%, rgba(14, 14, 14, 0.15) 100%);
+.navbar--transparent {
+  background: linear-gradient(
+    to bottom,
+    rgba(14, 14, 14, 1) 0%,
+    rgba(14, 14, 14, 0.15) 100%
+  );
 }
 
-/* hide navbar background image when navbar is transparent so page stays dark */
-.navbar--transparent .navbar-bg{
+.navbar--transparent .navbar-bg  { opacity: 0; pointer-events: none; }
+.navbar--transparent .nav-link   { color: var(--color-content-body); opacity: 1; }
+.navbar--transparent .nav-link.is-active { color: var(--color-content-body); opacity: 1; }
+.navbar--transparent .nav-underline {
+  background: var(--color-content-body);
+  box-shadow: 0 0 14px rgba(250, 250, 250, 0.28);
+}
+
+.navbar.hidden {
+  transform: translateY(-110%);
   opacity: 0;
   pointer-events: none;
 }
 
-/* ensure hovering links doesn't reveal or change page background */
-.nav-link:hover, .nav-link:focus {
-  background: transparent;
+.navbar-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
 }
 
-.navbar--transparent .nav-link{
-  color: #fafafa;
-  opacity: 1;
+.navbar-inner {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
 }
 
-.navbar--transparent .nav-link.is-active{
-  color: #fafafa;
-  opacity: 1;
-}
+.logo { display: flex; align-items: center; flex: 0 0 auto; margin-left: 0; }
+.logo img { height: 63.784px; width: 67px; display: block; }
+.logo svg { width: 35px; height: 77px; display: block; }
 
-.navbar--transparent .nav-underline{
-  background: #fafafa;
-  box-shadow: 0 0 14px rgba(250, 250, 250, 0.28);
-}
-
-.navbar.hidden{
-  transform: translateY(-110%);
-  opacity: 0;
-  pointer-events:none;
-}
-.navbar-bg{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  pointer-events:none;
-}
-.navbar-inner{
-  position:relative;
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:0; /* remove extra inner gap so left logo spacing equals right nav spacing */
-}
-.logo{display:flex;align-items:center;flex:0 0 auto}
-.logo{margin-left:0}
-.logo img{height:63.784px;width:67px;display:block}
-.logo svg{width:35px;height:77px;display:block}
-.nav-links{
-  position:relative;
-  display:flex;
-  gap: var(--spacing-6);
-  align-items:center;
+.nav-links {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-6);          /* 32 px  — Spacing/6 */
+  align-items: center;
   margin-left: auto;
   justify-content: flex-end;
   width: 357px;
 }
-.nav-link{
-  color:var(--color-content-body);
-  text-transform:uppercase;
-  font-family:var(--font-display);
-  font-weight:500;
-  letter-spacing:0;
-  text-decoration:none;
-  line-height:26px;
-  font-size:24px;
-  opacity:0.78;
-  transition: color 220ms cubic-bezier(.2,1,.3,1), transform 220ms cubic-bezier(.2,1,.3,1), opacity 160ms ease;
+
+.nav-link {
+  color: var(--color-link-default);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size:   var(--ts-nav-link-size);    /* 24 px */
+  font-weight: var(--ts-nav-link-weight);  /* 500   */
+  line-height: var(--ts-nav-link-line-height); /* 26 px */
+  letter-spacing: var(--ts-nav-link-letter-spacing);
+  text-decoration: none;
+  opacity: 0.78;
+  transition:
+    color   220ms cubic-bezier(.2, 1, .3, 1),
+    transform 220ms cubic-bezier(.2, 1, .3, 1),
+    opacity 160ms ease;
   transform: translateY(0);
 }
-.nav-link:hover, .nav-link:focus{
-  color: var(--color-content-title);
+
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--color-link-selected);
   transform: translateY(-2px);
-  opacity:1;
+  opacity: 1;
+  background: transparent;
 }
-.nav-link.is-active{
-  color: var(--color-content-title);
+
+.nav-link.is-active {
+  color: var(--color-link-selected);
   transform: translateY(-2px);
-  opacity:1;
-  font-weight:500;
-}
-.nav-underline{
-  display:none; /* underline removed in favor of color animation */
+  opacity: 1;
 }
 
-/* Responsive: collapse navigation under 900px */
-@media (max-width:900px){
-  .navbar{padding: var(--spacing-4) var(--spacing-5)}
-  .logo img{height:48px;width:auto}
-  .nav-links{gap:24px}
-  .nav-link{font-size:14px}
+.nav-underline { display: none; }
+
+@media (max-width: 900px) {
+  .navbar     { padding: var(--spacing-4) var(--spacing-5); }
+  .logo img   { height: 48px; width: auto; }
+  .nav-links  { gap: 24px; }
+  .nav-link   { font-size: 14px; }
 }
 
-.landing{
-  width:100%;
-  overflow:hidden;
+/* ================================================================
+ * LANDING PAGE LAYOUT
+ * ================================================================ */
+
+.landing {
+  width: 100%;
+  overflow: hidden;
 }
 
-.hero-outer{
-  display:flex;
-  width:100%;
-  margin:0 auto;
+.hero-outer {
+  display: flex;
+  width: 100%;
+  margin: 0 auto;
   padding: 0;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:10px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
   min-height: 100dvh;
   box-sizing: border-box;
   overflow: hidden;
   background: var(--color-background-primary);
 }
 
-.hero-inner{
-  width:100%;
-  max-width:min(1083px, 100%);
-  display:flex;
-  align-items:center;
-  justify-content:center;
+.hero-inner {
+  width: 100%;
+  max-width: min(1083px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transform: translateY(clamp(-72px, -5vw, -32px));
 }
 
-.wrap {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.stack {
-  position: relative;
-  width: 100%;
-  display: grid;
-  place-items: center;
-}
-
-.blur {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  will-change: filter;
-}
-
-.word {
-  display: block;
-  font-family: "Forma DJR Display", sans-serif;
-  font-weight: 900;
-  font-size: 300px;
-  line-height: 0.86;
-  letter-spacing: -0.025em;
-  white-space: nowrap;
-  text-transform: uppercase;
-  color: var(--color-content-title);
-  transition:
-    filter 0.58s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.58s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.second {
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: 4px var(--color-content-title);
-}
-
-.blur .word {
-  filter: blur(14px);
-  opacity: 1;
-  transform: translateZ(0);
-}
-
-.clear {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: var(--part-top);
-  height: var(--part-height);
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0;
-  transform: scale(0.998);
-  overflow: hidden;
-  transition:
-    opacity 0.48s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.clear .word {
-  filter: blur(0);
-  opacity: 1;
-  transform: translateZ(0);
-}
-
-.clear.is-active {
-  opacity: 1;
-  transform: scale(1.01);
-}
-
-.guard {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: var(--part-top);
-  height: var(--part-height);
-  z-index: 3;
-  margin: 0;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: default;
-}
-
-.guard:focus {
-  outline: none;
-}
+/* ================================================================
+ * STORY SECTIONS  (Scrolling text style)
+ * ================================================================ */
 
 .story,
 .quote,
 .question,
-.scroll-cue{
-  padding-left:var(--spacing-11);
-  padding-right:var(--spacing-11);
-  box-sizing:border-box;
+.scroll-cue {
+  padding-left:  var(--spacing-11);
+  padding-right: var(--spacing-11);
+  box-sizing: border-box;
 }
 
-/* lead paragraph under hero */
-.lead-paragraph{
-  max-width:980px;
-  margin: var(--hero-to-lead) auto 0; /* distance from hero as requested */
-  font-size:var(--unit-64);
-  color:var(--color-content-body);
+.lead-paragraph {
+  max-width: 980px;
+  margin: var(--hero-to-lead) auto 0;
+  font-size:   var(--ts-scrolling-size);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
 }
 
-.story{
-  max-width:1080px;
-  margin-top:40px;
-  font-family:var(--font-display);
-  font-size:var(--unit-64);
-  line-height:var(--spacing-10);
-  color:var(--color-content-body);
+.story {
+  max-width:   1080px;
+  margin-top:  40px;
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
 }
 
 .story p,
 .quote,
-.question h2{
-  margin:0;
+.question h2 { margin: 0; }
+
+.story--left {
+  max-width:  var(--figma-story-width);
+  margin-top: var(--spacing-12);
 }
 
-.story--right{
-  margin-left:auto;
-  text-align:right;
-  max-width:var(--figma-story-width);
-  margin-top:var(--story-numbers-gap);
+.story--right {
+  margin-left: auto;
+  text-align:  right;
+  max-width:   var(--figma-story-width);
+  margin-top:  var(--story-numbers-gap);
 }
 
-.story--left{
-  max-width:var(--figma-story-width);
-  margin-top:var(--spacing-12);
+.story--intro  { margin-top: 0; }
+
+.story--summary {
+  max-width:  980px;
+  margin-top: 192px;
 }
 
-.story--intro{
-  margin-top:0;
-}
-
-.story--summary{
-  max-width:980px;
-  margin-top:192px; /* Figma: 287px dal content→summary, sottratto padding-bottom 95px */
-}
-
+/* Quote sub-variant */
 .story--quote {
-  max-width: var(--figma-story-width); /* identico alle story */
+  max-width:   var(--figma-story-width);
   font-family: var(--font-display);
-  font-size: var(--unit-64);
-  line-height: var(--spacing-10);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
   color: var(--color-content-body);
-  margin-top: var(--spacing-12); /* stesso gap delle story-left */
+  margin-top: var(--spacing-12);
 }
 
 .story--quote-left {
-  margin-left: 0;
-  margin-top: var(--spacing-19); /* 500px — Figma: gap numeri→citazione1 */
-  text-align: left;
+  margin-left:  0;
+  margin-top:   var(--spacing-19);
+  text-align:   left;
   padding-left: var(--spacing-11);
 }
 
 .story--quote-right {
-  margin-left: auto;
-  margin-top: var(--spacing-15); /* 300px — Figma: gap citazione1→citazione2 */
-  text-align: right;
+  margin-left:   auto;
+  margin-top:    var(--spacing-15);
+  text-align:    right;
   padding-right: var(--spacing-11);
 }
 
 .quote {
   margin: 0;
-  max-width: var(--figma-story-width);
+  max-width:   var(--figma-story-width);
   font-family: var(--font-display);
-  font-size: var(--unit-64);
-  line-height: var(--spacing-10);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
   color: var(--color-content-body);
 }
 
-.accent{
-  color:var(--color-content-title);
-}
+.accent { color: var(--color-content-accent); }
 
-.question-shell{
-  background: var(--color-content-title);
-  color:#000;
+/* ================================================================
+ * QUESTION PANEL  (lime background — Scrollitelling text style)
+ * ================================================================ */
+
+.question-panel {
+  background: var(--color-content-accent);
+  color: #000;
   margin-top: 346px;
   padding-top: 154px;
-  min-height: 100svh;
-  position: relative;
+  padding-bottom: 95px;
+  overflow-x: hidden;
 }
 
-.question-stage{
-  position: relative;
-  height: 100svh;
-}
-
-.question-viewport{
-  width: 100%;
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  overscroll-behavior: contain;
-  -ms-overflow-style: none;
-}
-
-.question-viewport::-webkit-scrollbar{
-  display: none;
-}
-
-.question-track{
-  display:flex;
-  flex-direction:row;
-  height: 100%;
-  width: max-content;
-}
-
-.question-track .question{
-  margin-top: 0;
-}
-
-.question{
-  flex: 0 0 100vw;
-  min-height: 100svh;
-  padding-left: var(--spacing-11);
-  padding-right: var(--spacing-11);
-  box-sizing: border-box;
+.question-track {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 24px;
+  gap: var(--spacing-19);  /* 500 px between questions */
 }
 
-.question--intro{
-  align-items: flex-start;
+.question-track .question { margin-top: 0; }
+
+.question {
+  padding-left:  var(--spacing-11);
+  padding-right: var(--spacing-11);
+  box-sizing: border-box;
 }
 
-.question h2{
-  font-family: var(--font-display);
-  font-size: var(--unit-116);
-  line-height: 106px;
-  font-weight: 800;
+.question h2 {
+  font-family:    var(--font-display);
+  font-size:      var(--ts-scrollitelling-size);    /* 116 px */
+  font-weight:    var(--ts-scrollitelling-weight);  /* 800    */
+  line-height:    var(--ts-scrollitelling-line-height); /* 106 px */
+  letter-spacing: var(--ts-scrollitelling-letter-spacing);
   text-transform: uppercase;
   color: #000;
   margin: 0;
   max-width: none;
 }
 
-.question .accent{
-  color:#000;
+.question .accent { color: #000; }
+
+.question--right              { display: flex; justify-content: flex-end; }
+.question--right h2           { text-align: right; }
+
+.ghost {
+  color: transparent;
+  opacity: 1;
+  -webkit-text-stroke: var(--stroke-1) #000;  /* Stroke/1 = 2 px */
 }
 
-.question--right{
-  display:flex;
-  justify-content:flex-end;
-}
+/* ================================================================
+ * SCROLL CUE  (H3 text style)
+ * ================================================================ */
 
-.question--right h2{
-  text-align:right;
-}
-
-.ghost{
-  color:transparent;
-  opacity:1;
-  -webkit-text-stroke:3px #000;
-}
-
-.scroll-cue{
+.scroll-cue {
   margin-top: var(--spacing-19);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:10px;
-  color:var(--color-content-title);
-  font-family:var(--font-display);
-  font-size:var(--unit-20);
-  line-height:1.2;
-  text-align:center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-content-accent);
+  font-family: var(--font-display);
+  font-size:   var(--ts-h3-size);    /* 36 px */
+  font-weight: var(--ts-h3-weight);  /* 500   */
+  line-height: var(--ts-h3-line-height);
+  text-align: center;
 }
 
-.scroll-cue img{
-  width:56px;
-  height:auto;
-  display:block;
-  transform:rotate(90deg);
-  margin-top:24px;
+.scroll-cue img {
+  width: 56px;
+  height: auto;
+  display: block;
+  transform: rotate(90deg);
+  margin-top: 24px;
 }
 
-.gallery{
-  display:flex;
-  flex-wrap:wrap;
-  gap:12px;
-  justify-content:center;
-  padding:80px 72px 120px;
-  align-items:flex-start;
+/* ================================================================
+ * GALLERY PREVIEW
+ * ================================================================ */
+
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  padding: 80px var(--spacing-11) 120px;
+  align-items: flex-start;
 }
 
-.gallery-item{
-  margin:0;
-  flex:0 0 auto;
+.gallery-item       { margin: 0; flex: 0 0 auto; }
+.gallery-item img   { width: 100%; height: auto; display: block; object-fit: cover; }
+
+/* ================================================================
+ * ARCHIVIO LINK
+ * ================================================================ */
+
+.archivio-link { text-decoration: none; }
+.archivio-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.gallery-item img{
-  width:100%;
-  height:auto;
-  display:block;
-  object-fit:cover;
-}
+/* ================================================================
+ * RESPONSIVE
+ * ================================================================ */
 
-@media (max-width:900px){
-  .hero-outer{
-    min-height: calc(100vh - 112px);
-    padding:72px 16px 48px;
-  }  
-
-  .hero-outer{
+@media (max-width: 900px) {
+  .hero-outer {
     min-height: calc(100svh - 112px);
-  }
-
-  .word {
-    font-size: 140px;
+    padding: 72px 16px 48px;
   }
 
   .story,
   .question,
   .scroll-cue,
-  .gallery{
-    padding-left:16px;
-    padding-right:16px;
-  }
-  .story,
-  .question h2{
-    font-size:40px;
-    line-height:1.1;
-  }
-  .question{
-    padding-left:16px;
-    padding-right:16px;
-  }
-  .story--right{
-    margin-top:32px;
-  }
-  .story--quote-left,
-  .story--quote-right{
-    margin-top:32px;
-    padding-left:0;
-    padding-right:0;
-    text-align:left;
-  }
-  .question--right{
-    justify-content:flex-start;
-  }
-  .scroll-cue{
-    font-size:24px;
+  .gallery {
+    padding-left:  16px;
+    padding-right: 16px;
   }
 
-  .gallery{
-    padding-top:80px;
-    padding-bottom:120px;
+  .story,
+  .question h2 {
+    font-size:   40px;
+    line-height: 1.1;
   }
+
+  .story--right    { margin-top: 32px; }
+
+  .story--quote-left,
+  .story--quote-right {
+    margin-top:    32px;
+    padding-left:  0;
+    padding-right: 0;
+    text-align:    left;
+  }
+
+  .question--right { justify-content: flex-start; }
+
+  .scroll-cue { font-size: 24px; }
+
+  .gallery { padding-top: 80px; padding-bottom: 120px; }
 }
