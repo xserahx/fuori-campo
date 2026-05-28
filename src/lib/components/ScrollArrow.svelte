@@ -1,11 +1,15 @@
 <script lang="ts">
+  // Optional click override — if provided, replaces the default scroll-down.
+  let { onclick: handleClick = () => window.scrollBy({ top: window.innerHeight, behavior: "smooth" }) }:
+    { onclick?: () => void } = $props();
+
   let hovered = $state(false);
 </script>
 
 <button class="scroll-arrow" aria-label="Scorri verso il basso"
   onmouseenter={() => hovered = true}
   onmouseleave={() => hovered = false}
-  onclick={() => window.scrollBy({ top: window.innerHeight, behavior: "smooth" })}
+  onclick={handleClick}
 >
   <span class="label">Continua a scorrere per accedere alla galleria</span>
 

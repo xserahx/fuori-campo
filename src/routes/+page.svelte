@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import ScrollArrow from "../lib/components/ScrollArrow.svelte";
@@ -8,23 +9,12 @@
   import { imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
+  /* ── Intro loader ─────────────────────────────────────────────── */
   let showIntro = $state(true);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
-  let navbarVisible = $state(true);
-  let navbarFixed = $state(true);
-  let activeNavIndex = $state(0);
-  let underlineLeft = $state(0);
-  let underlineWidth = $state(0);
-  let underlineVisible = $state(false);
 
   const volunteers = ["/volontari/1.jpg", "/volontari/2.jpg", "/volontari/3.jpg"];
-  const navItems = [
-    { href: "/gallery", label: "GALLERIA" },
-    { href: "/category", label: "CATEGORIE" },
-    { href: "/about", label: "ABOUT" }
-  ];
-
   let loaderPhotoSrc = $state(volunteers[0]);
   let activeLoaderSet = $state(0);
 
@@ -41,190 +31,28 @@
     ]
   ];
 
-  let interval: ReturnType<typeof setInterval> | undefined;
-  let exitTimeout: ReturnType<typeof setTimeout> | undefined;
+  /* ── Navbar state ─────────────────────────────────────────────── */
+  let navbarVisible = $state(true);
+  let navbarFixed = $state(true);
+
+  /* ── DOM refs ────────────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
-  let lastScrollY = 0;
-  let lastPointerY = 0;
-  let sawPointer = false;
-  let navContainer: HTMLElement | null = null;
-  let navLinkRefs: Array<HTMLAnchorElement | undefined> = [];
+  let questionShell: HTMLElement | null = null;
+  let questionTrack: HTMLElement | null = null;
 
-  function navLinkAction(node: HTMLAnchorElement, index: number) {
-    navLinkRefs[index] = node;
-
-    return {
-      destroy() {
-        if (navLinkRefs[index] === node) navLinkRefs[index] = undefined;
-      }
-    };
-  }
-
-  function resolveNavIndex() {
-    const pathname = window.location.pathname;
-    const foundIndex = navItems.findIndex(
-      (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
-    );
-
-    return foundIndex >= 0 ? foundIndex : 0;
-  }
-
-  function syncUnderline(index: number) {
-    const link = navLinkRefs[index];
-    if (!link || !navContainer) return;
-
-    const linkRect = link.getBoundingClientRect();
-    const containerRect = navContainer.getBoundingClientRect();
-
-    activeNavIndex = index;
-    underlineLeft = linkRect.left - containerRect.left;
-    underlineWidth = linkRect.width;
-    underlineVisible = navbarVisible;
-  }
-
-  function setNavSelection(index: number) {
-    syncUnderline(index);
-  }
-
-  function resetNavSelection() {
-    syncUnderline(routeNavIndex);
-  }
-
-  let routeNavIndex = 0;
-
-  onMount(() => {
-    interval = setInterval(() => {
-      loaderProgress += 2;
-
-      if (loaderProgress % 20 === 0) {
-        activeLoaderSet = (activeLoaderSet + 1) % loaderBlockLayouts.length;
-        loaderPhotoSrc = volunteers[Math.floor(Math.random() * volunteers.length)];
-      }
-
-      if (loaderProgress >= 100) {
-        introExiting = true;
-        exitTimeout = setTimeout(() => {
-          showIntro = false;
-        }, 600);
-
-        if (interval) clearInterval(interval);
-      }
-    }, 60);
-
-    return () => {
-      if (interval) clearInterval(interval);
-      if (exitTimeout) clearTimeout(exitTimeout);
-    };
-  });
-
-  onMount(() => {
-    const updateNavbarState = () => {
-      if (!heroSection) {
-        navbarVisible = true;
-        navbarFixed = true;
-        underlineVisible = true;
-        return;
-      }
-
-      const rect = heroSection.getBoundingClientRect();
-      const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
-
-      navbarVisible = inHero;
-      navbarFixed = inHero;
-      underlineVisible = inHero;
-    };
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollDelta = currentScrollY - lastScrollY;
-
-      if (heroSection) {
-        const rect = heroSection.getBoundingClientRect();
-        const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
-
-        if (inHero) {
-          navbarVisible = true;
-          navbarFixed = true;
-          underlineVisible = true;
-        } else if (currentScrollY <= 20) {
-          navbarVisible = false;
-          navbarFixed = true;
-          underlineVisible = false;
-        } else if (scrollDelta > 8) {
-          navbarVisible = false;
-          underlineVisible = false;
-        } else if (scrollDelta < -8) {
-          navbarVisible = true;
-          underlineVisible = true;
-        }
-      }
-
-      lastScrollY = currentScrollY;
-    };
-
-    const handlePointerMove = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-
-      if (!sawPointer) {
-        lastPointerY = event.clientY;
-        sawPointer = true;
-        return;
-      }
-
-      const movingUp = event.clientY < lastPointerY || event.movementY < 0;
-      const nearTopEdge = event.clientY <= 180;
-
-      if (!heroSection) return;
-
-      const rect = heroSection.getBoundingClientRect();
-      const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
-
-      if (!inHero && movingUp && nearTopEdge) {
-        navbarVisible = true;
-        underlineVisible = true;
-      }
-
-      lastPointerY = event.clientY;
-    };
-
-    const handleWheel = (event: WheelEvent) => {
-      if (!heroSection || event.deltaY >= 0 || window.scrollY <= 20) return;
-
-      const rect = heroSection.getBoundingClientRect();
-      const inHero = rect.top < window.innerHeight * 0.15 && rect.bottom > window.innerHeight * 0.45;
-
-      if (!inHero) {
-        navbarVisible = true;
-        underlineVisible = true;
-      }
-    };
-
-    window.addEventListener("scroll", updateNavbarState, { passive: true });
-    window.addEventListener("resize", updateNavbarState, { passive: true });
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    window.addEventListener("wheel", handleWheel, { passive: true });
-
-    routeNavIndex = resolveNavIndex();
-    activeNavIndex = routeNavIndex;
-
-    updateNavbarState();
-    handleScroll();
-
-    requestAnimationFrame(() => syncUnderline(activeNavIndex));
-
-    return () => {
-      window.removeEventListener("scroll", updateNavbarState);
-      window.removeEventListener("resize", updateNavbarState);
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("wheel", handleWheel);
-    };
-  });
-
+  /* ── Gallery / scroll cue ─────────────────────────────────────── */
   const galleryCount = 12;
   const offsetCount = 6;
 
+  function navigateToGallery() {
+    goto("/gallery");
+  }
+
+  /* ── Timers ──────────────────────────────────────────────────── */
+  let interval: ReturnType<typeof setInterval> | undefined;
+  let exitTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  /* ── blurReveal configs ──────────────────────────────────────── */
   const fadeReveal: BlurRevealOptions = {
     variant: "fade",
     blur: 24,
@@ -237,8 +65,208 @@
     blur: 24,
     duration: 1000,
     threshold: 0.15,
-    delay: 80
+    delay: 120
   };
+
+  /* ═══════════════════════════════════════════════════════════════
+   * MOUNT — intro loader
+   * ═══════════════════════════════════════════════════════════════ */
+  onMount(() => {
+    interval = setInterval(() => {
+      loaderProgress += 2;
+
+      if (loaderProgress % 20 === 0) {
+        activeLoaderSet = (activeLoaderSet + 1) % loaderBlockLayouts.length;
+        loaderPhotoSrc = volunteers[Math.floor(Math.random() * volunteers.length)];
+      }
+
+      if (loaderProgress >= 100) {
+        introExiting = true;
+        exitTimeout = setTimeout(() => { showIntro = false; }, 600);
+        if (interval) clearInterval(interval);
+      }
+    }, 60);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (exitTimeout) clearTimeout(exitTimeout);
+    };
+  });
+
+  /* ═══════════════════════════════════════════════════════════════
+   * MOUNT — scroll behaviour (navbar + scroll-locked horizontal pan)
+   *
+   * Strategy: the tall question-shell still exists so position:sticky
+   * works naturally for keyboard / programmatic navigation.  For wheel
+   * and touch we use *non-passive* listeners so we can call
+   * e.preventDefault() while the sticky panel is active.  This fully
+   * blocks vertical scroll and drives translateX directly instead —
+   * vertical movement only resumes once the user has panned to the
+   * start or end of the question track.
+   * ═══════════════════════════════════════════════════════════════ */
+  onMount(() => {
+    let lastScrollY = window.scrollY;
+
+    /* ── Geometry ────────────────────────────────────────────────── */
+    let qShellTop  = 0;   // doc-top distance to shell's top edge
+    let qShellHeight = 0; // JS-set shell height = 100vh + totalSlide
+    let totalSlide = 0;   // max horizontal travel (px)
+
+    /* ── Virtual horizontal position ────────────────────────────── */
+    let hOffset = 0;      // 0 … totalSlide
+
+    const applyTransform = () => {
+      if (questionTrack) {
+        questionTrack.style.transform = `translateX(${-Math.round(hOffset)}px)`;
+      }
+    };
+
+    /* ── Build / rebuild shell geometry ─────────────────────────── */
+    const setupHorizontalScroll = () => {
+      if (!questionShell || !questionTrack) return;
+      totalSlide   = Math.max(0, questionTrack.scrollWidth - window.innerWidth);
+      qShellHeight = window.innerHeight + totalSlide;
+      questionShell.style.height = `${qShellHeight}px`;
+      qShellTop    = questionShell.getBoundingClientRect().top + window.scrollY;
+    };
+
+    /* ── Wheel — non-passive; intercepts vertical → horizontal ──
+       While the sticky pin is active AND the user hasn't reached
+       either boundary, preventDefault() blocks the page from
+       scrolling and we advance hOffset instead.                  */
+    const handleWheel = (e: WheelEvent) => {
+      if (!questionShell || !questionTrack || totalSlide <= 0) return;
+
+      const sy = window.scrollY;
+      const vh = window.innerHeight;
+
+      // Sticky active range: [qShellTop, qShellTop + totalSlide)
+      const inSticky = sy >= qShellTop && sy < qShellTop + qShellHeight - vh;
+
+      if (!inSticky) {
+        // Exited upward → reset so re-entry starts from question 1
+        if (sy < qShellTop) hOffset = 0;
+        return;
+      }
+
+      // At start, scrolling up → release; page scrolls back above section
+      if (hOffset <= 0 && e.deltaY < 0) return;
+      // At end, scrolling down → release; page scrolls past section
+      if (hOffset >= totalSlide && e.deltaY > 0) return;
+
+      // Still panning — block vertical scroll, advance horizontal
+      e.preventDefault();
+      hOffset = Math.max(0, Math.min(totalSlide, hOffset + e.deltaY));
+      applyTransform();
+    };
+
+    /* ── Touch — swipe-up gesture drives the same hOffset ───────── */
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!questionShell || !questionTrack || totalSlide <= 0) return;
+
+      const sy = window.scrollY;
+      const vh = window.innerHeight;
+      const inSticky = sy >= qShellTop && sy < qShellTop + qShellHeight - vh;
+      if (!inSticky) return;
+
+      // positive dy = swipe up = user wants to go right
+      const dy = touchStartY - e.touches[0].clientY;
+      touchStartY = e.touches[0].clientY;
+
+      if (hOffset <= 0 && dy < 0) return;
+      if (hOffset >= totalSlide && dy > 0) return;
+
+      e.preventDefault();
+      hOffset = Math.max(0, Math.min(totalSlide, hOffset + dy * 1.5));
+      applyTransform();
+    };
+
+    /* ── Scroll — passive; navbar visibility only ────────────────── */
+    const handleScroll = () => {
+      const sy    = window.scrollY;
+      const delta = sy - lastScrollY;
+      const vh    = window.innerHeight;
+      const inQuestion = sy >= qShellTop && sy < qShellTop + qShellHeight - vh;
+
+      if (heroSection) {
+        const rect   = heroSection.getBoundingClientRect();
+        const inHero = rect.top < vh * 0.15 && rect.bottom > vh * 0.45;
+
+        if (inHero) {
+          navbarVisible = true;
+          navbarFixed   = true;
+        } else if (inQuestion) {
+          navbarVisible = false;          // hide over lime panel
+        } else if (sy <= 20) {
+          navbarVisible = false;
+          navbarFixed   = true;
+        } else if (delta > 8) {
+          navbarVisible = false;
+        } else if (delta < -8) {
+          navbarVisible = true;
+        }
+      }
+
+      lastScrollY = sy;
+    };
+
+    /* ── Pointer move — show navbar when cursor nears top ─────────── */
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      if (!heroSection) return;
+      const rect   = heroSection.getBoundingClientRect();
+      const inHero = rect.top < window.innerHeight * 0.15 &&
+                     rect.bottom > window.innerHeight * 0.45;
+      if (!inHero && event.movementY < 0 && event.clientY <= 180) {
+        navbarVisible = true;
+      }
+    };
+
+    /* ── Upward wheel outside hero — re-show navbar (passive) ─────── */
+    const handleNavWheel = (event: WheelEvent) => {
+      if (!heroSection || event.deltaY >= 0 || window.scrollY <= 20) return;
+      const rect   = heroSection.getBoundingClientRect();
+      const inHero = rect.top < window.innerHeight * 0.15 &&
+                     rect.bottom > window.innerHeight * 0.45;
+      if (!inHero) navbarVisible = true;
+    };
+
+    /* ── Resize ──────────────────────────────────────────────────── */
+    const handleResize = () => {
+      setupHorizontalScroll();
+      applyTransform();
+    };
+
+    /* ── Init ────────────────────────────────────────────────────── */
+    requestAnimationFrame(() => {
+      setupHorizontalScroll();
+      applyTransform();
+    });
+
+    window.addEventListener("scroll",      handleScroll,      { passive: true  });
+    window.addEventListener("wheel",       handleWheel,       { passive: false }); // intercepts
+    window.addEventListener("wheel",       handleNavWheel,    { passive: true  }); // navbar only
+    window.addEventListener("touchstart",  handleTouchStart,  { passive: true  });
+    window.addEventListener("touchmove",   handleTouchMove,   { passive: false }); // intercepts
+    window.addEventListener("pointermove", handlePointerMove, { passive: true  });
+    window.addEventListener("resize",      handleResize,      { passive: true  });
+
+    return () => {
+      window.removeEventListener("scroll",      handleScroll);
+      window.removeEventListener("wheel",       handleWheel);
+      window.removeEventListener("wheel",       handleNavWheel);
+      window.removeEventListener("touchstart",  handleTouchStart);
+      window.removeEventListener("touchmove",   handleTouchMove);
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("resize",      handleResize);
+    };
+  });
 </script>
 
 <IntroLoader
@@ -252,12 +280,15 @@
 
 <div class="site">
   <main class="landing">
+
+    <!-- ── Hero ────────────────────────────────────────────────── -->
     <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
         <BlurTitle />
       </div>
     </section>
 
+    <!-- ── Scrolling story sections (vertical) ─────────────────── -->
     <section class="story story--left story--intro"
       use:blurReveal={{ direction: "left", variant: "slide", blur: 24 }}>
       <p class="lead-paragraph">
@@ -272,60 +303,71 @@
       </p>
     </section>
 
-    <!-- QUOTE 1 -->
-    <section class="story story--quote story--quote-left" use:blurReveal={{ direction: "left", variant: "slide", blur: 20, threshold: 0.15 }}>
+    <!-- Quotes -->
+    <section class="story story--quote story--quote-left"
+      use:blurReveal={{ direction: "left", variant: "slide", blur: 20, threshold: 0.15 }}>
       <p class="quote">
         Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
       </p>
     </section>
 
-    <!-- QUOTE 2 -->
-    <section class="story story--quote story--quote-right" use:blurReveal={{ direction: "right", variant: "slide", blur: 20, threshold: 0.15, delay: 150 }}>
+    <section class="story story--quote story--quote-right"
+      use:blurReveal={{ direction: "right", variant: "slide", blur: 20, threshold: 0.15, delay: 150 }}>
       <p class="quote">
         Nella narrazione ufficiale erano spesso dati per scontati.
       </p>
     </section>
 
-    <!-- QUESTION PANEL — lime background -->
-    <div class="question-panel">
-      <div class="question-track">
-        <section class="question question--left"
-              use:blurReveal={fadeReveal}>
-          <h2>
-            <span class="accent">MA </span>
-            <span class="ghost">CHI SONO </span>
-            <span class="accent">DAVVERO</span><br />
-            <span class="accent">I VOLONTARI?</span>
-          </h2>
-        </section>
+    <!-- ── Question section (sticky → horizontal scroll) ────────── -->
+    <!--
+      .question-shell  — tall element; its height sets the vertical
+                         scroll budget for the horizontal pan.
+      .question-sticky — position:sticky keeps the lime panel pinned.
+      .question-panel  — lime background fill.
+      .question-track  — JS sets translateX() to pan horizontally.
+    -->
+    <div class="question-shell" bind:this={questionShell}>
+      <div class="question-sticky">
+        <div class="question-panel">
+          <div class="question-track" bind:this={questionTrack}>
 
-        <section class="question question--right"
-              use:blurReveal={fadeRevealDelayed}>
-          <h2>
-            <span class="ghost">PERCHÈ </span>
-            <span class="accent">HANNO DECISO</span><br />
-            <span class="accent">DI CANDIDARSI?</span>
-          </h2>
-        </section>
+            <section class="question question--left">
+              <h2>
+                <span class="accent">MA </span>
+                <span class="ghost">CHI SONO </span>
+                <span class="accent">DAVVERO</span><br />
+                <span class="accent">I VOLONTARI?</span>
+              </h2>
+            </section>
 
-        <section class="question question--left"
-              use:blurReveal={fadeReveal}>
-          <h2>
-            <span class="ghost">COSA FACEVANO </span><br />
-            <span class="accent">CONCRETAMENTE?</span>
-          </h2>
-        </section>
+            <section class="question question--right">
+              <h2>
+                <span class="ghost">PERCHÈ </span>
+                <span class="accent">HANNO DECISO</span><br />
+                <span class="accent">DI CANDIDARSI?</span>
+              </h2>
+            </section>
 
-        <section class="question question--right"
-              use:blurReveal={fadeRevealDelayed}>
-          <h2>
-            <span class="accent">NE È VALSA LA PENA?</span><br />
-            <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
-          </h2>
-        </section>
+            <section class="question question--left">
+              <h2>
+                <span class="ghost">COSA FACEVANO </span><br />
+                <span class="accent">CONCRETAMENTE?</span>
+              </h2>
+            </section>
+
+            <section class="question question--right">
+              <h2>
+                <span class="accent">NE È VALSA LA PENA?</span><br />
+                <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
+              </h2>
+            </section>
+
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- ── Post-question (vertical resumes) ─────────────────────── -->
     <section class="story story--left story--summary"
       use:blurReveal={{ direction: "left", threshold: 0.3 }}>
       <p>
@@ -334,11 +376,13 @@
       </p>
     </section>
 
+    <!-- Scroll cue — clicking navigates to the gallery page -->
     <div class="scroll-cue"
       use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
-      <ScrollArrow />
+      <ScrollArrow onclick={navigateToGallery} />
     </div>
 
+    <!-- Gallery preview teaser -->
     <section class="gallery" aria-label="Gallery preview">
       {#each galleryImages as src, index}
         <figure
@@ -349,6 +393,7 @@
         </figure>
       {/each}
     </section>
+
   </main>
 </div>
 

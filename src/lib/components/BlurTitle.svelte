@@ -244,6 +244,7 @@
 
   .layer-blurred .fuori,
   .layer-blurred .campo {
+    opacity: 1;                                    /* restore from .campo { opacity:0 } */
     color: var(--color-content-title);
     -webkit-text-fill-color: var(--color-content-title);
     -webkit-text-stroke-width: 0;
@@ -254,10 +255,12 @@
     text-align: center;
   }
 
-  /* CAMPO is transparent — no explicit stroke.
-     The blurred layer behind it spreads a lime glow into this area,
-     matching Figma's FOREGROUND_BLUR effect (no visible contour). */
+  /* CAMPO — fully invisible in the sharp layer so no letterform
+     contour composites against the blurred glow below.
+     The blurred layer's lime CAMPO (filter:blur + opacity) provides
+     the soft glow, matching Figma's FOREGROUND_BLUR (no hard edge). */
   .campo {
+    opacity: 0;
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke-width: 0;
