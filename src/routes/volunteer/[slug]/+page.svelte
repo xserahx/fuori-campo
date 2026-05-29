@@ -1,219 +1,189 @@
 <script lang="ts">
-  import { page } from '$app/stores';
-  import { onDestroy } from 'svelte';
+  import '../../../lib/styles/tokens.css';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import { imagesRaw, slugify } from '$lib/data/gallery';
-  import type { GalleryImage } from '$lib/data/gallery';
+  import Navbar from '$lib/components/Navbar.svelte';
 
-  type VolunteerImage = GalleryImage & {
-    city?: string;
-    region?: string;
-    role?: string;
-    age?: number;
-    responses?: string[];
-  };
+  /* ── Build ordered unique-volunteer list ─────────────────────── */
+  type VolEntry = { slug: string; name: string; src: string };
+  const volunteerList: VolEntry[] = [];
+  {
+    const seen = new Set<string>();
+    for (let i = 0; i < imagesRaw.length; i++) {
+      const img = imagesRaw[i];
+      if (!img.name) continue;
+      const s = slugify(img.name, i);
+      if (!seen.has(s)) { seen.add(s); volunteerList.push({ slug: s, name: img.name, src: img.src }); }
+    }
+  }
 
-  const fallbackHero = 'https://www.figma.com/api/mcp/asset/a593d582-cfd0-47a0-ad9c-c058031c20d7';
+  /* ── Background scatter: all images with valid positions ─────── */
+  /* Figma design canvas is ~1920 × 1200 px */
+  const CANVAS_W = 1920;
+  const CANVAS_H = 1200;
+  const bgPhotos = imagesRaw.filter(img => img.src);
+
+  /* ── Reactive state from URL ─────────────────────────────────── */
+  const currentSlug = $derived(page.params.slug ?? '');
+
+  const volunteer = $derived(
+    imagesRaw.find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
+  );
+
+  const vIdx = $derived(
+    volunteerList.findIndex(v => v.slug === currentSlug)
+  );
+
+  /* ── Local UI state ──────────────────────────────────────────── */
+  let infoOpen   = $state(false);
+  let openQ      = $state(-1);
+
+  /* Reset panel when volunteer changes */
+  $effect(() => {
+    currentSlug;
+    infoOpen = false;
+    openQ    = -1;
+  });
+
+  /* ── Navigation ──────────────────────────────────────────────── */
+  function goTo(offset: number) {
+    const len    = volunteerList.length;
+    const target = volunteerList[((vIdx + offset) % len + len) % len];
+    if (target) goto(`/volunteer/${target.slug}`);
+  }
+
+  /* ── Helpers ─────────────────────────────────────────────────── */
   const questionTitles = [
     'COME MI VEDEVANO GLI ALTRI.',
     'IL MIO MOMENTO PREFERITO.',
     'QUELLO CHE VORREI DIMENTICARE.',
     'COSA MI PORTO A CASA.',
     'COSA (NON) MI AVETE CHIESTO.',
-    'LA MIA RISPOSTA ONESTA.'
+    'LA MIA RISPOSTA ONESTA.',
   ];
 
-  let slug: string | null = null;
-  let volunteer = $state<VolunteerImage | null>(null);
-  let volunteerImages = $state<VolunteerImage[]>([]);
-  let activePhotoIndex = 0;
-  let activeMode = $state<'info' | 'foto'>('info');
-  let openIndex = $state(0);
-
-  function splitDisplayName(name: string | undefined) {
-    const fallback = ['Aquila Muraca', 'Francesca'];
-
-    if (!name) return fallback;
-
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-
-    if (parts.length <= 1) return [parts[0] ?? fallback[0], ''];
-
-    return [parts.slice(0, -1).join(' '), parts.at(-1) ?? ''];
+  function locationLine(vol: typeof volunteer): string {
+    if (!vol) return 'BORMIO - STELVIO SKI CENTER';
+    const parts = [vol.city, vol.region].filter(Boolean);
+    return parts.length ? parts.join(' - ').toUpperCase() : 'BORMIO - STELVIO SKI CENTER';
   }
-
-  function selectVolunteerBySlug(nextSlug: string | null) {
-    slug = nextSlug;
-    volunteer = slug
-      ? imagesRaw.find((img, index) => slugify(img.name, index) === slug) ?? null
-      : null;
-
-    volunteerImages = volunteer
-      ? imagesRaw.filter((img, index) => slugify(img.name, index) === slug)
-      : [];
-
-    activePhotoIndex = 0;
-    activeMode = 'info';
-    openIndex = 0;
-  }
-
-  function currentHeroImage() {
-    return volunteerImages[activePhotoIndex]?.src ?? volunteer?.src ?? fallbackHero;
-  }
-
-  function hasPhotos() {
-    return volunteerImages.length > 0 || (volunteer?.src && volunteer.src !== fallbackHero);
-  }
-
-  function previousPhoto() {
-    if (!volunteerImages.length) return;
-
-    activePhotoIndex = (activePhotoIndex - 1 + volunteerImages.length) % volunteerImages.length;
-  }
-
-  function nextPhoto() {
-    if (!volunteerImages.length) return;
-
-    activePhotoIndex = (activePhotoIndex + 1) % volunteerImages.length;
-  }
-
-  const unsub = page.subscribe(($page) => {
-    selectVolunteerBySlug($page.params.slug ?? null);
-  });
-
-  onDestroy(() => unsub());
-
-  let firstName = $state('');
-  let lastName = $state('');
-  let hoveredQuestion = $state<number>(-1);
-  let hoveredThumbnail = $state<number>(-1);
-  $effect(() => {
-    [firstName, lastName] = splitDisplayName(volunteer?.name ?? 'Aquila Muraca Francesca');
-  });
 </script>
 
 <svelte:head>
-  <title>Volunteer — {volunteer?.name ?? 'Aquila Muraca Francesca'}</title>
+  <title>{volunteer?.name ?? 'Volunteer'} — Fuori Campo</title>
 </svelte:head>
 
-<main class="volunteer-page">
-  <section class="hero">
-    <button class="back-button" type="button" onclick={() => history.back()} aria-label="Go back">
-      <span class="back-button__icon" aria-hidden="true">←</span>
-      <span>BACK</span>
-    </button>
+<Navbar pinned />
 
-    <div class="hero-title" aria-label={volunteer?.name ?? 'Aquila Muraca Francesca'}>
-      <p class="hero-title__solid">{firstName.toUpperCase()}</p>
-      <p class="hero-title__outline">{lastName.toUpperCase()}</p>
-    </div>
+<main class="lb">
 
-    {#if activeMode === 'info'}
-      <div class="info-grid">
-          <div class="hero-meta">
-            <p class="hero-meta__role">{volunteer?.role ?? 'EVENT SERVICES VOLUNTEER'}</p>
-            <p>{volunteer?.city ?? 'BORMIO'}{volunteer?.region ? ` - ${volunteer.region.toUpperCase()}` : ' - STELVIO SKI CENTER'}</p>
-            <p>{volunteer?.region ? `${volunteer.region}, ${volunteer.age ?? 59} anni` : 'Lombardia, 59 anni'}</p>
-          </div>
+  <!-- ── Blurred background scatter ─────────────────────────────── -->
+  <div class="bg-scatter" aria-hidden="true">
+    {#each bgPhotos as img}
+      <img
+        src={img.src}
+        alt=""
+        class="bg-photo"
+        loading="lazy"
+        draggable="false"
+        style="
+          left: {((img.left ?? 0) / CANVAS_W * 100).toFixed(2)}vw;
+          top:  {((img.top  ?? 0) / CANVAS_H * 100).toFixed(2)}vh;
+          width:{((img.width?? 160) / CANVAS_W * 100).toFixed(2)}vw;
+        "
+      />
+    {/each}
+  </div>
 
-          <div class="questions-list" aria-label="Volunteer questions">
-            {#each questionTitles as title, i}
-              <button
-                type="button"
-                class="question-row"
-                class:is-open={openIndex === i}
-                class:muted={openIndex !== -1 && openIndex !== i}
-                onmouseenter={() => (hoveredQuestion = i)}
-                onmouseleave={() => (hoveredQuestion = -1)}
-                onfocus={() => (hoveredQuestion = i)}
-                onblur={() => (hoveredQuestion = -1)}
-                onclick={() => (openIndex = openIndex === i ? -1 : i)}
-                aria-expanded={openIndex === i}
-              >
-                <span>{title}</span>
-                <span class="toggle-icon" aria-hidden="true">{openIndex === i ? '−' : '+'}</span>
-              </button>
-            {/each}
-          </div>
+  <!-- Overlay 1 — desaturate + heavy blur -->
+  <div class="bg-ov bg-ov-1" aria-hidden="true"></div>
+  <!-- Overlay 2 — darken + medium blur -->
+  <div class="bg-ov bg-ov-2" aria-hidden="true"></div>
 
-          {#if openIndex !== -1}
-            {@const response = volunteer?.responses?.[openIndex] ?? 'NESSUNA RISPOSTA DISPONIBILE.'}
-            <div class="expanded-answer" role="region" aria-live="polite">
-              <div class="expanded-inner">
-                <p>{response}</p>
-              </div>
-            </div>
-          {/if}
-      </div>
+  <!-- ── Navigation arrows ───────────────────────────────────────── -->
+  <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
+    <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
+      <path d="M24 4L4 25L24 46" stroke="#BDFF5D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <button class="arrow arrow--next" type="button" aria-label="Volunteer successivo" onclick={() => goTo(1)}>
+    <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
+      <path d="M4 4L24 25L4 46" stroke="#BDFF5D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- ── Photo frame + caption ────────────────────────────────────── -->
+  <div class="photo-frame">
+
+    <!-- Main image -->
+    {#if volunteer?.src}
+      <img
+        src={volunteer.src}
+        alt={volunteer.name ?? 'Volunteer'}
+        class="photo-img"
+        draggable="false"
+      />
     {:else}
-      {#if hasPhotos()}
-        <div class="hero-media">
-          <button class="hero-arrow hero-arrow--left" type="button" aria-label="Previous photo" onclick={previousPhoto}>
-            <span aria-hidden="true">‹</span>
-          </button>
-
-          <div class="hero-image-shell">
-            <img src={currentHeroImage()} alt={volunteer?.name ?? 'Volunteer photo'} class="hero-image" />
-          </div>
-
-          <button class="hero-arrow hero-arrow--right" type="button" aria-label="Next photo" onclick={nextPhoto}>
-            <span aria-hidden="true">›</span>
-          </button>
-          <div class="hero-thumbs">
-            {#each volunteerImages as img, idx}
-              <button
-                class="thumb"
-                type="button"
-                onmouseenter={() => (hoveredThumbnail = idx)}
-                onmouseleave={() => (hoveredThumbnail = -1)}
-                onclick={() => (activePhotoIndex = idx)}
-                aria-label={`Show photo ${idx + 1}`}
-              >
-                <img src={img.src} alt={img.name ?? 'thumb'} />
-              </button>
-            {/each}
-          </div>
-        </div>
-      {:else}
-        <div class="hero-no-photo" aria-hidden="true">
-          <div class="hero-no-photo__art"></div>
-        </div>
-      {/if}
+      <div class="photo-placeholder"></div>
     {/if}
 
-    <div class="mode-toggle" aria-label="View toggle">
-      <button
-        type="button"
-        class="mode-toggle__info"
-        class:is-active={activeMode === 'info'}
-        aria-pressed={activeMode === 'info'}
-        onclick={() => (activeMode = 'info')}
-      >
-        INFO
-      </button>
-      <button
-        type="button"
-        class="mode-toggle__foto"
-        class:is-active={activeMode === 'foto'}
-        aria-pressed={activeMode === 'foto'}
-        onclick={() => (activeMode = 'foto')}
-      >
-        FOTO
-      </button>
+    <!-- Bottom gradient + text caption (overlays photo) -->
+    <div class="photo-caption">
+      <div class="caption-grad" aria-hidden="true"></div>
+      <div class="caption-text">
+        <p class="cap-location">{locationLine(volunteer)}</p>
+        <p class="cap-role">{(volunteer?.role ?? 'Event Services Volunteer').toUpperCase()}</p>
+        <p class="cap-name">{volunteer?.name?.toUpperCase() ?? 'ALESSANDRA SCALVINI'}</p>
+      </div>
     </div>
-  </section>
+
+    <!-- ⊕ expand button (bottom-right of photo) -->
+    <button
+      class="expand-btn"
+      class:expand-btn--open={infoOpen}
+      type="button"
+      aria-label={infoOpen ? 'Chiudi info' : 'Apri info'}
+      onclick={() => { infoOpen = !infoOpen; openQ = -1; }}
+      aria-expanded={infoOpen}
+    >
+      <span aria-hidden="true">{infoOpen ? '×' : '+'}</span>
+    </button>
+  </div>
+
+  <!-- ── Info drawer (slides up from below photo) ──────────────── -->
+  <div class="info-drawer" class:info-drawer--open={infoOpen} aria-hidden={!infoOpen}>
+    {#each questionTitles as q, i}
+      <button
+        class="q-row"
+        class:q-row--open={openQ === i}
+        type="button"
+        tabindex={infoOpen ? 0 : -1}
+        onclick={() => { openQ = openQ === i ? -1 : i; }}
+        aria-expanded={openQ === i}
+      >
+        <span class="q-text">{q}</span>
+        <span class="q-icon" aria-hidden="true">{openQ === i ? '−' : '+'}</span>
+      </button>
+
+      {#if openQ === i}
+        <div class="q-answer" role="region" aria-live="polite">
+          <p>{volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.'}</p>
+        </div>
+      {/if}
+    {/each}
+  </div>
+
 </main>
 
 <style>
-  :global(html),
-  :global(body) {
+  /* ── Global ─────────────────────────────────────────────────────── */
+  :global(html), :global(body) {
     margin: 0;
-    min-height: 100%;
-    background: #1a1a1a;
+    background: #0e0e0e;
     color: #fafafa;
-  }
-
-  :global(body) {
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   :global(*) {
@@ -221,556 +191,300 @@
     font-family: 'Forma DJR Display', sans-serif;
   }
 
-  .volunteer-page {
-    min-height: 100vh;
-    background: #1a1a1a;
-    padding-bottom: 48px;
-  }
-
-  .hero {
+  /* ── Lightbox shell ─────────────────────────────────────────────── */
+  .lb {
     position: relative;
-    min-height: 960px;
-    padding-top: 205px;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #0e0e0e;
   }
 
-  .hero-title {
+  /* ── Background scatter ─────────────────────────────────────────── */
+  .bg-scatter {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bg-photo {
+    position: absolute;
+    opacity: 0.5;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Overlay 1: full desaturation via mix-blend-mode + blur */
+  .bg-ov {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .bg-ov-1 {
+    z-index: 1;
+    background: #0e0e0e;
+    opacity: 0.5;
+    mix-blend-mode: saturation;
+    backdrop-filter: blur(11px);
+  }
+
+  /* Overlay 2: darken + softer blur */
+  .bg-ov-2 {
+    z-index: 2;
+    background: rgba(26, 26, 26, 0.65);
+    backdrop-filter: blur(5px);
+  }
+
+  /* ── Navigation arrows ──────────────────────────────────────────── */
+  .arrow {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    width: 59px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .arrow:hover { opacity: 0.65; }
+
+  .arrow--prev { left: 70px; }
+  .arrow--next { right: 70px; }
+
+  /* ── Main photo frame ───────────────────────────────────────────── */
+  /*
+   * Figma: 1091 × 581 px in a 1728-wide artboard.
+   * We keep the aspect ratio and scale with the viewport.
+   * Center: 50% left, ~56vh top (accounts for navbar offset).
+   */
+  .photo-frame {
     position: absolute;
     left: 50%;
-    top: 205px;
-    transform: translateX(-20%);
-    width: min(1210px, calc(100vw - 80px));
-    margin: 0;
-    display: flex;
-    align-items: baseline;
-    justify-content: left;
-    gap: 10px;
-    text-transform: uppercase;
-    pointer-events: none;
-  }
-
-  .hero-title p {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: var(--figma-title-size, 90px);
-    line-height: var(--figma-title-lineheight, 100px);
-    letter-spacing: -0.02em;
-    align-items: baseline;
-    justify-content: left;
-    white-space: nowrap;
-    font-weight: 800;
-    text-transform: uppercase;
-  }
-
-  /* question list & expanded answer */
-  .questions-list { display:flex; flex-direction:column; gap:10px; }
-
-  .question-row { text-align:left; padding:14px 20px; border:0; background:transparent; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:48px; line-height:1; letter-spacing:-0.02em; }
-  .question-row:hover, .question-row:focus { color:var(--gallery-accent,#bdff5d); transform:translateX(6px); }
-  .question-row.is-open { color:var(--gallery-accent,#bdff5d); transform:translateX(6px); }
-  .question-row.muted { filter: blur(2px) opacity(0.45); transform:none; pointer-events: none; }
-
-  .toggle-icon { color:var(--gallery-accent,#bdff5d); font-size:32px; line-height:1; min-width:36px; text-align:right; }
-
-  .expanded-answer {
-    position: absolute;
-    right: 40px;
-    top: 559px;
-    background: var(--gallery-accent, #bdff5d);
-    color: #0a0a0a;
-    padding: 26px;
-    border-radius: 6px;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.08);
-    max-width: min(760px, calc(100% - 420px));
-    z-index: 3;
-  }
-  .expanded-inner p { margin: 0; font-size: 18px; line-height: 1.45; font-weight: 400; }
-
-  .hero-thumbs { display:flex; gap:10px; margin-left: 12px; align-items:center; }
-  .hero-thumbs .thumb { width:80px; height:56px; border:0; padding:0; background:transparent; cursor:pointer; }
-  .hero-thumbs img { width:100%; height:100%; object-fit:cover; display:block; filter:grayscale(100%) contrast(0.9); }
-  .hero-thumbs .thumb:hover img, .hero-thumbs .thumb:focus img { filter:none; }
-
-  .hero-title__solid {
-    color: var(--color-content-title);
-    font-weight: 800;
-  }
-
-  .hero-title__outline {
-    color: transparent;
-    -webkit-text-stroke: 4px var(--color-content-title);
-    font-weight: 800;
-  }
-
-  .hero-meta {
-    position: absolute;
-    left: 40px;
-    top: 303px;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    color: #fafafa;
-    font-size: 20px;
-    line-height: 1.05;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    z-index: 2;
-  }
-
-  .hero-meta p {
-    margin: 0;
-  }
-
-  .hero-meta__role {
-    color: var(--gallery-accent, #bdff5d);
-    font-weight: 600;
-  }
-
-  .hero-media {
-    position: relative;
-    width: 953px;
-    margin: 44px auto 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-  }
-
-  .hero-image-shell {
-    width: 953px;
-    height: 508px;
+    top: 56vh;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    width: min(1091px, 63vw);
+    aspect-ratio: 1091 / 581;
     overflow: hidden;
     box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
     background: #111;
   }
 
-  .hero-image {
+  .photo-img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    display: block;
     object-fit: cover;
-  }
-
-  .hero-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 41px;
-    height: 36px;
-    display: grid;
-    place-items: center;
-    border: 0;
-    background: transparent;
-    color: #bdff5d;
-    font-size: 56px;
-    line-height: 1;
-    padding: 0;
-    cursor: pointer;
-    z-index: 3;
-  }
-
-  .hero-arrow--left {
-    left: -64px;
-  }
-
-  .hero-arrow--right {
-    right: -64px;
-  }
-
-  @media (max-width: 1100px) {
-    .hero {
-      min-height: 860px;
-      padding-top: 180px;
-    }
-
-    .hero-title {
-      width: calc(100vw - 40px);
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .hero-meta {
-      left: 20px;
-      top: 280px;
-      font-size: 16px;
-    }
-
-    .hero-media {
-      width: calc(100vw - 80px);
-      margin-top: 48px;
-      gap: 0;
-    }
-
-    .hero-no-photo {
-      width: calc(100vw - 80px);
-      margin-top: 28px;
-      gap: 20px;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .hero-arrow--left {
-      left: -48px;
-    }
-
-    .hero-arrow--right {
-      right: -48px;
-    }
-
-    .question-row {
-      padding-left: 20px;
-      padding-right: 20px;
-      min-height: 78px;
-    }
-  }
-
-  @media (max-width: 760px) {
-    .hero {
-      min-height: auto;
-      padding-top: 140px;
-    }
-
-    .hero-title {
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-      text-align: center;
-    }
-
-    .hero-meta {
-      position: static;
-      margin: 24px 20px 0;
-    }
-
-    .hero-media {
-      width: calc(100vw - 32px);
-      margin-top: 24px;
-    }
-
-    .hero-arrow--left {
-      left: -6px;
-    }
-
-    .hero-arrow--right {
-      right: -6px;
-    }
-
-    .question-row {
-      font-size: 22px;
-      min-height: 72px;
-    }
-  }
-
-  .volunteer-page {
-    min-height: 100dvh;
-    background: #111;
-    padding-bottom: 32px;
-  }
-
-  .hero {
-    min-height: 100dvh;
-    padding: 20px 0 32px;
-  }
-
-  .back-button {
-    position: absolute;
-    top: 20px;
-    left: 38px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 31px;
-    padding: 0 14px 0 12px;
-    border: 1px solid #bdff5d;
-    border-radius: 999px;
-    background: rgba(17, 17, 17, 0.95);
-    color: #fafafa;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    text-transform: uppercase;
-    cursor: pointer;
-    z-index: 2;
-  }
-
-  .back-button__icon {
-    font-size: 18px;
-    line-height: 1;
-    color: #fafafa;
-  }
-
-  .hero-title {
-    position: absolute;
-    top: 58px;
-    left: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    text-transform: uppercase;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .hero-title p {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 116px;
-    line-height: 1;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-    font-weight: 800;
-    text-transform: uppercase;
-  }
-
-  .hero-title__solid {
-    color: #bdff5d;
-  }
-
-  .hero-title__outline {
-    color: transparent;
-    -webkit-text-stroke: 3px #bdff5d;
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: 340px minmax(0, 1fr);
-    gap: 34px;
-    align-items: start;
-    margin-top: 559px;
-    padding: 0 40px;
-  }
-
-  .hero-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    color: #fafafa;
-    font-size: 24px;
-    align-items: center;
-    letter-spacing: 0;
-    text-transform: uppercase;
-  }
-
-  .hero-meta p {
-    margin: 0;
-  }
-
-  .hero-meta__role {
-    color: #bdff5d;
-    margin-bottom: 4px;
-  }
-
-  .questions-list {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .question-row {
-    width: 100%;
-    min-height: 64px;
-    display: flex;
-    align-items: center;
-    padding: 0 0 8px;
-    border: 0;
-    border-bottom: 4px solid rgba(250, 250, 250, 0.92);
-    background: transparent;
-    color: #fafafa;
-    text-align: left;
-    font-size: 64px;
-    line-height: 64px;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
-    cursor: pointer;
-  }
-
-  .question-row span {
     display: block;
-    width: 100%;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
   }
 
-  .hero-media {
-    width: min(953px, calc(100vw - 120px));
-    margin: 180px auto 0;
+  .photo-placeholder {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #111 0%, #1c1c1c 100%);
+  }
+
+  /* ── Caption area ────────────────────────────────────────────────── */
+  /* Overlays the bottom of the photo frame */
+  .photo-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .caption-grad {
+    position: absolute;
+    inset: 0;
+    /* Matches Figma: h-143px from-#0e0e0e to transparent */
+    background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
+  }
+
+  .caption-text {
     position: relative;
+    padding: 0 26px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .cap-location {
+    margin: 0;
+    font-family: var(--font-display, 'Forma DJR Display');
+    font-size: clamp(9px, 0.64vw, 13px);   /* ~11px @ 1728px */
+    font-weight: 500;
+    line-height: 4.12;                      /* ~45px leading @ 11px */
+    color: #fafafa;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  .cap-role {
+    margin: 0;
+    font-family: var(--font-display, 'Forma DJR Display');
+    font-size: clamp(16px, 1.53vw, 28px);  /* ~26px @ 1728px */
+    font-weight: 500;
+    line-height: 1.1;
+    color: #fafafa;
+  }
+
+  .cap-name {
+    margin: 0;
+    font-family: var(--font-display, 'Forma DJR Display');
+    font-size: clamp(24px, 2.55vw, 46px);  /* ~44px @ 1728px */
+    font-weight: 800;
+    line-height: 1.03;
+    color: var(--color-content-accent, #bdff5d);
+    text-transform: uppercase;
+  }
+
+  /* ── Expand (+) button ──────────────────────────────────────────── */
+  /* Positioned at bottom-right corner of the photo, inside the caption */
+  .expand-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 3;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .hero-image-shell {
-    width: 953px;
-    height: 508px;
-    overflow: hidden;
-    background: #111;
-    box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
-  }
-
-  .hero-image {
-    width: 100%;
-    height: 100%;
-    display: block;
-    object-fit: cover;
-  }
-
-  .hero-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 41px;
-    height: 36px;
-    display: grid;
-    place-items: center;
     border: 0;
     background: transparent;
-    color: #bdff5d;
-    font-size: 56px;
+    color: var(--color-content-accent, #bdff5d);
+    font-size: 30px;
+    font-weight: 300;
     line-height: 1;
-    padding: 0;
     cursor: pointer;
-    z-index: 3;
+    padding: 0;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
   }
 
-  .hero-arrow--left {
-    left: -64px;
-  }
+  .expand-btn:hover { opacity: 0.75; }
 
-  .hero-arrow--right {
-    right: -64px;
-  }
+  /* Rotate × into + when open */
+  .expand-btn--open { transform: rotate(45deg); }
 
-  .hero-no-photo {
-    width: min(953px, calc(100vw - 120px));
-    margin: 180px auto 0;
-    height: 508px;
-    background: #0d0d0d;
-  }
-
-  .hero-no-photo__art {
-    width: 100%;
-    height: 100%;
-    border: 1px solid rgba(189, 255, 93, 0.06);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.15));
-  }
-
-  .mode-toggle {
+  /* ── Info drawer ─────────────────────────────────────────────────── */
+  /*
+   * Anchored to the bottom of the viewport, slides up via clip-path.
+   * Width matches the photo frame; horizontally centred.
+   */
+  .info-drawer {
     position: fixed;
-    left: 36px;
-    bottom: 20px;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: min(1091px, 63vw);
+    max-height: 44vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    background: #0e0e0e;
+    border-top: 1px solid rgba(250, 250, 250, 0.08);
+    display: flex;
+    flex-direction: column;
+    /* Clip from the bottom → slides upward when revealed */
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 0.40s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .info-drawer::-webkit-scrollbar { display: none; }
+
+  .info-drawer--open {
+    clip-path: inset(0 0 0% 0);
+  }
+
+  /* ── Question rows ───────────────────────────────────────────────── */
+  .q-row {
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 10px;
-    z-index: 4;
-  }
-
-  .mode-toggle button {
+    justify-content: space-between;
+    padding: 0 26px;
+    min-height: 56px;
     border: 0;
-    padding: 0;
+    border-bottom: 1px solid rgba(250, 250, 250, 0.1);
     background: transparent;
     color: #fafafa;
-    font-size: 12px;
-    font-weight: 700;
+    font-family: var(--font-display, 'Forma DJR Display');
+    font-size: clamp(14px, 1.2vw, 20px);
+    font-weight: 500;
     line-height: 1;
     text-transform: uppercase;
+    letter-spacing: -0.01em;
     cursor: pointer;
+    text-align: left;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
   }
 
-  .mode-toggle__info {
-    min-width: 31px;
-    height: 15px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background: #bdff5d;
-    color: #111;
+  .q-row:hover,
+  .q-row--open { color: var(--color-content-accent, #bdff5d); }
+
+  .q-text { flex: 1; }
+
+  .q-icon {
+    color: var(--color-content-accent, #bdff5d);
+    font-size: 20px;
+    min-width: 22px;
+    text-align: right;
   }
 
-  .mode-toggle__foto {
+  .q-answer {
+    padding: 14px 26px 18px;
+    border-bottom: 1px solid rgba(250, 250, 250, 0.1);
+    background: #111;
+    flex-shrink: 0;
+  }
+
+  .q-answer p {
+    margin: 0;
+    font-size: clamp(14px, 1vw, 18px);
+    font-weight: 400;
+    line-height: 1.55;
     color: #fafafa;
   }
 
+  /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1100px) {
-    .hero-title {
-      left: 24px;
-      top: 46px;
-    }
+    .arrow--prev { left: 16px; }
+    .arrow--next { right: 16px; }
 
-    .hero-title p {
-      font-size: 92px;
-    }
-
-    .info-grid {
-      grid-template-columns: 240px minmax(0, 1fr);
-      gap: 24px;
-      margin-top: 250px;
-      padding: 0 24px;
-    }
-
-    .hero-meta,
-    .question-row {
-      font-size: 24px;
-    }
-
-    .hero-media,
-    .hero-no-photo {
-      width: calc(100vw - 48px);
-      margin-top: 140px;
-    }
-
-    .hero-arrow--left {
-      left: -48px;
-    }
-
-    .hero-arrow--right {
-      right: -48px;
+    .photo-frame {
+      width: min(900px, 90vw);
     }
   }
 
-  @media (max-width: 760px) {
-    .hero {
-      min-height: auto;
+  @media (max-width: 700px) {
+    .photo-frame {
+      width: 96vw;
+      top: 52vh;
     }
 
-    .hero-title {
-      position: static;
-      padding: 56px 20px 0;
-    }
+    .cap-location { font-size: 10px; }
+    .cap-role     { font-size: 14px; }
+    .cap-name     { font-size: 20px; }
 
-    .hero-title p {
-      font-size: 52px;
-      white-space: normal;
-    }
-
-    .info-grid {
-      grid-template-columns: 1fr;
-      margin-top: 28px;
-      padding: 0 20px;
-    }
-
-    .hero-meta {
-      font-size: 18px;
-    }
-
-    .question-row {
-      font-size: 22px;
-      min-height: 36px;
-    }
-
-    .mode-toggle {
-      left: 20px;
-      bottom: 16px;
-    }
-
-    .hero-media,
-    .hero-no-photo {
-      width: calc(100vw - 40px);
-      margin-top: 24px;
-      height: auto;
-    }
-
-    .hero-image-shell {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 953 / 508;
-    }
+    .arrow--prev { left: 8px; }
+    .arrow--next { right: 8px; }
   }
 </style>
