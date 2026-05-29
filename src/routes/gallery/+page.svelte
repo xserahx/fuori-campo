@@ -216,23 +216,35 @@
     height: 45px;
     border: 0;
     background: transparent;
-    padding: 0;
+    padding-top: 11px;
     cursor: pointer;
     z-index: 2;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
   }
 
-  .toggle-option--photos { left: 0; }
-  .toggle-option--names  { right: 0; }
+  .toggle-option--photos {
+    left: 0;
+    justify-content: flex-start;
+    padding-left: 20px;
+    padding-right: 0;
+  }
+
+  .toggle-option--names  {
+    right: 0;
+    justify-content: flex-end;
+    padding-left: 0;
+    padding-right: 20px;
+  }
 
   .toggle-label {
     font-family: 'Forma DJR Display', sans-serif;
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;
+    width: 57px;
     text-transform: uppercase;
+    text-align: center;
     transition: color 0.2s ease;
     pointer-events: none;
   }

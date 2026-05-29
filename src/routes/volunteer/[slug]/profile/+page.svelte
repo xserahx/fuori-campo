@@ -119,15 +119,15 @@
     <!-- Quote (top-right) -->
     {#if volunteer?.quote}
       <blockquote class="vol-quote">
-        <span class="qmark" aria-hidden="true">"</span>
-        {volunteer.quote}
-        <span class="qmark" aria-hidden="true">"</span>
+        <span class="qmark qmark--open" aria-hidden="true">“</span>
+        <p class="quote-body">{volunteer.quote}</p>
+        <span class="qmark qmark--close" aria-hidden="true">”</span>
       </blockquote>
     {:else}
       <blockquote class="vol-quote vol-quote--dim">
-        <span class="qmark" aria-hidden="true">"</span>
-        Un'esperienza che non dimenticherò mai.
-        <span class="qmark" aria-hidden="true">"</span>
+        <span class="qmark qmark--open" aria-hidden="true">“</span>
+        <p class="quote-body">Un'esperienza che non dimenticherò mai.</p>
+        <span class="qmark qmark--close" aria-hidden="true">”</span>
       </blockquote>
     {/if}
 
@@ -210,13 +210,6 @@
   {/if}
 
   <!-- ── INFO / FOTO toggle (bottom-left, always visible) ──────── -->
-  <!--
-    Geometry (same as gallery toggle):
-    Track: 180×45px, border-radius 999px, bg #0e0e0e
-    Pill: 88×37px, top:4px
-    INFO selected → pill left:4px
-    FOTO selected → pill translateX(84px)  (180-88-4=88 → shift=84)
-  -->
   <div class="toggle-area">
     <div class="toggle-track" class:toggle--foto={viewMode === 'foto'}>
       <span class="toggle-pill" aria-hidden="true"></span>
@@ -372,7 +365,10 @@
   }
 
   /* ── Quote (top-right, INFO mode only) ──────────────────────────── */
-  /*  Figma: right column, top aligned with name hero */
+  /*
+   * Figma 6039:15669 — right column, top-aligned with name hero.
+   * Layout: opening " (84px Medium, left) → text (32px Bold, right) → closing " (84px Medium, right)
+   */
   .vol-quote {
     position: absolute;
     left: calc(67% + 4vw);
@@ -380,23 +376,39 @@
     width: clamp(160px, 22.7vw, 393px);
     margin: 0;
     padding: 0;
-    font-size: clamp(14px, 1.85vw, 32px);
-    font-weight: 700;
-    line-height: 1.3;
-    color: #fafafa;
-    text-align: right;
     z-index: 6;
+    display: flex;
+    flex-direction: column;
     font-style: normal;
   }
 
-  /* Placeholder quote (no real data): keep it readable, no italic */
+  /* Placeholder (no real quote yet) — slightly dimmed */
   .vol-quote--dim { opacity: 0.55; }
 
+  /* Large decorative quotation marks — 84 px Medium weight (Figma) */
   .qmark {
-    font-size: 1.5em;
-    line-height: 0;
-    opacity: 0.55;
-    vertical-align: super;
+    display: block;
+    font-size: clamp(40px, 5.5vw, 84px);
+    font-weight: 500;          /* Medium */
+    line-height: 1;
+    color: #fafafa;
+    user-select: none;
+  }
+
+  /* Opening mark: left-aligned (hangs into left margin) */
+  .qmark--open  { text-align: left; }
+  /* Closing mark: right-aligned */
+  .qmark--close { text-align: right; }
+
+  /* Quote text — 32 px Bold, right-aligned, letter-spacing 3% (Figma) */
+  .quote-body {
+    margin: 0;
+    font-size: clamp(14px, 2.2vw, 32px);
+    font-weight: 700;          /* Bold */
+    line-height: 1;
+    letter-spacing: 0.03em;   /* 0.96 px at 32 px = 3% */
+    color: #fafafa;
+    text-align: right;
   }
 
   /* ── Q&A accordion (right column, INFO mode) ─────────────────── */
@@ -557,13 +569,6 @@
   }
 
   /* ── INFO / FOTO toggle ──────────────────────────────────────────── */
-  /*
-   * Same geometry as gallery toggle:
-   * Track:  180 × 45 px, radius 999px, bg #0e0e0e
-   * Pill:   88 × 37 px, top:4px
-   * INFO → pill at left:4px
-   * FOTO → pill translateX(84px)  [180 - 88 - 4 = 88; shift = 84]
-   */
   .toggle-area {
     position: fixed;
     left: 4.17vw;
@@ -602,23 +607,33 @@
     height: 45px;
     border: 0;
     background: transparent;
-    padding: 0;
+    padding-top: 11px;
     cursor: pointer;
     z-index: 2;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;
+    text-align: center;
     text-transform: uppercase;
     transition: color 0.2s ease;
   }
 
   /* INFO (left side) */
-  .toggle-opt--info { left: 0; }
+  .toggle-opt--info {
+    left: 0;
+    justify-content: flex-start;
+    padding-left: 20px;
+    padding-right: 0;
+  }
   /* FOTO (right side) */
-  .toggle-opt--foto { right: 0; }
+  .toggle-opt--foto {
+    right: 0;
+    justify-content: flex-end;
+    padding-left: 0;
+    padding-right: 20px;
+  }
 
   /* Colours: selected = dark text on lime pill; unselected = white */
   .toggle-opt--info { color: #0e0e0e; }   /* INFO default: on lime (selected) */
@@ -646,7 +661,9 @@
     .name-firstname { padding-left: 12vw; }
     .vol-info  { max-width: 28vw; }
     .qa-wrap   { left: 36vw; }
-    .vol-quote { left: 62%; width: clamp(120px, 18vw, 300px); font-size: clamp(12px, 1.5vw, 26px); }
+    .vol-quote    { left: 62%; width: clamp(120px, 18vw, 300px); }
+    .quote-body   { font-size: clamp(12px, 1.5vw, 26px); }
+    .qmark        { font-size: clamp(28px, 3.5vw, 56px); }
     .foto-wrap { left: 48vw; }
     .back-btn  { font-size: 18px; padding: 10px 14px; }
     .toggle-area { left: 3.2vw; }
@@ -664,10 +681,11 @@
       position: relative;
       left: auto; top: auto;
       width: 100%;
-      text-align: left;
       padding: 20px 16px;
-      font-size: 18px;
     }
+
+    .quote-body { font-size: 18px; text-align: right; }
+    .qmark      { font-size: 40px; }
 
     .vol-info {
       position: relative;
