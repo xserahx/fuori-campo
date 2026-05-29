@@ -151,8 +151,8 @@
 
   .names-bg {
     position: absolute;
-    left: calc(25% + 42px);
-    right: 72px;
+    left: clamp(16px, calc(25% + 42px), calc(25% + 42px));
+    right: clamp(32px, 4.5vw, 72px);
     top: 0;
     bottom: 0;
     overflow: hidden;
@@ -169,8 +169,8 @@
     left: 0;
     right: 0;
     height: 112px;
-    font-size: 90px;
-    line-height: 100px;
+    font-size: clamp(44px, 6vw, 90px);
+    line-height: clamp(50px, 7vw, 100px);
     color: rgba(255, 255, 255, 0.24);
     text-transform: uppercase;
     letter-spacing: 0;
@@ -191,14 +191,15 @@
 
   .names-interaction {
     position: absolute;
-    left: calc(25% + 42px);
-    right: 72px;
+    left: clamp(16px, calc(25% + 42px), calc(25% + 42px));
+    right: clamp(32px, 4.5vw, 72px);
     top: 0;
     bottom: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     z-index: 6;
     padding-top: 0;
     scrollbar-width: none;
@@ -216,8 +217,8 @@
     background: transparent;
     color: transparent;
     height: 112px;
-    font-size: 90px;
-    line-height: 100px;
+    font-size: clamp(44px, 6vw, 90px);
+    line-height: clamp(50px, 7vw, 100px);
     padding: 0 0 12px 0;
     margin: 0;
     cursor: pointer;
@@ -229,7 +230,7 @@
   .names-interaction__item:hover,
   .names-interaction__item.selected {
     color: var(--gallery-accent, #bdff5d);
-    transform: translateX(44px);
+    transform: translateX(clamp(16px, 2.9vw, 44px));
   }
 
   .names-interaction__label {
@@ -262,6 +263,16 @@
   .item-underline.visible {
     width: 100%;
     opacity: 1;
+  }
+
+  /* ── Responsive ─────────────────────────────────────────────── */
+  /* On small laptops, collapse the left whitespace zone */
+  @media (max-width: 1100px) {
+    .names-bg,
+    .names-interaction {
+      left: clamp(16px, 10%, 120px);
+      right: 32px;
+    }
   }
 
   .copy-toast {

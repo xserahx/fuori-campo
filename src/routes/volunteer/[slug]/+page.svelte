@@ -352,6 +352,13 @@
   }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
+  /* Small laptop 1024–1300 px */
+  @media (max-width: 1300px) {
+    .photo-frame { width: min(900px, 80vw); top: 54vh; }
+    .arrow--prev { left: 32px; }
+    .arrow--next { right: 32px; }
+  }
+
   @media (max-width: 1100px) {
     .arrow--prev { left: 16px; }
     .arrow--next { right: 16px; }

@@ -303,7 +303,8 @@
   .name-hero {
     position: absolute;
     left: 0;
-    top: 20vh;
+    /* Stay below INDIETRO button (≈125+24+50px) with breathing room */
+    top: calc(var(--navbar-height, 125px) + 100px);
     width: 100%;
     pointer-events: none;
     z-index: 5;
@@ -331,11 +332,12 @@
   }
 
   /* ── Volunteer info (left, mid-page, INFO mode only) ──────────── */
-  /*  Figma: left:74px → 4.28vw, top:539px → ~47.7vh of 1130px */
+  /*  Below name hero: name-top + 2 lines of font + gap.
+      2 lines ≈ clamp(74px, 12.4vw, 213px)  [2 × clamp(40,6.71vw,116) × 0.92] */
   .vol-info {
     position: absolute;
     left: 4.28vw;
-    top: 47vh;
+    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 20px);
     z-index: 10;
     display: flex;
     flex-direction: column;
@@ -370,11 +372,11 @@
   }
 
   /* ── Quote (top-right, INFO mode only) ──────────────────────────── */
-  /*  Figma: left ≈ calc(67% + 4.34vw), top ~242px */
+  /*  Figma: right column, top aligned with name hero */
   .vol-quote {
     position: absolute;
     left: calc(67% + 4vw);
-    top: 21vh;
+    top: calc(var(--navbar-height, 125px) + 100px);
     width: clamp(160px, 22.7vw, 393px);
     margin: 0;
     padding: 0;
@@ -387,22 +389,23 @@
     font-style: normal;
   }
 
-  .vol-quote--dim { opacity: 0.35; font-style: italic; }
+  /* Placeholder quote (no real data): keep it readable, no italic */
+  .vol-quote--dim { opacity: 0.55; }
 
   .qmark {
-    font-size: 1.3em;
+    font-size: 1.5em;
     line-height: 0;
-    opacity: 0.3;
+    opacity: 0.55;
     vertical-align: super;
   }
 
   /* ── Q&A accordion (right column, INFO mode) ─────────────────── */
-  /*  Figma: right:62px → 3.59vw, top:522px → 46.2vh, width:1059px → 61.3vw */
+  /*  Starts at the same top as vol-info, below the name hero */
   .qa-wrap {
     position: absolute;
     left: 35.11vw;
     right: 3.59vw;
-    top: 44vh;
+    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 20px);
     bottom: 80px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -420,12 +423,12 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 0;
+    padding: 8px 0;
     border: 0;
     background: transparent;
     color: #fafafa;
-    /* Figma: 48px medium, tracking 1.92px */
-    font-size: clamp(16px, 2.78vw, 48px);
+    /* Clamp by both vw AND vh so rows fit the available height */
+    font-size: clamp(13px, min(2.78vw, 3.5vh), 48px);
     font-weight: 500;
     line-height: 1;
     text-transform: uppercase;
@@ -482,7 +485,7 @@
     position: absolute;
     left: 53vw;        /* start right of center, matching Figma */
     right: 3.59vw;
-    top: 38vh;         /* just below name section */
+    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 20px);
     bottom: 80px;
     z-index: 10;
     overflow: hidden;
@@ -626,19 +629,35 @@
   .toggle--foto .toggle-opt--foto { color: #0e0e0e; }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
-  @media (max-width: 1100px) {
-    .name-hero { top: 22vh; }
-    .vol-info  { top: 50vh; max-width: 32vw; }
-    .qa-wrap   { left: 38vw; top: 46vh; }
-    .vol-quote { left: 60%; width: 34vw; top: 23vh; }
+
+  /* Small laptop 1024–1280 px — tighten columns */
+  @media (max-width: 1280px) {
+    .name-surname  { padding-left: 3.2vw; }
+    .name-firstname { padding-left: 15vw; }
+    .vol-info  { max-width: 30vw; left: 3.2vw; }
+    .qa-wrap   { left: 34vw; }
+    .vol-quote { left: calc(64% + 2vw); width: clamp(140px, 20vw, 360px); }
     .foto-wrap { left: 50vw; }
+    .back-btn  { font-size: 20px; }
   }
 
+  /* Compact laptop ≤1100 px */
+  @media (max-width: 1100px) {
+    .name-firstname { padding-left: 12vw; }
+    .vol-info  { max-width: 28vw; }
+    .qa-wrap   { left: 36vw; }
+    .vol-quote { left: 62%; width: clamp(120px, 18vw, 300px); font-size: clamp(12px, 1.5vw, 26px); }
+    .foto-wrap { left: 48vw; }
+    .back-btn  { font-size: 18px; padding: 10px 14px; }
+    .toggle-area { left: 3.2vw; }
+  }
+
+  /* Tablet breakpoint — switch to single-column flow */
   @media (max-width: 768px) {
     .profile { overflow-y: auto; height: auto; min-height: 100vh; }
 
-    .name-hero    { position: relative; top: auto; margin-top: 120px; }
-    .name-surname  { padding-left: 16px; }
+    .name-hero      { position: relative; top: auto; margin-top: 120px; }
+    .name-surname   { padding-left: 16px; }
     .name-firstname { padding-left: 48px; }
 
     .vol-quote {

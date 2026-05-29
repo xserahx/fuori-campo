@@ -42,24 +42,25 @@
   }
 
   .hero {
-    padding: 110px 24px 0 80px;
+    padding: clamp(56px, 8vh, 110px) clamp(16px, 2vw, 24px) 0 clamp(24px, 5.5vw, 80px);
     flex: 1 0 auto;
   }
 
   .hero h1 {
     margin: 0;
-    font-size: 116px;
+    font-size: clamp(48px, 8vw, 116px);
     line-height: 1;
     font-weight: 800;
     letter-spacing: 0;
   }
 
   .hero p {
-    margin: 18px 0 0 260px;
+    /* Indent scales: zero on narrow, up to 260 px on 1440 px+ */
+    margin: clamp(12px, 1.5vw, 18px) 0 0 clamp(0px, 18vw, 260px);
     max-width: 1311px;
     color: #000;
     font-family: "Forma DJR Display", sans-serif;
-    font-size: 84px;
+    font-size: clamp(26px, 5.8vw, 84px);
     font-weight: 500;
     line-height: 0.95;
     letter-spacing: 0;
@@ -70,12 +71,12 @@
     position: relative;
     left: 0;
     right: 0;
-    padding: 0 72px 10px;
+    padding: 0 clamp(24px, 5vw, 72px) 10px;
     color: #000;
-    font-size: 24px;
-    line-height: 1;
+    font-size: clamp(14px, 1.5vw, 24px);
+    line-height: 1.3;
     font-weight: 500;
-    margin-top: 40px;
+    margin-top: clamp(24px, 3vw, 40px);
     display: flex;
     justify-content: flex-start;
   }
@@ -88,13 +89,5 @@
 
   .team-copy p {
     margin: 0;
-  }
-
-  @media (min-width: 900px) {
-    .hero {
-      padding-top: 110px;
-      padding-left: 80px;
-      padding-right: 24px;
-    }
   }
 </style>

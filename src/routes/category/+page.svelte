@@ -605,14 +605,12 @@
 
   .curve-top {
     top: 0;
-    height: 34vh;
-    min-height: 170px;
+    height: clamp(120px, 30vh, 260px);
   }
 
   .curve-bottom {
     bottom: 0;
-    height: 31vh;
-    min-height: 160px;
+    height: clamp(110px, 28vh, 240px);
   }
 
   /* ── bottom UI ───────────────────────────────────────── */
@@ -629,19 +627,22 @@
 
   .title {
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: 116px;
+    /* Scale from 48 px on small laptops to 116 px on large screens */
+    font-size: clamp(48px, 7.5vw, 116px);
     font-weight: 800;
     font-style: normal;
     text-transform: uppercase;
     letter-spacing: -0.025em;
     line-height: 0.9;
     margin: 0;
-    max-width: 72%;
+    /* Removed fixed max-width — bottom-bar padding is the boundary */
+    max-width: none;
     display: flex;
     flex-direction: column;
     gap: 0.05em;
     pointer-events: auto; /* allow clicking despite bottom-bar none */
     cursor: pointer;
+    overflow: visible;
     transition: transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 320ms ease;
   }
 
@@ -649,15 +650,18 @@
     color: #baff44;
     display: block;
     white-space: nowrap;
-    margin-left: var(--spacing-11, 72px);
+    /* Indent scales: 16 px minimum up to 72 px */
+    margin-left: clamp(16px, 5vw, 72px);
   }
 
   .title-outline {
     color: transparent;
-    -webkit-text-stroke: 2px #baff44;
+    /* Stroke scales with font */
+    -webkit-text-stroke: clamp(1px, 0.14vw, 2px) #baff44;
     display: block;
     white-space: nowrap;
-    margin-left: var(--spacing-17, 340px);
+    /* Stagger indent scales: ~100 px at 800 px up to 340 px at 1388 px */
+    margin-left: clamp(48px, 24.5vw, 340px);
     margin-right: 0;
   }
 
@@ -665,12 +669,5 @@
   .title.is-exit {
     transform: translateY(-32vh) scale(0.98);
     opacity: 0;
-  }
-
-  @media (max-width: 640px) {
-    .title { font-size: 52px; max-width: 78%; }
-    .title-fill { margin-left: var(--spacing-11, 72px); }
-    .title-outline { margin-left: var(--spacing-17, 340px); margin-right: 0; }
-    .title-outline { -webkit-text-stroke: 1.5px #baff44; }
   }
 </style>

@@ -176,8 +176,8 @@
   /* ── FOTO / NOMI toggle ─────────────────────────────────────────── */
   .toggle {
     position: fixed;
-    left: 72px;
-    bottom: 48px;
+    left: clamp(24px, 4.5vw, 72px);
+    bottom: clamp(24px, 3.5vh, 48px);
     z-index: 100;
   }
 
@@ -248,19 +248,19 @@
   /* ── FILTRA PER CATEGORIA button ───────────────────────────────── */
   .filter-btn {
     position: fixed;
-    right: 81px;
-    bottom: 48px;
+    right: clamp(24px, 5vw, 81px);
+    bottom: clamp(24px, 3.5vh, 48px);
     z-index: 100;
-    width: 275px;
-    padding: 12px 20px;
+    width: clamp(200px, 18vw, 275px);
+    padding: clamp(8px, 1vh, 12px) 20px;
     border-radius: 999px;
     border: 2px solid var(--color-content-accent, #bdff5d);
     background: transparent;
     color: #fafafa;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: 24px;
+    font-size: clamp(16px, 1.5vw, 24px);
     font-weight: 500;
-    line-height: 26px;
+    line-height: 1.2;
     text-align: center;
     white-space: nowrap;
     cursor: pointer;
@@ -292,7 +292,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 140px 81px 160px 0;
+    padding: 100px clamp(32px, 5.5vw, 81px) 120px 0;
     /* Dark-to-transparent gradient so photos are legible through it */
     background: linear-gradient(
       to left,
@@ -320,7 +320,7 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 48px;
+    gap: clamp(24px, 3.2vw, 48px);
     align-items: flex-end;
   }
 
@@ -329,9 +329,9 @@
     background: transparent;
     color: #fafafa;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: 48px;
+    font-size: clamp(24px, 3.2vw, 48px);
     font-weight: 500;
-    line-height: 0.85;
+    line-height: 0.9;
     text-transform: uppercase;
     letter-spacing: 1.92px;
     text-align: right;
@@ -351,10 +351,10 @@
 
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
-    .toggle { left: 16px; bottom: 24px; }
-    .filter-btn { right: 16px; bottom: 24px; font-size: 16px; width: auto; padding: 10px 16px; }
-    .cat-panel { width: 100vw; padding: 100px 24px 140px; }
-    .cat-item { font-size: 32px; }
-    .cat-list { gap: 32px; }
+    .toggle     { left: 16px; bottom: 20px; }
+    .filter-btn { right: 16px; bottom: 20px; font-size: 14px; width: auto; padding: 10px 14px; }
+    .cat-panel  { width: 100vw; padding: 100px 24px 120px; }
+    .cat-item   { font-size: 28px; }
+    .cat-list   { gap: 28px; }
   }
 </style>

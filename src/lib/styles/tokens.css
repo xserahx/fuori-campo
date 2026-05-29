@@ -27,24 +27,26 @@
    --font-display: 'Forma DJR Display', sans-serif;  /* Main font */
 
   /* Scrolling — body / story paragraphs
-    Medium 500 · 64 px · lh 64 px · ls 0 */
-  --ts-scrolling-size:           64px;
+    Medium 500 · 64 px · lh 64 px · ls 0
+    Responsive: scales from 32 px at 800 px viewport to 64 px at 1524 px+ */
+  --ts-scrolling-size:           clamp(32px, 4.2vw, 64px);
   --ts-scrolling-weight:         500;
-  --ts-scrolling-line-height:    64px;
+  --ts-scrolling-line-height:    clamp(32px, 4.2vw, 64px);
   --ts-scrolling-letter-spacing: 0em;
 
   /* H3 | Quotes + Answers + mini categorie
     Medium 500 · 36 px · lh 100% · ls 2% (0.72 px) */
-  --ts-h3-size:           36px;
+  --ts-h3-size:           clamp(18px, 2.5vw, 36px);
   --ts-h3-weight:         500;
   --ts-h3-line-height:    1;
   --ts-h3-letter-spacing: 0.72px;
 
   /* Scrollitelling — question headings on lime panel
-    Extra Bold 800 · 116 px · lh 106 px · ls 0 */
-  --ts-scrollitelling-size:           116px;
+    Extra Bold 800 · 116 px · lh 106 px · ls 0
+    Responsive: scales from 52 px at ~700 px viewport to 116 px at 1547 px+ */
+  --ts-scrollitelling-size:           clamp(52px, 7.5vw, 116px);
   --ts-scrollitelling-weight:         800;
-  --ts-scrollitelling-line-height:    106px;
+  --ts-scrollitelling-line-height:    clamp(48px, 6.9vw, 106px);
   --ts-scrollitelling-letter-spacing: 0em;
 
   /* Filter + Domande — category filters, small labels
@@ -360,10 +362,17 @@ body::-webkit-scrollbar,
 
 .nav-underline { display: none; }
 
+/* Small laptop — tighten horizontal padding, slightly smaller nav text */
+@media (max-width: 1100px) {
+  .navbar    { padding: var(--spacing-5) var(--spacing-8); }  /* 24px 48px */
+  .nav-links { gap: 24px; }
+  .nav-link  { font-size: 20px; }
+}
+
 @media (max-width: 900px) {
-  .navbar     { padding: var(--spacing-4) var(--spacing-5); }
+  .navbar     { padding: var(--spacing-4) var(--spacing-5); }  /* 16px 24px */
   .logo img   { height: 48px; width: auto; }
-  .nav-links  { gap: 24px; }
+  .nav-links  { gap: 20px; }
   .nav-link   { font-size: 14px; }
 }
 
@@ -619,6 +628,46 @@ body::-webkit-scrollbar,
  * RESPONSIVE
  * ================================================================ */
 
+/* ── Small laptop (1024–1280 px) ──────────────────────────────── */
+@media (max-width: 1280px) {
+  .story,
+  .scroll-cue,
+  .gallery {
+    padding-left:  48px;
+    padding-right: 48px;
+  }
+
+  .question { padding: 0 48px; }
+
+  .story--left,
+  .story--right {
+    max-width: min(var(--figma-story-width), 88vw);
+  }
+
+  .question-shell { margin-top: 200px; }
+}
+
+/* ── Compact laptop / large tablet (≤1100 px) ─────────────────── */
+@media (max-width: 1100px) {
+  .story,
+  .scroll-cue,
+  .gallery {
+    padding-left:  32px;
+    padding-right: 32px;
+  }
+
+  .question { padding: 0 32px; }
+
+  .story--right { margin-top: 48px; }
+
+  .story--quote-left  { margin-top: 200px; }
+  .story--quote-right { margin-top: 200px; }
+
+  .question-shell { margin-top: 140px; }
+  .question-sticky { margin-top: 100px; }
+}
+
+/* ── Tablet / small (≤900 px) ─────────────────────────────────── */
 @media (max-width: 900px) {
   .hero-outer {
     min-height: calc(100svh - 112px);
@@ -635,16 +684,6 @@ body::-webkit-scrollbar,
   /* Question panels keep full-width but shrink the side padding */
   .question {
     padding: 0 16px;
-  }
-
-  .story {
-    font-size:   40px;
-    line-height: 1.1;
-  }
-
-  .question h2 {
-    font-size:   clamp(32px, 8vw, 56px);
-    line-height: 1.05;
   }
 
   .story--right    { margin-top: 32px; }

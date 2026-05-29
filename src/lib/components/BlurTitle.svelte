@@ -181,7 +181,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    width: min(1083px, 90vw);
+    width: min(1083px, 94vw);
     max-width: 100vw;
     user-select: none;
     pointer-events: none;
@@ -200,8 +200,9 @@
     justify-content: center;
     gap: 0;
     font-family: var(--font-display);
-    font-size: 300px;
-    line-height: 250px;
+    /* Scale from 120 px on small laptops to 300 px on large screens */
+    font-size:   clamp(120px, 20vw, 300px);
+    line-height: clamp(100px, 16.7vw, 250px);
     font-weight: 800;
     letter-spacing: -0.02em;
     text-transform: uppercase;
