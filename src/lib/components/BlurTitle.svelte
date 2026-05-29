@@ -12,7 +12,6 @@
     );
   }
 
-  /* ── each fog zone is just a <div> with radial-gradient + filter:blur ── */
   interface FogZone {
     el: HTMLDivElement;
     /* base position as fraction of container */
@@ -65,7 +64,7 @@
         dF:    0.00035 + Math.random() * 0.00055,
         dAx:   0.055 + Math.random() * 0.07,
         dAy:   0.025 + Math.random() * 0.04,
-        baseW: 55 + Math.random() * 45,   /* % of container width */
+        baseW: 55 + Math.random() * 45,   
         baseH: 55 + Math.random() * 45,
         bF:    0.0006 + Math.random() * 0.002,
         bA:    0.10 + Math.random() * 0.18,
@@ -125,7 +124,6 @@
         /* position: centre the ellipse on (x,y) */
         const left = (z.x * W) - (w / 100 * W) / 2;
         const top  = (z.y * H) - (h / 100 * H) / 2;
-
         const s = z.el.style;
         s.width   = `${w}%`;
         s.height  = `${h}%`;
@@ -154,7 +152,6 @@
   bind:this={titleWrap}
   aria-label="FUORI CAMPO"
 >
-  <!-- fog zones injected by JS live here (position:absolute) -->
 
   <!-- layer 1: sharp text -->
   <div class="title-text layer-sharp" aria-hidden="true">
@@ -229,8 +226,6 @@
     text-align: center;
   }
 
-  /* blurred copy sits behind the sharp layer
-     blur(25px) matches Figma FOREGROUND_BLUR radius:25 (node 3773:4324) */
   .layer-blurred {
     z-index: 1;
     filter: blur(25px);
@@ -263,10 +258,6 @@
     text-align: center;
   }
 
-  /* CAMPO — fully invisible in the sharp layer so no letterform
-     contour composites against the blurred glow below.
-     The blurred layer's lime CAMPO (filter:blur + opacity) provides
-     the soft glow, matching Figma's FOREGROUND_BLUR (no hard edge). */
   .campo {
     opacity: 0;
     color: transparent;
