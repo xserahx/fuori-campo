@@ -3,6 +3,9 @@
   import { goto } from '$app/navigation';
   import '$lib/styles/tokens.css';
 
+  const DOT_DEFAULT = 'https://www.figma.com/api/mcp/asset/606ddbd4-d9de-491d-9c57-da9f6aaf06d2';
+  const DOT_SELECTED = 'https://www.figma.com/api/mcp/asset/a1d0bb60-3e1f-4bd0-85f5-81a39a3cb364';
+
   type CategoryInfo = {
     label: string;
     image: string;
@@ -40,59 +43,92 @@
   const prevCat = $derived(catIdx >= 0 ? CATEGORIES[(catIdx - 1 + CATEGORIES.length) % CATEGORIES.length] : null);
   const nextCat = $derived(catIdx >= 0 ? CATEGORIES[(catIdx + 1) % CATEGORIES.length] : null);
 
-  const categorySummaries: Record<string, { eyebrow: string; subtitle: string; details: string[] }> = {
+  type SubRole = {
+    title: string;
+    description: string;
+    role: string;
+  };
+
+  const categorySummaries: Record<string, { eyebrow: string; subtitle: string; roles: SubRole[] }> = {
     relazioni: {
       eyebrow: 'COM = Communication',
       subtitle: 'Sanno già cosa risponderti prima ancora che tu finisca la domanda.',
-      details: [
-        'Gestisce l\'immagine pubblica dei Giochi, i rapporti con i media locali',
-        'e la creazione di contenuti per i canali ufficiali di Milano Cortina 2026.',
-        'Communication Volunteer'
+      roles: [
+        {
+          title: 'PRS = Press',
+          description: 'Gestisce i rapporti con la stampa e la diffusione delle informazioni ufficiali, supportando comunicati, accrediti e richieste media.',
+          role: 'Press Volunteer'
+        },
+        {
+          title: 'INT = Interactions / Protocol',
+          description: 'Gestisce l\'accoglienza della "Olympic Family" (membri CIO, autorità e VIP), occupandosi di cerimoniale e standard di ospitalità di alto livello.',
+          role: 'Interaction / Protocol Volunteer'
+        },
+        {
+          title: 'LAN = Language Services',
+          description: 'Supporta la comunicazione multilingua tra staff, ospiti e delegazioni, facilitando traduzioni, mediazione e comprensione reciproca.',
+          role: 'Language Services Volunteer'
+        },
+        {
+          title: 'NCS = NOC Service (Comitati Olimpici Nazionali)',
+          description: 'Il punto di contatto unico per i Comitati Olimpici Nazionali; li assiste in ogni necessità logistica o burocratica durante la loro permanenza.',
+          role: 'NOC Assistant'
+        }
       ]
     },
     cerimonie: {
       eyebrow: 'CER = Cerimonie',
       subtitle: 'Ogni gesto pesa, ogni passaggio arriva al momento giusto.',
-      details: [
-        'Coordina momenti solenni, protocolli e premiazioni con precisione',
-        'e ritmo scenico durante gli eventi.',
-        'Ceremonies Volunteer'
+      roles: [
+        {
+          title: 'CER = Cerimonie',
+          description: 'Coordina momenti solenni, protocolli e premiazioni con precisione e ritmo scenico durante gli eventi.',
+          role: 'Ceremonies Volunteer'
+        }
       ]
     },
     sport: {
       eyebrow: 'SPT = Sport',
       subtitle: 'Tiene il passo delle competizioni, senza perdere il controllo.',
-      details: [
-        'Supporta le competizioni sul campo e la gestione dei flussi',
-        'nelle aree gara.',
-        'Sport Volunteer'
+      roles: [
+        {
+          title: 'SPT = Sport',
+          description: 'Supporta le competizioni sul campo e la gestione dei flussi nelle aree gara.',
+          role: 'Sport Volunteer'
+        }
       ]
     },
     organizzativa: {
       eyebrow: 'ORG = Organizzazione',
       subtitle: 'Dietro le quinte, tutto si incastra e continua a muoversi.',
-      details: [
-        'Tiene insieme turni, spazi e servizi generali',
-        'così che la macchina dei Giochi resti fluida e affidabile.',
-        'Operations Volunteer'
+      roles: [
+        {
+          title: 'ORG = Organizzazione',
+          description: 'Tiene insieme turni, spazi e servizi generali così che la macchina dei Giochi resti fluida e affidabile.',
+          role: 'Operations Volunteer'
+        }
       ]
     },
     logistica: {
       eyebrow: 'LOG = Logistica',
       subtitle: 'Fa arrivare le cose e le persone esattamente dove devono stare.',
-      details: [
-        'Gestisce spostamenti, materiali e territorio',
-        'assicurando che ogni supporto arrivi al posto giusto al momento giusto.',
-        'Logistics Volunteer'
+      roles: [
+        {
+          title: 'LOG = Logistica',
+          description: 'Gestisce spostamenti, materiali e territorio, assicurando che ogni supporto arrivi al posto giusto al momento giusto.',
+          role: 'Logistics Volunteer'
+        }
       ]
     },
     gestione: {
       eyebrow: 'FEX = Fan Experience',
       subtitle: 'Trasforma l\'arrivo del pubblico in un\'esperienza chiara e memorabile.',
-      details: [
-        'Lavora sui servizi al pubblico e sull\'accoglienza',
-        'per trasformare l\'esperienza dei fan in qualcosa di memorabile.',
-        'Fan Experience Volunteer'
+      roles: [
+        {
+          title: 'FEX = Fan Experience',
+          description: 'Lavora sui servizi al pubblico e sull\'accoglienza per trasformare l\'esperienza dei fan in qualcosa di memorabile.',
+          role: 'Fan Experience Volunteer'
+        }
       ]
     }
   };
@@ -100,14 +136,24 @@
   const activeSummary = $derived(categorySummaries[cat?.tag ?? ''] ?? {
     eyebrow: cat ? `${cat.label.split(' ')[0]} = Category` : 'CATEGORY',
     subtitle: 'Un ruolo che connette persone, spazi e contenuti.',
-    details: [
-      'Lavora in modo coordinato tra persone, spazi e contenuti',
-      'per supportare il funzionamento dell\'evento.',
-      'Volunteer'
+    roles: [
+      {
+        title: cat?.label ?? 'CATEGORY',
+        description: 'Lavora in modo coordinato tra persone, spazi e contenuti per supportare il funzionamento dell\'evento.',
+        role: 'Volunteer'
+      }
     ]
   });
 
-  const dotCount = 5;
+  let activeRoleIndex = $state(0);
+
+  $effect(() => {
+    activeRoleIndex = 0;
+    cat?.tag;
+  });
+
+  const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
+  const roleCount = $derived(activeSummary.roles.length);
 </script>
 
 <svelte:head>
@@ -115,7 +161,7 @@
 </svelte:head>
 
 {#if cat}
-  <main class="category-page">
+  <main class="category-page" class:category-sport={cat?.slug === 'sport'}>
     <div class="category-shell">
       <button class="back-button" type="button" aria-label="Indietro" onclick={() => goto('/category')}>
         <span class="back-arrow" aria-hidden="true">←</span>
@@ -139,7 +185,7 @@
       <section class="summary-card" aria-label="Categoria e sottocategoria">
         <div class="summary-top">
           <div class="summary-meta">
-            <p class="summary-eyebrow">{activeSummary.eyebrow}</p>
+            <p class="summary-eyebrow">{activeRole.title}</p>
             <div class="summary-nav" aria-label="Navigazione categorie">
               {#if prevCat}
                 <button class="nav-arrow" type="button" aria-label="Categoria precedente" onclick={() => goto(`/category/${prevCat.slug}`)}>
@@ -155,15 +201,29 @@
           </div>
 
           <div class="summary-copy">
-            {#each activeSummary.details as detail, index}
-              <p class:summary-footer={index === activeSummary.details.length - 1}>{detail}</p>
-            {/each}
+            <p>{activeRole.description}</p>
+            <p class="summary-footer">{activeRole.role}</p>
           </div>
         </div>
 
-        <div class="summary-dots" aria-hidden="true">
-          {#each Array(dotCount) as _, index}
-            <span class="dot" class:dot--active={index === 0}></span>
+        <div class="summary-dots" aria-label="Sub-roles">
+          {#each activeSummary.roles as _, index}
+            <button
+              type="button"
+              class="dot"
+              class:dot--active={index === activeRoleIndex}
+              aria-label={`Mostra sub-ruolo ${index + 1}`}
+              aria-pressed={index === activeRoleIndex}
+              onclick={() => { activeRoleIndex = index; }}
+            >
+              <img
+                alt=""
+                src={index === activeRoleIndex ? DOT_SELECTED : DOT_DEFAULT}
+                width="16"
+                height="16"
+                draggable="false"
+              />
+            </button>
           {/each}
         </div>
       </section>
@@ -193,7 +253,7 @@
   .category-shell {
     position: relative;
     min-height: 100dvh;
-    padding: 12px 0 40px;
+    padding: var(--spacing-3) 0 var(--spacing-7);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -201,8 +261,8 @@
 
   .back-button {
     width: fit-content;
-    margin-left: 43px;
-    margin-top: 14px;
+    margin-left: var(--spacing-8);
+    margin-top: var(--spacing-4);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -227,7 +287,7 @@
   .hero {
     width: min(100%, 1728px);
     margin: 0 auto;
-    padding: 26px 0 0;
+    padding: var(--spacing-5) 0 0;
     display: flex;
     flex-direction: column;
   }
@@ -236,7 +296,7 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-    padding: 0 72px;
+    padding: 0 var(--spacing-11);
     transform: translateY(-4px);
   }
 
@@ -253,22 +313,30 @@
 
   .title-fill {
     color: #baff44;
-    margin-left: 0;
+    margin-left: var(--spacing-11);
   }
 
   .title-outline {
     color: transparent;
     -webkit-text-stroke: clamp(1px, 0.14vw, 2px) #baff44;
-    margin-left: clamp(72px, 20vw, 340px);
+    margin-left: clamp(var(--spacing-11), 20vw, 340px);
     margin-top: -8px;
+  }
+
+  /* Revert SPORT title alignment to previous behavior */
+  .category-sport .title-fill {
+    margin-left: 0;
+  }
+  .category-sport .title-outline {
+    margin-left: clamp(48px, 24.5vw, 340px);
   }
 
   .hero-copy {
     margin: 0;
-    width: min(1318px, calc(100% - 72px));
+    width: min(1318px, calc(100% - var(--spacing-11)));
     margin-left: auto;
-    margin-top: 44px;
-    padding: 0 72px 0 0;
+    margin-top: var(--spacing-11);
+    padding: 0 var(--spacing-11) 0 0;
     text-align: right;
     font-family: 'Forma DJR Display', sans-serif;
     font-size: clamp(34px, 4.9vw, 84px);
@@ -281,16 +349,16 @@
   .summary-card {
     width: min(100%, 1728px);
     margin: 0 auto;
-    padding: 0 72px 0 72px;
+    padding: 0 var(--spacing-11) 0 var(--spacing-11);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-3);
   }
 
   .summary-top {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--spacing-3);
     width: min(780px, 100%);
   }
 
@@ -298,7 +366,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
+    gap: var(--spacing-3);
   }
 
   .summary-eyebrow {
@@ -336,13 +404,17 @@
     margin: 0;
     max-width: 780px;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: 24px;
+    font-size: var(--unit-24);
     line-height: 26px;
     color: #fafafa;
   }
 
   .summary-copy p {
     margin: 0;
+  }
+
+  .summary-copy p:first-child {
+    white-space: pre-wrap;
   }
 
   .summary-footer {
@@ -360,14 +432,19 @@
   }
 
   .dot {
+    appearance: none;
+    border: 0;
     width: 16px;
     height: 16px;
-    border-radius: 999px;
-    background: rgba(186, 255, 68, 0.15);
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
   }
 
-  .dot--active {
-    background: #baff44;
+  .dot img {
+    display: block;
+    width: 16px;
+    height: 16px;
   }
 
   .not-found {
@@ -385,16 +462,9 @@
       padding-top: 16px;
     }
 
-      padding: 34px 0 0;
-
     .hero {
-      grid-template-columns: 1fr;
       padding: 40px 24px 0;
       width: auto;
-      padding: 0 24px;
-      margin-left: 0;
-      margin-top: 24px;
-      max-width: 100%;
     .hero-copy {
       justify-self: start;
       text-align: left;
@@ -402,8 +472,16 @@
       max-width: 100%;
     }
 
-      padding: 0 24px 0;
+    .hero-title {
+      padding: 0 24px;
+      margin-left: 0;
+      margin-top: 24px;
+      max-width: 100%;
+    }
+
+    .title-outline {
       margin-left: clamp(44px, 19vw, 220px);
+    }
 
     .summary-eyebrow {
       font-size: 24px;

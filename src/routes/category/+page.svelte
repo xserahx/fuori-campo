@@ -471,7 +471,10 @@
   </div>
 
   <div class="bottom-bar">
-    <div class="title" aria-live="polite" bind:this={titleEl} role="button" tabindex="0" onclick={handleTitleClick} onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
+    <div class="title" aria-live="polite" bind:this={titleEl} role="button" tabindex="0"
+      class:category-sport={categorySlug(currentLabel) === 'sport'}
+      onclick={handleTitleClick}
+      onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
       {#each titleLines as line, index}
         {#if index === 0}
           <span class="title-fill">{line}</span>
@@ -541,11 +544,11 @@
   }
 
   .arrow-left {
-    left: 20px;
+    left: var(--spacing-5);
   }
 
   .arrow-right {
-    right: 20px;
+    right: var(--spacing-5);
   }
 
   canvas {
@@ -626,7 +629,7 @@
   .bottom-bar {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    padding: 0 20px 18px;
+    padding: 0 var(--spacing-5) var(--spacing-4);
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
@@ -656,8 +659,8 @@
     color: #baff44;
     display: block;
     white-space: nowrap;
-    /* Indent scales: 16 px minimum up to 72 px */
-    margin-left: clamp(16px, 5vw, 72px);
+    /* Default indent */
+    margin-left: var(--spacing-11);
   }
 
   .title-outline {
@@ -666,9 +669,17 @@
     -webkit-text-stroke: clamp(1px, 0.14vw, 2px) #baff44;
     display: block;
     white-space: nowrap;
-    /* Stagger indent scales: ~100 px at 800 px up to 340 px at 1388 px */
-    margin-left: clamp(48px, 24.5vw, 340px);
+    /* Keep outline aligned with filled line using tokens */
+    margin-left: calc(var(--spacing-11) + var(--spacing-4));
     margin-right: 0;
+  }
+
+  /* Revert SPORT title alignment to previous behavior */
+  .title.category-sport .title-fill {
+    margin-left: clamp(var(--spacing-4), 5vw, var(--spacing-11));
+  }
+  .title.category-sport .title-outline {
+    margin-left: clamp(var(--spacing-8), 24.5vw, 340px);
   }
 
 </style>
