@@ -385,13 +385,15 @@
   /* Placeholder (no real quote yet) — slightly dimmed */
   .vol-quote--dim { opacity: 0.55; }
 
-  /* Large decorative quotation marks — 84 px Medium weight (Figma) */
+  /* Large decorative quotation marks — 84 px Medium weight, outline (Figma H2) */
   .qmark {
     display: block;
     font-size: clamp(40px, 5.5vw, 84px);
     font-weight: 500;          /* Medium */
-    line-height: 1;
-    color: #fafafa;
+    line-height: clamp(50px, 5.5vw, 80px);
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 2px var(--color-content-body, #fafafa);
     user-select: none;
   }
 
@@ -400,13 +402,13 @@
   /* Closing mark: right-aligned */
   .qmark--close { text-align: right; }
 
-  /* Quote text — 32 px Bold, right-aligned, letter-spacing 3% (Figma) */
+  /* Quote text — 32 px Bold, right-aligned (Figma h3) */
   .quote-body {
     margin: 0;
     font-size: clamp(14px, 2.2vw, 32px);
     font-weight: 700;          /* Bold */
     line-height: 1;
-    letter-spacing: 0.03em;   /* 0.96 px at 32 px = 3% */
+    letter-spacing: 0.96px;
     color: #fafafa;
     text-align: right;
   }
@@ -423,6 +425,9 @@
     overflow-x: hidden;
     scrollbar-width: none;
     z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.16vw, 20px);
   }
 
   .qa-wrap::-webkit-scrollbar { display: none; }
@@ -435,16 +440,16 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 8px 0;
+    padding: 4px 0;
     border: 0;
     background: transparent;
     color: #fafafa;
-    /* Clamp by both vw AND vh so rows fit the available height */
-    font-size: clamp(13px, min(2.78vw, 3.5vh), 48px);
+    /* Figma: Unit/48 = 48px at 1728px artboard → 2.78vw */
+    font-size: clamp(16px, 2.78vw, 48px);
     font-weight: 500;
     line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.04em;  /* 4% = 1.92px at 48px — matches Figma */
     cursor: pointer;
     text-align: left;
     transition: color 0.15s ease;
@@ -467,10 +472,10 @@
     color: var(--color-content-accent, #bdff5d);
   }
 
-  /* Figma: separator 2.417px white line */
+  /* Figma: separator 2.417px — var(--color/link/default, #fafafa) */
   .qa-sep {
-    height: 2px;
-    background: rgba(250, 250, 250, 0.18);
+    height: 2.417px;
+    background: #fafafa;
     flex-shrink: 0;
   }
 
@@ -663,7 +668,7 @@
     .qa-wrap   { left: 36vw; }
     .vol-quote    { left: 62%; width: clamp(120px, 18vw, 300px); }
     .quote-body   { font-size: clamp(12px, 1.5vw, 26px); }
-    .qmark        { font-size: clamp(28px, 3.5vw, 56px); }
+    .qmark        { font-size: clamp(28px, 4.5vw, 56px); }
     .foto-wrap { left: 48vw; }
     .back-btn  { font-size: 18px; padding: 10px 14px; }
     .toggle-area { left: 3.2vw; }
