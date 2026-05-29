@@ -80,6 +80,25 @@
       .trim()
       .replace(/\s+/g, '-');
   }
+
+  function categorySlug(label: string) {
+    switch (slugifyLabel(label)) {
+      case 'relazioni-e-comunicazione':
+        return 'relazioni';
+      case 'cerimonie-e-revenue':
+        return 'cerimonie';
+      case 'sport-e-discipline':
+        return 'sport';
+      case 'area-organizzativa-e-servizi-generali':
+        return 'organizzativa';
+      case 'logistica-e-territorio':
+        return 'logistica';
+      case 'gestione-operativa-e-fan-experience':
+        return 'gestione';
+      default:
+        return slugifyLabel(label);
+    }
+  }
   
   const LERP_K = 0.072; 
 
@@ -371,7 +390,7 @@
   async function handleTitleClick() {
     const idx = mod(Math.round(animPos || 0), N());
     const label = categories?.[idx]?.label ?? '';
-    const slug = slugifyLabel(label || '');
+    const slug = categorySlug(label || '');
     if (slug) await goto(`/category/${slug}`);
   }
 
