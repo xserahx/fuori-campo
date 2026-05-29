@@ -95,14 +95,6 @@
 
   /* ═══════════════════════════════════════════════════════════════
    * MOUNT — scroll behaviour (navbar + scroll-locked horizontal pan)
-   *
-   * Strategy: the tall question-shell still exists so position:sticky
-   * works naturally for keyboard / programmatic navigation.  For wheel
-   * and touch we use *non-passive* listeners so we can call
-   * e.preventDefault() while the sticky panel is active.  This fully
-   * blocks vertical scroll and drives translateX directly instead —
-   * vertical movement only resumes once the user has panned to the
-   * start or end of the question track.
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
     let lastScrollY = window.scrollY;
@@ -113,7 +105,7 @@
     let totalSlide = 0;   // max horizontal travel (px)
 
     /* ── Virtual horizontal position ────────────────────────────── */
-    let hOffset = 0;      // 0 … totalSlide
+    let hOffset = 0;      // 0 totalSlide
 
     const applyTransform = () => {
       if (questionTrack) {
@@ -151,12 +143,15 @@
 
       // At start, scrolling up → release; page scrolls back above section
       if (hOffset <= 0 && e.deltaY < 0) return;
-      // At end, scrolling down → release; page scrolls past section
-      if (hOffset >= totalSlide && e.deltaY > 0) return;
+      // At end, scrolling down → snap past the shell so sticky disengages instantly
+      if (hOffset >= totalSlide && e.deltaY > 0) {
+        window.scrollTo({ top: qShellTop + qShellHeight - window.innerHeight, behavior: 'instant' });
+        return;
+      }
 
       // Still panning — block vertical scroll, advance horizontal
       e.preventDefault();
-      hOffset = Math.max(0, Math.min(totalSlide, hOffset + e.deltaY));
+      hOffset = Math.max(0, Math.min(totalSlide, hOffset + e.deltaY * 1.5));
       applyTransform();
     };
 
@@ -180,10 +175,13 @@
       touchStartY = e.touches[0].clientY;
 
       if (hOffset <= 0 && dy < 0) return;
-      if (hOffset >= totalSlide && dy > 0) return;
+      if (hOffset >= totalSlide && dy > 0) {
+        window.scrollTo({ top: qShellTop + qShellHeight - window.innerHeight, behavior: 'instant' });
+        return;
+      }
 
       e.preventDefault();
-      hOffset = Math.max(0, Math.min(totalSlide, hOffset + dy * 1.5));
+      hOffset = Math.max(0, Math.min(totalSlide, hOffset + dy * 2));
       applyTransform();
     };
 
@@ -342,7 +340,7 @@
 
             <section class="question question--right">
               <h2>
-                <span class="ghost">PERCHÈ </span>
+                <span class="ghost">PERCHÉ </span>
                 <span class="accent">HANNO DECISO</span><br />
                 <span class="accent">DI CANDIDARSI?</span>
               </h2>

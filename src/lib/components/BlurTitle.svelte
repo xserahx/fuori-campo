@@ -47,9 +47,9 @@
         will-change:transform,opacity,filter;
         background: radial-gradient(
           ellipse at center,
-          rgba(180,180,180,0.28) 0%,
-          rgba(140,140,140,0.12) 35%,
-          rgba(100,100,100,0.04) 65%,
+          rgba(189,255,93,0.22) 0%,
+          rgba(189,255,93,0.10) 35%,
+          rgba(189,255,93,0.03) 65%,
           transparent 100%
         );
       `;
@@ -219,6 +219,14 @@
 
   .layer-sharp {
     z-index: 2;
+  }
+
+  .layer-sharp .campo {
+    opacity: 1;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
+    text-align: center;
   }
 
   /* blurred copy sits behind the sharp layer

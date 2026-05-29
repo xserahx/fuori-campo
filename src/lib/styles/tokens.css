@@ -525,10 +525,12 @@ body::-webkit-scrollbar,
   flex-direction: row;
   height: 100%;
   will-change: transform;
-  transition: transform 80ms linear;   /* rounds off discrete wheel steps */
+  transition: transform 50ms linear;   /* tight easing — snappy at 1.5× speed */
 }
 
-/* 5 ▸ Individual panels — each owns one viewport width */
+/* 5 ▸ Individual panels — each owns one viewport width.
+   Figma: left panels use pl-72 pr-0; right panels use pl-0 pr-72.
+   This matches the 1304 px natural text column in the 1728 px artboard. */
 .question {
   width: 100vw;
   height: 100%;
@@ -536,8 +538,20 @@ body::-webkit-scrollbar,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 var(--spacing-11);        /* 72 px sides */
   box-sizing: border-box;
+}
+
+/* Left-aligned questions: 72 px left padding, text can reach right edge */
+.question--left {
+  padding-left:  var(--spacing-11);   /* 72 px */
+  padding-right: 0;
+}
+
+/* Right-aligned questions: 72 px right padding, text can reach left edge */
+.question--right {
+  align-items:   flex-end;
+  padding-left:  0;
+  padding-right: var(--spacing-11);   /* 72 px */
 }
 
 .question h2 {
@@ -552,15 +566,13 @@ body::-webkit-scrollbar,
 }
 
 .question .accent { color: #000; }
+.question--right h2 { text-align: right; }
 
-.question--right              { align-items: flex-end; }
-.question--right h2           { text-align: right; }
-
-/* Ghost text — transparent letterforms with black stroke */
+/* Ghost text — transparent letterforms with black stroke (Figma: stroke on text layer) */
 .ghost {
   color: transparent;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: var(--stroke-1) #000;   /* 2 px */
+  -webkit-text-stroke: var(--stroke-1) #000;   /* 2 px — matches Figma stroke */
 }
 
 /* ================================================================
@@ -632,10 +644,9 @@ body::-webkit-scrollbar,
     padding-right: 16px;
   }
 
-  /* Question panels keep full-width but shrink the side padding */
-  .question {
-    padding: 0 16px;
-  }
+  /* Question panels keep full-width but shrink the active-side padding */
+  .question--left  { padding-left:  16px; padding-right: 0; }
+  .question--right { padding-left:  0;    padding-right: 16px; }
 
   .story {
     font-size:   40px;
