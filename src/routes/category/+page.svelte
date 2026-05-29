@@ -343,6 +343,17 @@
   function onPointerUp() {
     if (!isDragging) return;
     isDragging = false;
+
+    // Detect a tap/click on the center image (minimal drag, pointer near screen centre)
+    if (Math.abs(dragLive) < 0.08 && containerEl) {
+      const ratio = Math.abs(dragStartX - containerEl.clientWidth / 2) / containerEl.clientWidth;
+      if (ratio < 0.22) {
+        dragLive = 0;
+        handleTitleClick();
+        return;
+      }
+    }
+
     if      (dragLive >  0.35) { targetPos++; }
     else if (dragLive < -0.35) { targetPos--; }
     position = mod(targetPos, N());
@@ -357,23 +368,11 @@
     renderer.setSize(w, h);
   }
 
-  // Click handler that animates the title upward before navigating
   async function handleTitleClick() {
-    // Determine the currently centered index from the animated position
     const idx = mod(Math.round(animPos || 0), N());
     const label = categories?.[idx]?.label ?? '';
     const slug = slugifyLabel(label || '');
-
-    // Start exit animation
-    titleEl?.classList.add('is-exit');
-
-    // Wait for animation to play
-    await new Promise((r) => setTimeout(r, 320));
-
-    if (slug) {
-      // add query param so receiving page can opt-in to entry positioning
-      await goto(`/category/${slug}?from=carousel`);
-    }
+    if (slug) await goto(`/category/${slug}`);
   }
 
   onMount(() => { buildScene(); window.addEventListener('resize', onResize); });
@@ -412,9 +411,7 @@
 
 <Navbar pinned />
 
-<section
-  class="carousel"
-  bind:this={containerEl}
+<section class="carousel" bind:this={containerEl}
   onpointerdown={onPointerDown}
   onpointermove={onPointerMove}
   onpointerup={onPointerUp}
@@ -423,21 +420,14 @@
 >
   <canvas bind:this={canvasEl}></canvas>
 
-  <div
-    class="edge-panel edge-panel--left"
-    aria-hidden="true"
+  <div class="edge-panel edge-panel--left" aria-hidden="true"
     style={`background-image: url('${previousCategory?.image ?? ''}')`}
   ></div>
-  <div
-    class="edge-panel edge-panel--right"
-    aria-hidden="true"
+  <div class="edge-panel edge-panel--right" aria-hidden="true"
     style={`background-image: url('${nextCategory?.image ?? ''}')`}
   ></div>
 
-  <button
-    class="arrow arrow-left"
-    type="button"
-    aria-label="Previous category"
+  <button class="arrow arrow-left" type="button" aria-label="Previous category"
     onpointerdown={(e) => onArrowPointerDown(-1, e)}
   >
     <span aria-hidden="true">‹</span>
@@ -462,7 +452,7 @@
   </div>
 
   <div class="bottom-bar">
-    <div class="title" class:is-exit={false} aria-live="polite" bind:this={titleEl} role="button" tabindex="0" onclick={handleTitleClick} onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
+    <div class="title" aria-live="polite" bind:this={titleEl} role="button" tabindex="0" onclick={handleTitleClick} onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
       {#each titleLines as line, index}
         {#if index === 0}
           <span class="title-fill">{line}</span>
@@ -627,7 +617,6 @@
 
   .title {
     font-family: 'Forma DJR Display', sans-serif;
-    /* Scale from 48 px on small laptops to 116 px on large screens */
     font-size: clamp(48px, 7.5vw, 116px);
     font-weight: 800;
     font-style: normal;
@@ -635,15 +624,13 @@
     letter-spacing: -0.025em;
     line-height: 0.9;
     margin: 0;
-    /* Removed fixed max-width — bottom-bar padding is the boundary */
     max-width: none;
     display: flex;
     flex-direction: column;
     gap: 0.05em;
-    pointer-events: auto; /* allow clicking despite bottom-bar none */
+    pointer-events: auto;
     cursor: pointer;
     overflow: visible;
-    transition: transform 320ms cubic-bezier(0.22,1,0.36,1), opacity 320ms ease;
   }
 
   .title-fill {
@@ -665,9 +652,4 @@
     margin-right: 0;
   }
 
-  /* exit animation when clicking title */
-  .title.is-exit {
-    transform: translateY(-32vh) scale(0.98);
-    opacity: 0;
-  }
 </style>
