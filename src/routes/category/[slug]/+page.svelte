@@ -78,7 +78,7 @@
     },
     cerimonie: {
       eyebrow: 'CER = Cerimonie',
-      subtitle: 'Ogni gesto pesa, ogni passaggio arriva al momento giusto.',
+      subtitle: 'Erano lì alle 6 di mattina per provare una cosa che durava 40 secondi. L\'hanno rifatta 12 volte. Non si sa mai. ',
       roles: [
         {
           title: 'CER = Cerimonie',
@@ -91,93 +91,158 @@
           role: 'Revenue Volunteer'
         },
         {
-          title: 'HOS = Hospitality',
-          description: 'Gestisce l\'accoglienza degli ospiti istituzionali e degli sponsor nelle aree riservate, curando ogni dettaglio dell\'esperienza VIP.',
-          role: 'Hospitality Volunteer'
+          title: 'RTC = Rate Card',
+          description: 'Gestisce il catalogo degli ospiti istituzionali e degli sponsor nelle aree riservate, curando ogni dettaglio dell\'esperienza VIP.Gestisce il catalogo di servizi e attrezzature extra che i partner e i media possono noleggiare per le loro operazioni specifiche durante i Giochi.',
+          role: 'Rate Card Volunteer'
+        },
+        {
+          title: 'IKL = I-Knowledge',
+          description: 'Si occupa del monitoraggio e della raccolta dati per il programma di "Legacy" e trasferimento della conoscenza richiesto dal CIO.',
+          role: 'I-Knowledge Volunteer'
         }
       ]
     },
     sport: {
       eyebrow: 'SPT = Sport',
-      subtitle: 'Tiene il passo delle competizioni, senza perdere il controllo.',
+      subtitle: 'Conoscono il regolamento di sport che non sapevano esistessero fino a sei mesi fa.',
       roles: [
         {
-          title: 'SPT = Sport',
-          description: 'Supporta le competizioni sul campo e la gestione dei flussi nelle aree gara, lavorando a diretto contatto con atleti e staff tecnico.',
-          role: 'Sport Volunteer'
+          title: 'XALP = Alpine Skiing',
+          description: 'Lo sci alpino, che comprende le prove di velocità (Discesa e Super-G) e quelle tecniche (Slalom e Gigante) su pista battuta.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
         },
         {
-          title: 'MED = Medical',
-          description: 'Garantisce il presidio sanitario nelle aree di gara e di allenamento, coordinandosi con i servizi medici ufficiali per interventi rapidi ed efficaci.',
-          role: 'Medical Volunteer'
+          title: 'XBOB = Bobsleigh',
+          description: 'Il bob, disciplina di discesa su pista ghiacciata con equipaggi da due o quattro componenti.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
         },
         {
-          title: 'TEC = Technology',
-          description: 'Gestisce la strumentazione tecnica di campo, i sistemi di cronometria e il supporto digitale alle discipline sportive durante le competizioni.',
-          role: 'Technology Volunteer'
+          title: 'XBTH = Biathlon',
+          description: 'Sport che combina lo sci di fondo (resistenza) con il tiro a segno con carabina (precisione) in diverse sessioni.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
+        },
+        {
+          title: 'XCSS = Cross-Country',
+          description: 'Lo sci di fondo.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+        },
+        {
+          title: 'XCUR = Curling',
+          description: 'Sport di strategia su ghiaccio dove si fanno scivolare pesanti pietre di granito verso un bersaglio (house).',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+        },
+        {
+          title: 'XFRS = Freestyle Skiing',
+          description: 'Sci acrobatico che include specialità come Moguls, Aerials, Halfpipe, Slopestyle e lo Ski Cross.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+        },
+        {
+          title: 'XFSK = Figure Skating',
+          description: 'Il pattinaggio di figura, dove singoli, coppie o gruppi eseguono elementi tecnici e coreografici su musica.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, FOP Operations Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+        },
+        {
+          title: 'XIHO = Ice Hockey',
+          description: 'Torneo di hockey su ghiaccio, sport di squadra ad alta velocità giocato in tre tempi da 20 minuti.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+        },
+        {
+          title: 'XSJP = Ski Jumping',
+          description: 'Il salto con gli sci dai trampolini (Normal Hill e Large Hill), valutato per distanza e stile del volo.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Hill Support Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
+        },
+         {
+          title: 'XSMT = Ski Mountaineering',
+          description: 'Lo sci alpinismo. Debutta nel 2026 e prevede salite con pelli di foca, tratti a piedi e discese fuori pista.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+        },
+         {
+          title: 'XSSK = Speed Skating',
+          description: 'Pattinaggio di velocità su pista lunga (400m), dove gli atleti competono contro il tempo in corsie separate.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+        },
+        {
+          title: 'XSTK = Short Track Speed Skating',
+          description: 'Pattinaggio di velocità su pista corta (111m), caratterizzato da partenze in linea e sorpassi spettacolari.',
+          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, FOP Operations Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
         }
       ]
     },
     organizzativa: {
       eyebrow: 'ORG = Organizzazione',
-      subtitle: 'Dietro le quinte, tutto si incastra e continua a muoversi.',
+      subtitle: 'Nessuno sa esattamente cosa fanno, ma quando mancano si sente.',
       roles: [
         {
-          title: 'ORG = Organizzazione',
-          description: 'Tiene insieme turni, spazi e servizi generali così che la macchina dei Giochi resti fluida e affidabile in ogni momento.',
-          role: 'Operations Volunteer'
+          title: 'PEM = People Management',
+          description: 'Si occupa della strategia delle risorse umane "intangibile": pianificazione dei turni, gestione dei check-in/out dei volontari presso i centri dedicati, coordinamento della formazione e attività di riconoscimento/rewarding.',
+          role: 'Workforce Village Volunteer, Athlete 365 Volunteer, Mind Zone Volunteer, Olympic Club Volunteer, Workforce Volunteer '
         },
         {
-          title: 'ADM = Administration',
-          description: 'Si occupa delle pratiche burocratiche, della gestione documentale e del supporto amministrativo agli uffici operativi dei Giochi.',
-          role: 'Administration Volunteer'
+          title: 'ACR = Accreditations',
+          description: 'Gestisce l\'intero ciclo di vita dell\'accreditamento. Questo include la verifica delle identità, il rilascio dei pass e la gestione degli UAC (Uniform and Accreditation Centres), dove avviene fisicamente la consegna del kit ufficiale (divisa Salomon) a volontari e staff.',
+          role: 'Accreditation Volunteer, Uniform Volunteer '
         },
         {
-          title: 'SER = General Services',
-          description: 'Garantisce la qualità e la continuità dei servizi di supporto offerti a staff, atleti e pubblico nelle venue e nelle aree di servizio.',
-          role: 'General Services Volunteer'
+          title: 'TEC = Technology',
+          description: 'Assicura il funzionamento di tutta l\'infrastruttura IT: dai sistemi di cronometraggio e punteggio (Timing & Scoring) alla connettività Wi-Fi e al supporto tecnico nei siti (Venue Technology).',
+          role: 'Results Volunteer, Timing Volunteer, Venue Technology Volunteer'
         }
       ]
     },
     logistica: {
       eyebrow: 'LOG = Logistica',
-      subtitle: 'Fa arrivare le cose e le persone esattamente dove devono stare.',
+      subtitle: 'Hanno spostato quella cosa lì, poi di là, poi di nuovo lì. Alla fine era nel posto giusto dall\'inizio.',
       roles: [
         {
-          title: 'LOG = Logistica',
-          description: 'Gestisce spostamenti, materiali e territorio, assicurando che ogni supporto arrivi al posto giusto al momento giusto.',
+          title: 'AND = Arrivals & Departures',
+          description: 'Opera nei "Port of Entry" (aeroporti di Malpensa, Linate, Venezia e stazioni ferroviarie). Accoglie le delegazioni e coordina il flusso verso le destinazioni finali.',
+          role: 'Arrivals & Departures Volunteer'
+        },
+        {
+          title: 'LOG = Logistics',
+          description: 'Responsabile della pianificazione, stoccaggio e distribuzione di materiali pesanti, arredi e attrezzature sportive tra i vari cluster (Milano, Valtellina, Cortina, Val di Fiemme e Anterselva).',
           role: 'Logistics Volunteer'
         },
         {
           title: 'TRA = Transport',
-          description: 'Coordina il trasporto di atleti, delegazioni, staff e materiali tra le sedi di gara, i villaggi olimpici e gli hub logistici.',
+          description: 'Gestisce il sistema di navette e la flotta di veicoli ufficiali per garantire spostamenti puntuali e sicuri a tutti gli stakeholder accreditati.',
           role: 'Transport Volunteer'
         },
         {
-          title: 'TER = Territory',
-          description: 'Presidia le aree esterne alle venue e il territorio circostante, garantendo segnaletica, orientamento e supporto ai visitatori sul campo.',
-          role: 'Territory Volunteer'
+          title: 'VIL = Village',
+          description: 'Gestisce le operazioni nei Villaggi Olimpici e Paralimpici, assicurando i servizi residenziali e l\'accoglienza quotidiana per gli atleti.',
+          role: 'Village Volunteer'
         }
       ]
     },
     gestione: {
       eyebrow: 'FEX = Fan Experience',
-      subtitle: 'Trasforma l\'arrivo del pubblico in un\'esperienza chiara e memorabile.',
+      subtitle: 'Hanno risposto alla stessa domanda 400 volte  in un giorno con il sorriso. Almeno le prime 380.',
       roles: [
         {
-          title: 'FEX = Fan Experience',
-          description: 'Lavora sui servizi al pubblico e sull\'accoglienza per trasformare l\'esperienza dei fan in qualcosa di memorabile, dal primo accesso all\'ultima nota.',
-          role: 'Fan Experience Volunteer'
+          title: 'EVM = Event Management',
+          description: 'Coordinamento operativo della Venue. È l\'area che fa da "collante" tra tutte le altre FA per assicurare che il sito di gara funzioni secondo i piani.',
+          role: 'Event Management Volunteer'
         },
         {
-          title: 'OPS = Operations',
-          description: 'Garantisce la continuità operativa delle venue coordinando staffing, flussi interni e la risposta tempestiva a ogni esigenza durante gli eventi.',
-          role: 'Operations Volunteer'
+          title: 'EVS = Event Services',
+          description: 'Gestisce l\'esperienza e la sicurezza dello spettatore all\'interno del sito di gara. Si occupa della gestione dei flussi (code e ingressi), del controllo dei titoli di accesso, dell\'assistenza alle persone con disabilità e delle procedure di primo intervento o smarrimento oggetti.',
+          role: 'Event Services Volunteer'
         },
         {
-          title: 'ACC = Accreditation',
-          description: 'Gestisce i sistemi di accreditamento e il controllo accessi per atleti, media e ospiti, assicurando sicurezza e fluidità agli ingressi.',
-          role: 'Accreditation Volunteer'
+          title: 'SPP = Sport Presentation',
+          description: 'Gestisce lo spettacolo "live" negli stadi: annunci dello speaker, musica, contenuti sui maxischermi e coordinamento dei momenti di intrattenimento per il pubblico.',
+          role: 'Sport Presentation Volunteer'
+        },
+        {
+          title: 'SPS = Spectator Services',
+          description: 'Gestisce l\'esperienza dello spettatore dal momento in cui entra nel perimetro olimpico: orientamento, assistenza, gestione delle code e dei flussi alle tribune.',
+          role: 'Spectator Services Volunteer'
+        },
+        {
+          title: 'DOP = Doping Control',
+          description: 'Fornisce supporto logistico ai medici antidoping. Il ruolo principale è quello di Chaperone: notificare agli atleti il controllo e scortarli fino alla stazione medica ufficiale.',
+          role: 'Doping Control Volunteer'
         }
       ]
     }
