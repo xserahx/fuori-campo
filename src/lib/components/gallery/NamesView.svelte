@@ -21,7 +21,18 @@
   for (const p of peopleFromImages) peopleMap.set(p.name, p);
   for (const p of manualPeople) if (!peopleMap.has(p.name)) peopleMap.set(p.name, p);
 
-  const people: Person[] = Array.from(peopleMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  // Extract the sort key = surname.
+  // • manual entries are stored "Cognome Nome" → surname is parts[0]
+  // • image  entries are stored "Nome Cognome" → surname is parts.slice(1)
+  function surnameKey(p: Person): string {
+    const parts = p.name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return p.name;
+    return p.source === 'manual' ? parts[0] : parts.slice(1).join(' ');
+  }
+
+  const people: Person[] = Array.from(peopleMap.values()).sort((a, b) =>
+    surnameKey(a).localeCompare(surnameKey(b), 'it', { sensitivity: 'base' })
+  );
 
   let selectedIndex = $state<number>(-1);
   let copied = $state(false);

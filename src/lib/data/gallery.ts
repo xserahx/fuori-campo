@@ -25,7 +25,7 @@ export const imagesRaw: GalleryImage[] = [
     src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e',
     left: 470.12, top: 340.6, width: 185.5, height: 247.3,
     tags: ['sport'],
-    name: 'Aquila Muraca Francesca',
+    name: 'Francesca Aquila Muraca',
     dayDescription: 'I turni erano variabili, potevano essere al mattino verso le 8:30 o al pomeriggio verso le 13. Raggiungevo il luogo di gara prendendo prima il treno per arrivare a Milano, la metro da Cadorna a Rogoredo e poi il pullman o la navetta. Durante la giornata mi occupavo degli accessi nei relativi luoghi. Ho costruito un bel rapporto con i volontari e i vari membri dello staff.'
   },
   { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425 },
@@ -188,7 +188,7 @@ export const volunteersNames: string[] = [
   "Airaghi Giuseppe",
   "Amedeo Aureliano",
   "Angelini Carlotta",
-  "Aquila Muraca Francesca",
+  "Francesca Aquila Muraca",
   "Aramini Ivan",
   "Bandini Daniele",
   "Barrel Paola",
