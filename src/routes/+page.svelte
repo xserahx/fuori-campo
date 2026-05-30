@@ -95,17 +95,38 @@
 
   /* ═══════════════════════════════════════════════════════════════
    * MOUNT — scroll behaviour (navbar + scroll-locked horizontal pan)
+   *
+   * Geometry model
+   * ─────────────
+   *  .question-shell   position:relative, height set by JS
+   *  .question-sticky  position:sticky, top:0, margin-top:STICKY_MARGIN,
+   *                    height:100vh
+   *  .question-track   horizontal flex, JS translateX
+   *
+   *  STICKY_MARGIN (192 px) = .question-sticky { margin-top }
+   *  panStart = qShellTop + STICKY_MARGIN   ← sticky has fully pinned
+   *  panEnd   = panStart + totalSlide       ← all panels consumed
+   *  qShellH  = STICKY_MARGIN + vh + totalSlide
+   *
+   *  While panStart ≤ scrollY < panEnd:
+   *    wheel / touch → blocked vertically, drives hOffset horizontally
+   *  At panEnd: page jumps past shell, sticky unpins, vertical resumes.
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
     let lastScrollY = window.scrollY;
 
     /* ── Geometry ────────────────────────────────────────────────── */
-    let qShellTop  = 0;   // doc-top distance to shell's top edge
-    let qShellHeight = 0; // JS-set shell height = 100vh + totalSlide
-    let totalSlide = 0;   // max horizontal travel (px)
+    const STICKY_MARGIN = 192; // mirrors .question-sticky { margin-top }
+
+    let qShellTop  = 0;
+    let qShellH    = 0;
+    let totalSlide = 0;
 
     /* ── Virtual horizontal position ────────────────────────────── */
-    let hOffset = 0;      // 0 totalSlide
+    let hOffset = 0;
+
+    /* ── Panel snap ──────────────────────────────────────────────── */
+    let snapTimer: ReturnType<typeof setTimeout> | undefined;
 
     const applyTransform = () => {
       if (questionTrack) {
@@ -113,46 +134,64 @@
       }
     };
 
+    /* Snap to nearest panel with a spring transition */
+    const scheduleSnap = () => {
+      if (snapTimer) clearTimeout(snapTimer);
+      snapTimer = setTimeout(() => {
+        const pw     = window.innerWidth;
+        const target = Math.round(hOffset / pw) * pw;
+        if (Math.abs(hOffset - target) > 1 && questionTrack) {
+          questionTrack.style.transition = 'transform 380ms cubic-bezier(0.22,1,0.36,1)';
+          hOffset = target;
+          applyTransform();
+          setTimeout(() => {
+            if (questionTrack) questionTrack.style.transition = 'transform 80ms linear';
+          }, 400);
+        }
+      }, 200);
+    };
+
     /* ── Build / rebuild shell geometry ─────────────────────────── */
     const setupHorizontalScroll = () => {
       if (!questionShell || !questionTrack) return;
-      totalSlide   = Math.max(0, questionTrack.scrollWidth - window.innerWidth);
-      qShellHeight = window.innerHeight + totalSlide;
-      questionShell.style.height = `${qShellHeight}px`;
-      qShellTop    = questionShell.getBoundingClientRect().top + window.scrollY;
+      totalSlide = Math.max(0, questionTrack.scrollWidth - window.innerWidth);
+      // Shell must cover entry gap + sticky height + all horizontal travel
+      qShellH    = STICKY_MARGIN + window.innerHeight + totalSlide;
+      questionShell.style.height = `${qShellH}px`;
+      qShellTop  = questionShell.getBoundingClientRect().top + window.scrollY;
     };
 
-    /* ── Wheel — non-passive; intercepts vertical → horizontal ──
-       While the sticky pin is active AND the user hasn't reached
-       either boundary, preventDefault() blocks the page from
-       scrolling and we advance hOffset instead.                  */
+    /* ── Wheel — non-passive; converts vertical → horizontal pan ───
+       Vertical scroll is blocked (preventDefault) only while the
+       sticky is pinned AND we have more panels to reveal.          */
     const handleWheel = (e: WheelEvent) => {
       if (!questionShell || !questionTrack || totalSlide <= 0) return;
 
-      const sy = window.scrollY;
-      const vh = window.innerHeight;
+      const sy       = window.scrollY;
+      const panStart = qShellTop + STICKY_MARGIN; // sticky is fully pinned here
+      const panEnd   = panStart + totalSlide;      // last panel consumed
 
-      // Sticky active range: [qShellTop, qShellTop + totalSlide)
-      const inSticky = sy >= qShellTop && sy < qShellTop + qShellHeight - vh;
+      const inZone = sy >= panStart && sy < panEnd;
 
-      if (!inSticky) {
-        // Exited upward → reset so re-entry starts from question 1
-        if (sy < qShellTop) hOffset = 0;
-        return;
+      if (!inZone) {
+        // Re-entering from above → reset to panel 1
+        if (sy < panStart) hOffset = 0;
+        return; // let normal vertical scroll proceed
       }
 
-      // At start, scrolling up → release; page scrolls back above section
+      // At left edge + scrolling up → release; vertical scroll resumes upward
       if (hOffset <= 0 && e.deltaY < 0) return;
-      // At end, scrolling down → snap past the shell so sticky disengages instantly
+      // At right edge + scrolling down → jump past shell, vertical resumes
       if (hOffset >= totalSlide && e.deltaY > 0) {
-        window.scrollTo({ top: qShellTop + qShellHeight - window.innerHeight, behavior: 'instant' });
+        window.scrollTo({ top: panEnd, behavior: 'instant' });
         return;
       }
 
-      // Still panning — block vertical scroll, advance horizontal
+      // Inside zone → block vertical, drive horizontal
       e.preventDefault();
       hOffset = Math.max(0, Math.min(totalSlide, hOffset + e.deltaY * 1.5));
       applyTransform();
+      scheduleSnap();
     };
 
     /* ── Touch — swipe-up gesture drives the same hOffset ───────── */
@@ -165,32 +204,35 @@
     const handleTouchMove = (e: TouchEvent) => {
       if (!questionShell || !questionTrack || totalSlide <= 0) return;
 
-      const sy = window.scrollY;
-      const vh = window.innerHeight;
-      const inSticky = sy >= qShellTop && sy < qShellTop + qShellHeight - vh;
-      if (!inSticky) return;
+      const sy       = window.scrollY;
+      const panStart = qShellTop + STICKY_MARGIN;
+      const panEnd   = panStart + totalSlide;
+      const inZone   = sy >= panStart && sy < panEnd;
+      if (!inZone) return;
 
-      // positive dy = swipe up = user wants to go right
+      // positive dy = finger swiped up = scroll right
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
 
       if (hOffset <= 0 && dy < 0) return;
       if (hOffset >= totalSlide && dy > 0) {
-        window.scrollTo({ top: qShellTop + qShellHeight - window.innerHeight, behavior: 'instant' });
+        window.scrollTo({ top: panEnd, behavior: 'instant' });
         return;
       }
 
       e.preventDefault();
       hOffset = Math.max(0, Math.min(totalSlide, hOffset + dy * 2));
       applyTransform();
+      scheduleSnap();
     };
 
     /* ── Scroll — passive; navbar visibility only ────────────────── */
     const handleScroll = () => {
-      const sy    = window.scrollY;
-      const delta = sy - lastScrollY;
-      const vh    = window.innerHeight;
-      const inQuestion = sy >= qShellTop && sy < qShellTop + qShellHeight - vh;
+      const sy       = window.scrollY;
+      const delta    = sy - lastScrollY;
+      const vh       = window.innerHeight;
+      const panStart = qShellTop + STICKY_MARGIN;
+      const inQuestion = sy >= panStart && sy < panStart + totalSlide;
 
       if (heroSection) {
         const rect   = heroSection.getBoundingClientRect();
@@ -200,7 +242,7 @@
           navbarVisible = true;
           navbarFixed   = true;
         } else if (inQuestion) {
-          navbarVisible = false;          // hide over lime panel
+          navbarVisible = false;      // hide over question panels
         } else if (sy <= 20) {
           navbarVisible = false;
           navbarFixed   = true;
@@ -263,6 +305,7 @@
       window.removeEventListener("touchmove",   handleTouchMove);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("resize",      handleResize);
+      if (snapTimer) clearTimeout(snapTimer);
     };
   });
 </script>
