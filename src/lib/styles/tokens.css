@@ -662,7 +662,7 @@ body::-webkit-scrollbar,
     max-width: min(var(--figma-story-width), 88vw);
   }
 
-  .question-shell { margin-top: 200px; }
+  .question-shell  { margin-top: 200px; }
 }
 
 /* ── Compact laptop / large tablet (≤1100 px) ─────────────────── */
@@ -681,7 +681,7 @@ body::-webkit-scrollbar,
   .story--quote-left  { margin-top: 200px; }
   .story--quote-right { margin-top: 200px; }
 
-  .question-shell { margin-top: 140px; }
+  .question-shell  { margin-top: 140px; }
 }
 
 /* ── Tablet / small (≤900 px) ─────────────────────────────────── */

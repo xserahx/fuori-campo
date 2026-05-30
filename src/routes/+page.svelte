@@ -243,10 +243,16 @@
           vTarget = clamp(s.top + delta, 0, maxScroll());
           return;
         }
-        /* Scrolling right / down past the last panel → exit forward */
+        /* Scrolling right / down past the last panel → exit forward.
+           Snap vSmooth past the shell range so tryLock can't re-lock
+           and reset hTarget to 0 (which would send user back to Q1). */
         if (s.hTarget >= s.slide && delta > 0) {
-          locked  = null;
-          vTarget = clamp(s.top + s.slide + 1 + delta, 0, maxScroll());
+          locked        = null;
+          const exitPos = s.top + s.slide + 1;
+          vSmooth       = exitPos;
+          vPrev         = exitPos;
+          window.scrollTo({ top: exitPos, behavior: 'instant' });
+          vTarget       = clamp(exitPos + delta, 0, maxScroll());
           return;
         }
         /* Still inside → advance/retreat horizontal */
@@ -254,10 +260,12 @@
         return;
       }
 
-      /* Vertical: check if delta would land inside a shell */
+      /* Vertical: check if delta would land inside a shell.
+         Guard with vSmooth < s.top so we never re-lock a shell
+         we already exited forward. */
       const projected = vSmooth + delta;
       for (const s of [s1, s2] as S[]) {
-        if (s.slide > 0 && projected >= s.top && delta > 0) {
+        if (s.slide > 0 && vSmooth < s.top && projected >= s.top && delta > 0) {
           /* About to enter — lock immediately */
           const excess  = projected - s.top;
           s.hTarget     = clamp(excess, 0, s.slide);
@@ -433,14 +441,9 @@
     </div>
 
     <!--
-      ── Vertical interlude between zones ─────────────────────────
-      The margin-top on .question-shell below creates the vertical
-      scroll segment between Q2 and Q3 ("third question = vertical").
-    -->
-
-    <!--
       ══ H-SHELL 2 — Q3 (lime, left) + Q4 (dark, right) ══════════
-      Same scrub pattern, independent geometry.
+      margin-top on .question-shell provides the vertical scroll gap
+      between shell1 and shell2. Same scrub pattern, independent geometry.
     -->
     <div class="question-shell" bind:this={shell2}>
       <div class="question-sticky">
@@ -448,7 +451,7 @@
 
           <section class="question question--left question--lime">
             <h2>
-              <span class="ghost">COSA FACEVANO </span><br />
+              <span class="ghost">COSA FACEVANO</span><br />
               <span class="accent">CONCRETAMENTE?</span>
             </h2>
           </section>
