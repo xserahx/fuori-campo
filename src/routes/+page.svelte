@@ -41,8 +41,10 @@
   // H1 = Q1 (lime) + Q2 (dark),  H2 = Q3 (lime) + Q4 (dark)
   let shell1: HTMLElement | null = null;
   let track1: HTMLElement | null = null;
-  let shell2: HTMLElement | null = null;
-  let track2: HTMLElement | null = null;
+  let veil1:      HTMLElement | null = null;   // blur-veil overlay for shell 1
+  let shell2:     HTMLElement | null = null;
+  let track2:     HTMLElement | null = null;
+  let veil2:  HTMLElement | null = null;   // blur-veil overlay for shell 2
 
   /* ── Gallery / scroll cue ─────────────────────────────────────── */
   const galleryCount = 12;
@@ -123,13 +125,23 @@
   onMount(() => {
 
     /* ── Global smooth scroll state ─────────────────────────────── */
-    let vTarget = window.scrollY;   // raw intent (accumulated deltas)
-    let vSmooth = window.scrollY;   // lerped — the display scroll
+    let vTarget = window.scrollY;
+    let vSmooth = window.scrollY;
     let vPrev   = window.scrollY;
     let rafId   = 0;
 
-    /* GSAP ScrollSmoother smooth:1.2 ≈ 0.085 per frame at 60 fps */
-    const LERP = 0.085;
+    /* Pure LERP — smooth, predictable, no overshoot.
+       LERP_H is slightly faster for horizontal panels so they feel
+       crisp and responsive while vertical stays buttery.
+       BLUR_DECAY: fraction kept per frame — 0.87 clears in ~35 frames
+       (~580 ms at 60 fps), long enough to cover the full transition. */
+    const LERP       = 0.085;
+    const LERP_H     = 0.10;
+    const BLUR_DECAY = 0.87;
+
+    /* Per-shell blur state: fb = flash burst, hp = prev hSmooth    */
+    let fb1 = 0, fb2 = 0;
+    let h1p = 0, h2p = 0;
 
     function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
     function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
@@ -171,19 +183,22 @@
       }
     };
 
+    /* ── Blur helper: spike the panel blur-veil ─────────────────── */
+    function blurShell(s: S) { if (s === s1) fb1 = 14; else fb2 = 14; }
+
     /* ── Lock detection — call from both wheel handler and tick ──── */
     function tryLock(sy: number) {
       if (locked !== null) return;
       for (const s of [s1, s2] as S[]) {
         if (s.slide > 0 && sy >= s.top && sy < s.top + s.slide) {
-          /* Convert any vertical overshoot into initial h progress  */
-          const overshoot   = Math.max(0, sy - s.top);
-          s.hTarget         = clamp(overshoot, 0, s.slide);
-          s.hSmooth         = s.hTarget;             // snap — no visual jump
-          locked            = s;
-          vTarget           = s.top;                 // freeze vertical
-          vSmooth           = s.top;                 // snap smooth too
+          const overshoot = Math.max(0, sy - s.top);
+          s.hTarget       = clamp(overshoot, 0, s.slide);
+          s.hSmooth       = s.hTarget;
+          locked          = s;
+          vTarget         = s.top;
+          vSmooth         = s.top;
           window.scrollTo({ top: s.top, behavior: 'instant' });
+          blurShell(s);
           break;
         }
       }
@@ -191,12 +206,12 @@
 
     /* ── RAF tick ────────────────────────────────────────────────── */
     const tick = () => {
-      /* 1 ─ ScrollSmoother: lerp vSmooth toward vTarget */
-      vSmooth       = lerp(vSmooth, vTarget, LERP);
-      const vDelta  = vSmooth - vPrev;
-      vPrev         = vSmooth;
+      /* 1 ─ LERP: smooth, predictable vertical motion */
+      vSmooth      = lerp(vSmooth, vTarget, LERP);
+      const vDelta = vSmooth - vPrev;
+      vPrev        = vSmooth;
 
-      /* 2 ─ Entry detection (catches cases when lerp drifts into shell) */
+      /* 2 ─ Entry detection */
       tryLock(vSmooth);
 
       /* 3 ─ Apply to browser (position:sticky reads window.scrollY) */
@@ -208,15 +223,38 @@
       const sy = vSmooth;
       const vh = window.innerHeight;
 
-      /* 4 ─ Horizontal tracks */
-      for (const [s, track] of [[s1, track1], [s2, track2]] as const) {
-        if (s.slide <= 0 || !track) continue;
-        (s as S).hSmooth = lerp((s as S).hSmooth, (s as S).hTarget, LERP);
-        (track as HTMLElement).style.transform =
-          `translateX(${(-(s as S).hSmooth).toFixed(2)}px)`;
+      /* 4 ─ Horizontal tracks + transition blur
+             Decay flash-blur, add velocity-proportional motion blur,
+             write combined value to each shell's blur-veil overlay.  */
+      fb1 = Math.max(0, fb1 * BLUR_DECAY);
+      fb2 = Math.max(0, fb2 * BLUR_DECAY);
+
+      if (s1.slide > 0 && track1) {
+        s1.hSmooth = lerp(s1.hSmooth, s1.hTarget, LERP_H);
+        track1.style.transform = `translateX(${(-s1.hSmooth).toFixed(2)}px)`;
+        const b1 = Math.min(fb1 + Math.abs(s1.hSmooth - h1p) * 0.03, 14);
+        if (veil1) veil1.style.backdropFilter = b1 > 0.08 ? `blur(${b1.toFixed(1)}px)` : '';
+        h1p = s1.hSmooth;
+      }
+      if (s2.slide > 0 && track2) {
+        s2.hSmooth = lerp(s2.hSmooth, s2.hTarget, LERP_H);
+        track2.style.transform = `translateX(${(-s2.hSmooth).toFixed(2)}px)`;
+        const b2 = Math.min(fb2 + Math.abs(s2.hSmooth - h2p) * 0.03, 14);
+        if (veil2) veil2.style.backdropFilter = b2 > 0.08 ? `blur(${b2.toFixed(1)}px)` : '';
+        h2p = s2.hSmooth;
       }
 
-      /* 5 ─ Navbar */
+      /* 5 ─ Hero title scroll parallax
+             --hero-scroll-p drives BlurTitle's CSS transform/opacity.
+             Ramps 0→1 over the first 70 % of the hero so the title
+             fades out before the user fully leaves the section.      */
+      if (heroDocBot > heroDocTop) {
+        const heroLen = (heroDocBot - heroDocTop) * 0.70;
+        const heroP   = Math.max(0, Math.min(1, (sy - heroDocTop) / heroLen));
+        document.documentElement.style.setProperty('--hero-scroll-p', heroP.toFixed(3));
+      }
+
+      /* 6 ─ Navbar */
       const inQ        = locked !== null;
       const heroTopVP  = heroDocTop - sy;
       const heroBotVP  = heroDocBot - sy;
@@ -244,10 +282,12 @@
           return;
         }
         /* Scrolling right / down past the last panel → exit forward.
-           Snap vSmooth past the shell range so tryLock can't re-lock
-           and reset hTarget to 0 (which would send user back to Q1). */
+           Snap vSmooth past the shell range so tryLock can't re-lock.
+           Zone-flash hides the snap and creates a cinematic dissolve
+           as the page transitions back to vertical scroll.           */
         if (s.hTarget >= s.slide && delta > 0) {
-          locked        = null;
+          locked    = null;
+          blurShell(s);
           const exitPos = s.top + s.slide + 1;
           vSmooth       = exitPos;
           vPrev         = exitPos;
@@ -274,6 +314,7 @@
           vTarget       = s.top;
           vSmooth       = s.top;
           window.scrollTo({ top: s.top, behavior: 'instant' });
+          blurShell(s);
           return;
         }
       }
@@ -369,6 +410,7 @@
   {loaderProgress}
 />
 
+
 <div class="site">
   <main class="landing">
 
@@ -437,6 +479,7 @@
           </section>
 
         </div>
+        <div class="question-blur-veil" bind:this={veil1}></div>
       </div>
     </div>
 
@@ -464,6 +507,7 @@
           </section>
 
         </div>
+        <div class="question-blur-veil" bind:this={veil2}></div>
       </div>
     </div>
 

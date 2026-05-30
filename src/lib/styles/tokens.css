@@ -249,6 +249,7 @@ body::-webkit-scrollbar,
   background: var(--color-background-primary) !important;
 }
 
+
 /* ================================================================
  * NAVBAR
  * ================================================================ */
@@ -521,6 +522,17 @@ body::-webkit-scrollbar,
   top: 0;
   height: 100vh;
   overflow: hidden;
+}
+
+/* Blur-veil — absolute overlay above the track.
+   JS writes backdrop-filter each RAF frame: spikes on V↔H transitions
+   then decays, plus a velocity-proportional component while scrolling
+   between panels. Pointer-events disabled so clicks pass through.   */
+.question-blur-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
 }
 
 /* 3 ▸ Track — no CSS transition; RAF lerp in JS handles smoothness */
