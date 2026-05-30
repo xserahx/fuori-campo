@@ -248,8 +248,8 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
-    width: 59px;
-    height: 55px;
+    width: 28px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -262,8 +262,8 @@
 
   .arrow:hover { opacity: 0.65; }
 
-  .arrow--prev { left: 70px; }
-  .arrow--next { right: 70px; }
+  .arrow--prev { left: 8px; }
+  .arrow--next { right: 8px; }
 
   /* ── Main photo frame ───────────────────────────────────────────── */
   .photo-frame {
@@ -378,13 +378,9 @@
   /* Small laptop 1024–1300 px */
   @media (max-width: 1300px) {
     .photo-frame { width: min(900px, 80vw); top: 54vh; }
-    .arrow--prev { left: 32px; }
-    .arrow--next { right: 32px; }
   }
 
   @media (max-width: 1100px) {
-    .arrow--prev { left: 16px; }
-    .arrow--next { right: 16px; }
     .photo-frame { width: min(900px, 90vw); }
   }
 
@@ -393,7 +389,5 @@
     .cap-location { font-size: 10px; }
     .cap-role     { font-size: 14px; }
     .cap-name     { font-size: 20px; }
-    .arrow--prev  { left: 8px; }
-    .arrow--next  { right: 8px; }
   }
 </style>

@@ -517,11 +517,11 @@
 
   .arrow {
     position: absolute;
-    /* Centre vertically in the carousel area above the 264px title (designer intent) */
-    top: calc(50% - 132px);
+    /* Center vertically in the carousel area */
+    top: 50%;
     transform: translateY(-50%);
-    width: 64px;
-    height: 64px;
+    width: 28px;
+    height: 50px;
     background: transparent;
     color: #ffffff; /* default white */
     display: grid;
@@ -545,11 +545,11 @@
   }
 
   .arrow-left {
-    left: var(--spacing-11);
+    left: 8px;
   }
 
   .arrow-right {
-    right: var(--spacing-11);
+    right: 8px;
   }
 
   canvas {
