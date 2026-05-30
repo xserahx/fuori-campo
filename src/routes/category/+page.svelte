@@ -645,7 +645,8 @@
     font-weight: 800;
     font-style: normal;
     text-transform: uppercase;
-    letter-spacing: -0.025em;
+    /* Figma h1 style: letterSpacing: 0 */
+    letter-spacing: 0;
     /* Figma: leading-[unit/116] = 1:1 with font size */
     line-height: 1;
     margin: 0;

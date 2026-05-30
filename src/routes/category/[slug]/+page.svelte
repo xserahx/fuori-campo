@@ -355,8 +355,9 @@
     font-size: clamp(56px, 8vw, 116px);
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: -0.03em;
-    line-height: 0.86;
+    /* Figma h1: letterSpacing: 0, leading-[unit/116] = 1:1 with font size */
+    letter-spacing: 0;
+    line-height: 1;
     white-space: nowrap;
   }
 

@@ -2,7 +2,7 @@
   import { buildPeople, imagesRaw, slugify } from '$lib/data/gallery';
   import { goto } from '$app/navigation';
 
-  const ROW_HEIGHT = 112;
+  const ROW_HEIGHT = 120;
 
   let { activeFilter = null }: { activeFilter?: string | null } = $props();
 
@@ -28,20 +28,18 @@
     return imagesRaw.findIndex((img) => img.name === name) || 0;
   }
 
-  async function copyAndOpen(person: Person, idx: number) {
+  function openVolunteer(person: Person) {
     const imageIndex = findImageIndexByName(person.name);
     const slug = slugify(person.name, imageIndex);
     const href = `/volunteer/${slug}`;
 
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(window.location.origin + href);
-        copied = true;
-        setTimeout(() => (copied = false), 700);
-      }
-    } catch (e) {}
+    // Fire-and-forget clipboard copy — never block navigation
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(window.location.origin + href)
+        .then(() => { copied = true; setTimeout(() => (copied = false), 700); })
+        .catch(() => {});
+    }
 
-    await new Promise((r) => setTimeout(r, 250));
     goto(href);
   }
 
@@ -96,7 +94,7 @@
           onmouseenter={() => (selectedIndex = index)}
           onfocus={() => (selectedIndex = index)}
           onblur={() => (selectedIndex = -1)}
-          onclick={() => copyAndOpen(person, index)}
+          onclick={() => openVolunteer(person)}
           aria-label={`Open ${person.name}`}
           type="button"
         >
@@ -151,8 +149,9 @@
 
   .names-bg {
     position: absolute;
-    left: clamp(16px, calc(25% + 42px), calc(25% + 42px));
-    right: clamp(32px, 4.5vw, 72px);
+    /* Figma: names text at x=394 in 1728px frame → 22.8vw */
+    left: clamp(16px, 22.8vw, 394px);
+    right: var(--spacing-11);
     top: 0;
     bottom: 0;
     overflow: hidden;
@@ -168,10 +167,12 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 112px;
+    /* Figma: leading-[120px] = 120px row height */
+    height: 120px;
     font-size: clamp(44px, 6vw, 90px);
-    line-height: clamp(50px, 7vw, 100px);
-    color: rgba(255, 255, 255, 0.24);
+    line-height: clamp(54px, 7vw, 120px);
+    /* Figma: color/content/body = #fafafa — dimming handled by opacity formula */
+    color: var(--color-content-body);
     text-transform: uppercase;
     letter-spacing: 0;
     transition:
@@ -183,16 +184,16 @@
   }
 
   .names-bg__item.selected {
-    color: rgba(255, 255, 255, 0.24);
-    opacity: 0.12;
-    filter: blur(12px);
+    opacity: 0;
+    filter: none;
     transform: none;
   }
 
   .names-interaction {
     position: absolute;
-    left: clamp(16px, calc(25% + 42px), calc(25% + 42px));
-    right: clamp(32px, 4.5vw, 72px);
+    /* Same base position as names-bg */
+    left: clamp(16px, 22.8vw, 394px);
+    right: var(--spacing-11);
     top: 0;
     bottom: 0;
     display: flex;
@@ -216,10 +217,12 @@
     border: 0;
     background: transparent;
     color: transparent;
-    height: 112px;
+    /* Figma: leading-[120px] default row height */
+    height: 120px;
     font-size: clamp(44px, 6vw, 90px);
-    line-height: clamp(50px, 7vw, 100px);
-    padding: 0 0 12px 0;
+    line-height: clamp(54px, 7vw, 120px);
+    /* 20px bottom padding creates 100px text area matching Figma's selected leading */
+    padding: 0 0 20px 0;
     margin: 0;
     cursor: pointer;
     text-align: left;
@@ -230,7 +233,10 @@
   .names-interaction__item:hover,
   .names-interaction__item.selected {
     color: var(--gallery-accent, #bdff5d);
-    transform: translateX(clamp(16px, 2.9vw, 44px));
+    /* Figma: selected shifts from 394px to 474px = 80px — 4.6vw at 1728px */
+    transform: translateX(clamp(16px, 4.6vw, 80px));
+    /* Figma: selected leading-[100px] */
+    line-height: clamp(47px, 5.8vw, 100px);
   }
 
   .names-interaction__label {
@@ -242,7 +248,6 @@
   .name-wrap {
     display: inline-block;
     position: relative;
-    padding-bottom: 12px;
   }
 
   .name-text {
@@ -271,7 +276,7 @@
     .names-bg,
     .names-interaction {
       left: clamp(16px, 10%, 120px);
-      right: 32px;
+      right: var(--spacing-5);
     }
   }
 
