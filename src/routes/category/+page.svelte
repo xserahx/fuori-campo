@@ -562,8 +562,8 @@
 
   .edge-panel {
     position: absolute;
-    top: 12vh;
-    bottom: 13vh;
+    top: 0;
+    bottom: 0;
     width: min(22vw, 340px);
     pointer-events: none;
     z-index: 2;

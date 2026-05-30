@@ -20,20 +20,23 @@
 	});
 
 
-	// Loading intro: show once per session with a random volunteer face
+	// Loading intro: show once per session with a clear volunteer portrait for preview
 	let showIntro = $state(false);
 	let introSrc = $state<string | null>(null);
 
-	if (browser) {
+	$effect(() => {
+		if (!browser || introSrc || showIntro) return;
+
+		const forceIntroPreview = page.url.searchParams.get('intro') === '1';
 		const seen = sessionStorage.getItem('introSeen');
-		if (!seen) {
-			const pool = imagesRaw.filter(i => !!i.name).map(i => i.src);
-			if (pool.length) {
-				introSrc = pool[Math.floor(Math.random() * pool.length)];
+		if (!seen || forceIntroPreview) {
+			const preview = imagesRaw.find((image) => image.name === 'Rudy Bre') ?? imagesRaw.find((image) => !!image.name);
+			if (preview?.src) {
+				introSrc = preview.src;
 				showIntro = true;
 			}
 		}
-	}
+	});
 
 	// Cinematic crossfade between every page navigation.
 	// Graceful degradation: if the browser lacks the API, navigation
@@ -59,7 +62,7 @@
 {/if}
 
 {#if showIntro && introSrc}
-	<LoadingIntro src={introSrc} on:complete={() => { sessionStorage.setItem('introSeen','1'); showIntro = false; }} tilesX={8} tilesY={6} />
+	<LoadingIntro src={introSrc} on:complete={() => { if (page.url.searchParams.get('intro') !== '1') sessionStorage.setItem('introSeen','1'); showIntro = false; }} />
 {/if}
 
 {@render children()}
