@@ -40,7 +40,7 @@
         .catch(() => {});
     }
 
-    goto(href);
+    goto(href + '/profile');
   }
 
   function syncScroll() {

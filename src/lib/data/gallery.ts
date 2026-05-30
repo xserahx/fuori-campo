@@ -7,6 +7,8 @@ export type GalleryImage = {
   height: number;
   tags?: string[];
   name?: string;
+  /** Full-width lime card testimonial — shown on profile page */
+  dayDescription?: string;
 };
 
 export type Person = {
@@ -19,6 +21,13 @@ export const imagesRaw: GalleryImage[] = [
   { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06 },
   { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06, tags: ['logistica'], name: 'Michele Tomolillo' },
   { src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e', left: 628.47, top: 155.8, width: 161.035, height: 286.285, tags: ['gestione'], name: 'Elisa Filippi' },
+  {
+    src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e',
+    left: 470.12, top: 340.6, width: 185.5, height: 247.3,
+    tags: ['sport'],
+    name: 'Aquila Muraca Francesca',
+    dayDescription: 'I turni erano variabili, potevano essere al mattino verso le 8:30 o al pomeriggio verso le 13. Raggiungevo il luogo di gara prendendo prima il treno per arrivare a Milano, la metro da Cadorna a Rogoredo e poi il pullman o la navetta. Durante la giornata mi occupavo degli accessi nei relativi luoghi. Ho costruito un bel rapporto con i volontari e i vari membri dello staff.'
+  },
   { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425 },
   { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425, tags: ['relazioni'], name: 'Adriano Lacchin' },
   { src: 'https://www.figma.com/api/mcp/asset/9dc12179-c0fb-4d55-988b-c055d87fecb1', left: 320.99, top: 1041.6, width: 184.303, height: 138.452, tags: ['cerimonie'], name: 'Guido Marzorati' },

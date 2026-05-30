@@ -7,12 +7,13 @@
 
   /* ── Extended volunteer type ─────────────────────────────────── */
   type Volunteer = GalleryImage & {
-    city?:      string;
-    region?:    string;
-    role?:      string;
-    age?:       number;
-    quote?:     string;
-    responses?: string[];
+    city?:           string;
+    region?:         string;
+    role?:           string;
+    age?:            number;
+    quote?:          string;
+    responses?:      string[];
+    dayDescription?: string;
   };
 
   /* ── Reactive volunteer from URL ─────────────────────────────── */
@@ -53,6 +54,7 @@
 
   /* Reset on navigation */
   $effect(() => { currentSlug; openQ = -1; viewMode = 'info'; });
+
 
   /* ── Helpers ─────────────────────────────────────────────────── */
   function locationLine(vol: Volunteer | null): string {
@@ -152,7 +154,14 @@
           <div class="qa-sep" aria-hidden="true"></div>
           {#if openQ === i}
             <div class="qa-answer" role="region" aria-live="polite">
-              <p>{volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.'}</p>
+              <!-- First question: show lime day-description card if available -->
+              {#if i === 0 && volunteer?.dayDescription}
+                <div class="day-card">
+                  <p class="day-card__text">{volunteer.dayDescription}</p>
+                </div>
+              {:else}
+                <p>{volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.'}</p>
+              {/if}
             </div>
           {/if}
         </div>
@@ -413,6 +422,29 @@
     text-align: right;
   }
 
+  /* ── Day-description lime card (Figma 3772:4591) ─────────────── */
+  /*
+   * Figma: 1062×219px, accent background (#bdff5d), rounded rect.
+   * Rendered inside the first Q&A answer — expands when + is clicked.
+   */
+  .day-card {
+    background: var(--color-content-accent, #bdff5d);
+    border-radius: 12px;
+    padding: clamp(20px, 2.1vw, 36px) clamp(24px, 2.5vw, 44px);
+    margin-top: 8px;
+    min-height: clamp(120px, 12.7vw, 219px);
+  }
+
+  .day-card__text {
+    margin: 0;
+    font-family: 'Forma DJR Display', sans-serif;
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 26px;
+    color: var(--color-content-body-black, #0e0e0e);
+  }
+
   /* ── Q&A accordion (right column, INFO mode) ─────────────────── */
   /*  Starts at the same top as vol-info, below the name hero */
   .qa-wrap {
@@ -490,6 +522,10 @@
     font-weight: 400;
     line-height: 1.6;
     color: rgba(250, 250, 250, 0.8);
+  }
+
+  .day-card .day-card__text {
+    color: var(--color-content-body-black, #0e0e0e);
   }
 
   /* ── FOTO view wrapper ───────────────────────────────────────────── */
