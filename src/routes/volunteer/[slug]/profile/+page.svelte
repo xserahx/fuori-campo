@@ -38,6 +38,7 @@
 
   /* ── View mode toggle: 'info' | 'foto' ───────────────────────── */
   let viewMode = $state<'info' | 'foto'>('info');
+  let nameHovered = $state(false);
 
   /* ── Q&A accordion ───────────────────────────────────────────── */
   const questionTitles = [
@@ -97,11 +98,17 @@
     Line 2: FIRSTNAME — lime outline, left: 19.68vw (340px / 1728px artboard)
     Font: 116px extra-bold → clamp(40px, 6.71vw, 116px)
   -->
-  <div class="name-hero" aria-label={volunteer?.name}>
+  <div
+    class="name-hero"
+    role="img"
+    aria-label={volunteer?.name}
+    onmouseenter={() => { nameHovered = true; }}
+    onmouseleave={() => { nameHovered = false; }}
+  >
     {#if nameSurname}
       <div class="name-surname" aria-hidden="true">{nameSurname}</div>
     {/if}
-    <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
+    <div class="name-firstname" class:hidden={nameHovered} aria-hidden="true">{nameFirstname}</div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
@@ -308,7 +315,7 @@
     /* Stay below INDIETRO button (≈125+24+50px) with breathing room */
     top: calc(var(--navbar-height, 125px) + 100px);
     width: 100%;
-    pointer-events: none;
+    pointer-events: auto;
     z-index: 5;
     line-height: 0.92;
   }
@@ -320,6 +327,7 @@
     text-transform: uppercase;
     white-space: nowrap;
     display: block;
+    transition: opacity 220ms ease, transform 220ms ease;
   }
 
   .name-surname {
@@ -331,6 +339,11 @@
     padding-left: 19.68vw;
     color: transparent;
     -webkit-text-stroke: 2px var(--color-content-accent, #bdff5d);
+  }
+
+  .name-firstname.hidden {
+    opacity: 0;
+    transform: translateY(-0.1em);
   }
 
   /* ── Volunteer info (left, mid-page, INFO mode only) ──────────── */
@@ -558,6 +571,7 @@
     top: 0;
     background: linear-gradient(to bottom, #0e0e0e 0%, transparent 100%);
     backdrop-filter: blur(4px);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   }
 
@@ -565,6 +579,7 @@
     bottom: 0;
     background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
     backdrop-filter: blur(4px);
+    mask-image: linear-gradient(to top, black 60%, transparent 100%);
     -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
   }
 
