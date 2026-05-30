@@ -38,7 +38,6 @@
 
   /* ── View mode toggle: 'info' | 'foto' ───────────────────────── */
   let viewMode = $state<'info' | 'foto'>('info');
-  let nameHovered = $state(false);
 
   /* ── Q&A accordion ───────────────────────────────────────────── */
   const questionTitles = [
@@ -102,13 +101,11 @@
     class="name-hero"
     role="img"
     aria-label={volunteer?.name}
-    onmouseenter={() => { nameHovered = true; }}
-    onmouseleave={() => { nameHovered = false; }}
   >
     {#if nameSurname}
       <div class="name-surname" aria-hidden="true">{nameSurname}</div>
     {/if}
-    <div class="name-firstname" class:hidden={nameHovered} aria-hidden="true">{nameFirstname}</div>
+    <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
@@ -327,7 +324,6 @@
     text-transform: uppercase;
     white-space: nowrap;
     display: block;
-    transition: opacity 220ms ease, transform 220ms ease;
   }
 
   .name-surname {
@@ -339,11 +335,6 @@
     padding-left: 19.68vw;
     color: transparent;
     -webkit-text-stroke: 2px var(--color-content-accent, #bdff5d);
-  }
-
-  .name-firstname.hidden {
-    opacity: 0;
-    transform: translateY(-0.1em);
   }
 
   /* ── Volunteer info (left, mid-page, INFO mode only) ──────────── */
