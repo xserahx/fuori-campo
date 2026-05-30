@@ -512,32 +512,27 @@ body::-webkit-scrollbar,
   margin-top: 346px;       /* gap before lime panel (Figma) */
 }
 
-/* 2 ▸ Sticky lens — stays pinned to the viewport for the shell's full height */
+/* 2 ▸ Sticky lens — height: 100vh so child percentages resolve correctly */
 .question-sticky {
   position: sticky;
   top: 0;
-  margin-top: 192px;       /* gap before lime panel (Figma) */
+  height: 100vh;
+  margin-top: 192px;       /* entry gap before panels pin (Figma) */
   overflow: hidden;
 }
 
-/* 3 ▸ Lime fill */
-.question-panel {
-  width: 100%;
-  height: 100%;
-  background: var(--color-content-accent);
-  overflow: hidden;
-}
-
-/* 4 ▸ Horizontal track — JS sets transform: translateX(…) on scroll */
+/* 3 ▸ Horizontal track — JS sets transform: translateX(…) on scroll */
 .question-track {
   display: flex;
   flex-direction: row;
-  height: 100%;
+  height: 100%;            /* = 100vh, from sticky parent */
   will-change: transform;
   transition: transform 80ms linear;   /* rounds off discrete wheel steps */
 }
 
-/* 5 ▸ Individual panels — each owns one viewport width */
+/* 4 ▸ Individual panels — each owns one viewport width.
+   ── Colour tokens set per variant (.question--lime / .question--dark)
+      and consumed by h2, .accent, .ghost children.                    */
 .question {
   width: 100vw;
   height: 100%;
@@ -549,27 +544,49 @@ body::-webkit-scrollbar,
   box-sizing: border-box;
 }
 
+/* ── Panel variants ─────────────────────────────────────────────────
+   Figma: Q1/Q3 → lime bg (#bdff5d), dark text (#0e0e0e)
+          Q2/Q4 → dark bg (#0e0e0e), accent text (#bdff5d)          */
+.question--lime {
+  --q-text:       var(--color-content-body-black);  /* #0e0e0e */
+  --ghost-stroke: var(--color-content-body-black);
+  background:     var(--color-content-accent);      /* #bdff5d */
+}
+.question--dark {
+  --q-text:       var(--color-content-accent);      /* #bdff5d */
+  --ghost-stroke: var(--color-content-accent);
+  background:     var(--color-background-primary);  /* #0e0e0e */
+}
+
 .question h2 {
   font-family:    var(--font-display);
-  font-size:      var(--ts-scrollitelling-size);        /* 116 px */
+  font-size:      var(--ts-scrollitelling-size);        /* 116 px → clamp */
   font-weight:    var(--ts-scrollitelling-weight);      /* 800    */
-  line-height:    var(--ts-scrollitelling-line-height); /* 106 px */
+  line-height:    var(--ts-scrollitelling-line-height); /* 106 px → clamp */
   letter-spacing: var(--ts-scrollitelling-letter-spacing);
   text-transform: uppercase;
-  color: #000;
+  color: var(--q-text, var(--color-content-body-black));
   margin: 0;
 }
 
-.question .accent { color: #000; }
+/* Override global .accent inside questions — colour comes from panel token */
+.question .accent { color: var(--q-text, var(--color-content-body-black)); }
 
 .question--right              { align-items: flex-end; }
 .question--right h2           { text-align: right; }
 
-/* Ghost text — transparent letterforms with black stroke */
+/* Ghost text — outline-only letterforms; stroke colour from panel token */
 .ghost {
   color: transparent;
   -webkit-text-fill-color: transparent;
-  -webkit-text-stroke: var(--stroke-1) #000;   /* 2 px */
+  -webkit-text-stroke: var(--stroke-1) var(--ghost-stroke, var(--color-content-body-black));
+}
+
+/* ── Scroll-cue label (Figma: H3 36px, accent, ls 0.72px) ─────────── */
+.scroll-cue-label {
+  margin: 0;
+  letter-spacing: var(--ts-h3-letter-spacing);   /* 0.72px */
+  text-align: center;
 }
 
 /* ================================================================

@@ -318,49 +318,51 @@
 
     <!-- ── Question section (sticky → horizontal scroll) ────────── -->
     <!--
-      .question-shell  — tall element; its height sets the vertical
-                         scroll budget for the horizontal pan.
-      .question-sticky — position:sticky keeps the lime panel pinned.
-      .question-panel  — lime background fill.
-      .question-track  — JS sets translateX() to pan horizontally.
+      Figma scroll-locked horizontal section.
+      .question-shell  — tall proxy; JS sets height = 100vh + totalSlide.
+      .question-sticky — position:sticky; height:100vh — pins to viewport.
+      .question-track  — horizontal flex; JS sets translateX() to pan.
+      Each panel: 100vw × 100vh. Q1/Q3 = lime bg, Q2/Q4 = dark bg.
     -->
     <div class="question-shell" bind:this={questionShell}>
       <div class="question-sticky">
-        <div class="question-panel">
-          <div class="question-track" bind:this={questionTrack}>
+        <div class="question-track" bind:this={questionTrack}>
 
-            <section class="question question--left">
-              <h2>
-                <span class="accent">MA </span>
-                <span class="ghost">CHI SONO </span>
-                <span class="accent">DAVVERO</span><br />
-                <span class="accent">I VOLONTARI?</span>
-              </h2>
-            </section>
+          <!-- Q1 — lime bg, dark text, left-aligned -->
+          <section class="question question--left question--lime">
+            <h2>
+              <span class="accent">MA </span>
+              <span class="ghost">CHI SONO </span>
+              <span class="accent">DAVVERO</span><br />
+              <span class="accent">I VOLONTARI?</span>
+            </h2>
+          </section>
 
-            <section class="question question--right">
-              <h2>
-                <span class="ghost">PERCHÉ </span>
-                <span class="accent">HANNO DECISO</span><br />
-                <span class="accent">DI CANDIDARSI?</span>
-              </h2>
-            </section>
+          <!-- Q2 — dark bg, accent text, right-aligned -->
+          <section class="question question--right question--dark">
+            <h2>
+              <span class="ghost">PERCHÉ </span>
+              <span class="accent">HANNO DECISO</span><br />
+              <span class="accent">DI CANDIDARSI?</span>
+            </h2>
+          </section>
 
-            <section class="question question--left">
-              <h2>
-                <span class="ghost">COSA FACEVANO </span><br />
-                <span class="accent">CONCRETAMENTE?</span>
-              </h2>
-            </section>
+          <!-- Q3 — lime bg, dark text, left-aligned -->
+          <section class="question question--left question--lime">
+            <h2>
+              <span class="ghost">COSA FACEVANO </span><br />
+              <span class="accent">CONCRETAMENTE?</span>
+            </h2>
+          </section>
 
-            <section class="question question--right">
-              <h2>
-                <span class="accent">NE È VALSA LA PENA?</span><br />
-                <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
-              </h2>
-            </section>
+          <!-- Q4 — dark bg, accent text, right-aligned -->
+          <section class="question question--right question--dark">
+            <h2>
+              <span class="accent">NE È VALSA LA PENA?</span><br />
+              <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
+            </h2>
+          </section>
 
-          </div>
         </div>
       </div>
     </div>
@@ -374,9 +376,10 @@
       </p>
     </section>
 
-    <!-- Scroll cue — clicking navigates to the gallery page -->
+    <!-- Scroll cue — Figma: H3 36px accent, ls 0.72px + arrow -->
     <div class="scroll-cue"
       use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
+      <p class="scroll-cue-label">Continua a scorrere per accedere alla galleria</p>
       <ScrollArrow onclick={navigateToGallery} />
     </div>
 
