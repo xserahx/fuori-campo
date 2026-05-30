@@ -479,7 +479,6 @@
     <!-- Scroll cue — Figma: H3 36px accent, ls 0.72px + arrow -->
     <div class="scroll-cue"
       use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
-      <p class="scroll-cue-label">Continua a scorrere per accedere alla galleria</p>
       <ScrollArrow onclick={navigateToGallery} />
     </div>
 
