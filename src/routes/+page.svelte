@@ -98,122 +98,232 @@
   });
 
   /* ═══════════════════════════════════════════════════════════════
-   * MOUNT — GSAP dydpJzY-equivalent horizontal scroll
+   * MOUNT — ScrollSmoother + locked horizontal zones
    *
-   * Mirrors the GreenSock ScrollTrigger "Horizontal Scroll" pen exactly:
+   * Exact GSAP homepage model:
    *
-   *   gsap.to(track, {
-   *     xPercent: -100 * (panels - 1),
-   *     ease: "none",
-   *     scrollTrigger: { trigger, pin: true, scrub: 1, end: "+=" + width }
-   *   });
+   *   ScrollSmoother({ smooth: 1.2 })
+   *     → vTarget accumulates wheel/touch; vSmooth lerps toward it
+   *     → window.scrollTo(vSmooth) every frame (sticky still works)
    *
-   * Pure-JS translation:
-   *   • Shell height  = 100vh + (N-1)×100vw  (the "end" distance)
-   *   • position:sticky pins the track (ScrollTrigger's "pin: true")
-   *   • translateX    = -(scrollY - shellTop), clamped [0, slide]
-   *   • RAF lerp      = "scrub: 1" (smooth lag between scroll & visuals)
-   *   • No wheel/touch interception — page scrolls freely, track follows
+   *   ScrollTrigger({ pin:true, scrub, end: "+=" + width })
+   *   + horizontal zone LOCK:
+   *     → on entry: vTarget freezes at shellTop (vertical stops)
+   *     → all delta is redirected to hTarget for this shell
+   *     → hSmooth lerps toward hTarget → track translateX = -hSmooth
+   *     → on exit-right: vTarget jumps past shell, vertical resumes
+   *     → on exit-left:  vTarget decreases, scroll goes up
    *
-   * Two independent shells:
-   *   [hero + stories]       vertical
-   *   [H-Shell 1 : Q1 → Q2] horizontal scrub
-   *   [gap ~346 px]          vertical  ← "third question = vertical"
-   *   [H-Shell 2 : Q3 → Q4] horizontal scrub
-   *   [summary + gallery]    vertical
+   * This gives:
+   *   • Buttery smooth scroll everywhere (ScrollSmoother)
+   *   • True vertical lock inside horizontal zones (no downward drift)
+   *   • Only rightward progress while locked
+   *   • Seamless V→H and H→V transitions
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
-    let lastScrollY = window.scrollY;
 
-    /* ── Per-shell state ──────────────────────────────────────────── */
-    type S = { top: number; slide: number; x: number };
-    const s1: S = { top: 0, slide: 0, x: 0 };
-    const s2: S = { top: 0, slide: 0, x: 0 };
+    /* ── Global smooth scroll state ─────────────────────────────── */
+    let vTarget = window.scrollY;   // raw intent (accumulated deltas)
+    let vSmooth = window.scrollY;   // lerped — the display scroll
+    let vPrev   = window.scrollY;
+    let rafId   = 0;
 
-    /* scrub: 1 equivalent — ~10 frames at 60 fps */
-    const LERP = 0.10;
-    let rafId = 0;
+    /* GSAP ScrollSmoother smooth:1.2 ≈ 0.085 per frame at 60 fps */
+    const LERP = 0.085;
 
     function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+    function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+    function maxScroll() {
+      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    }
 
-    /* ── Setup: shell heights + document-top positions ────────────────
-       (N-1)×vw  =  total horizontal travel  =  GSAP's "end" distance.
-       scrollWidth is unreliable on overflow:visible flex — use child
-       count instead (always correct).                                */
+    /* ── Per-shell state ─────────────────────────────────────────── */
+    type S = { top: number; slide: number; hTarget: number; hSmooth: number };
+    const s1: S = { top: 0, slide: 0, hTarget: 0, hSmooth: 0 };
+    const s2: S = { top: 0, slide: 0, hTarget: 0, hSmooth: 0 };
+
+    /* Currently locked shell (null = vertical mode) */
+    let locked: S | null = null;
+
+    /* Hero document-space bounds */
+    let heroDocTop = 0, heroDocBot = 0;
+
+    /* ── Setup ───────────────────────────────────────────────────── */
     const setup = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
+      const sy = window.scrollY;
 
       if (shell1 && track1) {
-        s1.slide = (track1.children.length - 1) * vw;   // 1×vw for 2 panels
+        s1.slide = (track1.children.length - 1) * vw;
         shell1.style.height = `${vh + s1.slide}px`;
-        s1.top = shell1.getBoundingClientRect().top + window.scrollY;
+        s1.top   = shell1.getBoundingClientRect().top + sy;
       }
       if (shell2 && track2) {
         s2.slide = (track2.children.length - 1) * vw;
         shell2.style.height = `${vh + s2.slide}px`;
-        s2.top = shell2.getBoundingClientRect().top + window.scrollY;
+        s2.top   = shell2.getBoundingClientRect().top + sy;
+      }
+      if (heroSection) {
+        const r    = heroSection.getBoundingClientRect();
+        heroDocTop = r.top    + sy;
+        heroDocBot = r.bottom + sy;
       }
     };
 
-    /* ── RAF tick — scrub both tracks (GSAP scrub:1 equivalent) ──────
-       target = -(scrollY - shellTop)  clamped to [0, slide]
-       x      = lerp(x, target, LERP) for cinematic smoothing        */
-    const tick = () => {
-      const sy = window.scrollY;
+    /* ── Lock detection — call from both wheel handler and tick ──── */
+    function tryLock(sy: number) {
+      if (locked !== null) return;
+      for (const s of [s1, s2] as S[]) {
+        if (s.slide > 0 && sy >= s.top && sy < s.top + s.slide) {
+          /* Convert any vertical overshoot into initial h progress  */
+          const overshoot   = Math.max(0, sy - s.top);
+          s.hTarget         = clamp(overshoot, 0, s.slide);
+          s.hSmooth         = s.hTarget;             // snap — no visual jump
+          locked            = s;
+          vTarget           = s.top;                 // freeze vertical
+          vSmooth           = s.top;                 // snap smooth too
+          window.scrollTo({ top: s.top, behavior: 'instant' });
+          break;
+        }
+      }
+    }
 
+    /* ── RAF tick ────────────────────────────────────────────────── */
+    const tick = () => {
+      /* 1 ─ ScrollSmoother: lerp vSmooth toward vTarget */
+      vSmooth       = lerp(vSmooth, vTarget, LERP);
+      const vDelta  = vSmooth - vPrev;
+      vPrev         = vSmooth;
+
+      /* 2 ─ Entry detection (catches cases when lerp drifts into shell) */
+      tryLock(vSmooth);
+
+      /* 3 ─ Apply to browser (position:sticky reads window.scrollY) */
+      const rounded = Math.round(vSmooth);
+      if (Math.abs(rounded - window.scrollY) > 0) {
+        window.scrollTo({ top: rounded, behavior: 'instant' });
+      }
+
+      const sy = vSmooth;
+      const vh = window.innerHeight;
+
+      /* 4 ─ Horizontal tracks */
       for (const [s, track] of [[s1, track1], [s2, track2]] as const) {
         if (s.slide <= 0 || !track) continue;
-        const target = -Math.max(0, Math.min(s.slide, sy - s.top));
-        s.x = lerp(s.x, target, LERP);
-        (track as HTMLElement).style.transform = `translateX(${s.x.toFixed(2)}px)`;
+        (s as S).hSmooth = lerp((s as S).hSmooth, (s as S).hTarget, LERP);
+        (track as HTMLElement).style.transform =
+          `translateX(${(-(s as S).hSmooth).toFixed(2)}px)`;
       }
+
+      /* 5 ─ Navbar */
+      const inQ        = locked !== null;
+      const heroTopVP  = heroDocTop - sy;
+      const heroBotVP  = heroDocBot - sy;
+      const inHero     = heroTopVP < vh * 0.15 && heroBotVP > vh * 0.45;
+
+      if      (inHero)       { navbarVisible = true;  navbarFixed = true; }
+      else if (inQ)          { navbarVisible = false; }
+      else if (sy <= 20)     { navbarVisible = false; navbarFixed = true; }
+      else if (vDelta >  5)  { navbarVisible = false; }
+      else if (vDelta < -5)  { navbarVisible = true;  }
 
       rafId = requestAnimationFrame(tick);
     };
 
-    /* ── Scroll — navbar visibility ───────────────────────────────── */
-    const handleScroll = () => {
-      const sy    = window.scrollY;
-      const delta = sy - lastScrollY;
-      const vh    = window.innerHeight;
-      const inQ   = (s1.slide > 0 && sy >= s1.top && sy < s1.top + s1.slide + vh) ||
-                    (s2.slide > 0 && sy >= s2.top && sy < s2.top + s2.slide + vh);
+    /* ── Input helpers ───────────────────────────────────────────── */
+    function applyDelta(delta: number) {
+      /* If locked: redirect delta to horizontal, keep vertical frozen */
+      if (locked !== null) {
+        const s = locked;
 
-      if (heroSection) {
-        const rect   = heroSection.getBoundingClientRect();
-        const inHero = rect.top < vh * 0.15 && rect.bottom > vh * 0.45;
-
-        if      (inHero)      { navbarVisible = true; navbarFixed = true; }
-        else if (inQ)         { navbarVisible = false; }
-        else if (sy <= 20)    { navbarVisible = false; navbarFixed = true; }
-        else if (delta >  8)  { navbarVisible = false; }
-        else if (delta < -8)  { navbarVisible = true; }
+        /* Scrolling left / up at the Q1 edge → exit backward */
+        if (s.hTarget <= 0 && delta < 0) {
+          locked  = null;
+          vTarget = clamp(s.top + delta, 0, maxScroll());
+          return;
+        }
+        /* Scrolling right / down past the last panel → exit forward */
+        if (s.hTarget >= s.slide && delta > 0) {
+          locked  = null;
+          vTarget = clamp(s.top + s.slide + 1 + delta, 0, maxScroll());
+          return;
+        }
+        /* Still inside → advance/retreat horizontal */
+        s.hTarget = clamp(s.hTarget + delta, 0, s.slide);
+        return;
       }
 
-      lastScrollY = sy;
+      /* Vertical: check if delta would land inside a shell */
+      const projected = vSmooth + delta;
+      for (const s of [s1, s2] as S[]) {
+        if (s.slide > 0 && projected >= s.top && delta > 0) {
+          /* About to enter — lock immediately */
+          const excess  = projected - s.top;
+          s.hTarget     = clamp(excess, 0, s.slide);
+          s.hSmooth     = 0;
+          locked        = s;
+          vTarget       = s.top;
+          vSmooth       = s.top;
+          window.scrollTo({ top: s.top, behavior: 'instant' });
+          return;
+        }
+      }
+
+      vTarget = clamp(vTarget + delta, 0, maxScroll());
+    }
+
+    /* ── Wheel ───────────────────────────────────────────────────── */
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      applyDelta(e.deltaY);
     };
 
-    /* ── Pointer move — reveal navbar near top (mouse only) ──────── */
+    /* ── Touch ───────────────────────────────────────────────────── */
+    let touchY = 0;
+    const handleTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
+    const handleTouchMove  = (e: TouchEvent) => {
+      e.preventDefault();
+      const dy = touchY - e.touches[0].clientY;
+      touchY   = e.touches[0].clientY;
+      applyDelta(dy);
+    };
+
+    /* ── Keyboard ────────────────────────────────────────────────── */
+    const handleKeydown = (e: KeyboardEvent) => {
+      const map: Record<string, number> = {
+        ArrowDown:  80,  ArrowUp:  -80,
+        PageDown:   window.innerHeight * 0.85,
+        PageUp:    -window.innerHeight * 0.85,
+        ' ':        window.innerHeight * 0.85,
+      };
+      if (e.key === 'Home') { e.preventDefault(); locked = null; vTarget = 0;           return; }
+      if (e.key === 'End')  { e.preventDefault(); locked = null; vTarget = maxScroll(); return; }
+      const d = map[e.key];
+      if (d === undefined) return;
+      e.preventDefault();
+      applyDelta(d);
+    };
+
+    /* ── External scroll sync (a11y / tab focus) ─────────────────── */
+    const handleScroll = () => {
+      if (locked !== null) return;
+      if (Math.abs(window.scrollY - Math.round(vSmooth)) > 2) {
+        vTarget = window.scrollY;
+        vSmooth = window.scrollY;
+      }
+    };
+
+    /* ── Pointer move — reveal navbar near top ───────────────────── */
     const handlePointerMove = (e: PointerEvent) => {
-      if (e.pointerType === 'touch' || !heroSection) return;
-      const rect = heroSection.getBoundingClientRect();
-      const inHero = rect.top < window.innerHeight * 0.15 &&
-                     rect.bottom > window.innerHeight * 0.45;
+      if (e.pointerType === 'touch') return;
+      const inHero = (heroDocTop - vSmooth) < window.innerHeight * 0.15 &&
+                     (heroDocBot - vSmooth) > window.innerHeight * 0.45;
       if (!inHero && e.movementY < 0 && e.clientY <= 180) navbarVisible = true;
     };
 
-    /* ── Upward wheel re-shows navbar outside hero ───────────────── */
-    const handleNavWheel = (e: WheelEvent) => {
-      if (!heroSection || e.deltaY >= 0 || window.scrollY <= 20) return;
-      const rect = heroSection.getBoundingClientRect();
-      const inHero = rect.top < window.innerHeight * 0.15 &&
-                     rect.bottom > window.innerHeight * 0.45;
-      if (!inHero) navbarVisible = true;
-    };
-
     /* ── Resize ──────────────────────────────────────────────────── */
-    const handleResize = () => { setup(); };
+    const handleResize = () => { locked = null; setup(); };
 
     /* ── Init ────────────────────────────────────────────────────── */
     requestAnimationFrame(() => {
@@ -221,15 +331,21 @@
       rafId = requestAnimationFrame(tick);
     });
 
-    window.addEventListener('scroll',      handleScroll,      { passive: true });
-    window.addEventListener('wheel',       handleNavWheel,    { passive: true });
-    window.addEventListener('pointermove', handlePointerMove, { passive: true });
-    window.addEventListener('resize',      handleResize,      { passive: true });
+    window.addEventListener('wheel',       handleWheel,       { passive: false });
+    window.addEventListener('touchstart',  handleTouchStart,  { passive: true  });
+    window.addEventListener('touchmove',   handleTouchMove,   { passive: false });
+    window.addEventListener('keydown',     handleKeydown);
+    window.addEventListener('scroll',      handleScroll,      { passive: true  });
+    window.addEventListener('pointermove', handlePointerMove, { passive: true  });
+    window.addEventListener('resize',      handleResize,      { passive: true  });
 
     return () => {
       cancelAnimationFrame(rafId);
+      window.removeEventListener('wheel',       handleWheel);
+      window.removeEventListener('touchstart',  handleTouchStart);
+      window.removeEventListener('touchmove',   handleTouchMove);
+      window.removeEventListener('keydown',     handleKeydown);
       window.removeEventListener('scroll',      handleScroll);
-      window.removeEventListener('wheel',       handleNavWheel);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('resize',      handleResize);
     };
