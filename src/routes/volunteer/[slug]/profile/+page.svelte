@@ -25,6 +25,8 @@
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
   );
 
+  const isManualVolunteer = $derived(!volunteer);
+
   const volunteerTitle = $derived(
     volunteer?.name
       ?? (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug)?.name
@@ -32,12 +34,19 @@
       ?? 'Volunteer'
   );
 
-  /* ── Name display: firstname (outline) + surname (filled) ───── */
+  const volunteerRole = $derived((volunteer?.role ?? 'Event Services Volunteer').toUpperCase());
+
+  /* ── Name display: manual volunteers are firstname-first ────── */
+  const nameParts = $derived(volunteerTitle.trim().split(/\s+/).filter(Boolean));
   const nameSurname = $derived(
-    (volunteer?.name ?? '').trim().split(/\s+/).slice(1).join(' ').toUpperCase()
+    isManualVolunteer
+      ? nameParts[0]?.toUpperCase() ?? ''
+      : nameParts.slice(1).join(' ').toUpperCase()
   );
   const nameFirstname = $derived(
-    (volunteer?.name ?? '').trim().split(/\s+/)[0]?.toUpperCase() ?? ''
+    isManualVolunteer
+      ? nameParts.slice(1).join(' ').toUpperCase()
+      : nameParts[0]?.toUpperCase() ?? ''
   );
 
   /* ── Photos for this volunteer (for FOTO view) ───────────────── */
@@ -85,7 +94,7 @@
 </script>
 
 <svelte:head>
-  <title>{volunteerTitle} — Fuori Campo</title>
+  <title>{volunteerTitle} — {volunteerRole} — Fuori Campo</title>
 </svelte:head>
 
 <Navbar pinned />
@@ -113,7 +122,7 @@
   <div
     class="name-hero"
     role="img"
-    aria-label={volunteer?.name}
+    aria-label={volunteerTitle}
   >
     {#if nameSurname}
       <div class="name-surname" aria-hidden="true">{nameSurname}</div>
@@ -356,7 +365,7 @@
   .vol-info {
     position: absolute;
     left: 4.28vw;
-    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 20px);
+    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 56px);
     z-index: 10;
     display: flex;
     flex-direction: column;

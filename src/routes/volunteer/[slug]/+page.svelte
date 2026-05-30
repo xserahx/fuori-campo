@@ -40,12 +40,16 @@
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
   );
 
+  const isManualVolunteer = $derived(!volunteer);
+
   const volunteerTitle = $derived(
     volunteer?.name
       ?? (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug)?.name
       ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
       ?? 'Volunteer'
   );
+
+  const volunteerRole = $derived((volunteer?.role ?? 'Event Services Volunteer').toUpperCase());
 
   const vIdx = $derived(volunteerList.findIndex(v => v.slug === currentSlug));
 
@@ -72,7 +76,7 @@
 </script>
 
 <svelte:head>
-  <title>{volunteerTitle} — Fuori Campo</title>
+  <title>{volunteerTitle} — {volunteerRole} — Fuori Campo</title>
 </svelte:head>
 
 <Navbar pinned />

@@ -10,12 +10,12 @@
 
   const initialContext = readGalleryContext(page.url.searchParams);
 
-  type Person = { name: string; tags: string[] };
+  type Person = { name: string; tags: string[]; source: 'image' | 'manual' };
 
   // Merge people discovered from `imagesRaw` with the manually-maintained
   // `volunteersNames` to ensure the names view includes the full list.
-  const peopleFromImages: Person[] = buildPeople(imagesRaw);
-  const manualPeople: Person[] = volunteersNames.map((n) => ({ name: n, tags: [] }));
+  const peopleFromImages: Person[] = buildPeople(imagesRaw).map((person) => ({ ...person, source: 'image' }));
+  const manualPeople: Person[] = volunteersNames.map((n) => ({ name: n, tags: [], source: 'manual' }));
 
   const peopleMap = new Map<string, Person>();
   for (const p of peopleFromImages) peopleMap.set(p.name, p);
@@ -39,6 +39,18 @@
   function findImageIndexByName(name: string | undefined) {
     if (!name) return 0;
     return imagesRaw.findIndex((img) => img.name === name) || 0;
+  }
+
+  function formatDisplayName(person: Person) {
+    const { name, source } = person;
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+
+    if (!parts.length) return '';
+    if (parts.length === 1) return name.toUpperCase();
+
+    return source === 'manual'
+      ? name.toUpperCase()
+      : `${parts.slice(1).join(' ')} ${parts[0]}`.toUpperCase();
   }
 
   function openVolunteer(person: Person) {
@@ -94,7 +106,7 @@
             `}
           >
             <div class="name-wrap">
-              <span class="name-text">{person.name.toUpperCase()}</span>
+              <span class="name-text">{formatDisplayName(person)}</span>
             </div>
           </div>
         {/each}
@@ -119,10 +131,10 @@
           onfocus={() => (selectedIndex = index)}
           onblur={() => (selectedIndex = -1)}
           onclick={() => openVolunteer(person)}
-          aria-label={`Open ${person.name}`}
+          aria-label={`Open ${formatDisplayName(person)}`}
           type="button"
         >
-          <span class="names-interaction__label">{person.name.toUpperCase()}</span>
+          <span class="names-interaction__label">{formatDisplayName(person)}</span>
           <div class="item-underline" class:visible={selectedIndex === index} aria-hidden="true"></div>
         </button>
       {/each}
