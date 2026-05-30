@@ -14,22 +14,16 @@
   let introExiting = $state(false);
   let loaderProgress = $state(0);
 
-  const volunteers = ["/volontari/1.jpg", "/volontari/2.jpg", "/volontari/3.jpg"];
+  /* Volunteer portrait photos (Figma CDN) — cycle every 20 % of progress */
+  const volunteers = [
+    'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1',  // Rudy Bre
+    'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb',  // Michele Tomolillo
+    'https://www.figma.com/api/mcp/asset/331fa98b-1d4f-4c52-84df-2f4e0da7c169',  // Valentina Guerrini
+  ];
   let loaderPhotoSrc = $state(volunteers[0]);
   let activeLoaderSet = $state(0);
 
-  const loaderBlockLayouts = [
-    [
-      { left: 0, top: 0, width: 50, height: 50 },
-      { left: 50, top: 0, width: 50, height: 50 },
-      { left: 0, top: 50, width: 50, height: 50 },
-      { left: 50, top: 50, width: 50, height: 50 }
-    ],
-    [
-      { left: 0, top: 0, width: 100, height: 50 },
-      { left: 0, top: 50, width: 100, height: 50 }
-    ]
-  ];
+  const loaderBlockLayouts: never[][] = [];
 
   /* ── Navbar state ─────────────────────────────────────────────── */
   let navbarVisible = $state(true);
