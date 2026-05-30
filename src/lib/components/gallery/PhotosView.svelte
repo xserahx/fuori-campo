@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import gsap from 'gsap';
   import { buildInfiniteImages, buildSpacedImages, imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 
   let { activeFilter = null }: { activeFilter?: string | null } = $props();
 
@@ -13,12 +15,14 @@
   const designWidth = 1920;
   let designHeight = $state<number>(1080);
 
-  let currentX = 0;
-  let currentY = 0;
-  let targetX = 0;
-  let targetY = 0;
-  let velX = 0;
-  let velY = 0;
+  const initialContext = readGalleryContext(page.url.searchParams);
+
+  let currentX = $state(initialContext.photoX);
+  let currentY = $state(initialContext.photoY);
+  let targetX = $state(initialContext.photoX);
+  let targetY = $state(initialContext.photoY);
+  let velX = $state(0);
+  let velY = $state(0);
   let isDragging = false;
   let lastX = 0;
   let lastY = 0;
@@ -78,7 +82,13 @@
   }
 
   function openVolunteer(image: GalleryImage, index: number) {
-    goto(`/volunteer/${slugify(image.name, index)}`);
+    const search = buildGallerySearchParams({
+      view: 'photos',
+      filter: activeFilter,
+      photoX: currentX,
+      photoY: currentY,
+    });
+    goto(search ? `/volunteer/${slugify(image.name, index)}?${search}` : `/volunteer/${slugify(image.name, index)}`);
   }
 
   const infiniteImagesRaw = buildInfiniteImages(imagesRaw, 9);
@@ -112,6 +122,7 @@
       transform-origin:center center;
       left:calc(50vw - {designWidth / 2}px);
       top:calc(50vh - {designHeight / 2}px);
+      transform: translate({currentX}px, {currentY}px);
     "
   >
     {#each positionedImages as img, i (img.src + '-' + i + '-' + img.name)}

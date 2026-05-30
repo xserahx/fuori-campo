@@ -2,8 +2,9 @@
   import '../../../lib/styles/tokens.css';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { imagesRaw, slugify, volunteersNames, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
+  import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 
   /* ── Extended volunteer type ─────────────────────────────────── */
   type Volunteer = GalleryImage & {
@@ -33,9 +34,17 @@
 
   /* ── Reactive state from URL ─────────────────────────────────── */
   const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
+  const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
   const volunteer = $derived(
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
+  );
+
+  const volunteerTitle = $derived(
+    volunteer?.name
+      ?? (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug)?.name
+      ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
+      ?? 'Volunteer'
   );
 
   const vIdx = $derived(volunteerList.findIndex(v => v.slug === currentSlug));
@@ -44,7 +53,14 @@
   function goTo(offset: number) {
     const len    = volunteerList.length;
     const target = volunteerList[((vIdx + offset) % len + len) % len];
-    if (target) goto(`/volunteer/${target.slug}`);
+    if (target) {
+      const search = buildGallerySearchParams(currentContext);
+      goto(search ? `/volunteer/${target.slug}?${search}` : `/volunteer/${target.slug}`);
+    }
+  }
+
+  function goBackToGallery() {
+    goto(buildGalleryHref(currentContext));
   }
 
   /* ── Helpers ─────────────────────────────────────────────────── */
@@ -56,7 +72,7 @@
 </script>
 
 <svelte:head>
-  <title>{volunteer?.name ?? 'Volunteer'} — Fuori Campo</title>
+  <title>{volunteerTitle} — Fuori Campo</title>
 </svelte:head>
 
 <Navbar pinned />
@@ -92,7 +108,7 @@
     class="close-bg"
     type="button"
     aria-label="Torna alla galleria"
-    onclick={() => goto('/gallery')}
+    onclick={goBackToGallery}
   ></button>
 
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
@@ -138,7 +154,10 @@
       class="expand-btn"
       type="button"
       aria-label="Apri profilo completo"
-      onclick={() => goto(`/volunteer/${currentSlug}/profile`)}
+      onclick={() => {
+        const search = buildGallerySearchParams(currentContext);
+        goto(search ? `/volunteer/${currentSlug}/profile?${search}` : `/volunteer/${currentSlug}/profile`);
+      }}
     >
       <span aria-hidden="true">+</span>
     </button>

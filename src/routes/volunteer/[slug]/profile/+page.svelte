@@ -2,8 +2,9 @@
   import '../../../../lib/styles/tokens.css';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { imagesRaw, slugify, volunteersNames, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
+  import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
 
   /* ── Extended volunteer type ─────────────────────────────────── */
   type Volunteer = GalleryImage & {
@@ -18,9 +19,17 @@
 
   /* ── Reactive volunteer from URL ─────────────────────────────── */
   const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
+  const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
   const volunteer = $derived(
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
+  );
+
+  const volunteerTitle = $derived(
+    volunteer?.name
+      ?? (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug)?.name
+      ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
+      ?? 'Volunteer'
   );
 
   /* ── Name display: firstname (outline) + surname (filled) ───── */
@@ -69,10 +78,14 @@
     if (vol?.age)    parts.push(`${vol.age} anni`);
     return parts.join(', ') || 'Lombardia, 59 anni';
   }
+
+  function goBack() {
+    goto(buildGalleryHref(currentContext));
+  }
 </script>
 
 <svelte:head>
-  <title>{volunteer?.name ?? 'Profilo'} — Fuori Campo</title>
+  <title>{volunteerTitle} — Fuori Campo</title>
 </svelte:head>
 
 <Navbar pinned />
@@ -83,7 +96,7 @@
   <button
     class="back-btn"
     type="button"
-    onclick={() => goto(`/volunteer/${currentSlug}`)}
+    onclick={goBack}
   >
     <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true">
       <path d="M17 5H1M1 5L6 1M1 5L6 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>

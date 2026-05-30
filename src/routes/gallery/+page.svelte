@@ -1,11 +1,15 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import '../../lib/styles/tokens.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
   import NamesView from '$lib/components/gallery/NamesView.svelte';
+  import { readGalleryContext } from '$lib/data/gallery-context';
 
-  let activeToggle = $state<'photos' | 'names'>('photos');
-  let activeFilter  = $state<string | null>(null);
+  const initialContext = readGalleryContext(page.url.searchParams);
+
+  let activeToggle = $state<'photos' | 'names'>(initialContext.view);
+  let activeFilter  = $state<string | null>(initialContext.filter);
   let filterPanelOpen = $state(false);
 
   const filters = [

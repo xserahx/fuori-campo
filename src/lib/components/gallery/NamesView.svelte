@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import { buildPeople, imagesRaw, slugify, volunteersNames } from '$lib/data/gallery';
   import { goto } from '$app/navigation';
+  import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 
   const ROW_HEIGHT = 120;
 
   let { activeFilter = null }: { activeFilter?: string | null } = $props();
+
+  const initialContext = readGalleryContext(page.url.searchParams);
 
   type Person = { name: string; tags: string[] };
 
@@ -21,7 +25,7 @@
 
   let selectedIndex = $state<number>(-1);
   let copied = $state(false);
-  let bgScroll = $state<number>(0);
+  let bgScroll = $state<number>(initialContext.namesScroll);
 
   let bgContainerRef: HTMLDivElement;
   let namesInteractionRef: HTMLDivElement;
@@ -40,7 +44,12 @@
   function openVolunteer(person: Person) {
     const imageIndex = findImageIndexByName(person.name);
     const slug = slugify(person.name, imageIndex);
-    const href = `/volunteer/${slug}`;
+    const search = buildGallerySearchParams({
+      view: 'names',
+      filter: activeFilter,
+      namesScroll: namesInteractionRef?.scrollTop ?? 0,
+    });
+    const href = search ? `/volunteer/${slug}/profile?${search}` : `/volunteer/${slug}/profile`;
 
     // Fire-and-forget clipboard copy — never block navigation
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
@@ -49,7 +58,12 @@
         .catch(() => {});
     }
 
-    goto(href + '/profile');
+    goto(href);
+  }
+
+  function restoreScroll(node: HTMLDivElement) {
+    node.scrollTop = initialContext.namesScroll;
+    return {};
   }
 
   function syncScroll() {
@@ -89,6 +103,7 @@
 
     <div
       bind:this={namesInteractionRef}
+      use:restoreScroll
       class="names-interaction"
       role="listbox"
       aria-label="Names gallery"
