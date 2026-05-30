@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { buildPeople, imagesRaw, slugify } from '$lib/data/gallery';
+  import { buildPeople, imagesRaw, slugify, volunteersNames } from '$lib/data/gallery';
   import { goto } from '$app/navigation';
 
   const ROW_HEIGHT = 120;
@@ -8,7 +8,16 @@
 
   type Person = { name: string; tags: string[] };
 
-  const people: Person[] = buildPeople(imagesRaw);
+  // Merge people discovered from `imagesRaw` with the manually-maintained
+  // `volunteersNames` to ensure the names view includes the full list.
+  const peopleFromImages: Person[] = buildPeople(imagesRaw);
+  const manualPeople: Person[] = volunteersNames.map((n) => ({ name: n, tags: [] }));
+
+  const peopleMap = new Map<string, Person>();
+  for (const p of peopleFromImages) peopleMap.set(p.name, p);
+  for (const p of manualPeople) if (!peopleMap.has(p.name)) peopleMap.set(p.name, p);
+
+  const people: Person[] = Array.from(peopleMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
   let selectedIndex = $state<number>(-1);
   let copied = $state(false);
