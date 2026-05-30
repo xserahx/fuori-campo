@@ -37,8 +37,12 @@
 
   /* ── DOM refs ────────────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
-  let questionShell: HTMLElement | null = null;
-  let questionTrack: HTMLElement | null = null;
+  // Two independent horizontal scroll shells
+  // H1 = Q1 (lime) + Q2 (dark),  H2 = Q3 (lime) + Q4 (dark)
+  let shell1: HTMLElement | null = null;
+  let track1: HTMLElement | null = null;
+  let shell2: HTMLElement | null = null;
+  let track2: HTMLElement | null = null;
 
   /* ── Gallery / scroll cue ─────────────────────────────────────── */
   const galleryCount = 12;
@@ -94,218 +98,140 @@
   });
 
   /* ═══════════════════════════════════════════════════════════════
-   * MOUNT — scroll behaviour (navbar + scroll-locked horizontal pan)
+   * MOUNT — GSAP dydpJzY-equivalent horizontal scroll
    *
-   * Geometry model
-   * ─────────────
-   *  .question-shell   position:relative, height set by JS
-   *  .question-sticky  position:sticky, top:0, margin-top:STICKY_MARGIN,
-   *                    height:100vh
-   *  .question-track   horizontal flex, JS translateX
+   * Mirrors the GreenSock ScrollTrigger "Horizontal Scroll" pen exactly:
    *
-   *  STICKY_MARGIN (192 px) = .question-sticky { margin-top }
-   *  panStart = qShellTop + STICKY_MARGIN   ← sticky has fully pinned
-   *  panEnd   = panStart + totalSlide       ← all panels consumed
-   *  qShellH  = STICKY_MARGIN + vh + totalSlide
+   *   gsap.to(track, {
+   *     xPercent: -100 * (panels - 1),
+   *     ease: "none",
+   *     scrollTrigger: { trigger, pin: true, scrub: 1, end: "+=" + width }
+   *   });
    *
-   *  While panStart ≤ scrollY < panEnd:
-   *    wheel / touch → blocked vertically, drives hOffset horizontally
-   *  At panEnd: page jumps past shell, sticky unpins, vertical resumes.
+   * Pure-JS translation:
+   *   • Shell height  = 100vh + (N-1)×100vw  (the "end" distance)
+   *   • position:sticky pins the track (ScrollTrigger's "pin: true")
+   *   • translateX    = -(scrollY - shellTop), clamped [0, slide]
+   *   • RAF lerp      = "scrub: 1" (smooth lag between scroll & visuals)
+   *   • No wheel/touch interception — page scrolls freely, track follows
+   *
+   * Two independent shells:
+   *   [hero + stories]       vertical
+   *   [H-Shell 1 : Q1 → Q2] horizontal scrub
+   *   [gap ~346 px]          vertical  ← "third question = vertical"
+   *   [H-Shell 2 : Q3 → Q4] horizontal scrub
+   *   [summary + gallery]    vertical
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
     let lastScrollY = window.scrollY;
 
-    /* ── Geometry ────────────────────────────────────────────────── */
-    const STICKY_MARGIN = 192; // mirrors .question-sticky { margin-top }
+    /* ── Per-shell state ──────────────────────────────────────────── */
+    type S = { top: number; slide: number; x: number };
+    const s1: S = { top: 0, slide: 0, x: 0 };
+    const s2: S = { top: 0, slide: 0, x: 0 };
 
-    let qShellTop  = 0;
-    let qShellH    = 0;
-    let totalSlide = 0;
+    /* scrub: 1 equivalent — ~10 frames at 60 fps */
+    const LERP = 0.10;
+    let rafId = 0;
 
-    /* ── Virtual horizontal position ────────────────────────────── */
-    let hOffset = 0;
+    function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
-    /* ── Panel snap ──────────────────────────────────────────────── */
-    let snapTimer: ReturnType<typeof setTimeout> | undefined;
+    /* ── Setup: shell heights + document-top positions ────────────────
+       (N-1)×vw  =  total horizontal travel  =  GSAP's "end" distance.
+       scrollWidth is unreliable on overflow:visible flex — use child
+       count instead (always correct).                                */
+    const setup = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
-    const applyTransform = () => {
-      if (questionTrack) {
-        questionTrack.style.transform = `translateX(${-Math.round(hOffset)}px)`;
+      if (shell1 && track1) {
+        s1.slide = (track1.children.length - 1) * vw;   // 1×vw for 2 panels
+        shell1.style.height = `${vh + s1.slide}px`;
+        s1.top = shell1.getBoundingClientRect().top + window.scrollY;
+      }
+      if (shell2 && track2) {
+        s2.slide = (track2.children.length - 1) * vw;
+        shell2.style.height = `${vh + s2.slide}px`;
+        s2.top = shell2.getBoundingClientRect().top + window.scrollY;
       }
     };
 
-    /* Snap to nearest panel with a spring transition */
-    const scheduleSnap = () => {
-      if (snapTimer) clearTimeout(snapTimer);
-      snapTimer = setTimeout(() => {
-        const pw     = window.innerWidth;
-        const target = Math.round(hOffset / pw) * pw;
-        if (Math.abs(hOffset - target) > 1 && questionTrack) {
-          questionTrack.style.transition = 'transform 380ms cubic-bezier(0.22,1,0.36,1)';
-          hOffset = target;
-          applyTransform();
-          setTimeout(() => {
-            if (questionTrack) questionTrack.style.transition = 'transform 80ms linear';
-          }, 400);
-        }
-      }, 200);
-    };
+    /* ── RAF tick — scrub both tracks (GSAP scrub:1 equivalent) ──────
+       target = -(scrollY - shellTop)  clamped to [0, slide]
+       x      = lerp(x, target, LERP) for cinematic smoothing        */
+    const tick = () => {
+      const sy = window.scrollY;
 
-    /* ── Build / rebuild shell geometry ─────────────────────────── */
-    const setupHorizontalScroll = () => {
-      if (!questionShell || !questionTrack) return;
-      totalSlide = Math.max(0, questionTrack.scrollWidth - window.innerWidth);
-      // Shell must cover entry gap + sticky height + all horizontal travel
-      qShellH    = STICKY_MARGIN + window.innerHeight + totalSlide;
-      questionShell.style.height = `${qShellH}px`;
-      qShellTop  = questionShell.getBoundingClientRect().top + window.scrollY;
-    };
-
-    /* ── Wheel — non-passive; converts vertical → horizontal pan ───
-       Vertical scroll is blocked (preventDefault) only while the
-       sticky is pinned AND we have more panels to reveal.          */
-    const handleWheel = (e: WheelEvent) => {
-      if (!questionShell || !questionTrack || totalSlide <= 0) return;
-
-      const sy       = window.scrollY;
-      const panStart = qShellTop + STICKY_MARGIN; // sticky is fully pinned here
-      const panEnd   = panStart + totalSlide;      // last panel consumed
-
-      const inZone = sy >= panStart && sy < panEnd;
-
-      if (!inZone) {
-        // Re-entering from above → reset to panel 1
-        if (sy < panStart) hOffset = 0;
-        return; // let normal vertical scroll proceed
+      for (const [s, track] of [[s1, track1], [s2, track2]] as const) {
+        if (s.slide <= 0 || !track) continue;
+        const target = -Math.max(0, Math.min(s.slide, sy - s.top));
+        s.x = lerp(s.x, target, LERP);
+        (track as HTMLElement).style.transform = `translateX(${s.x.toFixed(2)}px)`;
       }
 
-      // At left edge + scrolling up → release; vertical scroll resumes upward
-      if (hOffset <= 0 && e.deltaY < 0) return;
-      // At right edge + scrolling down → jump past shell, vertical resumes
-      if (hOffset >= totalSlide && e.deltaY > 0) {
-        window.scrollTo({ top: panEnd, behavior: 'instant' });
-        return;
-      }
-
-      // Inside zone → block vertical, drive horizontal
-      e.preventDefault();
-      hOffset = Math.max(0, Math.min(totalSlide, hOffset + e.deltaY * 1.5));
-      applyTransform();
-      scheduleSnap();
+      rafId = requestAnimationFrame(tick);
     };
 
-    /* ── Touch — swipe-up gesture drives the same hOffset ───────── */
-    let touchStartY = 0;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (!questionShell || !questionTrack || totalSlide <= 0) return;
-
-      const sy       = window.scrollY;
-      const panStart = qShellTop + STICKY_MARGIN;
-      const panEnd   = panStart + totalSlide;
-      const inZone   = sy >= panStart && sy < panEnd;
-      if (!inZone) return;
-
-      // positive dy = finger swiped up = scroll right
-      const dy = touchStartY - e.touches[0].clientY;
-      touchStartY = e.touches[0].clientY;
-
-      if (hOffset <= 0 && dy < 0) return;
-      if (hOffset >= totalSlide && dy > 0) {
-        window.scrollTo({ top: panEnd, behavior: 'instant' });
-        return;
-      }
-
-      e.preventDefault();
-      hOffset = Math.max(0, Math.min(totalSlide, hOffset + dy * 2));
-      applyTransform();
-      scheduleSnap();
-    };
-
-    /* ── Scroll — passive; navbar visibility only ────────────────── */
+    /* ── Scroll — navbar visibility ───────────────────────────────── */
     const handleScroll = () => {
-      const sy       = window.scrollY;
-      const delta    = sy - lastScrollY;
-      const vh       = window.innerHeight;
-      const panStart = qShellTop + STICKY_MARGIN;
-      const inQuestion = sy >= panStart && sy < panStart + totalSlide;
+      const sy    = window.scrollY;
+      const delta = sy - lastScrollY;
+      const vh    = window.innerHeight;
+      const inQ   = (s1.slide > 0 && sy >= s1.top && sy < s1.top + s1.slide + vh) ||
+                    (s2.slide > 0 && sy >= s2.top && sy < s2.top + s2.slide + vh);
 
       if (heroSection) {
         const rect   = heroSection.getBoundingClientRect();
         const inHero = rect.top < vh * 0.15 && rect.bottom > vh * 0.45;
 
-        if (inHero) {
-          navbarVisible = true;
-          navbarFixed   = true;
-        } else if (inQuestion) {
-          navbarVisible = false;      // hide over question panels
-        } else if (sy <= 20) {
-          navbarVisible = false;
-          navbarFixed   = true;
-        } else if (delta > 8) {
-          navbarVisible = false;
-        } else if (delta < -8) {
-          navbarVisible = true;
-        }
+        if      (inHero)      { navbarVisible = true; navbarFixed = true; }
+        else if (inQ)         { navbarVisible = false; }
+        else if (sy <= 20)    { navbarVisible = false; navbarFixed = true; }
+        else if (delta >  8)  { navbarVisible = false; }
+        else if (delta < -8)  { navbarVisible = true; }
       }
 
       lastScrollY = sy;
     };
 
-    /* ── Pointer move — show navbar when cursor nears top ─────────── */
-    const handlePointerMove = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      if (!heroSection) return;
-      const rect   = heroSection.getBoundingClientRect();
+    /* ── Pointer move — reveal navbar near top (mouse only) ──────── */
+    const handlePointerMove = (e: PointerEvent) => {
+      if (e.pointerType === 'touch' || !heroSection) return;
+      const rect = heroSection.getBoundingClientRect();
       const inHero = rect.top < window.innerHeight * 0.15 &&
                      rect.bottom > window.innerHeight * 0.45;
-      if (!inHero && event.movementY < 0 && event.clientY <= 180) {
-        navbarVisible = true;
-      }
+      if (!inHero && e.movementY < 0 && e.clientY <= 180) navbarVisible = true;
     };
 
-    /* ── Upward wheel outside hero — re-show navbar (passive) ─────── */
-    const handleNavWheel = (event: WheelEvent) => {
-      if (!heroSection || event.deltaY >= 0 || window.scrollY <= 20) return;
-      const rect   = heroSection.getBoundingClientRect();
+    /* ── Upward wheel re-shows navbar outside hero ───────────────── */
+    const handleNavWheel = (e: WheelEvent) => {
+      if (!heroSection || e.deltaY >= 0 || window.scrollY <= 20) return;
+      const rect = heroSection.getBoundingClientRect();
       const inHero = rect.top < window.innerHeight * 0.15 &&
                      rect.bottom > window.innerHeight * 0.45;
       if (!inHero) navbarVisible = true;
     };
 
     /* ── Resize ──────────────────────────────────────────────────── */
-    const handleResize = () => {
-      setupHorizontalScroll();
-      applyTransform();
-    };
+    const handleResize = () => { setup(); };
 
     /* ── Init ────────────────────────────────────────────────────── */
     requestAnimationFrame(() => {
-      setupHorizontalScroll();
-      applyTransform();
+      setup();
+      rafId = requestAnimationFrame(tick);
     });
 
-    window.addEventListener("scroll",      handleScroll,      { passive: true  });
-    window.addEventListener("wheel",       handleWheel,       { passive: false }); // intercepts
-    window.addEventListener("wheel",       handleNavWheel,    { passive: true  }); // navbar only
-    window.addEventListener("touchstart",  handleTouchStart,  { passive: true  });
-    window.addEventListener("touchmove",   handleTouchMove,   { passive: false }); // intercepts
-    window.addEventListener("pointermove", handlePointerMove, { passive: true  });
-    window.addEventListener("resize",      handleResize,      { passive: true  });
+    window.addEventListener('scroll',      handleScroll,      { passive: true });
+    window.addEventListener('wheel',       handleNavWheel,    { passive: true });
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('resize',      handleResize,      { passive: true });
 
     return () => {
-      window.removeEventListener("scroll",      handleScroll);
-      window.removeEventListener("wheel",       handleWheel);
-      window.removeEventListener("wheel",       handleNavWheel);
-      window.removeEventListener("touchstart",  handleTouchStart);
-      window.removeEventListener("touchmove",   handleTouchMove);
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("resize",      handleResize);
-      if (snapTimer) clearTimeout(snapTimer);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll',      handleScroll);
+      window.removeEventListener('wheel',       handleNavWheel);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('resize',      handleResize);
     };
   });
 </script>
@@ -359,19 +285,16 @@
       </p>
     </section>
 
-    <!-- ── Question section (sticky → horizontal scroll) ────────── -->
     <!--
-      Figma scroll-locked horizontal section.
-      .question-shell  — tall proxy; JS sets height = 100vh + totalSlide.
-      .question-sticky — position:sticky; height:100vh — pins to viewport.
-      .question-track  — horizontal flex; JS sets translateX() to pan.
-      Each panel: 100vw × 100vh. Q1/Q3 = lime bg, Q2/Q4 = dark bg.
+      ══ H-SHELL 1 — Q1 (lime, left) + Q2 (dark, right) ══════════
+      Scrub: scrollY − shellTop drives translateX via RAF lerp.
+      Shell height = 100vh + 100vw (one panel of slide).
+      Sticky pins immediately at top:0 — no entry margin.
     -->
-    <div class="question-shell" bind:this={questionShell}>
+    <div class="question-shell" bind:this={shell1}>
       <div class="question-sticky">
-        <div class="question-track" bind:this={questionTrack}>
+        <div class="question-track" bind:this={track1}>
 
-          <!-- Q1 — lime bg, dark text, left-aligned -->
           <section class="question question--left question--lime">
             <h2>
               <span class="accent">MA </span>
@@ -381,7 +304,6 @@
             </h2>
           </section>
 
-          <!-- Q2 — dark bg, accent text, right-aligned -->
           <section class="question question--right question--dark">
             <h2>
               <span class="ghost">PERCHÉ </span>
@@ -390,7 +312,24 @@
             </h2>
           </section>
 
-          <!-- Q3 — lime bg, dark text, left-aligned -->
+        </div>
+      </div>
+    </div>
+
+    <!--
+      ── Vertical interlude between zones ─────────────────────────
+      The margin-top on .question-shell below creates the vertical
+      scroll segment between Q2 and Q3 ("third question = vertical").
+    -->
+
+    <!--
+      ══ H-SHELL 2 — Q3 (lime, left) + Q4 (dark, right) ══════════
+      Same scrub pattern, independent geometry.
+    -->
+    <div class="question-shell" bind:this={shell2}>
+      <div class="question-sticky">
+        <div class="question-track" bind:this={track2}>
+
           <section class="question question--left question--lime">
             <h2>
               <span class="ghost">COSA FACEVANO </span><br />
@@ -398,7 +337,6 @@
             </h2>
           </section>
 
-          <!-- Q4 — dark bg, accent text, right-aligned -->
           <section class="question question--right question--dark">
             <h2>
               <span class="accent">NE È VALSA LA PENA?</span><br />

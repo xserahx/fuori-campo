@@ -503,31 +503,32 @@ body::-webkit-scrollbar,
  * QUESTION SECTION  (sticky horizontal scroll — Scrollitelling style)
  * ================================================================ */
 
-/* 1 ▸ Shell — tall proxy that gives the browser a vertical scroll budget.
-         Height is set in JS: 100vh + total horizontal slide distance.
-         Default 400vh covers 4 × 100vw panels before JS recalculates. */
+/* ── GSAP-style scrub horizontal scroll shells ──────────────────────
+   Two independent shells: H1 = Q1+Q2,  H2 = Q3+Q4.
+   JS sets each shell's height = 100vh + totalSlide (1 × 100vw).
+   The margin-top between shells provides the vertical-scroll interlude
+   between the two horizontal zones.                                   */
+
+/* 1 ▸ Shell — position:relative; height driven entirely by JS */
 .question-shell {
   position: relative;
-  height: 400vh;           /* JS override on mount */
-  margin-top: 346px;       /* gap before lime panel (Figma) */
+  margin-top: 346px;   /* breathing room above each shell (Figma gap) */
 }
 
-/* 2 ▸ Sticky lens — height: 100vh so child percentages resolve correctly */
+/* 2 ▸ Sticky lens — pins to viewport; no entry margin (scrub starts immediately) */
 .question-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
-  margin-top: 192px;       /* entry gap before panels pin (Figma) */
   overflow: hidden;
 }
 
-/* 3 ▸ Horizontal track — JS sets transform: translateX(…) on scroll */
+/* 3 ▸ Track — no CSS transition; RAF lerp in JS handles smoothness */
 .question-track {
   display: flex;
   flex-direction: row;
-  height: 100%;            /* = 100vh, from sticky parent */
+  height: 100%;
   will-change: transform;
-  transition: transform 80ms linear;   /* rounds off discrete wheel steps */
 }
 
 /* 4 ▸ Individual panels — each owns one viewport width.
@@ -681,7 +682,6 @@ body::-webkit-scrollbar,
   .story--quote-right { margin-top: 200px; }
 
   .question-shell { margin-top: 140px; }
-  .question-sticky { margin-top: 100px; }
 }
 
 /* ── Tablet / small (≤900 px) ─────────────────────────────────── */
