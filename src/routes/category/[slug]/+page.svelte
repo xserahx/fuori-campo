@@ -82,8 +82,18 @@
       roles: [
         {
           title: 'CER = Cerimonie',
-          description: 'Coordina momenti solenni, protocolli e premiazioni con precisione e ritmo scenico durante gli eventi.',
+          description: 'Coordina momenti solenni, protocolli e premiazioni con precisione e ritmo scenico durante le cerimonie ufficiali di apertura, chiusura e medaglie.',
           role: 'Ceremonies Volunteer'
+        },
+        {
+          title: 'REV = Revenue',
+          description: 'Supporta le attività commerciali e di partnership durante i Giochi, garantendo un\'esperienza premium agli ospiti degli sponsor ufficiali.',
+          role: 'Revenue Volunteer'
+        },
+        {
+          title: 'HOS = Hospitality',
+          description: 'Gestisce l\'accoglienza degli ospiti istituzionali e degli sponsor nelle aree riservate, curando ogni dettaglio dell\'esperienza VIP.',
+          role: 'Hospitality Volunteer'
         }
       ]
     },
@@ -93,8 +103,18 @@
       roles: [
         {
           title: 'SPT = Sport',
-          description: 'Supporta le competizioni sul campo e la gestione dei flussi nelle aree gara.',
+          description: 'Supporta le competizioni sul campo e la gestione dei flussi nelle aree gara, lavorando a diretto contatto con atleti e staff tecnico.',
           role: 'Sport Volunteer'
+        },
+        {
+          title: 'MED = Medical',
+          description: 'Garantisce il presidio sanitario nelle aree di gara e di allenamento, coordinandosi con i servizi medici ufficiali per interventi rapidi ed efficaci.',
+          role: 'Medical Volunteer'
+        },
+        {
+          title: 'TEC = Technology',
+          description: 'Gestisce la strumentazione tecnica di campo, i sistemi di cronometria e il supporto digitale alle discipline sportive durante le competizioni.',
+          role: 'Technology Volunteer'
         }
       ]
     },
@@ -104,8 +124,18 @@
       roles: [
         {
           title: 'ORG = Organizzazione',
-          description: 'Tiene insieme turni, spazi e servizi generali così che la macchina dei Giochi resti fluida e affidabile.',
+          description: 'Tiene insieme turni, spazi e servizi generali così che la macchina dei Giochi resti fluida e affidabile in ogni momento.',
           role: 'Operations Volunteer'
+        },
+        {
+          title: 'ADM = Administration',
+          description: 'Si occupa delle pratiche burocratiche, della gestione documentale e del supporto amministrativo agli uffici operativi dei Giochi.',
+          role: 'Administration Volunteer'
+        },
+        {
+          title: 'SER = General Services',
+          description: 'Garantisce la qualità e la continuità dei servizi di supporto offerti a staff, atleti e pubblico nelle venue e nelle aree di servizio.',
+          role: 'General Services Volunteer'
         }
       ]
     },
@@ -117,6 +147,16 @@
           title: 'LOG = Logistica',
           description: 'Gestisce spostamenti, materiali e territorio, assicurando che ogni supporto arrivi al posto giusto al momento giusto.',
           role: 'Logistics Volunteer'
+        },
+        {
+          title: 'TRA = Transport',
+          description: 'Coordina il trasporto di atleti, delegazioni, staff e materiali tra le sedi di gara, i villaggi olimpici e gli hub logistici.',
+          role: 'Transport Volunteer'
+        },
+        {
+          title: 'TER = Territory',
+          description: 'Presidia le aree esterne alle venue e il territorio circostante, garantendo segnaletica, orientamento e supporto ai visitatori sul campo.',
+          role: 'Territory Volunteer'
         }
       ]
     },
@@ -126,8 +166,18 @@
       roles: [
         {
           title: 'FEX = Fan Experience',
-          description: 'Lavora sui servizi al pubblico e sull\'accoglienza per trasformare l\'esperienza dei fan in qualcosa di memorabile.',
+          description: 'Lavora sui servizi al pubblico e sull\'accoglienza per trasformare l\'esperienza dei fan in qualcosa di memorabile, dal primo accesso all\'ultima nota.',
           role: 'Fan Experience Volunteer'
+        },
+        {
+          title: 'OPS = Operations',
+          description: 'Garantisce la continuità operativa delle venue coordinando staffing, flussi interni e la risposta tempestiva a ogni esigenza durante gli eventi.',
+          role: 'Operations Volunteer'
+        },
+        {
+          title: 'ACC = Accreditation',
+          description: 'Gestisce i sistemi di accreditamento e il controllo accessi per atleti, media e ospiti, assicurando sicurezza e fluidità agli ingressi.',
+          role: 'Accreditation Volunteer'
         }
       ]
     }

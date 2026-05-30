@@ -517,7 +517,8 @@
 
   .arrow {
     position: absolute;
-    top: 50%;
+    /* Centre vertically in the carousel area above the 264px title (designer intent) */
+    top: calc(50% - 132px);
     transform: translateY(-50%);
     width: 64px;
     height: 64px;
@@ -544,11 +545,11 @@
   }
 
   .arrow-left {
-    left: var(--spacing-5);
+    left: var(--spacing-11);
   }
 
   .arrow-right {
-    right: var(--spacing-5);
+    right: var(--spacing-11);
   }
 
   canvas {
@@ -629,7 +630,8 @@
   .bottom-bar {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    padding: 0 var(--spacing-5) var(--spacing-4);
+    /* py-[20px] from Figma — no horizontal padding, rows handle their own indent */
+    padding: 20px 0;
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
@@ -644,37 +646,38 @@
     font-style: normal;
     text-transform: uppercase;
     letter-spacing: -0.025em;
-    line-height: 0.9;
+    /* Figma: leading-[unit/116] = 1:1 with font size */
+    line-height: 1;
     margin: 0;
-    max-width: none;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 0.05em;
+    gap: 0;
     pointer-events: auto;
     cursor: pointer;
     overflow: visible;
   }
 
   .title-fill {
-    color: #baff44;
+    color: var(--color-content-accent);
     display: block;
     white-space: nowrap;
-    /* Default indent */
+    /* Figma: Filled row px-[spacing/11, 72px] */
     margin-left: var(--spacing-11);
+    /* Figma: mb-[-8px] on filled row creates overlap with outline */
+    margin-bottom: -8px;
   }
 
   .title-outline {
     color: transparent;
-    /* Stroke scales with font */
-    -webkit-text-stroke: clamp(1px, 0.14vw, 2px) #baff44;
+    -webkit-text-stroke: clamp(1px, 0.14vw, 2px) var(--color-content-accent);
     display: block;
     white-space: nowrap;
-    /* Keep outline aligned with filled line using tokens */
-    margin-left: calc(var(--spacing-11) + var(--spacing-4));
-    margin-right: 0;
+    /* Figma: Outline row px-[spacing/17, 340px] — 340px at 1728px viewport */
+    margin-left: clamp(var(--spacing-11), 19.7vw, 340px);
   }
 
-  /* Revert SPORT title alignment to previous behavior */
+  /* SPORT: shorter first word, keep distinct stagger */
   .title.category-sport .title-fill {
     margin-left: clamp(var(--spacing-4), 5vw, var(--spacing-11));
   }
