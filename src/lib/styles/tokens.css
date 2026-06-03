@@ -1,0 +1,746 @@
+:root {
+  /* Background */
+  --color-background-primary:     #0e0e0e;              /* Color/Background/Primary     */
+  --color-background-transparent: rgba(26, 26, 26, 0);  /* Color/Background/Transparent */
+  --color-background-secondary:   #ebeeef;              /* Color/Background/secondary   */
+
+  /* Content */
+  --color-content-accent:     #bdff5d;  /* Color/Content/Accent     — neon lime   */
+  --color-content-body:       #fafafa;  /* Color/Content/Body                     */
+  --color-content-body-black: #0e0e0e;  /* Color/Content/Body-black               */
+  --color-content-primary:    #202426;  /* Color/Content/primary                  */
+
+  /* Links */
+  --color-link-selected: #bdff5d;  /* Color/Link/Selected */
+  --color-link-default:  #fafafa;  /* Color/Link/Default  */
+  --color-link-hover:    #fafafa;  /* Color/Link/Hover    */
+
+  /* Backward-compat aliases */
+  --color-content-title: var(--color-content-accent);   
+  --gallery-background:  var(--color-background-primary);
+  --gallery-overlay:     rgba(14, 14, 14, 0.5);
+  --gallery-text:        var(--color-content-body);
+  --gallery-accent:      var(--color-content-accent);
+
+   /* TYPOGRAPHY  (Figma: Font/Main font + named text styles) */ 
+  
+--font-display: "forma-djr-display", sans-serif;
+  /* Scrolling — body / story paragraphs
+    Medium 500 · 64 px · lh 64 px · ls 0
+    Responsive: scales from 32 px at 800 px viewport to 64 px at 1524 px+ */
+  --ts-scrolling-size:           clamp(32px, 4.2vw, 64px);
+  --ts-scrolling-weight:         500;
+  --ts-scrolling-line-height:    clamp(32px, 4.2vw, 64px);
+  --ts-scrolling-letter-spacing: 0em;
+
+  /* H3 | Quotes + Answers + mini categorie
+    Medium 500 · 36 px · lh 100% · ls 2% (0.72 px) */
+  --ts-h3-size:           clamp(18px, 2.5vw, 36px);
+  --ts-h3-weight:         500;
+  --ts-h3-line-height:    1;
+  --ts-h3-letter-spacing: 0.72px;
+
+  /* Scrollitelling — question headings on lime panel
+    Extra Bold 800 · 116 px · lh 106 px · ls 0
+    Responsive: scales from 52 px at ~700 px viewport to 116 px at 1547 px+ */
+  --ts-scrollitelling-size:           clamp(52px, 7.5vw, 116px);
+  --ts-scrollitelling-weight:         800;
+  --ts-scrollitelling-line-height:    clamp(48px, 6.9vw, 106px);
+  --ts-scrollitelling-letter-spacing: 0em;
+
+  /* Filter + Domande — category filters, small labels
+    Medium 500 · 20 px · lh 100% · ls 0 */
+  --ts-filter-size:           20px;
+  --ts-filter-weight:         500;
+  --ts-filter-line-height:    1;
+  --ts-filter-letter-spacing: 0em;
+
+  /* Navigation — FOTO / NOMI toggle labels
+    Bold 700 · 16 px · lh 100% · ls 0 */
+  --ts-navigation-size:           16px;
+  --ts-navigation-weight:         700;
+  --ts-navigation-line-height:    1;
+  --ts-navigation-letter-spacing: 0em;
+
+  /* Top-bar nav links — from TopBar component (Medium · 24 px · lh 26 px)
+    Note: overrides the "Navigation" text style; unit is Unit/24 */
+  --ts-nav-link-size:           24px;
+  --ts-nav-link-weight:         500;
+  --ts-nav-link-line-height:    26px;
+  --ts-nav-link-letter-spacing: 0em;
+
+  /* ----------------------------------------------------------
+   * UNIT SCALE  (Figma: Unit/*)
+   * ---------------------------------------------------------- */
+  --unit-16:  16px;   /* Unit/16  */
+  --unit-20:  20px;   /* Unit/20  */
+  --unit-24:  24px;   /* Unit/24  */
+  --unit-36:  36px;   /* Unit/36  */
+  --unit-64:  64px;   /* Unit/64  */
+  --unit-116: 116px;  /* Unit/116 */
+
+  /* Extended — implementation use only */
+  --unit-0:   0px;
+  --unit-1:   1px;
+  --unit-2:   2px;
+  --unit-4:   4px;
+  --unit-8:   8px;
+  --unit-12:  12px;
+  --unit-32:  32px;
+  --unit-40:  40px;
+  --unit-48:  48px;
+  --unit-56:  56px;
+  --unit-68:  68px;
+  --unit-72:  72px;
+  --unit-76:  76px;
+  --unit-80:  80px;
+  --unit-84:  84px;
+  --unit-160: 160px;
+  --unit-200: 200px;
+  --unit-300: 300px;
+  --unit-395: 395px;
+  --unit-500: 500px;
+  --unit-999: 999px;
+
+  /* ----------------------------------------------------------
+   * SPACING SCALE  (Figma: Spacing/*)
+   * ---------------------------------------------------------- */
+
+  /* Figma-defined */
+  --spacing-0:  0px;   /* Spacing/0  */
+  --spacing-1:  4px;   /* Spacing/1  */
+  --spacing-5:  24px;  /* Spacing/5  */
+  --spacing-6:  32px;  /* Spacing/6  */
+  --spacing-7:  40px;  /* Spacing/7  */
+  --spacing-8:  48px;  /* Spacing/8  */
+  --spacing-9:  72px;  /* Spacing/9  */
+  --spacing-10: 64px;  /* Spacing/10 */
+  --spacing-11: 72px;  /* Spacing/11 */
+
+  /* Extended — implementation use only */
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-12: 80px;
+  --spacing-13: 160px;
+  --spacing-14: 200px;
+  --spacing-15: 300px;
+  --spacing-18: 395px;
+  --spacing-19: 500px;
+
+  /* ----------------------------------------------------------
+   * RADIUS  (Figma: Radius/*)
+   * ---------------------------------------------------------- */
+
+  --radius-l:            24px;    /* Radius/L — pill container */
+  --radius-m:            16px;    /* Radius/M — pill active    */
+  --radius-rounded-pill: 53.5px;  /* toggle outer — implementation */
+
+  /* ----------------------------------------------------------
+   * STROKE  (Figma: Stroke/*)
+   * ---------------------------------------------------------- */
+
+  --stroke-1: 2px;  /* Stroke/1 */
+
+  /* ----------------------------------------------------------
+   * LAYOUT & COMPONENT TOKENS  (derived from Figma artboard)
+   * ---------------------------------------------------------- */
+
+  --navbar-height:         125px;
+  --max-width:             1100px;
+  --gallery-navbar-offset: 143px;
+  --gallery-edge-width:    70px;
+  --gallery-shell-z:       2;
+
+  /* Artboard-derived layout distances */
+  --story-numbers-gap: var(--unit-300);
+  --hero-to-lead:      calc(var(--spacing-13) + 469px);
+  --hero-top-gap:      144px;
+
+  /* Story / quote section widths */
+  --figma-story-width:      857px;
+  --figma-quote-width:      857px;
+  --figma-quote-margin-top: 492px;
+  --figma-story-right-top:  428px;
+  --figma-story-left-top:   0px;
+
+  /* Title geometry (Figma: Title node 3773:4324 — w:1083 h:500) */
+  --figma-hero-top:         224px;
+  --figma-title-height:     500px;
+  --figma-title-weight:     800;
+  --figma-title-size:       clamp(132px, 17vw, 260px);
+  --figma-title-lineheight: clamp(110px, 14vw, 210px);
+
+  /* Question section artboard positions */
+  --figma-quote-container-top: 2409px;
+  --figma-story-container-top: 1353px;
+  --question-1-top:            3529px;
+  --question-2-top:            4241px;
+  --question-3-top:            4953px;
+  --question-4-top:            5665px;
+
+  /* Question horizontal offsets (Figma) */
+  --question-left-1: 0px;
+  --question-left-2: 335px;
+  --question-left-3: 0px;
+  --question-left-4: 533px;
+
+  /* Post-question artboard positions */
+  --figma-summary-top: 6164px;
+  --figma-scroll-top:  6821px;
+  --quote-grid-height: 540px;
+
+  /* Gallery masonry sizing */
+  --gallery-width-1:  140px;
+  --gallery-width-2:  180px;
+  --gallery-width-3:  160px;
+  --gallery-width-4:  200px;
+  --gallery-width-5:  130px;
+  --gallery-width-6:  170px;
+  --gallery-width-7:  120px;
+  --gallery-width-8:  190px;
+  --gallery-width-9:  150px;
+  --gallery-width-10: 160px;
+  --gallery-width-11: 130px;
+  --gallery-width-12: 180px;
+
+  --gallery-offset-1: 0px;
+  --gallery-offset-2: 32px;
+  --gallery-offset-3: 12px;
+  --gallery-offset-4: 40px;
+  --gallery-offset-5: 18px;
+  --gallery-offset-6: 56px;
+}
+
+/* ================================================================
+ * FONT FACES
+ * Add WOFF2 files to static/fonts/ and restore @font-face rules.
+ * ================================================================ */
+
+/* ================================================================
+ * GLOBAL RESET & BASE
+ * ================================================================ */
+
+html, body, #svelte { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--color-background-primary);
+  color: var(--color-content-body);
+  font-family: var(--font-display);
+}
+
+/* Hide visual scrollbars, preserve scroll functionality */
+html, body, * {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.site {
+  min-height: 100vh;
+  background: var(--color-background-primary) !important;
+}
+
+
+/* ================================================================
+ * NAVBAR
+ * ================================================================ */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  padding: var(--spacing-5) var(--spacing-11);
+  display: flex;
+  align-items: center;
+  background: linear-gradient(
+    to bottom,
+    var(--color-background-primary) 0%,
+    rgba(14, 14, 14, 0.15) 100%
+  );
+  min-height: var(--navbar-height);
+  box-sizing: border-box;
+  z-index: 40;
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity   240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.navbar--transparent {
+  background: linear-gradient(
+    to bottom,
+    rgba(14, 14, 14, 1) 0%,
+    rgba(14, 14, 14, 0.15) 100%
+  );
+}
+
+.navbar--transparent .navbar-bg  { opacity: 0; pointer-events: none; }
+.navbar--transparent .nav-link   { color: var(--color-content-body); opacity: 1; }
+.navbar--transparent .nav-link.is-active { color: var(--color-content-body); opacity: 1; }
+.navbar--transparent .nav-underline {
+  background: var(--color-content-body);
+  box-shadow: 0 0 14px rgba(250, 250, 250, 0.28);
+}
+
+.navbar.hidden {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.navbar-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.navbar-inner {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+
+.logo { display: flex; align-items: center; flex: 0 0 auto; margin-left: 0; }
+.logo img { height: 63.784px; width: 67px; display: block; }
+.logo svg { width: 35px; height: 77px; display: block; }
+
+.nav-links {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-6);          /* 32 px  — Spacing/6 */
+  align-items: center;
+  margin-left: auto;
+  justify-content: flex-end;
+  width: 357px;
+}
+
+.nav-link {
+  color: var(--color-link-default);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size:   var(--ts-nav-link-size);    /* 24 px */
+  font-weight: var(--ts-nav-link-weight);  /* 500   */
+  line-height: var(--ts-nav-link-line-height); /* 26 px */
+  letter-spacing: var(--ts-nav-link-letter-spacing);
+  text-decoration: none;
+  opacity: 0.78;
+  transition:
+    color   220ms cubic-bezier(.2, 1, .3, 1),
+    transform 220ms cubic-bezier(.2, 1, .3, 1),
+    opacity 160ms ease;
+  transform: translateY(0);
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--color-link-selected);
+  transform: translateY(-2px);
+  opacity: 1;
+  background: transparent;
+}
+
+.nav-link.is-active {
+  color: var(--color-link-selected);
+  transform: translateY(-2px);
+  opacity: 1;
+}
+
+.nav-underline { display: none; }
+
+/* Small laptop — tighten horizontal padding, slightly smaller nav text */
+@media (max-width: 1100px) {
+  .navbar    { padding: var(--spacing-5) var(--spacing-8); }  /* 24px 48px */
+  .nav-links { gap: 24px; }
+  .nav-link  { font-size: 20px; }
+}
+
+@media (max-width: 900px) {
+  .navbar     { padding: var(--spacing-4) var(--spacing-5); }  /* 16px 24px */
+  .logo img   { height: 48px; width: auto; }
+  .nav-links  { gap: 20px; }
+  .nav-link   { font-size: 14px; }
+}
+
+/* ================================================================
+ * LANDING PAGE LAYOUT
+ * ================================================================ */
+
+.landing {
+  width: 100%;
+  overflow: hidden;
+}
+
+.hero-outer {
+  display: flex;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-background-primary);
+}
+
+.hero-inner {
+  width: 100%;
+  max-width: min(1083px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(clamp(-72px, -5vw, -32px));
+}
+
+/* ================================================================
+ * STORY SECTIONS  (Scrolling text style)
+ * ================================================================ */
+
+.story,
+.quote,
+.scroll-cue {
+  padding-left:  var(--spacing-11);
+  padding-right: var(--spacing-11);
+  box-sizing: border-box;
+}
+
+.lead-paragraph {
+  max-width: 980px;
+  margin: var(--hero-to-lead) auto 0;
+  font-size:   var(--ts-scrolling-size);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+}
+
+.story {
+  max-width:   1080px;
+  margin-top:  40px;
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+}
+
+.story p,
+.quote,
+.question h2 { margin: 0; }
+
+.story--left {
+  max-width:  var(--figma-story-width);
+  margin-top: var(--spacing-12);
+}
+
+.story--right {
+  margin-left: auto;
+  text-align:  right;
+  max-width:   var(--figma-story-width);
+  margin-top:  var(--story-numbers-gap);
+}
+
+.story--intro  { margin-top: 0; }
+
+.story--summary {
+  max-width:  980px;
+  margin-top: 192px;
+}
+
+/* Quote sub-variant */
+.story--quote {
+  max-width:   var(--figma-story-width);
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+  margin-top: var(--spacing-12);
+}
+
+.story--quote-left {
+  margin-left:  0;
+  margin-top:   var(--spacing-19);
+  text-align:   left;
+  padding-left: var(--spacing-11);
+}
+
+.story--quote-right {
+  margin-left:   auto;
+  margin-top:    var(--spacing-15);
+  text-align:    right;
+  padding-right: var(--spacing-11);
+}
+
+.quote {
+  margin: 0;
+  max-width:   var(--figma-story-width);
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+}
+
+.accent { color: var(--color-content-accent); }
+
+/* ================================================================
+ * QUESTION SECTION  (sticky horizontal scroll — Scrollitelling style)
+ * ================================================================ */
+
+/* ── GSAP-style scrub horizontal scroll shells ──────────────────────
+   Two independent shells: H1 = Q1+Q2,  H2 = Q3+Q4.
+   JS sets each shell's height = 100vh + totalSlide (1 × 100vw).
+   The margin-top between shells provides the vertical-scroll interlude
+   between the two horizontal zones.                                   */
+
+/* 1 ▸ Shell — position:relative; height driven entirely by JS */
+.question-shell {
+  position: relative;
+  margin-top: 346px;   /* breathing room above each shell (Figma gap) */
+}
+
+/* 2 ▸ Sticky lens — pins to viewport; no entry margin (scrub starts immediately) */
+.question-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Blur-veil — absolute overlay above the track.
+   JS writes backdrop-filter each RAF frame: spikes on V↔H transitions
+   then decays, plus a velocity-proportional component while scrolling
+   between panels. Pointer-events disabled so clicks pass through.   */
+.question-blur-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 3 ▸ Track — no CSS transition; RAF lerp in JS handles smoothness */
+.question-track {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  will-change: transform;
+}
+
+/* 4 ▸ Individual panels — each owns one viewport width.
+   ── Colour tokens set per variant (.question--lime / .question--dark)
+      and consumed by h2, .accent, .ghost children.                    */
+.question {
+  width: 100vw;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 var(--spacing-11);        /* 72 px sides */
+  box-sizing: border-box;
+}
+
+/* ── Panel variants ─────────────────────────────────────────────────
+   Figma: Q1/Q3 → lime bg (#bdff5d), dark text (#0e0e0e)
+          Q2/Q4 → dark bg (#0e0e0e), accent text (#bdff5d)          */
+.question--lime {
+  --q-text:       var(--color-content-body-black);  /* #0e0e0e */
+  --ghost-stroke: var(--color-content-body-black);
+  background:     var(--color-content-accent);      /* #bdff5d */
+}
+.question--dark {
+  --q-text:       var(--color-content-accent);      /* #bdff5d */
+  --ghost-stroke: var(--color-content-accent);
+  background:     var(--color-background-primary);  /* #0e0e0e */
+}
+
+.question h2 {
+  font-family:    var(--font-display);
+  font-size:      var(--ts-scrollitelling-size);        /* 116 px → clamp */
+  font-weight:    var(--ts-scrollitelling-weight);      /* 800    */
+  line-height:    var(--ts-scrollitelling-line-height); /* 106 px → clamp */
+  letter-spacing: var(--ts-scrollitelling-letter-spacing);
+  text-transform: uppercase;
+  color: var(--q-text, var(--color-content-body-black));
+  margin: 0;
+}
+
+/* Override global .accent inside questions — colour comes from panel token */
+.question .accent { color: var(--q-text, var(--color-content-body-black)); }
+
+.question--right              { align-items: flex-end; }
+.question--right h2           { text-align: right; }
+
+/* Ghost text — outline-only letterforms; stroke colour from panel token */
+.ghost {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: var(--stroke-1) var(--ghost-stroke, var(--color-content-body-black));
+}
+
+/* ── Scroll-cue label (Figma: H3 36px, accent, ls 0.72px) ─────────── */
+.scroll-cue-label {
+  margin: 0;
+  letter-spacing: var(--ts-h3-letter-spacing);   /* 0.72px */
+  text-align: center;
+}
+
+/* ================================================================
+ * SCROLL CUE  (H3 text style)
+ * ================================================================ */
+
+.scroll-cue {
+  margin-top: var(--spacing-19);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-content-accent);
+  font-family: var(--font-display);
+  font-size:   var(--ts-h3-size);    /* 36 px */
+  font-weight: var(--ts-h3-weight);  /* 500   */
+  line-height: var(--ts-h3-line-height);
+  text-align: center;
+}
+
+.scroll-cue img {
+  width: 56px;
+  height: auto;
+  display: block;
+  transform: rotate(90deg);
+  margin-top: 24px;
+}
+
+/* ================================================================
+ * GALLERY PREVIEW
+ * ================================================================ */
+
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  padding: 80px var(--spacing-11) 120px;
+  align-items: flex-start;
+}
+
+.gallery-item       { margin: 0; flex: 0 0 auto; }
+.gallery-item img   { width: 100%; height: auto; display: block; object-fit: cover; }
+
+/* ================================================================
+ * ARCHIVIO LINK
+ * ================================================================ */
+
+.archivio-link { text-decoration: none; }
+.archivio-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ================================================================
+ * RESPONSIVE
+ * ================================================================ */
+
+/* ── Small laptop (1024–1280 px) ──────────────────────────────── */
+@media (max-width: 1280px) {
+  .story,
+  .scroll-cue,
+  .gallery {
+    padding-left:  48px;
+    padding-right: 48px;
+  }
+
+  .question { padding: 0 48px; }
+
+  .story--left,
+  .story--right {
+    max-width: min(var(--figma-story-width), 88vw);
+  }
+
+  .question-shell  { margin-top: 200px; }
+}
+
+/* ── Compact laptop / large tablet (≤1100 px) ─────────────────── */
+@media (max-width: 1100px) {
+  .story,
+  .scroll-cue,
+  .gallery {
+    padding-left:  32px;
+    padding-right: 32px;
+  }
+
+  .question { padding: 0 32px; }
+
+  .story--right { margin-top: 48px; }
+
+  .story--quote-left  { margin-top: 200px; }
+  .story--quote-right { margin-top: 200px; }
+
+  .question-shell  { margin-top: 140px; }
+}
+
+/* ── Tablet / small (≤900 px) ─────────────────────────────────── */
+@media (max-width: 900px) {
+  .hero-outer {
+    min-height: calc(100svh - 112px);
+    padding: 72px 16px 48px;
+  }
+
+  .story,
+  .scroll-cue,
+  .gallery {
+    padding-left:  16px;
+    padding-right: 16px;
+  }
+
+  /* Question panels keep full-width but shrink the side padding */
+  .question {
+    padding: 0 16px;
+  }
+
+  .story--right    { margin-top: 32px; }
+
+  .story--quote-left,
+  .story--quote-right {
+    margin-top:    32px;
+    padding-left:  0;
+    padding-right: 0;
+    text-align:    left;
+  }
+
+  .scroll-cue { font-size: 24px; }
+
+  .gallery { padding-top: 80px; padding-bottom: 120px; }
+}
+
+/* ================================================================
+ * PAGE TRANSITIONS  (View Transitions API — progressive enhancement)
+ * ================================================================ */
+
+@keyframes vt-out { to   { opacity: 0; } }
+@keyframes vt-in  { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 280ms ease-out both vt-out;
+  }
+  ::view-transition-new(root) {
+    animation: 360ms ease-out both vt-in;
+  }
+}
