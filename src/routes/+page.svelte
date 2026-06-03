@@ -25,6 +25,7 @@
 
   const loaderBlockLayouts: never[][] = [];
 
+  
   /* ── Navbar state ─────────────────────────────────────────────── */
   let navbarVisible = $state(true);
   let navbarFixed = $state(true);
