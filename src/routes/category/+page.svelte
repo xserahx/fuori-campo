@@ -46,6 +46,7 @@
   // Continuous scroll position (unbounded integer target, float animation)
   let targetPos = 0;   
   let animPos   = 0;  
+  let visualPos = $state(0);
   let position  = $state(0); 
 
   // Drag state
@@ -278,6 +279,7 @@
     // Smooth lerp — feels like inertia
     animPos = lerp(animPos, targetPos, LERP_K);
     const visual = animPos + dragLive;
+    visualPos = visual;
 
     slots.forEach((slot, s) => {
       const slotOffset = s - HALF;  // −5 .. +5
@@ -415,6 +417,37 @@
 
   // ─── reactive labels ─────────────────────────────────────────────
   let currentIndex = $derived(mod(Math.round(position), N()));
+  let visualCenterIndex = $derived(mod(Math.round(visualPos), N()));
+  let transitionDirection = $derived.by(() => {
+    if (isDragging) {
+      if (dragLive > 0.001) return 1;
+      if (dragLive < -0.001) return -1;
+      return 0;
+    }
+
+    const delta = targetPos - visualPos;
+    if (delta > 0.001) return 1;
+    if (delta < -0.001) return -1;
+    return 0;
+  });
+
+  let edgeBlend = $derived.by(() => {
+    if (transitionDirection === 0) return 0;
+
+    const rawProgress = isDragging
+      ? Math.min(1, Math.abs(dragLive) / 0.35)
+      : Math.min(1, Math.abs(targetPos - visualPos));
+
+    return smoothstep(rawProgress);
+  });
+
+  let incomingCenterIndex = $derived(mod(visualCenterIndex + transitionDirection, N()));
+
+  let leftOutgoingImage = $derived(categories[mod(visualCenterIndex - 1, N())]?.image ?? '');
+  let leftIncomingImage = $derived(categories[mod(incomingCenterIndex - 1, N())]?.image ?? leftOutgoingImage);
+  let rightOutgoingImage = $derived(categories[mod(visualCenterIndex + 1, N())]?.image ?? '');
+  let rightIncomingImage = $derived(categories[mod(incomingCenterIndex + 1, N())]?.image ?? rightOutgoingImage);
+
   let currentLabel = $derived(categories[mod(Math.round(position), N())]?.label ?? '');
   let previousCategory = $derived(categories[mod(currentIndex - 1, N())]);
   let nextCategory    = $derived(categories[mod(currentIndex + 1, N())]);
@@ -447,12 +480,26 @@
   <canvas bind:this={canvasEl}></canvas>
 
   <!-- Thin blurred strips of adjacent images at the very edges -->
-  <div class="edge-panel edge-panel--left" aria-hidden="true"
-    style={`background-image: url('${previousCategory?.image ?? ''}')`}
-  ></div>
-  <div class="edge-panel edge-panel--right" aria-hidden="true"
-    style={`background-image: url('${nextCategory?.image ?? ''}')`}
-  ></div>
+  <div class="edge-panel edge-panel--left" aria-hidden="true">
+    <div
+      class="edge-panel__layer"
+      style={`background-image: url('${leftOutgoingImage}'); opacity:${1 - edgeBlend};`}
+    ></div>
+    <div
+      class="edge-panel__layer"
+      style={`background-image: url('${leftIncomingImage}'); opacity:${edgeBlend};`}
+    ></div>
+  </div>
+  <div class="edge-panel edge-panel--right" aria-hidden="true">
+    <div
+      class="edge-panel__layer"
+      style={`background-image: url('${rightOutgoingImage}'); opacity:${1 - edgeBlend};`}
+    ></div>
+    <div
+      class="edge-panel__layer"
+      style={`background-image: url('${rightIncomingImage}'); opacity:${edgeBlend};`}
+    ></div>
+  </div>
 
   <button class="arrow arrow-left" type="button" aria-label="Previous category"
     onpointerdown={(e) => onArrowPointerDown(-1, e)}
@@ -572,41 +619,59 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: min(22vw, 340px);
+    width: min(26vw, 400px);
     pointer-events: none;
     z-index: 2;
+    overflow: hidden;
+  }
+
+  .edge-panel__layer {
+    position: absolute;
+    inset: -4% -3%;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    filter: blur(12px) saturate(1.06);
-    -webkit-filter: blur(12px) saturate(1.06);
-    opacity: 1;
+    filter: blur(18px) saturate(1.08);
+    -webkit-filter: blur(18px) saturate(1.08);
+    will-change: opacity;
   }
 
   .edge-panel--left {
     left: 0;
     border-radius: 0 32px 32px 0;
     transform-origin: left center;
-    transform: scaleX(1.18);
+    transform: scaleX(1.22);
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
   }
 
   .edge-panel--right {
     right: 0;
     border-radius: 32px 0 0 32px;
     transform-origin: right center;
-    transform: scaleX(1.18);
+    transform: scaleX(1.22);
+    mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .edge-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
   }
 
   .edge-panel--left::after {
     left: 0;
-    width: 24%;
-    background: linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.32) 18%,rgba(0,0,0,0.12) 38%,rgba(0,0,0,0) 58%,rgba(0,0,0,0.35) 78%,rgba(0,0,0,0.82) 100%);
+    width: 100%;
+    background: linear-gradient(90deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.36) 24%, rgba(0,0,0,0.14) 52%, rgba(0,0,0,0.18) 72%, rgba(0,0,0,0.42) 88%, rgba(0,0,0,0.75) 100%);
   }
 
   .edge-panel--right::after {
     right: 0;
-    width: 24%;
-    background: linear-gradient(270deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.32) 18%,rgba(0,0,0,0.12) 38%,rgba(0,0,0,0) 58%,rgba(0,0,0,0.35) 78%,rgba(0,0,0,0.82) 100%);
+    width: 100%;
+    background: linear-gradient(270deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.36) 24%, rgba(0,0,0,0.14) 52%, rgba(0,0,0,0.18) 72%, rgba(0,0,0,0.42) 88%, rgba(0,0,0,0.75) 100%);
   }
 
   .curve-frame {
