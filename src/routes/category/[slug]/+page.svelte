@@ -7,6 +7,7 @@
   const DOT_SELECTED = 'https://www.figma.com/api/mcp/asset/a1d0bb60-3e1f-4bd0-85f5-81a39a3cb364';
   const ARROW_LEFT = 'https://www.figma.com/api/mcp/asset/f7620798-7f09-495b-b322-b355e4a96104';
   const ARROW_RIGHT = 'https://www.figma.com/api/mcp/asset/78aab99b-e7d5-4046-b398-8911b7a7cfea';
+  const BACK_ICON = 'https://www.figma.com/api/mcp/asset/b6c50607-8d2b-4867-bea0-12bc527e0378';
 
   type CategoryInfo = {
     label: string;
@@ -271,6 +272,7 @@
 
   const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
   const roleCount = $derived(activeSummary.roles.length);
+  const visibleDotCount = $derived(Math.min(5, roleCount));
 </script>
 
 <svelte:head>
@@ -281,8 +283,8 @@
   <main class="category-page" class:category-sport={cat?.slug === 'sport'}>
     <div class="category-shell">
       <button class="back-button" type="button" aria-label="Indietro" onclick={() => goto('/category')}>
-        <span class="back-arrow" aria-hidden="true">←</span>
-        <span>INDIETRO</span>
+        <img class="back-icon" src={BACK_ICON} alt="" width="18" height="10" draggable="false" />
+        <span class="back-label">INDIETRO</span>
       </button>
 
       <section class="hero" aria-labelledby="category-title">
@@ -324,7 +326,7 @@
         </div>
 
         <div class="summary-dots" aria-label="Sub-roles">
-          {#each activeSummary.roles as _, index}
+          {#each Array.from({ length: visibleDotCount }) as _, index}
             <button
               type="button"
               class="dot"
@@ -376,28 +378,38 @@
   }
 
   .back-button {
-    width: fit-content;
+    width: 168px;
+    height: 48px;
     margin-left: var(--spacing-11);
-    margin-top: 28px;
+    margin-top: 24px;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 16px;
+    justify-content: center;
+    gap: var(--spacing-3);
+    padding: 12px 20px;
     border: 2px solid var(--color-content-accent);
-    border-radius: var(--radius-rounded-pill);
+    border-radius: var(--unit-999);
     background: transparent;
     color: var(--color-content-body);
     font-family: var(--font-display);
-    font-size: 32px;
+    font-size: var(--unit-24);
     font-weight: 500;
-    line-height: 1;
+    line-height: 26px;
     cursor: pointer;
   }
 
-  .back-arrow {
-    font-size: 28px;
-    line-height: 1;
-    transform: translateY(-2px);
+  .back-icon {
+    width: 18px;
+    height: 10px;
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .back-label {
+    display: block;
+    width: 98px;
+    text-align: left;
+    line-height: 26px;
   }
 
   .hero {
@@ -557,6 +569,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 112px;
+    overflow: hidden;
     padding-bottom: 0;
   }
 
