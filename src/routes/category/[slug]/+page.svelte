@@ -220,7 +220,7 @@
     },
     gestione: {
       eyebrow: 'FEX = Fan Experience',
-      subtitle: 'Hanno risposto alla stessa domanda \n 400 volte  in un giorno con il sorriso.\nAlmeno le prime 380.',
+      subtitle: 'Hanno risposto alla stessa domanda 400 volte  in un giorno con il sorriso. Almeno le prime 380.',
       roles: [
         {
           title: 'EVM = Event Management',
@@ -414,7 +414,6 @@
 
   .hero {
     width: min(100%, 1728px);
-    margin: 0 auto;
     margin-top: 26px;
     padding: 0;
     display: flex;
@@ -432,7 +431,7 @@
   .title-fill,
   .title-outline {
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(56px, 6.75vw, 116px);
+    font-size: var(--Unit-116, 116px);
     font-weight: 800;
     text-transform: uppercase;
     /* Figma h1: letterSpacing: 0, leading-[unit/116] = 1:1 with font size */
@@ -460,18 +459,12 @@
   }
 
   .hero-copy {
-    margin: 0;
-    width: min(1110px, calc(100% - var(--spacing-18) - var(--spacing-11)));
-    margin-left: auto;
-    margin-top: var(--unit-40);
-    padding: 0 var(--spacing-11) 0 0;
+    margin: var(--spacing-9) var(--spacing-11) 87px var(--spacing-18);
     text-align: right;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(34px, 4.9vw, 72px);
+    font-size: var(--Unit-84, 84px);
     font-weight: 500;
-    line-height: 0.96;
-    letter-spacing: -0.04em;
-    white-space: pre-line;
+    line-height: var(--Spacing-12, 80px); 
     color: var(--color-content-body);
   }
 
