@@ -10,6 +10,8 @@
   const IMG_FIGMA_204 = '/figma/cat-1.jpg';
   const IMG_FIGMA_58  = '/figma/cat-5.jpg';
   const IMG_FIGMA_232 = '/figma/cat-8.jpg';
+  const CAROUSEL_ARROW_LEFT = 'https://www.figma.com/api/mcp/asset/149b18f8-4f5d-4cff-af7a-a6ea33c892be';
+  const CAROUSEL_ARROW_RIGHT = 'https://www.figma.com/api/mcp/asset/65eb55ac-70a4-455b-9a7b-693132669895';
 
   const defaultCategories: Category[] = [
     { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: IMG_FIGMA_204 },
@@ -504,7 +506,7 @@
   <button class="arrow arrow-left" type="button" aria-label="Previous category"
     onpointerdown={(e) => onArrowPointerDown(-1, e)}
   >
-    <span aria-hidden="true">‹</span>
+    <img src={CAROUSEL_ARROW_LEFT} alt="" width="14" height="28" draggable="false" />
   </button>
 
   <button
@@ -513,7 +515,7 @@
     aria-label="Next category"
     onpointerdown={(e) => onArrowPointerDown(1, e)}
   >
-    <span aria-hidden="true">›</span>
+    <img src={CAROUSEL_ARROW_RIGHT} alt="" width="14" height="28" draggable="false" />
   </button>
 
   <div class="curve-frame" aria-hidden="true">
@@ -571,26 +573,26 @@
 
   .arrow {
     position: absolute;
-    /* Center vertically in the carousel area */
+    /* Figma arrows are centered vertically in the carousel */
     top: 50%;
     transform: translateY(-50%);
-    width: 28px;
-    height: 50px;
+    width: 38px;
+    height: 52px;
     background: transparent;
-    color: #ffffff; /* default white */
-    display: grid;
-    place-items: center;
-    font-size: 44px;
-    line-height: 1;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
     z-index: 12;
     cursor: pointer;
     border: none;
     box-shadow: none;
   }
 
-  .arrow:hover {
-    color: var(--color-content-title);
+  .arrow img {
+    width: 14px;
+    height: 28px;
+    display: block;
   }
 
   .arrow:focus-visible {
@@ -599,11 +601,11 @@
   }
 
   .arrow-left {
-    left: 8px;
+    left: var(--spacing-11);
   }
 
   .arrow-right {
-    right: 8px;
+    right: var(--spacing-11);
   }
 
   canvas {
