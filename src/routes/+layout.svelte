@@ -19,17 +19,15 @@
 		);
 	});
 
-	/* Keep html { zoom } in sync with the actual viewport width.
-	   The initial value is set synchronously in app.html <head>.
-	   On resize: window.innerWidth returns CSS pixels in the current
-	   zoom space, so multiply by current zoom to recover physical width,
-	   then recompute. Math: physical = innerWidth × zoom, newZoom = physical / 1728. */
+	/* Keep html { zoom } in sync with the viewport on resize.
+	   Reset to 1 first so innerWidth always reports the physical pixel width,
+	   then scale uniformly: every element maintains its Figma-proportional size
+	   while the layout fills the full viewport width on any desktop resolution. */
 	$effect(() => {
 		if (!browser) return;
 		const update = () => {
-			const zoom = parseFloat(document.documentElement.style.zoom) || 1;
-			const physicalWidth = window.innerWidth * zoom;
-			document.documentElement.style.zoom = String(physicalWidth / 1728);
+			document.documentElement.style.zoom = '1';
+			document.documentElement.style.zoom = String(window.innerWidth / 1728);
 		};
 		window.addEventListener('resize', update, { passive: true });
 		return () => window.removeEventListener('resize', update);

@@ -393,13 +393,23 @@
     if (slug) await goto(`/category/${slug}`);
   }
 
-  onMount(() => { buildScene(); window.addEventListener('resize', onResize); });
+  onMount(() => {
+    // Override layout's padding-top and prevent scroll for the full-bleed carousel
+    const prev = { pt: document.body.style.paddingTop, ov: document.body.style.overflow };
+    document.body.style.paddingTop = '0';
+    document.body.style.overflow   = 'hidden';
+
+    buildScene();
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      document.body.style.paddingTop = prev.pt;
+      document.body.style.overflow   = prev.ov;
+    };
+  });
   onDestroy(() => {
     if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(animFrameId);
-    try {
-      renderer?.dispose();
-    } catch (e) {
-    }
+    try { renderer?.dispose(); } catch (e) {}
     if (typeof window !== 'undefined') window.removeEventListener('resize', onResize);
   });
 
@@ -426,8 +436,6 @@
   })());
 
 </script>
-
-<Navbar pinned />
 
 <section class="carousel" bind:this={containerEl}
   onpointerdown={onPointerDown}
@@ -494,9 +502,8 @@
 
   .carousel {
     position: fixed;
+    /* inset: 0 pins all four edges to the viewport — no dvh/vw unit needed */
     inset: 0;
-    width: 100vw;
-    height: 100dvh;
     background: var(--color-background-primary);
     overflow: hidden;
     cursor: grab;

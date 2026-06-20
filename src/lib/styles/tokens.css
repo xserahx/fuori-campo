@@ -215,7 +215,7 @@ body::-webkit-scrollbar,
 }
 
 .site {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--color-background-primary) !important;
 }
 
@@ -468,7 +468,9 @@ body::-webkit-scrollbar,
 .question-sticky {
   position: sticky;
   top: 0;
-  height: 100vh;
+  /* 100dvh fills the exact physical viewport on every desktop resolution —
+     no sub-pixel gap at the bottom regardless of browser chrome or zoom. */
+  height: 100dvh;
   overflow: hidden;
   background: var(--q-bg, var(--color-content-accent));
 }

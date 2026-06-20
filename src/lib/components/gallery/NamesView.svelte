@@ -208,7 +208,7 @@
   }
 
   .names-stage {
-    --names-center-padding: calc((100vh - 120px) / 2);
+    --names-center-padding: calc((100dvh - 120px) / 2);
 
     position: absolute;
     inset: 0;

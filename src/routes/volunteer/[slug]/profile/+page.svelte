@@ -287,7 +287,7 @@
   .profile {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background: #0e0e0e;
     color: #fafafa;
@@ -740,7 +740,7 @@
 
   /* Tablet breakpoint — switch to single-column flow */
   @media (max-width: 768px) {
-    .profile { overflow-y: auto; height: auto; min-height: 100vh; }
+    .profile { overflow-y: auto; height: auto; min-height: 100dvh; }
 
     .name-hero      { position: relative; top: auto; margin-top: 120px; }
     .name-surname   { padding-left: 16px; }

@@ -187,7 +187,7 @@
   .lb {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background: #0e0e0e;
   }

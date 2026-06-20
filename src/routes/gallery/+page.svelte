@@ -129,7 +129,7 @@
   /* ── Page shell ─────────────────────────────────────────────────── */
   .gallery-page {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     position: relative;
     background: var(--gallery-background, #0e0e0e);
