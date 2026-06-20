@@ -516,12 +516,14 @@ body::-webkit-scrollbar,
   margin-top: 346px;   /* breathing room above each shell (Figma gap) */
 }
 
-/* 2 ▸ Sticky lens — pins to viewport; no entry margin (scrub starts immediately) */
+/* 2 ▸ Sticky lens — pins to viewport; background driven by JS via --q-bg.
+        No CSS transition — the RAF lerp + smoothstep handle all easing. */
 .question-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
   overflow: hidden;
+  background: var(--q-bg, var(--color-content-accent));
 }
 
 /* Blur-veil — absolute overlay above the track.
@@ -558,18 +560,13 @@ body::-webkit-scrollbar,
 }
 
 /* ── Panel variants ─────────────────────────────────────────────────
-   Figma: Q1/Q3 → lime bg (#bdff5d), dark text (#0e0e0e)
-          Q2/Q4 → dark bg (#0e0e0e), accent text (#bdff5d)          */
-.question--lime {
-  --q-text:       var(--color-content-body-black);  /* #0e0e0e */
-  --ghost-stroke: var(--color-content-body-black);
-  background:     var(--color-content-accent);      /* #bdff5d */
-}
-.question--dark {
-  --q-text:       var(--color-content-accent);      /* #bdff5d */
-  --ghost-stroke: var(--color-content-accent);
-  background:     var(--color-background-primary);  /* #0e0e0e */
-}
+   Background and text color are both JS-driven via --q-bg / --q-fg
+   on the parent .question-sticky. Panels only own alignment.        */
+/* Panel variants: only carry layout/alignment tokens.
+   Background lives on .question-sticky (JS-driven via --q-bg).
+   Text color is unified to --q-fg set by JS on .question-sticky. */
+.question--lime { --q-align: flex-start; }
+.question--dark { --q-align: flex-end;   }
 
 .question h2 {
   font-family:    var(--font-display);
@@ -578,12 +575,18 @@ body::-webkit-scrollbar,
   line-height:    var(--ts-scrollitelling-line-height); /* 106 px → clamp */
   letter-spacing: var(--ts-scrollitelling-letter-spacing);
   text-transform: uppercase;
-  color: var(--q-text, var(--color-content-body-black));
+  /* --q-fg interpolated by JS; fallbacks for SSR/no-JS */
+  color: var(--q-fg, var(--color-content-body-black));
   margin: 0;
 }
 
-/* Override global .accent inside questions — colour comes from panel token */
-.question .accent { color: var(--q-text, var(--color-content-body-black)); }
+/* Unified colour for all text nodes inside questions */
+.question .accent { color: var(--q-fg, var(--color-content-body-black)); }
+
+/* Ghost stroke follows the same interpolated --q-fg */
+.question .ghost {
+  -webkit-text-stroke-color: var(--q-fg, var(--color-content-body-black));
+}
 
 .question--right              { align-items: flex-end; }
 .question--right h2           { text-align: right; }

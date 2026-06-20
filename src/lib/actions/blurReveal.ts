@@ -1,4 +1,4 @@
-export type BlurRevealVariant = "slide" | "clip" | "skew" | "letterspace" | "fade";
+export type BlurRevealVariant = "slide" | "clip" | "skew" | "letterspace" | "fade" | "cinema";
 
 export interface BlurRevealOptions {
   direction?: "left" | "right";
@@ -37,6 +37,7 @@ function buildTransition(
   if (variant === "letterspace") {
     base.push(`letter-spacing ${Math.round(dur * 1.1)}ms ${ease}`);
   }
+  /* cinema uses the base triple — no extra properties needed */
 
   return base.join(", ");
 }
@@ -81,6 +82,14 @@ function getHiddenStyles(
     base.transform = "translateY(32px) scale(0.96)";
   }
 
+  /* cinema — deep blur + strong vertical rise + subtle scale.
+     Used for sections that immediately follow a horizontal zone
+     to signal the return to vertical narrative with cinematic weight. */
+  if (variant === "cinema") {
+    base.filter    = `blur(${blur}px)`;
+    base.transform = `translateX(${tx * 0.2}px) translateY(56px) scale(0.93)`;
+  }
+
   return base;
 }
 
@@ -112,6 +121,10 @@ function getVisibleStyles(
 
   if (variant === "fade") {
     base.transform = "translateY(0px) scale(1)";
+  }
+
+  if (variant === "cinema") {
+    base.transform = "translateX(0px) translateY(0px) scale(1)";
   }
 
   return base;

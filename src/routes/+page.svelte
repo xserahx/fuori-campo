@@ -6,6 +6,7 @@
   import ScrollArrow from "../lib/components/ScrollArrow.svelte";
   import { blurReveal } from "../lib/actions/blurReveal";
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
+  import gsap from 'gsap';
   import { imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
@@ -32,14 +33,17 @@
 
   /* ── DOM refs ────────────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
-  // Two independent horizontal scroll shells
-  // H1 = Q1 (lime) + Q2 (dark),  H2 = Q3 (lime) + Q4 (dark)
-  let shell1: HTMLElement | null = null;
-  let track1: HTMLElement | null = null;
-  let veil1:      HTMLElement | null = null;   // blur-veil overlay for shell 1
-  let shell2:     HTMLElement | null = null;
-  let track2:     HTMLElement | null = null;
-  let veil2:  HTMLElement | null = null;   // blur-veil overlay for shell 2
+  // Single continuous horizontal shell — all 4 questions in one track
+  let shell1:    HTMLElement | null = null;
+  let stickyEl1: HTMLElement | null = null;  // sticky lens — receives --q-bg/--q-fg
+  let track1:    HTMLElement | null = null;
+  let veil1:     HTMLElement | null = null;
+
+  // Question panel h2 refs — per-frame content animation targets
+  let q1h2: HTMLElement | null = null;
+  let q2h2: HTMLElement | null = null;
+  let q3h2: HTMLElement | null = null;
+  let q4h2: HTMLElement | null = null;
 
   /* ── Gallery / scroll cue ─────────────────────────────────────── */
   const galleryCount = 12;
@@ -95,27 +99,17 @@
   });
 
   /* ═══════════════════════════════════════════════════════════════
-   * MOUNT — ScrollSmoother + locked horizontal zones
+   * MOUNT — sinuous scroll engine
    *
-   * Exact GSAP homepage model:
-   *
-   *   ScrollSmoother({ smooth: 1.2 })
-   *     → vTarget accumulates wheel/touch; vSmooth lerps toward it
-   *     → window.scrollTo(vSmooth) every frame (sticky still works)
-   *
-   *   ScrollTrigger({ pin:true, scrub, end: "+=" + width })
-   *   + horizontal zone LOCK:
-   *     → on entry: vTarget freezes at shellTop (vertical stops)
-   *     → all delta is redirected to hTarget for this shell
-   *     → hSmooth lerps toward hTarget → track translateX = -hSmooth
-   *     → on exit-right: vTarget jumps past shell, vertical resumes
-   *     → on exit-left:  vTarget decreases, scroll goes up
-   *
-   * This gives:
-   *   • Buttery smooth scroll everywhere (ScrollSmoother)
-   *   • True vertical lock inside horizontal zones (no downward drift)
-   *   • Only rightward progress while locked
-   *   • Seamless V→H and H→V transitions
+   * Architecture:
+   *   • Single horizontal shell with all 4 questions in one track
+   *   • Vertical LERP 0.070 / Horizontal LERP 0.078 — silkier than before
+   *   • Per-frame panel content: opacity/blur/transform driven by
+   *     distance from each panel's center — fully scrub-reversible
+   *   • Color dissolve: --q-bg/--q-fg on stickyEl1 interpolate
+   *     between #bdff5d and #0e0e0e at every panel boundary
+   *   • Blur-veil: BLUR_DECAY 0.93 → ~1.4 s cinematic tail
+   *   • GSAP scale pulse on V→H entry and H→V exit
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
 
@@ -125,34 +119,47 @@
     let vPrev   = window.scrollY;
     let rafId   = 0;
 
-    /* Pure LERP — smooth, predictable, no overshoot.
-       LERP_H is slightly faster for horizontal panels so they feel
-       crisp and responsive while vertical stays buttery.
-       BLUR_DECAY: fraction kept per frame — 0.87 clears in ~35 frames
-       (~580 ms at 60 fps), long enough to cover the full transition. */
-    const LERP       = 0.085;
-    const LERP_H     = 0.10;
-    const BLUR_DECAY = 0.87;
+    const LERP       = 0.070;  // sinuous vertical — settles in ~700 ms
+    const LERP_H     = 0.078;  // horizontal — slightly faster, still silky
+    const BLUR_DECAY = 0.93;   // blur tail ~1.4 s at 60 fps
 
-    /* Per-shell blur state: fb = flash burst, hp = prev hSmooth    */
-    let fb1 = 0, fb2 = 0;
-    let h1p = 0, h2p = 0;
+    /* Blur-veil state */
+    let fb1 = 0;
+    let h1p = 0;
+
+    /* ── Color dissolve palette ─────────────────────────────────────
+       4 panels: lime, dark, lime, dark — bg and text are inverses.
+       Dissolve spans 28%–72% of each panel width (centred at boundary). */
+    const LIME = [189, 255, 93]  as const;
+    const DARK = [14,  14,  14]  as const;
+    type Rgb = readonly [number, number, number];
+    const panelBg:   Rgb[] = [LIME, DARK, LIME, DARK];
+    const panelText: Rgb[] = [DARK, LIME, DARK, LIME];
+
+    /* ── Cached span arrays for hot RAF path ────────────────────── */
+    let pSpans: HTMLElement[][] = [[], [], [], []];
+
+    function cacheSpans() {
+      pSpans = [q1h2, q2h2, q3h2, q4h2].map(h =>
+        h ? (Array.from(h.querySelectorAll('span')) as HTMLElement[]) : []
+      );
+    }
+
+    /* ── Lock-change detection for GSAP entry/exit pulse ─────────── */
+    let prevLocked: typeof locked = null;
 
     function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
     function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+    function ss(t: number) { return t * t * (3 - 2 * t); }  // smoothstep
     function maxScroll() {
       return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     }
 
-    /* ── Per-shell state ─────────────────────────────────────────── */
+    /* ── Single shell state ──────────────────────────────────────── */
     type S = { top: number; slide: number; hTarget: number; hSmooth: number };
     const s1: S = { top: 0, slide: 0, hTarget: 0, hSmooth: 0 };
-    const s2: S = { top: 0, slide: 0, hTarget: 0, hSmooth: 0 };
 
-    /* Currently locked shell (null = vertical mode) */
     let locked: S | null = null;
-
-    /* Hero document-space bounds */
     let heroDocTop = 0, heroDocBot = 0;
 
     /* ── Setup ───────────────────────────────────────────────────── */
@@ -162,14 +169,9 @@
       const sy = window.scrollY;
 
       if (shell1 && track1) {
-        s1.slide = (track1.children.length - 1) * vw;
+        s1.slide = (track1.children.length - 1) * vw;  // 4 panels → 3 × vw
         shell1.style.height = `${vh + s1.slide}px`;
         s1.top   = shell1.getBoundingClientRect().top + sy;
-      }
-      if (shell2 && track2) {
-        s2.slide = (track2.children.length - 1) * vw;
-        shell2.style.height = `${vh + s2.slide}px`;
-        s2.top   = shell2.getBoundingClientRect().top + sy;
       }
       if (heroSection) {
         const r    = heroSection.getBoundingClientRect();
@@ -178,30 +180,27 @@
       }
     };
 
-    /* ── Blur helper: spike the panel blur-veil ─────────────────── */
-    function blurShell(s: S) { if (s === s1) fb1 = 14; else fb2 = 14; }
+    /* ── Blur spike ─────────────────────────────────────────────── */
+    function blurSpike() { fb1 = 22; }
 
-    /* ── Lock detection — call from both wheel handler and tick ──── */
+    /* ── Lock detection ─────────────────────────────────────────── */
     function tryLock(sy: number) {
       if (locked !== null) return;
-      for (const s of [s1, s2] as S[]) {
-        if (s.slide > 0 && sy >= s.top && sy < s.top + s.slide) {
-          const overshoot = Math.max(0, sy - s.top);
-          s.hTarget       = clamp(overshoot, 0, s.slide);
-          s.hSmooth       = s.hTarget;
-          locked          = s;
-          vTarget         = s.top;
-          vSmooth         = s.top;
-          window.scrollTo({ top: s.top, behavior: 'instant' });
-          blurShell(s);
-          break;
-        }
+      if (s1.slide > 0 && sy >= s1.top && sy < s1.top + s1.slide) {
+        const overshoot = Math.max(0, sy - s1.top);
+        s1.hTarget      = clamp(overshoot, 0, s1.slide);
+        s1.hSmooth      = s1.hTarget;
+        locked          = s1;
+        vTarget         = s1.top;
+        vSmooth         = s1.top;
+        window.scrollTo({ top: s1.top, behavior: 'instant' });
+        blurSpike();
       }
     }
 
     /* ── RAF tick ────────────────────────────────────────────────── */
     const tick = () => {
-      /* 1 ─ LERP: smooth, predictable vertical motion */
+      /* 1 ─ Vertical LERP */
       vSmooth      = lerp(vSmooth, vTarget, LERP);
       const vDelta = vSmooth - vPrev;
       vPrev        = vSmooth;
@@ -209,7 +208,7 @@
       /* 2 ─ Entry detection */
       tryLock(vSmooth);
 
-      /* 3 ─ Apply to browser (position:sticky reads window.scrollY) */
+      /* 3 ─ Sync browser scroll (sticky reads window.scrollY) */
       const rounded = Math.round(vSmooth);
       if (Math.abs(rounded - window.scrollY) > 0) {
         window.scrollTo({ top: rounded, behavior: 'instant' });
@@ -217,43 +216,97 @@
 
       const sy = vSmooth;
       const vh = window.innerHeight;
+      const VW = window.innerWidth;
 
-      /* 4 ─ Horizontal tracks + transition blur
-             Decay flash-blur, add velocity-proportional motion blur,
-             write combined value to each shell's blur-veil overlay.  */
+      /* 4 ─ Horizontal track + blur-veil */
       fb1 = Math.max(0, fb1 * BLUR_DECAY);
-      fb2 = Math.max(0, fb2 * BLUR_DECAY);
 
       if (s1.slide > 0 && track1) {
         s1.hSmooth = lerp(s1.hSmooth, s1.hTarget, LERP_H);
         track1.style.transform = `translateX(${(-s1.hSmooth).toFixed(2)}px)`;
-        const b1 = Math.min(fb1 + Math.abs(s1.hSmooth - h1p) * 0.03, 14);
+        const velBlur = Math.abs(s1.hSmooth - h1p) * 0.045;
+        const b1      = Math.min(fb1 + velBlur, 22);
         if (veil1) veil1.style.backdropFilter = b1 > 0.08 ? `blur(${b1.toFixed(1)}px)` : '';
         h1p = s1.hSmooth;
       }
-      if (s2.slide > 0 && track2) {
-        s2.hSmooth = lerp(s2.hSmooth, s2.hTarget, LERP_H);
-        track2.style.transform = `translateX(${(-s2.hSmooth).toFixed(2)}px)`;
-        const b2 = Math.min(fb2 + Math.abs(s2.hSmooth - h2p) * 0.03, 14);
-        if (veil2) veil2.style.backdropFilter = b2 > 0.08 ? `blur(${b2.toFixed(1)}px)` : '';
-        h2p = s2.hSmooth;
+
+      /* 5 ─ Per-frame panel content (scrub-reversible, no fire-once)
+             Each span's opacity/blur/transform follows its panel's
+             distance from the viewport centre — closer = more visible. */
+      if (s1.slide > 0) {
+        const hp      = s1.hSmooth;
+        const centers = [0, VW, 2 * VW, 3 * VW];
+
+        for (let pi = 0; pi < 4; pi++) {
+          const dist = Math.abs(hp - centers[pi]) / VW;   // 0=centred, 1=adjacent
+          const raw  = clamp(1 - dist * 1.65, 0, 1);
+          const vis  = ss(raw);                            // smoothstep visibility
+
+          const spans = pSpans[pi];
+          for (let si = 0; si < spans.length; si++) {
+            /* Stagger: later spans lag by 0.05 per index */
+            const sv  = clamp(vis - si * 0.05, 0, 1);
+            const sv3 = ss(sv);
+            const span = spans[si];
+            if (sv3 >= 0.9995) {
+              span.style.opacity   = '1';
+              span.style.filter    = '';
+              span.style.transform = 'none';
+            } else {
+              const inv = 1 - sv3;
+              span.style.opacity   = sv3.toFixed(3);
+              span.style.filter    = `blur(${(inv * 26).toFixed(1)}px)`;
+              span.style.transform = `translateY(${(inv * 36).toFixed(1)}px) scale(${(1 - inv * 0.06).toFixed(4)})`;
+            }
+          }
+        }
+
+        /* 6 ─ Color dissolve: bg + text on stickyEl1 */
+        if (stickyEl1) {
+          const t     = clamp(s1.hSmooth / VW, 0, 2.9999);
+          const idx   = Math.floor(t);
+          const local = t - idx;
+          /* Dissolve window: 28 %–72 % of each panel (tight cinematic blend) */
+          const blend = clamp((local - 0.28) / 0.44, 0, 1);
+          const eb    = ss(blend);
+          const ni    = Math.min(idx + 1, 3);
+
+          const bg  = panelBg[idx].map( (v, i) => Math.round(v + (panelBg[ni][i]  - v) * eb));
+          const txt = panelText[idx].map((v, i) => Math.round(v + (panelText[ni][i] - v) * eb));
+          stickyEl1.style.setProperty('--q-bg',  `rgb(${bg.join(',')})`);
+          stickyEl1.style.setProperty('--q-fg',  `rgb(${txt.join(',')})`);
+        }
       }
 
-      /* 5 ─ Hero title scroll parallax
-             --hero-scroll-p drives BlurTitle's CSS transform/opacity.
-             Ramps 0→1 over the first 70 % of the hero so the title
-             fades out before the user fully leaves the section.      */
+      /* 7 ─ GSAP scale pulse on lock-change (entry/exit cinematic beat) */
+      if (locked !== prevLocked) {
+        if (locked === s1 && track1) {
+          gsap.fromTo(track1,
+            { scale: 1.014 },
+            { scale: 1, duration: 0.70, ease: 'power3.out', overwrite: true }
+          );
+        }
+        if (prevLocked === s1 && locked === null && track1) {
+          gsap.fromTo(track1,
+            { scale: 0.988 },
+            { scale: 1, duration: 0.55, ease: 'power2.out', overwrite: true }
+          );
+        }
+        prevLocked = locked;
+      }
+
+      /* 8 ─ Hero parallax */
       if (heroDocBot > heroDocTop) {
         const heroLen = (heroDocBot - heroDocTop) * 0.70;
-        const heroP   = Math.max(0, Math.min(1, (sy - heroDocTop) / heroLen));
+        const heroP   = clamp((sy - heroDocTop) / heroLen, 0, 1);
         document.documentElement.style.setProperty('--hero-scroll-p', heroP.toFixed(3));
       }
 
-      /* 6 ─ Navbar */
-      const inQ        = locked !== null;
-      const heroTopVP  = heroDocTop - sy;
-      const heroBotVP  = heroDocBot - sy;
-      const inHero     = heroTopVP < vh * 0.15 && heroBotVP > vh * 0.45;
+      /* 9 ─ Navbar */
+      const inQ       = locked !== null;
+      const heroTopVP = heroDocTop - sy;
+      const heroBotVP = heroDocBot - sy;
+      const inHero    = heroTopVP < vh * 0.15 && heroBotVP > vh * 0.45;
 
       if      (inHero)       { navbarVisible = true;  navbarFixed = true; }
       else if (inQ)          { navbarVisible = false; }
@@ -266,52 +319,41 @@
 
     /* ── Input helpers ───────────────────────────────────────────── */
     function applyDelta(delta: number) {
-      /* If locked: redirect delta to horizontal, keep vertical frozen */
       if (locked !== null) {
-        const s = locked;
-
-        /* Scrolling left / up at the Q1 edge → exit backward */
-        if (s.hTarget <= 0 && delta < 0) {
+        /* Backward exit at left edge */
+        if (s1.hTarget <= 0 && delta < 0) {
           locked  = null;
-          vTarget = clamp(s.top + delta, 0, maxScroll());
+          blurSpike();
+          vTarget = clamp(s1.top + delta, 0, maxScroll());
           return;
         }
-        /* Scrolling right / down past the last panel → exit forward.
-           Snap vSmooth past the shell range so tryLock can't re-lock.
-           Zone-flash hides the snap and creates a cinematic dissolve
-           as the page transitions back to vertical scroll.           */
-        if (s.hTarget >= s.slide && delta > 0) {
-          locked    = null;
-          blurShell(s);
-          const exitPos = s.top + s.slide + 1;
-          vSmooth       = exitPos;
-          vPrev         = exitPos;
+        /* Forward exit past last panel */
+        if (s1.hTarget >= s1.slide && delta > 0) {
+          locked  = null;
+          blurSpike();
+          const exitPos = s1.top + s1.slide + 1;
+          vSmooth = exitPos;
+          vPrev   = exitPos;
           window.scrollTo({ top: exitPos, behavior: 'instant' });
-          vTarget       = clamp(exitPos + delta, 0, maxScroll());
+          vTarget = clamp(exitPos + delta, 0, maxScroll());
           return;
         }
-        /* Still inside → advance/retreat horizontal */
-        s.hTarget = clamp(s.hTarget + delta, 0, s.slide);
+        s1.hTarget = clamp(s1.hTarget + delta, 0, s1.slide);
         return;
       }
 
-      /* Vertical: check if delta would land inside a shell.
-         Guard with vSmooth < s.top so we never re-lock a shell
-         we already exited forward. */
+      /* Vertical — intercept if delta would land inside the shell */
       const projected = vSmooth + delta;
-      for (const s of [s1, s2] as S[]) {
-        if (s.slide > 0 && vSmooth < s.top && projected >= s.top && delta > 0) {
-          /* About to enter — lock immediately */
-          const excess  = projected - s.top;
-          s.hTarget     = clamp(excess, 0, s.slide);
-          s.hSmooth     = 0;
-          locked        = s;
-          vTarget       = s.top;
-          vSmooth       = s.top;
-          window.scrollTo({ top: s.top, behavior: 'instant' });
-          blurShell(s);
-          return;
-        }
+      if (s1.slide > 0 && vSmooth < s1.top && projected >= s1.top && delta > 0) {
+        const excess = projected - s1.top;
+        s1.hTarget   = clamp(excess, 0, s1.slide);
+        s1.hSmooth   = 0;
+        locked       = s1;
+        vTarget      = s1.top;
+        vSmooth      = s1.top;
+        window.scrollTo({ top: s1.top, behavior: 'instant' });
+        blurSpike();
+        return;
       }
 
       vTarget = clamp(vTarget + delta, 0, maxScroll());
@@ -336,7 +378,7 @@
     /* ── Keyboard ────────────────────────────────────────────────── */
     const handleKeydown = (e: KeyboardEvent) => {
       const map: Record<string, number> = {
-        ArrowDown:  80,  ArrowUp:  -80,
+        ArrowDown:  80, ArrowUp:  -80,
         PageDown:   window.innerHeight * 0.85,
         PageUp:    -window.innerHeight * 0.85,
         ' ':        window.innerHeight * 0.85,
@@ -349,7 +391,7 @@
       applyDelta(d);
     };
 
-    /* ── External scroll sync (a11y / tab focus) ─────────────────── */
+    /* ── External scroll sync ────────────────────────────────────── */
     const handleScroll = () => {
       if (locked !== null) return;
       if (Math.abs(window.scrollY - Math.round(vSmooth)) > 2) {
@@ -367,10 +409,11 @@
     };
 
     /* ── Resize ──────────────────────────────────────────────────── */
-    const handleResize = () => { locked = null; setup(); };
+    const handleResize = () => { locked = null; cacheSpans(); setup(); };
 
     /* ── Init ────────────────────────────────────────────────────── */
     requestAnimationFrame(() => {
+      cacheSpans();
       setup();
       rafId = requestAnimationFrame(tick);
     });
@@ -447,17 +490,17 @@
     </section>
 
     <!--
-      ══ H-SHELL 1 — Q1 (lime, left) + Q2 (dark, right) ══════════
-      Scrub: scrollY − shellTop drives translateX via RAF lerp.
-      Shell height = 100vh + 100vw (one panel of slide).
-      Sticky pins immediately at top:0 — no entry margin.
+      ══ SINGLE HORIZONTAL SHELL — Q1 → Q2 → Q3 → Q4 ═════════════
+      All 4 questions in one continuous track.
+      Shell height = 100vh + 3 × 100vw (4 panels, 3 widths of slide).
+      Color dissolve and per-frame content animation driven from JS.
     -->
     <div class="question-shell" bind:this={shell1}>
-      <div class="question-sticky">
+      <div class="question-sticky" bind:this={stickyEl1}>
         <div class="question-track" bind:this={track1}>
 
           <section class="question question--left question--lime">
-            <h2>
+            <h2 bind:this={q1h2}>
               <span class="accent">MA </span>
               <span class="ghost">CHI SONO </span>
               <span class="accent">DAVVERO</span><br />
@@ -466,10 +509,24 @@
           </section>
 
           <section class="question question--right question--dark">
-            <h2>
+            <h2 bind:this={q2h2}>
               <span class="ghost">PERCHÉ </span>
               <span class="accent">HANNO DECISO</span><br />
               <span class="accent">DI CANDIDARSI?</span>
+            </h2>
+          </section>
+
+          <section class="question question--left question--lime">
+            <h2 bind:this={q3h2}>
+              <span class="ghost">COSA FACEVANO</span><br />
+              <span class="accent">CONCRETAMENTE?</span>
+            </h2>
+          </section>
+
+          <section class="question question--right question--dark">
+            <h2 bind:this={q4h2}>
+              <span class="accent">NE È VALSA LA PENA?</span><br />
+              <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
             </h2>
           </section>
 
@@ -478,37 +535,9 @@
       </div>
     </div>
 
-    <!--
-      ══ H-SHELL 2 — Q3 (lime, left) + Q4 (dark, right) ══════════
-      margin-top on .question-shell provides the vertical scroll gap
-      between shell1 and shell2. Same scrub pattern, independent geometry.
-    -->
-    <div class="question-shell" bind:this={shell2}>
-      <div class="question-sticky">
-        <div class="question-track" bind:this={track2}>
-
-          <section class="question question--left question--lime">
-            <h2>
-              <span class="ghost">COSA FACEVANO</span><br />
-              <span class="accent">CONCRETAMENTE?</span>
-            </h2>
-          </section>
-
-          <section class="question question--right question--dark">
-            <h2>
-              <span class="accent">NE È VALSA LA PENA?</span><br />
-              <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
-            </h2>
-          </section>
-
-        </div>
-        <div class="question-blur-veil" bind:this={veil2}></div>
-      </div>
-    </div>
-
     <!-- ── Post-question (vertical resumes) ─────────────────────── -->
     <section class="story story--left story--summary"
-      use:blurReveal={{ direction: "left", threshold: 0.3 }}>
+      use:blurReveal={{ direction: "left", threshold: 0.25, blur: 36, duration: 1100, variant: "cinema" }}>
       <p>
         Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
         <a href="/gallery" class="accent archivio-link">archivio</a>.
@@ -543,5 +572,11 @@
   .archivio-link:hover {
     text-decoration: underline;
     text-underline-offset: 4px;
+  }
+
+  /* GSAP transforms require block/inline-block — spans are inline by default */
+  :global(.question h2 span) {
+    display: inline-block;
+    will-change: transform, opacity, filter;
   }
 </style>
