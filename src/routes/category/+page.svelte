@@ -56,10 +56,9 @@
   // ─── arc geometry constants ──────────────────────────────────────
   const ARC_R     = 4.1;   // cylinder radius — smaller = deeper curve
   const ARC_THETA = 0.25;  // angular step between card centres (radians)
-  const CARD_W    = 4.25;  // world-units — card width (square)
+  const CARD_W    = 4.25;  // world-units — card width
   const CARD_H    = 4.25;
 
-  // Side-mesh keeps the same footprint so the center image does not shrink
   const SIDE_W    = 4.9;
   const SIDE_H    = 4.9;
 
@@ -439,6 +438,7 @@
 >
   <canvas bind:this={canvasEl}></canvas>
 
+  <!-- Thin blurred strips of adjacent images at the very edges -->
   <div class="edge-panel edge-panel--left" aria-hidden="true"
     style={`background-image: url('${previousCategory?.image ?? ''}')`}
   ></div>
@@ -590,17 +590,17 @@
     transform: scaleX(1.18);
   }
 
-.edge-panel--left::after {
-  left: 0;
-  width: 24%; 
-  background: linear-gradient(90deg,rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.32) 18%, rgba(0, 0, 0, 0.12) 38%, rgba(0, 0, 0, 0) 58%,rgba(0, 0, 0, 0.35) 78%,rgba(0, 0, 0, 0.82) 100%);
+  .edge-panel--left::after {
+    left: 0;
+    width: 24%;
+    background: linear-gradient(90deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.32) 18%,rgba(0,0,0,0.12) 38%,rgba(0,0,0,0) 58%,rgba(0,0,0,0.35) 78%,rgba(0,0,0,0.82) 100%);
   }
 
-.edge-panel--right::after {
-  right: 0;
-  width: 24%; 
-  background: linear-gradient(270deg,rgba(0, 0, 0, 0.55) 0%,rgba(0, 0, 0, 0.32) 18%,rgba(0, 0, 0, 0.12) 38%,rgba(0, 0, 0, 0) 58%,rgba(0, 0, 0, 0.35) 78%,rgba(0, 0, 0, 0.82) 100%);
-}
+  .edge-panel--right::after {
+    right: 0;
+    width: 24%;
+    background: linear-gradient(270deg,rgba(0,0,0,0.55) 0%,rgba(0,0,0,0.32) 18%,rgba(0,0,0,0.12) 38%,rgba(0,0,0,0) 58%,rgba(0,0,0,0.35) 78%,rgba(0,0,0,0.82) 100%);
+  }
 
   .curve-frame {
     position: absolute;

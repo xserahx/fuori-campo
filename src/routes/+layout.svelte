@@ -19,6 +19,22 @@
 		);
 	});
 
+	/* Keep html { zoom } in sync with the actual viewport width.
+	   The initial value is set synchronously in app.html <head>.
+	   On resize: window.innerWidth returns CSS pixels in the current
+	   zoom space, so multiply by current zoom to recover physical width,
+	   then recompute. Math: physical = innerWidth × zoom, newZoom = physical / 1728. */
+	$effect(() => {
+		if (!browser) return;
+		const update = () => {
+			const zoom = parseFloat(document.documentElement.style.zoom) || 1;
+			const physicalWidth = window.innerWidth * zoom;
+			document.documentElement.style.zoom = String(physicalWidth / 1728);
+		};
+		window.addEventListener('resize', update, { passive: true });
+		return () => window.removeEventListener('resize', update);
+	});
+
 
 	// Loading intro: show once per session with a clear volunteer portrait for preview
 	let showIntro = $state(false);

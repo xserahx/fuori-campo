@@ -5,6 +5,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<title>Fuori campo</title>
+		<!-- Zoom the root element so every pixel, vw, vh, and fixed position
+		     operates in the 1728×1117 Figma reference frame on every device.
+		     Set synchronously before first paint — no layout shift.         -->
+		<script>try{document.documentElement.style.zoom=(window.innerWidth/1728).toString()}catch(e){}</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

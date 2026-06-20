@@ -14,13 +14,13 @@
     top: 50%;
     left: 50%;
     transform:
-      translate(-50%, calc(-50% - var(--hero-scroll-p, 0) * 52px))
+      translate(-50%, calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)))
       scale(calc(1 - var(--hero-scroll-p, 0) * 0.06));
     opacity: calc(1 - var(--hero-scroll-p, 0) * 1.6);
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: min(1083px, 94vw);
+    width: 1083px;
     max-width: 100vw;
     user-select: none;
     pointer-events: none;
@@ -32,8 +32,8 @@
   .campo {
     display: block;
     font-family: var(--font-display);
-    font-size:   clamp(120px, 20vw, 300px);
-    line-height: clamp(100px, 16.7vw, 250px);
+    font-size:   300px;
+    line-height: 250px;
     font-weight: 800;
     letter-spacing: -0.02em;
     text-transform: uppercase;

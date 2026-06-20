@@ -1,4 +1,7 @@
 :root {
+  /* ── Colors ─────────────────────────────────────────────────────
+     Scale-invariant — never multiplied by zoom.                   */
+
   /* Background */
   --color-background-primary:     #0e0e0e;              /* Color/Background/Primary     */
   --color-background-transparent: rgba(26, 26, 26, 0);  /* Color/Background/Transparent */
@@ -11,91 +14,81 @@
   --color-content-primary:    #202426;  /* Color/Content/primary                  */
 
   /* Links */
-  --color-link-selected: #bdff5d;  /* Color/Link/Selected */
-  --color-link-default:  #fafafa;  /* Color/Link/Default  */
-  --color-link-hover:    #fafafa;  /* Color/Link/Hover    */
+  --color-link-selected: #bdff5d;
+  --color-link-default:  #fafafa;
+  --color-link-hover:    #fafafa;
 
   /* Backward-compat aliases */
-  --color-content-title: var(--color-content-accent);   
+  --color-content-title: var(--color-content-accent);
   --gallery-background:  var(--color-background-primary);
   --gallery-overlay:     rgba(14, 14, 14, 0.5);
   --gallery-text:        var(--color-content-body);
   --gallery-accent:      var(--color-content-accent);
 
-   /* TYPOGRAPHY  (Figma: Font/Main font + named text styles) */ 
-  
-   
---font-display: "forma-djr-display", sans-serif;
-  /* Scrolling — body / story paragraphs
-    Medium 500 · 64 px · lh 64 px · ls 0
-    Responsive: scales from 32 px at 800 px viewport to 64 px at 1524 px+ */
-  --ts-scrolling-size:           clamp(32px, 4.2vw, 64px);
+  /* ── Typography  (Figma exact values at 1728 px reference) ─────
+     html { zoom } scales the entire coordinate space, so these are
+     the raw Figma px values — no calc() wrappers needed.          */
+
+  --font-display: "forma-djr-display", sans-serif;
+
+  /* Scrolling — body / story  (Medium 500 · 64 px · lh 64 px) */
+  --ts-scrolling-size:           64px;
   --ts-scrolling-weight:         500;
-  --ts-scrolling-line-height:    clamp(32px, 4.2vw, 64px);
+  --ts-scrolling-line-height:    64px;
   --ts-scrolling-letter-spacing: 0em;
 
-  /* H3 | Quotes + Answers + mini categorie
-    Medium 500 · 36 px · lh 100% · ls 2% (0.72 px) */
-  --ts-h3-size:           clamp(18px, 2.5vw, 36px);
+  /* H3 — quotes, labels  (Medium 500 · 36 px · lh 100% · ls 0.72 px) */
+  --ts-h3-size:           36px;
   --ts-h3-weight:         500;
   --ts-h3-line-height:    1;
   --ts-h3-letter-spacing: 0.72px;
 
-  /* Scrollitelling — question headings on lime panel
-    Extra Bold 800 · 116 px · lh 106 px · ls 0
-    Responsive: scales from 52 px at ~700 px viewport to 116 px at 1547 px+ */
-  --ts-scrollitelling-size:           clamp(52px, 7.5vw, 116px);
+  /* Scrollitelling — question headings  (ExtraBold 800 · 116 px · lh 106 px) */
+  --ts-scrollitelling-size:           116px;
   --ts-scrollitelling-weight:         800;
-  --ts-scrollitelling-line-height:    clamp(48px, 6.9vw, 106px);
+  --ts-scrollitelling-line-height:    106px;
   --ts-scrollitelling-letter-spacing: 0em;
 
-  /* Filter + Domande — category filters, small labels
-    Medium 500 · 20 px · lh 100% · ls 0 */
+  /* Filter + labels  (Medium 500 · 20 px) */
   --ts-filter-size:           20px;
   --ts-filter-weight:         500;
   --ts-filter-line-height:    1;
   --ts-filter-letter-spacing: 0em;
 
-  /* Navigation — FOTO / NOMI toggle labels
-    Bold 700 · 16 px · lh 100% · ls 0 */
+  /* Navigation toggles  (Bold 700 · 16 px) */
   --ts-navigation-size:           16px;
   --ts-navigation-weight:         700;
   --ts-navigation-line-height:    1;
   --ts-navigation-letter-spacing: 0em;
 
-  /* Top-bar nav links — from TopBar component (Medium · 24 px · lh 26 px)
-    Note: overrides the "Navigation" text style; unit is Unit/24 */
+  /* Top-bar nav links  (Medium 500 · 24 px · lh 26 px) */
   --ts-nav-link-size:           24px;
   --ts-nav-link-weight:         500;
   --ts-nav-link-line-height:    26px;
   --ts-nav-link-letter-spacing: 0em;
 
-  /* ----------------------------------------------------------
-   * UNIT SCALE  (Figma: Unit/*)
-   * ---------------------------------------------------------- */
-  --unit-16:  16px;   /* Unit/16  */
-  --unit-20:  20px;   /* Unit/20  */
-  --unit-24:  24px;   /* Unit/24  */
-  --unit-36:  36px;   /* Unit/36  */
-  --unit-64:  64px;   /* Unit/64  */
-  --unit-116: 116px;  /* Unit/116 */
-
-  /* Extended — implementation use only */
+  /* ── Unit scale  (Figma: Unit/*) ─────────────────────────────── */
   --unit-0:   0px;
   --unit-1:   1px;
   --unit-2:   2px;
   --unit-4:   4px;
   --unit-8:   8px;
   --unit-12:  12px;
+  --unit-16:  16px;   /* Unit/16  */
+  --unit-20:  20px;   /* Unit/20  */
+  --unit-24:  24px;   /* Unit/24  */
   --unit-32:  32px;
+  --unit-36:  36px;   /* Unit/36  */
   --unit-40:  40px;
   --unit-48:  48px;
   --unit-56:  56px;
+  --unit-64:  64px;   /* Unit/64  */
   --unit-68:  68px;
   --unit-72:  72px;
   --unit-76:  76px;
   --unit-80:  80px;
   --unit-84:  84px;
+  --unit-116: 116px;  /* Unit/116 */
   --unit-160: 160px;
   --unit-200: 200px;
   --unit-300: 300px;
@@ -103,25 +96,19 @@
   --unit-500: 500px;
   --unit-999: 999px;
 
-  /* ----------------------------------------------------------
-   * SPACING SCALE  (Figma: Spacing/*)
-   * ---------------------------------------------------------- */
-
-  /* Figma-defined */
-  --spacing-0:  0px;   /* Spacing/0  */
-  --spacing-1:  4px;   /* Spacing/1  */
-  --spacing-5:  24px;  /* Spacing/5  */
-  --spacing-6:  32px;  /* Spacing/6  */
-  --spacing-7:  40px;  /* Spacing/7  */
-  --spacing-8:  48px;  /* Spacing/8  */
-  --spacing-9:  72px;  /* Spacing/9  */
-  --spacing-10: 64px;  /* Spacing/10 */
-  --spacing-11: 72px;  /* Spacing/11 */
-
-  /* Extended — implementation use only */
+  /* ── Spacing scale  (Figma: Spacing/*) ──────────────────────── */
+  --spacing-0:  0px;
+  --spacing-1:  4px;    /* Spacing/1  */
   --spacing-2:  8px;
   --spacing-3:  12px;
   --spacing-4:  16px;
+  --spacing-5:  24px;   /* Spacing/5  */
+  --spacing-6:  32px;   /* Spacing/6  */
+  --spacing-7:  40px;   /* Spacing/7  */
+  --spacing-8:  48px;   /* Spacing/8  */
+  --spacing-9:  72px;   /* Spacing/9  */
+  --spacing-10: 64px;   /* Spacing/10 */
+  --spacing-11: 72px;   /* Spacing/11 */
   --spacing-12: 80px;
   --spacing-13: 160px;
   --spacing-14: 200px;
@@ -129,24 +116,15 @@
   --spacing-18: 395px;
   --spacing-19: 500px;
 
-  /* ----------------------------------------------------------
-   * RADIUS  (Figma: Radius/*)
-   * ---------------------------------------------------------- */
+  /* ── Radius  (Figma: Radius/*) ─────────────────────────────── */
+  --radius-l:            24px;     /* Radius/L — pill container */
+  --radius-m:            16px;     /* Radius/M — pill active    */
+  --radius-rounded-pill: 53.5px;   /* toggle outer              */
 
-  --radius-l:            24px;    /* Radius/L — pill container */
-  --radius-m:            16px;    /* Radius/M — pill active    */
-  --radius-rounded-pill: 53.5px;  /* toggle outer — implementation */
+  /* ── Stroke  (Figma: Stroke/*) ─────────────────────────────── */
+  --stroke-1: 2px;   /* Stroke/1 */
 
-  /* ----------------------------------------------------------
-   * STROKE  (Figma: Stroke/*)
-   * ---------------------------------------------------------- */
-
-  --stroke-1: 2px;  /* Stroke/1 */
-
-  /* ----------------------------------------------------------
-   * LAYOUT & COMPONENT TOKENS  (derived from Figma artboard)
-   * ---------------------------------------------------------- */
-
+  /* ── Layout & component tokens ─────────────────────────────── */
   --navbar-height:         125px;
   --max-width:             1100px;
   --gallery-navbar-offset: 143px;
@@ -154,9 +132,10 @@
   --gallery-shell-z:       2;
 
   /* Artboard-derived layout distances */
-  --story-numbers-gap: var(--unit-300);
-  --hero-to-lead:      calc(var(--spacing-13) + 469px);
-  --hero-top-gap:      144px;
+  --story-numbers-gap:   var(--unit-300);
+  --hero-to-lead:        629px;   /* spacing-13 (160) + 469 */
+  --hero-top-gap:        144px;
+  --hero-parallax-shift: 52px;    /* scroll-driven title drift */
 
   /* Story / quote section widths */
   --figma-story-width:      857px;
@@ -169,24 +148,20 @@
   --figma-hero-top:         224px;
   --figma-title-height:     500px;
   --figma-title-weight:     800;
-  --figma-title-size:       clamp(132px, 17vw, 260px);
-  --figma-title-lineheight: clamp(110px, 14vw, 210px);
+  --figma-title-size:       260px;
+  --figma-title-lineheight: 210px;
 
-  /* Question section artboard positions */
+  /* Artboard reference positions — documentation only */
   --figma-quote-container-top: 2409px;
   --figma-story-container-top: 1353px;
   --question-1-top:            3529px;
   --question-2-top:            4241px;
   --question-3-top:            4953px;
   --question-4-top:            5665px;
-
-  /* Question horizontal offsets (Figma) */
   --question-left-1: 0px;
   --question-left-2: 335px;
   --question-left-3: 0px;
   --question-left-4: 533px;
-
-  /* Post-question artboard positions */
   --figma-summary-top: 6164px;
   --figma-scroll-top:  6821px;
   --quote-grid-height: 540px;
@@ -212,11 +187,6 @@
   --gallery-offset-5: 18px;
   --gallery-offset-6: 56px;
 }
-
-/* ================================================================
- * FONT FACES
- * Add WOFF2 files to static/fonts/ and restore @font-face rules.
- * ================================================================ */
 
 /* ================================================================
  * GLOBAL RESET & BASE
@@ -323,7 +293,7 @@ body::-webkit-scrollbar,
 .nav-links {
   position: relative;
   display: flex;
-  gap: var(--spacing-6);          /* 32 px  — Spacing/6 */
+  gap: var(--spacing-6);
   align-items: center;
   margin-left: auto;
   justify-content: flex-end;
@@ -334,16 +304,16 @@ body::-webkit-scrollbar,
   color: var(--color-link-default);
   text-transform: uppercase;
   font-family: var(--font-display);
-  font-size:   var(--ts-nav-link-size);    /* 24 px */
-  font-weight: var(--ts-nav-link-weight);  /* 500   */
-  line-height: var(--ts-nav-link-line-height); /* 26 px */
-  letter-spacing: var(--ts-nav-link-letter-spacing);
+  font-size:        var(--ts-nav-link-size);
+  font-weight:      var(--ts-nav-link-weight);
+  line-height:      var(--ts-nav-link-line-height);
+  letter-spacing:   var(--ts-nav-link-letter-spacing);
   text-decoration: none;
   opacity: 0.78;
   transition:
-    color   220ms cubic-bezier(.2, 1, .3, 1),
+    color    220ms cubic-bezier(.2, 1, .3, 1),
     transform 220ms cubic-bezier(.2, 1, .3, 1),
-    opacity 160ms ease;
+    opacity  160ms ease;
   transform: translateY(0);
 }
 
@@ -362,20 +332,6 @@ body::-webkit-scrollbar,
 }
 
 .nav-underline { display: none; }
-
-/* Small laptop — tighten horizontal padding, slightly smaller nav text */
-@media (max-width: 1100px) {
-  .navbar    { padding: var(--spacing-5) var(--spacing-8); }  /* 24px 48px */
-  .nav-links { gap: 24px; }
-  .nav-link  { font-size: 20px; }
-}
-
-@media (max-width: 900px) {
-  .navbar     { padding: var(--spacing-4) var(--spacing-5); }  /* 16px 24px */
-  .logo img   { height: 48px; width: auto; }
-  .nav-links  { gap: 20px; }
-  .nav-link   { font-size: 14px; }
-}
 
 /* ================================================================
  * LANDING PAGE LAYOUT
@@ -407,7 +363,7 @@ body::-webkit-scrollbar,
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(clamp(-72px, -5vw, -32px));
+  transform: translateY(-72px);
 }
 
 /* ================================================================
@@ -501,23 +457,14 @@ body::-webkit-scrollbar,
 .accent { color: var(--color-content-accent); }
 
 /* ================================================================
- * QUESTION SECTION  (sticky horizontal scroll — Scrollitelling style)
+ * QUESTION SECTION  (sticky horizontal scroll)
  * ================================================================ */
 
-/* ── GSAP-style scrub horizontal scroll shells ──────────────────────
-   Two independent shells: H1 = Q1+Q2,  H2 = Q3+Q4.
-   JS sets each shell's height = 100vh + totalSlide (1 × 100vw).
-   The margin-top between shells provides the vertical-scroll interlude
-   between the two horizontal zones.                                   */
-
-/* 1 ▸ Shell — position:relative; height driven entirely by JS */
 .question-shell {
   position: relative;
-  margin-top: 346px;   /* breathing room above each shell (Figma gap) */
+  margin-top: 346px;
 }
 
-/* 2 ▸ Sticky lens — pins to viewport; background driven by JS via --q-bg.
-        No CSS transition — the RAF lerp + smoothstep handle all easing. */
 .question-sticky {
   position: sticky;
   top: 0;
@@ -526,10 +473,6 @@ body::-webkit-scrollbar,
   background: var(--q-bg, var(--color-content-accent));
 }
 
-/* Blur-veil — absolute overlay above the track.
-   JS writes backdrop-filter each RAF frame: spikes on V↔H transitions
-   then decays, plus a velocity-proportional component while scrolling
-   between panels. Pointer-events disabled so clicks pass through.   */
 .question-blur-veil {
   position: absolute;
   inset: 0;
@@ -537,7 +480,6 @@ body::-webkit-scrollbar,
   z-index: 2;
 }
 
-/* 3 ▸ Track — no CSS transition; RAF lerp in JS handles smoothness */
 .question-track {
   display: flex;
   flex-direction: row;
@@ -545,9 +487,6 @@ body::-webkit-scrollbar,
   will-change: transform;
 }
 
-/* 4 ▸ Individual panels — each owns one viewport width.
-   ── Colour tokens set per variant (.question--lime / .question--dark)
-      and consumed by h2, .accent, .ghost children.                    */
 .question {
   width: 100vw;
   height: 100%;
@@ -555,53 +494,43 @@ body::-webkit-scrollbar,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 var(--spacing-11);        /* 72 px sides */
+  padding: 0 var(--spacing-11);
   box-sizing: border-box;
 }
 
-/* ── Panel variants ─────────────────────────────────────────────────
-   Background and text color are both JS-driven via --q-bg / --q-fg
-   on the parent .question-sticky. Panels only own alignment.        */
-/* Panel variants: only carry layout/alignment tokens.
-   Background lives on .question-sticky (JS-driven via --q-bg).
-   Text color is unified to --q-fg set by JS on .question-sticky. */
 .question--lime { --q-align: flex-start; }
 .question--dark { --q-align: flex-end;   }
 
 .question h2 {
   font-family:    var(--font-display);
-  font-size:      var(--ts-scrollitelling-size);        /* 116 px → clamp */
-  font-weight:    var(--ts-scrollitelling-weight);      /* 800    */
-  line-height:    var(--ts-scrollitelling-line-height); /* 106 px → clamp */
+  font-size:      var(--ts-scrollitelling-size);
+  font-weight:    var(--ts-scrollitelling-weight);
+  line-height:    var(--ts-scrollitelling-line-height);
   letter-spacing: var(--ts-scrollitelling-letter-spacing);
   text-transform: uppercase;
-  /* --q-fg interpolated by JS; fallbacks for SSR/no-JS */
   color: var(--q-fg, var(--color-content-body-black));
   margin: 0;
 }
 
-/* Unified colour for all text nodes inside questions */
 .question .accent { color: var(--q-fg, var(--color-content-body-black)); }
 
-/* Ghost stroke follows the same interpolated --q-fg */
 .question .ghost {
   -webkit-text-stroke-color: var(--q-fg, var(--color-content-body-black));
 }
 
-.question--right              { align-items: flex-end; }
-.question--right h2           { text-align: right; }
+.question--right    { align-items: flex-end; }
+.question--right h2 { text-align: right; }
 
-/* Ghost text — outline-only letterforms; stroke colour from panel token */
 .ghost {
   color: transparent;
   -webkit-text-fill-color: transparent;
   -webkit-text-stroke: var(--stroke-1) var(--ghost-stroke, var(--color-content-body-black));
 }
 
-/* ── Scroll-cue label (Figma: H3 36px, accent, ls 0.72px) ─────────── */
+/* ── Scroll-cue label ───────────────────────────────────────────── */
 .scroll-cue-label {
   margin: 0;
-  letter-spacing: var(--ts-h3-letter-spacing);   /* 0.72px */
+  letter-spacing: var(--ts-h3-letter-spacing);
   text-align: center;
 }
 
@@ -617,8 +546,8 @@ body::-webkit-scrollbar,
   gap: 10px;
   color: var(--color-content-accent);
   font-family: var(--font-display);
-  font-size:   var(--ts-h3-size);    /* 36 px */
-  font-weight: var(--ts-h3-weight);  /* 500   */
+  font-size:   var(--ts-h3-size);
+  font-weight: var(--ts-h3-weight);
   line-height: var(--ts-h3-line-height);
   text-align: center;
 }
@@ -658,83 +587,7 @@ body::-webkit-scrollbar,
 }
 
 /* ================================================================
- * RESPONSIVE
- * ================================================================ */
-
-/* ── Small laptop (1024–1280 px) ──────────────────────────────── */
-@media (max-width: 1280px) {
-  .story,
-  .scroll-cue,
-  .gallery {
-    padding-left:  48px;
-    padding-right: 48px;
-  }
-
-  .question { padding: 0 48px; }
-
-  .story--left,
-  .story--right {
-    max-width: min(var(--figma-story-width), 88vw);
-  }
-
-  .question-shell  { margin-top: 200px; }
-}
-
-/* ── Compact laptop / large tablet (≤1100 px) ─────────────────── */
-@media (max-width: 1100px) {
-  .story,
-  .scroll-cue,
-  .gallery {
-    padding-left:  32px;
-    padding-right: 32px;
-  }
-
-  .question { padding: 0 32px; }
-
-  .story--right { margin-top: 48px; }
-
-  .story--quote-left  { margin-top: 200px; }
-  .story--quote-right { margin-top: 200px; }
-
-  .question-shell  { margin-top: 140px; }
-}
-
-/* ── Tablet / small (≤900 px) ─────────────────────────────────── */
-@media (max-width: 900px) {
-  .hero-outer {
-    min-height: calc(100svh - 112px);
-    padding: 72px 16px 48px;
-  }
-
-  .story,
-  .scroll-cue,
-  .gallery {
-    padding-left:  16px;
-    padding-right: 16px;
-  }
-
-  /* Question panels keep full-width but shrink the side padding */
-  .question {
-    padding: 0 16px;
-  }
-
-  .story--right    { margin-top: 32px; }
-
-  .story--quote-left,
-  .story--quote-right {
-    margin-top:    32px;
-    padding-left:  0;
-    padding-right: 0;
-    text-align:    left;
-  }
-
-  .scroll-cue { font-size: 24px; }
-
-  .gallery { padding-top: 80px; padding-bottom: 120px; }
-}
-
-/* ================================================================
- * PAGE TRANSITIONS  (View Transitions API — progressive enhancement)
+ * PAGE TRANSITIONS  (View Transitions API)
  * ================================================================ */
 
 @keyframes vt-out { to   { opacity: 0; } }

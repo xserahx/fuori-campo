@@ -126,7 +126,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: clamp(18px, 2.8vh, 36px);
+    gap: 36px;
     background: #0e0e0e;
     pointer-events: none;
     overflow: hidden;
@@ -158,7 +158,7 @@
   /* ── Mosaic ───────────────────────────────────────────────────── */
   .mosaic {
     position: relative;
-    --t: clamp(54px, 9.2vw, 106px);
+    --t: 106px;
     width:  calc(var(--cols) * var(--t));
     height: calc(var(--rows) * var(--t));
   }
@@ -198,7 +198,7 @@
   .pct {
     display: block;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size:   clamp(10px, 1vw, 13px);
+    font-size:   13px;
     font-weight: 400;
     letter-spacing: 0.14em;
     color: rgba(250, 250, 250, 0.48);

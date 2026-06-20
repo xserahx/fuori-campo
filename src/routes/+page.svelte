@@ -34,10 +34,11 @@
   /* ── DOM refs ────────────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
   // Single continuous horizontal shell — all 4 questions in one track
-  let shell1:    HTMLElement | null = null;
-  let stickyEl1: HTMLElement | null = null;  // sticky lens — receives --q-bg/--q-fg
-  let track1:    HTMLElement | null = null;
-  let veil1:     HTMLElement | null = null;
+  let shell1:           HTMLElement | null = null;
+  let stickyEl1:        HTMLElement | null = null;  // sticky lens — receives --q-bg/--q-fg
+  let track1:           HTMLElement | null = null;
+  let veil1:            HTMLElement | null = null;
+  let transitionOverlay: HTMLElement | null = null;  // fixed dissolve overlay for H→V exit
 
   // Question panel h2 refs — per-frame content animation targets
   let q1h2: HTMLElement | null = null;
@@ -145,6 +146,12 @@
       );
     }
 
+    /* ── Dissolve gate — freezes tick during H→V transition ─────── */
+    let dissolving = false;
+
+    /* ── Horizontal velocity — direction-aware blur ──────────────── */
+    let hPrevH = 0;
+
     /* ── Lock-change detection for GSAP entry/exit pulse ─────────── */
     let prevLocked: typeof locked = null;
 
@@ -200,6 +207,9 @@
 
     /* ── RAF tick ────────────────────────────────────────────────── */
     const tick = () => {
+      /* 0 ─ Dissolve gate — overlay covers the viewport; pause scroll */
+      if (dissolving) { rafId = requestAnimationFrame(tick); return; }
+
       /* 1 ─ Vertical LERP */
       vSmooth      = lerp(vSmooth, vTarget, LERP);
       const vDelta = vSmooth - vPrev;
@@ -230,6 +240,11 @@
         h1p = s1.hSmooth;
       }
 
+      /* Horizontal velocity — positive = moving right (forward), negative = backward */
+      const hVel      = s1.hSmooth - hPrevH;
+      hPrevH          = s1.hSmooth;
+      const goingBack = hVel < -0.6;  // meaningful backward motion threshold
+
       /* 5 ─ Per-frame panel content (scrub-reversible, no fire-once)
              Each span's opacity/blur/transform follows its panel's
              distance from the viewport centre — closer = more visible. */
@@ -254,9 +269,17 @@
               span.style.transform = 'none';
             } else {
               const inv = 1 - sv3;
-              span.style.opacity   = sv3.toFixed(3);
-              span.style.filter    = `blur(${(inv * 26).toFixed(1)}px)`;
-              span.style.transform = `translateY(${(inv * 36).toFixed(1)}px) scale(${(1 - inv * 0.06).toFixed(4)})`;
+              span.style.opacity = sv3.toFixed(3);
+              if (goingBack) {
+                /* Backward scroll: gentle fade only — no heavy blur/drift.
+                   Panels surface softly rather than re-performing their entry. */
+                span.style.filter    = inv > 0.02 ? `blur(${(inv * 4).toFixed(1)}px)` : '';
+                span.style.transform = `translateY(${(inv * 10).toFixed(1)}px) scale(${(1 - inv * 0.015).toFixed(4)})`;
+              } else {
+                /* Forward scroll: full cinematic entrance */
+                span.style.filter    = `blur(${(inv * 26).toFixed(1)}px)`;
+                span.style.transform = `translateY(${(inv * 36).toFixed(1)}px) scale(${(1 - inv * 0.06).toFixed(4)})`;
+              }
             }
           }
         }
@@ -278,19 +301,29 @@
         }
       }
 
-      /* 7 ─ GSAP scale pulse on lock-change (entry/exit cinematic beat) */
+      /* 7 ─ GSAP scale pulse on lock-change
+             Entry pulse: only when entering from the top (hSmooth near 0)
+             so re-entering from below at Q4 doesn't re-pulse Q4.
+             Exit pulse: only when the shell is still near the viewport
+             (backward exit), not after the dissolve overlay exit.     */
       if (locked !== prevLocked) {
         if (locked === s1 && track1) {
-          gsap.fromTo(track1,
-            { scale: 1.014 },
-            { scale: 1, duration: 0.70, ease: 'power3.out', overwrite: true }
-          );
+          const enteringFromTop = s1.hSmooth < s1.slide * 0.08;
+          if (enteringFromTop) {
+            gsap.fromTo(track1,
+              { scale: 1.014 },
+              { scale: 1, duration: 0.70, ease: 'power3.out', overwrite: true }
+            );
+          }
         }
         if (prevLocked === s1 && locked === null && track1) {
-          gsap.fromTo(track1,
-            { scale: 0.988 },
-            { scale: 1, duration: 0.55, ease: 'power2.out', overwrite: true }
-          );
+          const shellNearViewport = Math.abs(vSmooth - s1.top) < vh * 1.5;
+          if (shellNearViewport) {
+            gsap.fromTo(track1,
+              { scale: 0.988 },
+              { scale: 1, duration: 0.55, ease: 'power2.out', overwrite: true }
+            );
+          }
         }
         prevLocked = locked;
       }
@@ -327,15 +360,34 @@
           vTarget = clamp(s1.top + delta, 0, maxScroll());
           return;
         }
-        /* Forward exit past last panel */
+        /* Forward exit past last panel — cinematic dissolve overlay */
         if (s1.hTarget >= s1.slide && delta > 0) {
-          locked  = null;
+          locked     = null;
+          dissolving = true;
           blurSpike();
-          const exitPos = s1.top + s1.slide + 1;
-          vSmooth = exitPos;
-          vPrev   = exitPos;
-          window.scrollTo({ top: exitPos, behavior: 'instant' });
-          vTarget = clamp(exitPos + delta, 0, maxScroll());
+
+          const exitPos    = s1.top + s1.slide + 1;
+          const exitTarget = clamp(exitPos + delta, 0, maxScroll());
+
+          if (transitionOverlay) {
+            /* Fade overlay in → snap scroll position (hidden) → fade out */
+            gsap.timeline()
+              .to(transitionOverlay,    { opacity: 1, duration: 0.28, ease: 'power2.in' })
+              .call(() => {
+                vSmooth = exitPos;
+                vPrev   = exitPos;
+                vTarget = exitTarget;
+                window.scrollTo({ top: exitPos, behavior: 'instant' });
+              })
+              .to(transitionOverlay,    { opacity: 0, duration: 0.72, ease: 'power2.out', delay: 0.06 })
+              .call(() => { dissolving = false; });
+          } else {
+            vSmooth    = exitPos;
+            vPrev      = exitPos;
+            vTarget    = exitTarget;
+            window.scrollTo({ top: exitPos, behavior: 'instant' });
+            dissolving = false;
+          }
           return;
         }
         s1.hTarget = clamp(s1.hTarget + delta, 0, s1.slide);
@@ -362,6 +414,7 @@
     /* ── Wheel ───────────────────────────────────────────────────── */
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      if (dissolving) return;
       applyDelta(e.deltaY);
     };
 
@@ -370,6 +423,7 @@
     const handleTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
     const handleTouchMove  = (e: TouchEvent) => {
       e.preventDefault();
+      if (dissolving) return;
       const dy = touchY - e.touches[0].clientY;
       touchY   = e.touches[0].clientY;
       applyDelta(dy);
@@ -377,6 +431,7 @@
 
     /* ── Keyboard ────────────────────────────────────────────────── */
     const handleKeydown = (e: KeyboardEvent) => {
+      if (dissolving) return;
       const map: Record<string, number> = {
         ArrowDown:  80, ArrowUp:  -80,
         PageDown:   window.innerHeight * 0.85,
@@ -427,6 +482,8 @@
     window.addEventListener('resize',      handleResize,      { passive: true  });
 
     return () => {
+      dissolving = false;
+      if (transitionOverlay) gsap.killTweensOf(transitionOverlay);
       cancelAnimationFrame(rafId);
       window.removeEventListener('wheel',       handleWheel);
       window.removeEventListener('touchstart',  handleTouchStart);
@@ -450,6 +507,9 @@
 
 
 <div class="site">
+  <!-- Fixed overlay for cinematic H→V dissolve transition -->
+  <div class="transition-overlay" bind:this={transitionOverlay}></div>
+
   <main class="landing">
 
     <!-- ── Hero ────────────────────────────────────────────────── -->
@@ -578,5 +638,16 @@
   :global(.question h2 span) {
     display: inline-block;
     will-change: transform, opacity, filter;
+  }
+
+  /* Cinematic H→V exit overlay — fades in/out via GSAP to cover the scroll snap */
+  .transition-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    background: var(--color-background-primary, #0e0e0e);
+    opacity: 0;
+    will-change: opacity;
   }
 </style>
