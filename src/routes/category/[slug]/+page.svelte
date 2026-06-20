@@ -55,7 +55,7 @@
   const categorySummaries: Record<string, { eyebrow: string; subtitle: string; roles: SubRole[] }> = {
     relazioni: {
       eyebrow: 'COM = Communication',
-      subtitle: 'Sanno già cosa risponderti prima ancora che tu finisca la domanda.',
+      subtitle: 'Sanno già cosa risponderti prima\nancora che tu finisca la domanda.',
       roles: [
         {
           title: 'PRS = Press',
@@ -425,7 +425,8 @@
     display: flex;
     flex-direction: column;
     gap: 0;
-    padding: 8px var(--spacing-11) 0;
+    width: 100%;
+    padding: 20px 0;
   }
 
   .title-fill,
@@ -442,14 +443,15 @@
 
   .title-fill {
     color: var(--color-content-accent);
-    margin-left: 0;
+    margin-left: var(--spacing-11);
+    margin-bottom: -8px;
   }
 
   .title-outline {
     color: transparent;
     -webkit-text-stroke: clamp(1px, 0.14vw, 2px) var(--color-content-accent);
-    margin-left: clamp(56px, 9.8vw, 170px);
-    margin-top: -8px;
+    margin-left: 340px;
+    margin-top: 0;
   }
 
   /* SPORT title: shorter first word needs larger relative stagger */
