@@ -409,7 +409,7 @@
   .hero {
     width: min(100%, 1728px);
     margin: 0 auto;
-    margin-top: 26px;
+    margin-top: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -454,17 +454,16 @@
   }
 
   .hero-copy {
-    margin: 0;
-    width: min(1110px, calc(100% - var(--spacing-18) - var(--spacing-11)));
-    margin-left: auto;
-    margin-top: var(--unit-40);
-    padding: 0 var(--spacing-11) 0 0;
+    margin: 56px var(--spacing-11) 0 auto;
+    padding: 0;
+    width: 1318px;
+    max-width: calc(100% - var(--spacing-11) - 16px);
     text-align: right;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(34px, 4.9vw, 72px);
+    font-size: clamp(34px, 4.9vw, 84px);
     font-weight: 500;
-    line-height: 0.96;
-    letter-spacing: -0.04em;
+    line-height: 0.952;
+    letter-spacing: 0;
     white-space: pre-line;
     color: var(--color-content-body);
   }
@@ -479,21 +478,21 @@
     padding: 0 0 var(--spacing-7) var(--spacing-11);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-5);
+    gap: 16px;
   }
 
   .summary-top {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
-    width: min(665px, 100%);
+    width: min(780px, 100%);
   }
 
   .summary-meta {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: min(665px, 100%);
+    width: 100%;
   }
 
   .summary-eyebrow {
@@ -503,7 +502,7 @@
     font-weight: 700;
     line-height: 32px;
     letter-spacing: 0.96px;
-    color: #baff44;
+    color: var(--color-content-accent, #bdff5d);
   }
 
   .dot-frecce {
@@ -594,7 +593,7 @@
     flex-direction: column;
     gap: 0;
     margin: 0;
-    max-width: 665px;
+    max-width: 780px;
     font-family: 'Forma DJR Display', sans-serif;
     font-size: 24px;
     line-height: 26px;
