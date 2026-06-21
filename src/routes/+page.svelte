@@ -50,8 +50,20 @@
   const galleryCount = 12;
   const offsetCount = 6;
 
+  /* Gallery transition state — shared between click handler and scroll engine */
+  let galleryTransitionPending = false;
+
   function navigateToGallery() {
-    goto("/gallery");
+    if (galleryTransitionPending) return;
+    galleryTransitionPending = true;
+    document.documentElement.dataset.galleryEntry = '1';
+
+    const landing = document.querySelector<HTMLElement>('.landing');
+    const tl = gsap.timeline();
+    /* Blur + scale the page content out while the overlay fades in */
+    if (landing) tl.to(landing, { filter: 'blur(28px)', scale: 1.04, opacity: 0, duration: 0.48, ease: 'power2.in' }, 0);
+    if (transitionOverlay) tl.to(transitionOverlay, { opacity: 1, duration: 0.52, ease: 'power2.in' }, 0.06);
+    tl.call(() => goto('/gallery'));
   }
 
   /* ── Timers ──────────────────────────────────────────────────── */
@@ -168,6 +180,7 @@
 
     let locked: S | null = null;
     let heroDocTop = 0, heroDocBot = 0;
+    let galleryReady = false;
 
     /* ── Setup ───────────────────────────────────────────────────── */
     const setup = () => {
@@ -207,8 +220,8 @@
 
     /* ── RAF tick ────────────────────────────────────────────────── */
     const tick = () => {
-      /* 0 ─ Dissolve gate — overlay covers the viewport; pause scroll */
-      if (dissolving) { rafId = requestAnimationFrame(tick); return; }
+      /* 0 ─ Dissolve gate OR gallery exit — overlay covers the viewport; pause scroll */
+      if (dissolving || galleryTransitionPending) { rafId = requestAnimationFrame(tick); return; }
 
       /* 1 ─ Vertical LERP */
       vSmooth      = lerp(vSmooth, vTarget, LERP);
@@ -352,6 +365,7 @@
 
     /* ── Input helpers ───────────────────────────────────────────── */
     function applyDelta(delta: number) {
+      if (galleryTransitionPending) return;
       if (locked !== null) {
         /* Backward exit at left edge */
         if (s1.hTarget <= 0 && delta < 0) {
@@ -409,6 +423,17 @@
       }
 
       vTarget = clamp(vTarget + delta, 0, maxScroll());
+
+      /* Gallery scroll trigger — requires two scroll events at the bottom:
+         first lands at maxScroll (sets galleryReady), second fires the exit. */
+      if (delta > 0) {
+        if (vTarget >= maxScroll()) {
+          if (galleryReady) { navigateToGallery(); }
+          else              { galleryReady = true;  }
+        }
+      } else if (delta < 0) {
+        galleryReady = false;
+      }
     }
 
     /* ── Wheel ───────────────────────────────────────────────────── */

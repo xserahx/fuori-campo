@@ -1,10 +1,17 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { onMount } from 'svelte';
   import '../../lib/styles/tokens.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
   import NamesView from '$lib/components/gallery/NamesView.svelte';
   import { readGalleryContext } from '$lib/data/gallery-context';
+
+  onMount(() => {
+    /* Remove the gallery-entry marker after the bloom animation finishes (960ms + 80ms delay + margin). */
+    const t = setTimeout(() => { delete document.documentElement.dataset.galleryEntry; }, 1200);
+    return () => clearTimeout(t);
+  });
 
   const initialContext = readGalleryContext(page.url.searchParams);
 

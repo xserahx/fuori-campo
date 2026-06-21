@@ -92,8 +92,12 @@
 	/* ── Page transitions (View Transitions API) ─────────────────
 	   @keyframes are always global in Svelte; the pseudo-element
 	   selectors need :global() so Svelte doesn't scope them away. */
-	@keyframes vt-out { to   { opacity: 0; } }
-	@keyframes vt-in  { from { opacity: 0; } }
+	@keyframes vt-out        { to   { opacity: 0; } }
+	@keyframes vt-in         { from { opacity: 0; } }
+	@keyframes gallery-bloom {
+		0%   { opacity: 0; filter: blur(40px); transform: scale(0.97); }
+		100% { opacity: 1; filter: blur(0px);  transform: scale(1);    }
+	}
 
 	@media (prefers-reduced-motion: no-preference) {
 		:global(::view-transition-old(root)) {
@@ -101,6 +105,14 @@
 		}
 		:global(::view-transition-new(root)) {
 			animation: 360ms ease-out both vt-in;
+		}
+
+		/* Gallery entry — blur blooms in from darkness */
+		:global(html[data-gallery-entry="1"]::view-transition-old(root)) {
+			animation: 200ms ease-out both vt-out;
+		}
+		:global(html[data-gallery-entry="1"]::view-transition-new(root)) {
+			animation: 960ms cubic-bezier(0, 0, 0.2, 1) 80ms both gallery-bloom;
 		}
 	}
 </style>
