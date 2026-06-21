@@ -371,13 +371,18 @@
     cursor: pointer;
     padding: 0;
     text-shadow: 0 0 4px rgba(0, 0, 0, 0.25), 0 0 4px rgba(0, 0, 0, 0.25);
-    transition: color 0.18s ease;
+    transition: color 0.18s ease, filter 0.18s ease;
   }
 
-  .cat-item:hover,
+  /* Hover: blur whole element + lime — text-shadow stays (Figma: blur-[4px] on root) */
+  .cat-item:hover {
+    color: var(--color-content-accent, #bdff5d);
+    filter: blur(4px);
+  }
+
+  /* Selected: lime only, no blur, text-shadow stays */
   .cat-item--active {
     color: var(--color-content-accent, #bdff5d);
-    text-shadow: none;
   }
 
   /* Lime circle X button */
@@ -393,10 +398,11 @@
     justify-content: center;
     cursor: pointer;
     padding: 0;
-    transition: opacity 0.2s ease;
+    transition: filter 0.18s ease;
   }
 
-  .cat-close:hover { opacity: 0.85; }
+  /* Hover: blur the whole circle (Figma: blur-[4px] on root) */
+  .cat-close:hover { filter: blur(4px); }
 
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
