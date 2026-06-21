@@ -49,13 +49,10 @@
       : nameParts[0]?.toUpperCase() ?? ''
   );
 
-  /* ── Photos for this volunteer (for FOTO view) ───────────────── */
+  /* ── Photos for this volunteer ───────────────────────────────── */
   const volunteerPhotos = $derived(
     imagesRaw.filter(img => img.name && volunteer?.name && img.name === volunteer.name)
   );
-
-  /* ── View mode toggle: 'info' | 'foto' ───────────────────────── */
-  let viewMode = $state<'info' | 'foto'>('info');
 
   /* ── Q&A accordion ───────────────────────────────────────────── */
   const questionTitles = [
@@ -70,9 +67,7 @@
 
   let openQ = $state(-1);
 
-  /* Reset on navigation */
-  $effect(() => { currentSlug; openQ = -1; viewMode = 'info'; });
-
+  $effect(() => { currentSlug; openQ = -1; });
 
   /* ── Helpers ─────────────────────────────────────────────────── */
   function locationLine(vol: Volunteer | null): string {
@@ -101,7 +96,7 @@
 
 <main class="profile">
 
-  <!-- ── INDIETRO button (always visible) ──────────────────────── -->
+  <!-- ── INDIETRO button ──────────────────────────────────────────── -->
   <button
     class="back-btn"
     type="button"
@@ -113,12 +108,7 @@
     <span class="back-btn-label">INDIETRO</span>
   </button>
 
-  <!-- ── Hero name (always visible, both modes) ────────────────── -->
-  <!--
-    Line 1: SURNAME — lime filled,   left: 4.17vw  (72px / 1728px artboard)
-    Line 2: FIRSTNAME — lime outline, left: 19.68vw (340px / 1728px artboard)
-    Font: 116px extra-bold → clamp(40px, 6.71vw, 116px)
-  -->
+  <!-- ── Hero name ─────────────────────────────────────────────────── -->
   <div
     class="name-hero"
     role="img"
@@ -130,141 +120,92 @@
     <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════
-       INFO VIEW
-       Left column : volunteer info (role / location / detail)
-       Right column: Q&A accordion
-       ════════════════════════════════════════════════════════════ -->
-  {#if viewMode === 'info'}
+  <!-- ── Quote (top-right) ─────────────────────────────────────────── -->
+  {#if volunteer?.quote}
+    <blockquote class="vol-quote">
+      <span class="qmark qmark--open" aria-hidden="true">"</span>
+      <p class="quote-body">{volunteer.quote}</p>
+      <span class="qmark qmark--close" aria-hidden="true">"</span>
+    </blockquote>
+  {:else}
+    <blockquote class="vol-quote vol-quote--dim">
+      <span class="qmark qmark--open" aria-hidden="true">"</span>
+      <p class="quote-body">Un'esperienza che non dimenticherò mai.</p>
+      <span class="qmark qmark--close" aria-hidden="true">"</span>
+    </blockquote>
+  {/if}
 
-    <!-- Volunteer info (left, mid-page) -->
-    <div class="vol-info">
-      <p class="info-role">{(volunteer?.role ?? 'Event Services Volunteer').toUpperCase()}</p>
-      <p class="info-location">{locationLine(volunteer)}</p>
-      <p class="info-detail">{detailLine(volunteer)}</p>
+  <!-- ── Volunteer info (left, below name) ─────────────────────────── -->
+  <div class="vol-info">
+    <p class="info-role">{(volunteer?.role ?? 'Event Services Volunteer').toUpperCase()}</p>
+    <p class="info-location">{locationLine(volunteer)}<br />{detailLine(volunteer)}</p>
+  </div>
+
+  <!-- ── Photo column (left) ───────────────────────────────────────── -->
+  <div class="photo-col">
+    <div class="photo-fade photo-fade--top" aria-hidden="true"></div>
+    <div class="photo-fade photo-fade--bottom" aria-hidden="true"></div>
+    <div class="photo-scroll">
+      {#each volunteerPhotos as img (img.src + img.left)}
+        <button
+          class="photo-btn"
+          type="button"
+          aria-label="Vedi foto grande"
+          onclick={() => goto(`/volunteer/${currentSlug}`)}
+        >
+          <img
+            src={img.src}
+            alt={img.name ?? 'foto volunteer'}
+            class="photo-img"
+            draggable="false"
+          />
+        </button>
+      {/each}
+      {#if volunteerPhotos.length === 0 && volunteer?.src}
+        <button
+          class="photo-btn"
+          type="button"
+          aria-label="Vedi foto grande"
+          onclick={() => goto(`/volunteer/${currentSlug}`)}
+        >
+          <img
+            src={volunteer.src}
+            alt={volunteer?.name ?? 'foto volunteer'}
+            class="photo-img"
+            draggable="false"
+          />
+        </button>
+      {/if}
     </div>
+  </div>
 
-    <!-- Quote (top-right) -->
-    {#if volunteer?.quote}
-      <blockquote class="vol-quote">
-        <span class="qmark qmark--open" aria-hidden="true">“</span>
-        <p class="quote-body">{volunteer.quote}</p>
-        <span class="qmark qmark--close" aria-hidden="true">”</span>
-      </blockquote>
-    {:else}
-      <blockquote class="vol-quote vol-quote--dim">
-        <span class="qmark qmark--open" aria-hidden="true">“</span>
-        <p class="quote-body">Un'esperienza che non dimenticherò mai.</p>
-        <span class="qmark qmark--close" aria-hidden="true">”</span>
-      </blockquote>
-    {/if}
-
-    <!-- Q&A accordion (right column) -->
-    <!--
-      Figma: right:62px → 3.59vw, top:522px → 46.2vh of 1130px artboard.
-      Width: 1059px → 61.3vw, so left = 100% - 3.59vw - 61.3vw = 35.11vw.
-    -->
-    <div class="qa-wrap" role="list">
-      {#each questionTitles as q, i}
-        <div class="qa-item" role="listitem">
-          <button
-            class="qa-row"
-            class:qa-row--open={openQ === i}
-            type="button"
-            aria-expanded={openQ === i}
-            onclick={() => { openQ = openQ === i ? -1 : i; }}
-          >
-            <span class="qa-title">{q}</span>
-            <span class="qa-icon" aria-hidden="true">{openQ === i ? '−' : '+'}</span>
-          </button>
-          <div class="qa-sep" aria-hidden="true"></div>
+  <!-- ── Q&A accordion (right column) ─────────────────────────────── -->
+  <div class="qa-wrap" role="list">
+    {#each questionTitles as q, i}
+      <div class="qa-item" role="listitem">
+        <button
+          class="qa-row"
+          class:qa-row--open={openQ === i}
+          type="button"
+          aria-expanded={openQ === i}
+          onclick={() => { openQ = openQ === i ? -1 : i; }}
+        >
+          <span class="qa-title">{q}</span>
+          <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">+</span>
+        </button>
+        <div class="qa-sep" class:qa-sep--open={openQ === i}>
           {#if openQ === i}
             <div class="qa-answer" role="region" aria-live="polite">
-              <!-- First question: show lime day-description card if available -->
               {#if i === 0 && volunteer?.dayDescription}
-                <div class="day-card">
-                  <p class="day-card__text">{volunteer.dayDescription}</p>
-                </div>
+                <p>{volunteer.dayDescription}</p>
               {:else}
                 <p>{volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.'}</p>
               {/if}
             </div>
           {/if}
         </div>
-      {/each}
-    </div>
-
-  {:else}
-  <!-- ════════════════════════════════════════════════════════════
-       FOTO VIEW (Figma 6039:15675 / 6039:15746)
-       Right side: scrollable vertical column of volunteer photos,
-       with fade-mask at top & bottom.
-       Clicking a photo → back to lightbox for this volunteer.
-       ════════════════════════════════════════════════════════════ -->
-    <div class="foto-wrap">
-      <!-- Top + bottom blur gradients from Figma -->
-      <div class="foto-fade foto-fade--top" aria-hidden="true"></div>
-      <div class="foto-fade foto-fade--bottom" aria-hidden="true"></div>
-
-      <div class="foto-scroll">
-        {#each volunteerPhotos as img (img.src + img.left)}
-          <button
-            class="foto-btn"
-            type="button"
-            aria-label="Vedi foto grande"
-            onclick={() => goto(`/volunteer/${currentSlug}`)}
-          >
-            <img
-              src={img.src}
-              alt={img.name ?? 'foto volunteer'}
-              class="foto-img"
-              draggable="false"
-            />
-          </button>
-        {/each}
-
-        <!-- Fallback: show src from volunteer directly if no tagged photos -->
-        {#if volunteerPhotos.length === 0 && volunteer?.src}
-          <button
-            class="foto-btn"
-            type="button"
-            aria-label="Vedi foto grande"
-            onclick={() => goto(`/volunteer/${currentSlug}`)}
-          >
-            <img
-              src={volunteer.src}
-              alt={volunteer?.name ?? 'foto volunteer'}
-              class="foto-img"
-              draggable="false"
-            />
-          </button>
-        {/if}
       </div>
-    </div>
-
-  {/if}
-
-  <!-- ── INFO / FOTO toggle (bottom-left, always visible) ──────── -->
-  <div class="toggle-area">
-    <div class="toggle-track" class:toggle--foto={viewMode === 'foto'}>
-      <span class="toggle-pill" aria-hidden="true"></span>
-      <button
-        class="toggle-opt toggle-opt--info"
-        type="button"
-        aria-pressed={viewMode === 'info'}
-        onclick={() => { viewMode = 'info'; openQ = -1; }}
-      >
-        INFO
-      </button>
-      <button
-        class="toggle-opt toggle-opt--foto"
-        type="button"
-        aria-pressed={viewMode === 'foto'}
-        onclick={() => { viewMode = 'foto'; }}
-      >
-        FOTO
-      </button>
-    </div>
+    {/each}
   </div>
 
 </main>
@@ -275,7 +216,6 @@
     margin: 0;
     background: #0e0e0e;
     color: #fafafa;
-    overflow: hidden;
   }
 
   :global(*) {
@@ -294,6 +234,7 @@
   }
 
   /* ── INDIETRO button ─────────────────────────────────────────────── */
+  /* Figma 6103-10525: border-2 lime, px-20 py-12, gap-12, radius-999, w-168px */
   .back-btn {
     position: absolute;
     left: 4.17vw;
@@ -303,6 +244,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
+    width: 168px;
     border: 2px solid var(--color-content-accent, #bdff5d);
     border-radius: 999px;
     background: #0e0e0e;
@@ -322,177 +264,234 @@
     transition: filter 0.22s ease;
   }
 
-  /* Hover: text blooms with blur, arrow stays sharp */
   .back-btn:hover .back-btn-label {
     filter: blur(4px);
   }
 
   /* ── Hero name ───────────────────────────────────────────────────── */
-  /*
-   * Figma artboard: 1728px wide, artboard top: ~113px browser chrome.
-   * Line 1 (surname):   padding-left  72px → 4.17vw, lime filled
-   * Line 2 (firstname): padding-left 340px → 19.68vw, lime outline
-   * Font size: 116px → clamp(40px, 6.71vw, 116px)
-   * Top: 222px from artboard, after browser chrome offset
-   */
+  /* Figma 6103:7013: container top 337px (frame) = 225px, py-20px
+     → surname text starts at 245px. Leading: 116px. mb-[-8px] on surname.  */
   .name-hero {
     position: absolute;
     left: 0;
-    /* Stay below INDIETRO button (≈125+24+50px) with breathing room */
-    top: calc(var(--navbar-height, 125px) + 100px);
+    top: 225px;
     width: 100%;
+    padding: 20px 0;
     pointer-events: auto;
     z-index: 5;
-    line-height: 0.92;
   }
 
   .name-surname,
   .name-firstname {
     font-size: clamp(40px, 6.71vw, 116px);
     font-weight: 800;
+    line-height: 116px;
     text-transform: uppercase;
     white-space: nowrap;
     display: block;
   }
 
   .name-surname {
-    padding-left: 4.17vw;
+    padding-left: 72px;
+    margin-bottom: -8px;
     color: var(--color-content-accent, #bdff5d);
   }
 
   .name-firstname {
-    padding-left: 19.68vw;
+    padding-left: 340px;
     color: transparent;
     -webkit-text-stroke: 2px var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Volunteer info (left, mid-page, INFO mode only) ──────────── */
-  /*  Below name hero: name-top + 2 lines of font + gap.
-      2 lines ≈ clamp(74px, 12.4vw, 213px)  [2 × clamp(40,6.71vw,116) × 0.92] */
+  /* ── Volunteer info (left) ───────────────────────────────────────── */
+  /* Figma 6103:7015: left 74px, top 629px (frame) = 517px viewport */
+  /* Figma 6103:7015: left 74px, top 629px (frame) = 517px, w 513px */
   .vol-info {
     position: absolute;
-    left: 4.28vw;
-    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 56px);
+    left: 72px;
+    top: 517px;
     z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    max-width: 28vw;
+    gap: 0;
+    width: 513px;
   }
 
+  /* font-size: var(--unit/36, 36px), tracking: 1.44px */
   .info-role {
     margin: 0;
     font-size: clamp(14px, 2.08vw, 36px);
     font-weight: 500;
     line-height: 1;
-    letter-spacing: 0.02em;
+    letter-spacing: 1.44px;
     color: var(--color-content-accent, #bdff5d);
   }
 
+  /* font-size: var(--unit/24, 24px), tracking: 0.96px — location + detail in one p */
   .info-location {
     margin: 0;
     font-size: clamp(12px, 1.39vw, 24px);
     font-weight: 500;
     line-height: 1.3;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.96px;
+    white-space: pre-wrap;
     color: #fafafa;
   }
 
-  .info-detail {
-    margin: 0;
-    font-size: clamp(12px, 1.39vw, 24px);
-    font-weight: 400;
-    line-height: 1.3;
-    color: rgba(250, 250, 250, 0.6);
-  }
-
-  /* ── Quote (top-right, INFO mode only) ──────────────────────────── */
-  /*
-   * Figma 6039:15669 — right column, top-aligned with name hero.
-   * Layout: opening " (84px Medium, left) → text (32px Bold, right) → closing " (84px Medium, right)
-   */
+  /* ── Quote (top-right) ───────────────────────────────────────────── */
+  /* Figma 6103:7018: left calc(66.67%+80px), top 357px (frame) = 245px viewport
+     Container: w-429px h-176px. Text: w-393px, Bold 32px, right-aligned.
+     Quote marks: 84px Medium, transparent (text-stroke).                      */
   .vol-quote {
     position: absolute;
-    left: calc(67% + 4vw);
-    top: calc(var(--navbar-height, 125px) + 100px);
-    width: clamp(160px, 22.7vw, 393px);
+    left: calc(66.67% + 80px);
+    top: 245px;
+    width: 429px;
+    height: 176px;
     margin: 0;
     padding: 0;
     z-index: 6;
-    display: flex;
-    flex-direction: column;
     font-style: normal;
   }
 
-  /* Placeholder (no real quote yet) — slightly dimmed */
   .vol-quote--dim { opacity: 0.55; }
 
-  /* Large decorative quotation marks — 84 px Medium weight, outline (Figma H2) */
-  .qmark {
-    display: block;
-    font-size: clamp(40px, 5.5vw, 84px);
-    font-weight: 500;          /* Medium */
-    line-height: clamp(50px, 5.5vw, 80px);
+  /* Opening " — top-left of the container, transparent outline */
+  .qmark--open {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: clamp(40px, 4.86vw, 84px);
+    font-weight: 500;
+    line-height: 80px;
     color: transparent;
-    -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 2px var(--color-content-body, #fafafa);
+    -webkit-text-stroke: 2px #fafafa;
     user-select: none;
   }
 
-  /* Opening mark: left-aligned (hangs into left margin) */
-  .qmark--open  { text-align: left; }
-  /* Closing mark: right-aligned */
-  .qmark--close { text-align: right; }
+  /* Closing " — bottom-right */
+  .qmark--close {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    font-size: clamp(40px, 4.86vw, 84px);
+    font-weight: 500;
+    line-height: 80px;
+    color: transparent;
+    -webkit-text-stroke: 2px #fafafa;
+    user-select: none;
+  }
 
-  /* Quote text — 32 px Bold, right-aligned (Figma h3) */
+  /* Quote text — 32px Bold, right-aligned, w-393px, right-edge of container */
   .quote-body {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 393px;
     margin: 0;
-    font-size: clamp(14px, 2.2vw, 32px);
-    font-weight: 700;          /* Bold */
-    line-height: 1;
+    font-size: clamp(14px, 1.85vw, 32px);
+    font-weight: 700;
+    line-height: 32px;
     letter-spacing: 0.96px;
     color: #fafafa;
     text-align: right;
+    white-space: pre-wrap;
   }
 
-  /* ── Day-description lime card (Figma 3772:4591) ─────────────── */
-  /*
-   * Figma: 1062×219px, accent background (#bdff5d), rounded rect.
-   * Rendered inside the first Q&A answer — expands when + is clicked.
-   */
-  .day-card {
-    background: var(--color-content-accent, #bdff5d);
-    border-radius: 12px;
-    padding: clamp(20px, 2.1vw, 36px) clamp(24px, 2.5vw, 44px);
-    margin-top: 8px;
-    min-height: clamp(120px, 12.7vw, 219px);
+  /* ── Photo column (left) ─────────────────────────────────────────── */
+  /* Figma 6103:7000: left 72px, top 757px (frame) = 645px viewport, w 782px, h 570px */
+  .photo-col {
+    position: absolute;
+    left: 72px;
+    top: 645px;
+    width: 782px;
+    height: 570px;
+    overflow: hidden;
+    z-index: 8;
   }
 
-  .day-card__text {
-    margin: 0;
-    font-family: 'Forma DJR Display', sans-serif;
-    font-size: 24px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 26px;
-    color: var(--color-content-body-black, #0e0e0e);
+  .photo-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    pointer-events: none;
+    height: 120px;
   }
 
-  /* ── Q&A accordion (right column, INFO mode) ─────────────────── */
-  /*  Starts at the same top as vol-info, below the name hero */
+  .photo-fade--top {
+    top: 0;
+    background: linear-gradient(to bottom, #0e0e0e 0%, transparent 100%);
+    backdrop-filter: blur(4px);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+
+  .photo-fade--bottom {
+    bottom: 0;
+    background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
+    backdrop-filter: blur(4px);
+    mask-image: linear-gradient(to top, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
+  }
+
+  .photo-scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 40px 0;
+  }
+
+  .photo-scroll::-webkit-scrollbar { display: none; }
+
+  .photo-btn {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .photo-btn:hover { opacity: 0.82; }
+
+  .photo-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    border-radius: 4px;
+  }
+
+  /* ── Q&A accordion (right column) ───────────────────────────────── */
+  /* Figma 6103:15338: w-1059px, gap-20px (var --spacing/4,5), right: 73px.
+     All items uniform: font var(--unit/48)=48px, tracking 1.92px.
+     Title: w-879px. Icon: size-52px. Separator: h-2.417px.               */
   .qa-wrap {
     position: absolute;
-    left: 35.11vw;
-    right: 3.59vw;
-    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 20px);
-    bottom: 80px;
+    right: 73px;
+    top: 689px;
+    width: 1059px;
+    bottom: 40px;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
     z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.16vw, 20px);
+    gap: 20px;
   }
 
   .qa-wrap::-webkit-scrollbar { display: none; }
@@ -509,12 +508,11 @@
     border: 0;
     background: transparent;
     color: #fafafa;
-    /* Figma: Unit/48 = 48px at 1728px artboard → 2.78vw */
-    font-size: clamp(16px, 2.78vw, 48px);
+    font-size: 48px;
     font-weight: 500;
     line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 0.04em;  /* 4% = 1.92px at 48px — matches Figma */
+    letter-spacing: 1.92px;
     cursor: pointer;
     text-align: left;
     transition: color 0.15s ease;
@@ -523,229 +521,75 @@
   .qa-row:hover,
   .qa-row--open { color: var(--color-content-accent, #bdff5d); }
 
-  .qa-title { flex: 1; }
+  .qa-row:hover + .qa-sep:not(.qa-sep--open) { background: #bdff5d; }
+
+  /* Figma: title w-879px within 1059px item, icon size-52px */
+  .qa-title { flex: 1; max-width: 879px; }
 
   .qa-icon {
     flex-shrink: 0;
-    width: clamp(24px, 3.01vw, 52px);
-    height: clamp(24px, 3.01vw, 52px);
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(18px, 2.31vw, 40px);
+    font-size: 42px;
     font-weight: 300;
     color: var(--color-content-accent, #bdff5d);
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Figma: separator 2.417px — var(--color/link/default, #fafafa) */
+  .qa-icon--open { transform: rotate(-45deg); }
+
+  /* Figma: separator h-2.417px → hover lime → expanded lime card */
   .qa-sep {
     height: 2.417px;
     background: #fafafa;
     flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    transition: background 200ms ease;
+  }
+
+  .qa-sep--open {
+    height: auto;
+    min-height: 320px;
+    background: #bdff5d;
   }
 
   .qa-answer {
-    padding: 12px 0 16px;
-    border-bottom: 1px solid rgba(250, 250, 250, 0.1);
+    padding: 48px 64px;
   }
 
   .qa-answer p {
     margin: 0;
-    font-size: clamp(13px, 1.04vw, 18px);
-    font-weight: 400;
-    line-height: 1.6;
-    color: rgba(250, 250, 250, 0.8);
-  }
-
-  .day-card .day-card__text {
-    color: var(--color-content-body-black, #0e0e0e);
-  }
-
-  /* ── FOTO view wrapper ───────────────────────────────────────────── */
-  /*
-   * Figma 6039:15675: photo column centered at x ≈ 74.5vw (right of center),
-   * spanning from below the name to near-bottom of screen.
-   * Width ≈ 42.6vw (735.966 / 1728). Centred in the right half.
-   */
-  .foto-wrap {
-    position: absolute;
-    left: 53vw;        /* start right of center, matching Figma */
-    right: 3.59vw;
-    top: calc(var(--navbar-height, 125px) + 100px + clamp(74px, 12.4vw, 213px) + 20px);
-    bottom: 80px;
-    z-index: 10;
-    overflow: hidden;
-  }
-
-  /* Top fade: blur gradient from Figma */
-  .foto-fade {
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 2;
-    pointer-events: none;
-    height: 120px;
-  }
-
-  .foto-fade--top {
-    top: 0;
-    background: linear-gradient(to bottom, #0e0e0e 0%, transparent 100%);
-    backdrop-filter: blur(4px);
-    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-  }
-
-  .foto-fade--bottom {
-    bottom: 0;
-    background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
-    backdrop-filter: blur(4px);
-    mask-image: linear-gradient(to top, black 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
-  }
-
-  /* Scrollable photo column */
-  .foto-scroll {
-    position: absolute;
-    inset: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 40px 0;
-  }
-
-  .foto-scroll::-webkit-scrollbar { display: none; }
-
-  .foto-btn {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    cursor: pointer;
-    display: block;
-    width: 100%;
-    flex-shrink: 0;
-    transition: opacity 0.2s ease;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .foto-btn:hover { opacity: 0.82; }
-
-  .foto-img {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: cover;
-    pointer-events: none;
-    user-select: none;
-    -webkit-user-drag: none;
-    border-radius: 4px;
-  }
-
-  /* ── INFO / FOTO toggle ──────────────────────────────────────────── */
-  .toggle-area {
-    position: fixed;
-    left: 4.17vw;
-    bottom: 48px;
-    z-index: 30;
-  }
-
-  .toggle-track {
-    position: relative;
-    width: 180px;
-    height: 45px;
-    border-radius: 999px;
-    background: #0e0e0e;
-    overflow: hidden;
-  }
-
-  .toggle-pill {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 88px;
-    height: 37px;
-    border-radius: 995px;
-    background: var(--color-content-accent, #bdff5d);
-    pointer-events: none;
-    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  /* Shift pill to the right when FOTO is active */
-  .toggle--foto .toggle-pill { transform: translateX(84px); }
-
-  .toggle-opt {
-    position: absolute;
-    top: 0;
-    width: 90px;
-    height: 45px;
-    border: 0;
-    background: transparent;
-    padding-top: 11px;
-    cursor: pointer;
-    z-index: 2;
-    display: flex;
-    align-items: flex-start;
-    font-size: 24px;
+    font-family: 'Forma DJR Display', sans-serif;
+    font-size: 28px;
     font-weight: 500;
-    line-height: 26px;
-    text-align: center;
-    text-transform: uppercase;
-    transition: color 0.2s ease;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    color: #0e0e0e;
   }
-
-  /* INFO (left side) */
-  .toggle-opt--info {
-    left: 0;
-    justify-content: flex-start;
-    padding-left: 20px;
-    padding-right: 0;
-  }
-  /* FOTO (right side) */
-  .toggle-opt--foto {
-    right: 0;
-    justify-content: flex-end;
-    padding-left: 0;
-    padding-right: 20px;
-  }
-
-  /* Colours: selected = dark text on lime pill; unselected = white */
-  .toggle-opt--info { color: #0e0e0e; }   /* INFO default: on lime (selected) */
-  .toggle-opt--foto { color: #fafafa; }   /* FOTO default: unselected */
-
-  /* When FOTO is active, flip the colours */
-  .toggle--foto .toggle-opt--info { color: #fafafa; }
-  .toggle--foto .toggle-opt--foto { color: #0e0e0e; }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
-
-  /* Small laptop 1024–1280 px — tighten columns */
   @media (max-width: 1280px) {
     .name-surname  { padding-left: 3.2vw; }
     .name-firstname { padding-left: 15vw; }
-    .vol-info  { max-width: 30vw; left: 3.2vw; }
-    .qa-wrap   { left: 34vw; }
+    .vol-info  { left: 3.2vw; }
     .vol-quote { left: calc(64% + 2vw); width: clamp(140px, 20vw, 360px); }
-    .foto-wrap { left: 50vw; }
-    .back-btn  { font-size: 20px; }
+    .photo-col { left: 3.2vw; width: 45vw; }
+    .qa-wrap   { right: 3.2vw; width: 42vw; }
   }
 
-  /* Compact laptop ≤1100 px */
   @media (max-width: 1100px) {
     .name-firstname { padding-left: 12vw; }
-    .vol-info  { max-width: 28vw; }
-    .qa-wrap   { left: 36vw; }
     .vol-quote    { left: 62%; width: clamp(120px, 18vw, 300px); }
     .quote-body   { font-size: clamp(12px, 1.5vw, 26px); }
     .qmark        { font-size: clamp(28px, 4.5vw, 56px); }
-    .foto-wrap { left: 48vw; }
-    .back-btn  { font-size: 18px; padding: 10px 14px; }
-    .toggle-area { left: 3.2vw; }
+    .photo-col    { left: 3vw; width: 44vw; }
+    .qa-wrap      { right: 3vw; width: 40vw; }
   }
 
-  /* Tablet breakpoint — switch to single-column flow */
   @media (max-width: 768px) {
     .profile { overflow-y: auto; height: auto; min-height: 100dvh; }
 
@@ -766,26 +610,26 @@
     .vol-info {
       position: relative;
       left: auto; top: auto;
-      max-width: 100%;
+      width: 100%;
       padding: 24px 16px 0;
+    }
+
+    .photo-col {
+      position: relative;
+      left: auto; top: auto;
+      width: 100%;
+      height: 60vh;
+      margin: 16px 0;
     }
 
     .qa-wrap {
       position: relative;
       left: auto; right: auto; top: auto; bottom: auto;
+      width: 100%;
       overflow: visible;
       padding: 16px;
     }
 
     .qa-row { font-size: 20px; }
-
-    .foto-wrap {
-      position: relative;
-      left: auto; right: auto; top: auto; bottom: auto;
-      height: 60vh;
-      margin: 16px;
-    }
-
-    .toggle-area { bottom: 24px; left: 16px; }
   }
 </style>
