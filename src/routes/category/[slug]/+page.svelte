@@ -55,7 +55,7 @@
   const categorySummaries: Record<string, { eyebrow: string; subtitle: string; roles: SubRole[] }> = {
     relazioni: {
       eyebrow: 'COM = Communication',
-      subtitle: 'Sanno già cosa risponderti prima\nancora che tu finisca la domanda.',
+      subtitle: 'Sanno già cosa risponderti prima ancora che tu finisca la domanda.',
       roles: [
         {
           title: 'PRS = Press',
@@ -107,7 +107,7 @@
     },
     sport: {
       eyebrow: 'SPT = Sport',
-      subtitle: 'Conoscono il regolamento di sport che non sapevano esistessero fino a sei mesi fa.',
+      subtitle: 'Conoscono il regolamento di sport che non sapevano esistessero\nfino a sei mesi fa.',
       roles: [
         {
           title: 'XALP = Alpine Skiing',
@@ -220,7 +220,7 @@
     },
     gestione: {
       eyebrow: 'FEX = Fan Experience',
-      subtitle: 'Hanno risposto alla stessa domanda \n 400 volte  in un giorno con il sorriso.\nAlmeno le prime 380.',
+      subtitle: 'Hanno risposto alla stessa domanda 400 volte in un giorno con il sorriso.\nAlmeno le prime 380.',
       roles: [
         {
           title: 'EVM = Event Management',
