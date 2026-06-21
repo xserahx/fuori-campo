@@ -5,6 +5,7 @@
   import { imagesRaw, slugify, volunteersNames, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
+  import { fetchVolunteer, getImageUrl, getImageUrls, type VolunteerRow } from '$lib/supabase';
 
   /* ── Extended volunteer type ─────────────────────────────────── */
   type Volunteer = GalleryImage & {
@@ -25,34 +26,99 @@
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
   );
 
+  /* ── Supabase volunteer data ─────────────────────────────────── */
+  let dbVol = $state<VolunteerRow | null>(null);
+
+  $effect(() => {
+    const slug = currentSlug;
+    let cancelled = false;
+    fetchVolunteer(slug).then(v => { if (!cancelled) dbVol = v; });
+    return () => { cancelled = true; };
+  });
+
+  /* ── Resolved display values (DB takes priority) ─────────────── */
   const isManualVolunteer = $derived(!volunteer);
 
   const volunteerTitle = $derived(
-    volunteer?.name
-      ?? (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug)?.name
-      ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
-      ?? 'Volunteer'
+    dbVol
+      ? `${dbVol.cognome} ${dbVol.nome}`
+      : (volunteer?.name
+          ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
+          ?? 'Volunteer')
   );
 
-  const volunteerRole = $derived((volunteer?.role ?? 'Event Services Volunteer').toUpperCase());
+  const volunteerRole = $derived(
+    dbVol
+      ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? 'Volunteer').toUpperCase()
+      : (volunteer?.role ?? 'Event Services Volunteer').toUpperCase()
+  );
 
-  /* ── Name display: manual volunteers are firstname-first ────── */
+  /* ── Name display ────────────────────────────────────────────── */
   const nameParts = $derived(volunteerTitle.trim().split(/\s+/).filter(Boolean));
   const nameSurname = $derived(
-    isManualVolunteer
-      ? nameParts[0]?.toUpperCase() ?? ''
-      : nameParts.slice(1).join(' ').toUpperCase()
+    dbVol
+      ? dbVol.cognome.toUpperCase()
+      : isManualVolunteer
+        ? nameParts[0]?.toUpperCase() ?? ''
+        : nameParts.slice(1).join(' ').toUpperCase()
   );
   const nameFirstname = $derived(
-    isManualVolunteer
-      ? nameParts.slice(1).join(' ').toUpperCase()
-      : nameParts[0]?.toUpperCase() ?? ''
+    dbVol
+      ? dbVol.nome.toUpperCase()
+      : isManualVolunteer
+        ? nameParts.slice(1).join(' ').toUpperCase()
+        : nameParts[0]?.toUpperCase() ?? ''
   );
 
-  /* ── Photos for this volunteer ───────────────────────────────── */
-  const volunteerPhotos = $derived(
-    imagesRaw.filter(img => img.name && volunteer?.name && img.name === volunteer.name)
+  /* ── Resolved location / detail lines ───────────────────────── */
+  const resolvedLocation = $derived(
+    dbVol
+      ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase()
+      : locationLine(volunteer)
   );
+
+  const resolvedDetail = $derived(
+    dbVol
+      ? [dbVol.regione, dbVol.eta ? `${dbVol.eta} anni` : null].filter(Boolean).join(', ') || ''
+      : detailLine(volunteer)
+  );
+
+  /* ── Quote ───────────────────────────────────────────────────── */
+  const resolvedQuote = $derived(
+    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : (volunteer?.quote ?? null)
+  );
+
+  /* ── Photo (main, for hero) ──────────────────────────────────── */
+  const resolvedSrc = $derived(
+    dbVol?.ha_immagini ? getImageUrl(dbVol.image_path) : null
+  );
+
+  /* ── All photos from Storage (preferred) or Figma fallback ───── */
+  const dbPhotos = $derived(dbVol ? getImageUrls(dbVol) : []);
+  const volunteerPhotos = $derived(
+    dbPhotos.length > 0
+      ? dbPhotos
+      : imagesRaw.filter(img => img.name && volunteer?.name && img.name === volunteer.name).map(img => img.src)
+  );
+
+  /* ── Q&A responses ───────────────────────────────────────────── */
+  const dbResponses = $derived(
+    dbVol?.autorizzazione_risposte
+      ? [
+          dbVol.giornata_tipo,
+          dbVol.percezione_pubblico,
+          dbVol.commento_positivo,
+          dbVol.commento_negativo,
+          dbVol.cosa_porti,
+          dbVol.commenti_generali,
+          dbVol.rifai,
+        ]
+      : null
+  );
+
+  /* ── Image load state ────────────────────────────────────────── */
+  let imgError = $state(false);
+  $effect(() => { currentSlug; imgError = false; });
 
   /* ── Q&A accordion ───────────────────────────────────────────── */
   const questionTitles = [
@@ -121,10 +187,10 @@
   </div>
 
   <!-- ── Quote (top-right) ─────────────────────────────────────────── -->
-  {#if volunteer?.quote}
+  {#if resolvedQuote}
     <blockquote class="vol-quote">
       <span class="qmark qmark--open" aria-hidden="true">"</span>
-      <p class="quote-body">{volunteer.quote}</p>
+      <p class="quote-body">{resolvedQuote}</p>
       <span class="qmark qmark--close" aria-hidden="true">"</span>
     </blockquote>
   {:else}
@@ -137,8 +203,8 @@
 
   <!-- ── Volunteer info (left, below name) ─────────────────────────── -->
   <div class="vol-info">
-    <p class="info-role">{(volunteer?.role ?? 'Event Services Volunteer').toUpperCase()}</p>
-    <p class="info-location">{locationLine(volunteer)}<br />{detailLine(volunteer)}</p>
+    <p class="info-role">{volunteerRole}</p>
+    <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
   </div>
 
   <!-- ── Photo column (left) ───────────────────────────────────────── -->
@@ -161,7 +227,22 @@
           />
         </button>
       {/each}
-      {#if volunteerPhotos.length === 0 && volunteer?.src}
+      {#if volunteerPhotos.length === 0 && resolvedSrc && !imgError}
+        <button
+          class="photo-btn"
+          type="button"
+          aria-label="Vedi foto grande"
+          onclick={() => goto(`/volunteer/${currentSlug}`)}
+        >
+          <img
+            src={resolvedSrc}
+            alt={volunteerTitle}
+            class="photo-img"
+            draggable="false"
+            onerror={() => { imgError = true; }}
+          />
+        </button>
+      {:else if volunteerPhotos.length === 0 && volunteer?.src}
         <button
           class="photo-btn"
           type="button"
@@ -196,7 +277,9 @@
         <div class="qa-sep" class:qa-sep--open={openQ === i}>
           {#if openQ === i}
             <div class="qa-answer" role="region" aria-live="polite">
-              {#if i === 0 && volunteer?.dayDescription}
+              {#if dbResponses}
+                <p>{dbResponses[i] ?? 'Nessuna risposta disponibile.'}</p>
+              {:else if i === 0 && volunteer?.dayDescription}
                 <p>{volunteer.dayDescription}</p>
               {:else}
                 <p>{volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.'}</p>

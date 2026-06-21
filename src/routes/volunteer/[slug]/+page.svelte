@@ -5,6 +5,7 @@
   import { imagesRaw, slugify, volunteersNames, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
+  import { fetchVolunteer, getImageUrl, type VolunteerRow } from '$lib/supabase';
 
   /* ── Extended volunteer type ─────────────────────────────────── */
   type Volunteer = GalleryImage & {
@@ -40,16 +41,44 @@
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
   );
 
-  const isManualVolunteer = $derived(!volunteer);
+  /* ── Supabase volunteer data ─────────────────────────────────── */
+  let dbVol = $state<VolunteerRow | null>(null);
 
+  $effect(() => {
+    const slug = currentSlug;
+    let cancelled = false;
+    fetchVolunteer(slug).then(v => { if (!cancelled) dbVol = v; });
+    return () => { cancelled = true; };
+  });
+
+  /* ── Image load state ────────────────────────────────────────── */
+  let imgError = $state(false);
+  $effect(() => { currentSlug; imgError = false; });
+
+  /* ── Resolved display values (DB takes priority) ─────────────── */
   const volunteerTitle = $derived(
-    volunteer?.name
-      ?? (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug)?.name
-      ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
-      ?? 'Volunteer'
+    dbVol
+      ? `${dbVol.cognome} ${dbVol.nome}`
+      : (volunteer?.name
+          ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
+          ?? 'Volunteer')
   );
 
-  const volunteerRole = $derived((volunteer?.role ?? 'Event Services Volunteer').toUpperCase());
+  const volunteerRole = $derived(
+    dbVol
+      ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? 'Volunteer').toUpperCase()
+      : (volunteer?.role ?? 'Event Services Volunteer').toUpperCase()
+  );
+
+  const resolvedVenue = $derived(
+    dbVol
+      ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase()
+      : locationLine(volunteer)
+  );
+
+  const resolvedSrc = $derived(
+    dbVol?.ha_immagini ? getImageUrl(dbVol.image_path) : (volunteer?.src ?? null)
+  );
 
   const vIdx = $derived(volunteerList.findIndex(v => v.slug === currentSlug));
 
@@ -132,12 +161,13 @@
   <div class="photo-frame">
 
     <!-- Main image -->
-    {#if volunteer?.src}
+    {#if resolvedSrc && !imgError}
       <img
-        src={volunteer.src}
-        alt={volunteer.name ?? 'Volunteer'}
+        src={resolvedSrc}
+        alt={volunteerTitle}
         class="photo-img"
         draggable="false"
+        onerror={() => { imgError = true; }}
       />
     {:else}
       <div class="photo-placeholder"></div>
@@ -147,9 +177,9 @@
     <div class="photo-caption">
       <div class="caption-grad" aria-hidden="true"></div>
       <div class="caption-text">
-        <p class="cap-location">{locationLine(volunteer)}</p>
-        <p class="cap-role">{(volunteer?.role ?? 'Event Services Volunteer').toUpperCase()}</p>
-        <p class="cap-name">{volunteer?.name?.toUpperCase() ?? 'ALESSANDRA SCALVINI'}</p>
+        <p class="cap-location">{resolvedVenue}</p>
+        <p class="cap-role">{volunteerRole}</p>
+        <p class="cap-name">{volunteerTitle.toUpperCase()}</p>
       </div>
     </div>
 
