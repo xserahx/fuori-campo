@@ -19,16 +19,17 @@
 		);
 	});
 
-	/* Keep html { zoom } in sync with the viewport on resize.
+	/* Keep html { zoom } in sync with the viewport on mount and resize.
 	   Reset to 1 first so innerWidth always reports the physical pixel width,
 	   then scale uniformly: every element maintains its Figma-proportional size
-	   while the layout fills the full viewport width on any desktop resolution. */
+	   while the layout fills the full viewport on any resolution. */
 	$effect(() => {
 		if (!browser) return;
 		const update = () => {
 			document.documentElement.style.zoom = '1';
 			document.documentElement.style.zoom = String(window.innerWidth / 1728);
 		};
+		update();
 		window.addEventListener('resize', update, { passive: true });
 		return () => window.removeEventListener('resize', update);
 	});
