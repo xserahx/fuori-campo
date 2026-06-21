@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import '../../lib/styles/tokens.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
@@ -91,44 +92,53 @@
     </div>
   </section>
 
-  <!-- ── FILTRA PER CATEGORIA button (bottom-right) ────────────── -->
-  <button
-    class="filter-btn"
-    class:filter-btn--active={activeFilter !== null}
-    type="button"
-    aria-expanded={filterPanelOpen}
-    onclick={() => { filterPanelOpen = !filterPanelOpen; }}
-  >
-    FILTRA PER CATEGORIA
-  </button>
-
-  <!-- ── Category drawer (slides in from right) ────────────────── -->
-  {#if filterPanelOpen}
-    <!-- scrim: click outside to close -->
-    <div
-      class="cat-scrim"
-      role="presentation"
-      onclick={() => { filterPanelOpen = false; }}
-    ></div>
+  <!-- ── FILTRA PER CATEGORIA button — hidden while panel is open ── -->
+  {#if !filterPanelOpen}
+    <button
+      class="filter-btn"
+      class:filter-btn--active={activeFilter !== null}
+      type="button"
+      onclick={() => { filterPanelOpen = true; }}
+    >
+      <span class="filter-btn-label">FILTRA PER CATEGORIA</span>
+    </button>
   {/if}
 
-  <div class="cat-panel" class:cat-panel--open={filterPanelOpen} aria-hidden={!filterPanelOpen}>
-    <ul class="cat-list" role="list">
-      {#each filters as filter}
-        <li>
+  <!-- ── Category overlay (right gradient panel) ───────────────── -->
+  {#if filterPanelOpen}
+    <div
+      class="cat-overlay"
+      role="presentation"
+      transition:fade={{ duration: 220 }}
+      onclick={() => { filterPanelOpen = false; }}
+    >
+      <div class="cat-items">
+        {#each filters as filter}
           <button
             class="cat-item"
             class:cat-item--active={activeFilter === filter.id}
             type="button"
-            tabindex={filterPanelOpen ? 0 : -1}
-            onclick={() => selectFilter(filter.id)}
+            onclick={(e) => { e.stopPropagation(); selectFilter(filter.id); }}
           >
             {filter.label}
           </button>
-        </li>
-      {/each}
-    </ul>
-  </div>
+        {/each}
+      </div>
+
+      <!-- Lime circle X — closes the panel -->
+      <button
+        class="cat-close"
+        type="button"
+        aria-label="Chiudi filtri"
+        onclick={(e) => { e.stopPropagation(); filterPanelOpen = false; }}
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <line x1="3" y1="3" x2="17" y2="17" stroke="#0e0e0e" stroke-width="2" stroke-linecap="round"/>
+          <line x1="17" y1="3" x2="3" y2="17" stroke="#0e0e0e" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  {/if}
 </main>
 
 <style>
@@ -204,57 +214,54 @@
 
   .toggle-track {
     position: relative;
-    width: 180px;
+    width: 190px;
     height: 45px;
     border-radius: 999px;
     background: var(--gallery-background, #0e0e0e);
-    overflow: hidden;
   }
 
-  /* Sliding lime pill */
+  /* Outlined sliding pill — lime border, transparent fill */
   .toggle-selected {
     position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 88px;
-    height: 37px;
+    top: 0;
+    left: 0;
+    width: 97px;
+    height: 45px;
     border-radius: 995px;
-    background: var(--gallery-accent, #bdff5d);
+    border: 2px solid var(--color-content-accent, #bdff5d);
+    background: transparent;
     transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
   }
 
-  /* Shift pill to right when NOMI is active
-     right position = 180 - 88 - 4 = 88px → translateX = 88 - 4 = 84px */
+  /* Shift pill to right when NOMI is active: 190 - 97 = 93 */
   .toggle--names .toggle-selected {
-    transform: translateX(84px);
+    transform: translateX(93px);
   }
 
   .toggle-option {
     position: absolute;
     top: 0;
-    width: 90px;   /* 180 / 2 */
+    width: 95px;
     height: 45px;
     border: 0;
     background: transparent;
-    padding-top: 11px;
     cursor: pointer;
     z-index: 2;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    transition: filter 0.22s ease;
   }
 
   .toggle-option--photos {
     left: 0;
     justify-content: flex-start;
     padding-left: 20px;
-    padding-right: 0;
   }
 
-  .toggle-option--names  {
+  .toggle-option--names {
     right: 0;
     justify-content: flex-end;
-    padding-left: 0;
     padding-right: 20px;
   }
 
@@ -264,19 +271,23 @@
     font-weight: 500;
     line-height: 26px;
     width: 57px;
-    text-transform: uppercase;
     text-align: center;
-    transition: color 0.2s ease;
+    color: #fafafa;
+    transition: color 0.22s ease;
     pointer-events: none;
+    user-select: none;
   }
 
-  /* FOTO selected (default): dark text on lime pill */
-  .toggle-option--photos .toggle-label { color: #0e0e0e; }
-  /* NOMI unselected: white */
-  .toggle-option--names  .toggle-label { color: var(--gallery-text, #fafafa); }
-  /* When NOMI is active: flip colours */
-  .toggle--names .toggle-option--photos .toggle-label { color: var(--gallery-text, #fafafa); }
-  .toggle--names .toggle-option--names  .toggle-label { color: #0e0e0e; }
+  /* Any hovered side: text turns lime */
+  .toggle-option:hover .toggle-label {
+    color: var(--color-content-accent, #bdff5d);
+  }
+
+  /* Hovering the ALREADY-SELECTED side adds a cinematic bloom blur */
+  .toggle-track:not(.toggle--names) .toggle-option--photos:hover,
+  .toggle-track.toggle--names       .toggle-option--names:hover {
+    filter: blur(4px);
+  }
 
   /* ── FILTRA PER CATEGORIA button ───────────────────────────────── */
   .filter-btn {
@@ -284,77 +295,65 @@
     right: clamp(24px, 5vw, 81px);
     bottom: clamp(24px, 3.5vh, 48px);
     z-index: 100;
-    width: clamp(200px, 18vw, 275px);
-    padding: clamp(8px, 1vh, 12px) 20px;
+    width: 275px;
+    padding: 12px 20px;
     border-radius: 999px;
     border: 2px solid var(--color-content-accent, #bdff5d);
-    background: transparent;
-    color: #fafafa;
-    font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(16px, 1.5vw, 24px);
-    font-weight: 500;
-    line-height: 1.2;
-    text-align: center;
-    white-space: nowrap;
+    background: #0e0e0e;
     cursor: pointer;
-    transition: background 0.22s ease, color 0.22s ease;
+    transition: background 0.22s ease;
   }
 
-  /* Filter is active → lime fill, dark text */
+  .filter-btn-label {
+    display: block;
+    font-family: 'Forma DJR Display', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 26px;
+    text-align: center;
+    white-space: nowrap;
+    color: #fafafa;
+    transition: color 0.22s ease, filter 0.22s ease;
+  }
+
+  /* Hover (default, no active filter): text turns lime with bloom blur */
+  .filter-btn:not(.filter-btn--active):hover .filter-btn-label {
+    color: var(--color-content-accent, #bdff5d);
+    filter: blur(4px);
+  }
+
+  /* Active state (a filter is selected): lime fill, dark text, no blur on hover */
   .filter-btn--active {
     background: var(--color-content-accent, #bdff5d);
+  }
+  .filter-btn--active .filter-btn-label {
     color: #0e0e0e;
   }
 
-  /* ── Category panel ─────────────────────────────────────────────── */
-  /* Invisible click-trap to close panel on outside click */
-  .cat-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 90;
-  }
-
-  /* The actual drawer slides in from the right */
-  .cat-panel {
+  /* ── Category overlay (right gradient panel) ────────────────────── */
+  .cat-overlay {
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     z-index: 95;
-    width: min(600px, 52vw);
+    width: min(880px, 51vw);
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 100px clamp(32px, 5.5vw, 81px) 120px 0;
-    /* Dark-to-transparent gradient so photos are legible through it */
-    background: linear-gradient(
-      to left,
-      rgba(14, 14, 14, 0.94) 55%,
-      rgba(14, 14, 14, 0) 100%
-    );
-    /* Slide in/out */
-    transform: translateX(100%);
-    opacity: 0;
-    transition:
-      transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-      opacity   0.28s ease;
-    pointer-events: none;
-  }
-
-  .cat-panel--open {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .cat-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(24px, 3.2vw, 48px);
     align-items: flex-end;
+    justify-content: flex-end;
+    padding-bottom: 48px;
+    padding-right: 72px;
+    gap: 80px;
+    background: linear-gradient(to left, #0e0e0e 0%, rgba(26, 26, 26, 0) 100%);
+    cursor: default;
+  }
+
+  .cat-items {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 36px;
   }
 
   .cat-item {
@@ -362,32 +361,49 @@
     background: transparent;
     color: #fafafa;
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(24px, 3.2vw, 48px);
+    font-size: 32px;
     font-weight: 500;
-    line-height: 0.9;
+    line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 1.92px;
+    letter-spacing: 1.28px;
     text-align: right;
-    white-space: pre-line;   /* honour \n in label */
+    white-space: pre-line;
     cursor: pointer;
     padding: 0;
-    text-shadow:
-      0 0 4px rgba(0, 0, 0, 0.25),
-      0 0 4px rgba(0, 0, 0, 0.25);
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.25), 0 0 4px rgba(0, 0, 0, 0.25);
     transition: color 0.18s ease;
   }
 
   .cat-item:hover,
   .cat-item--active {
     color: var(--color-content-accent, #bdff5d);
+    text-shadow: none;
   }
+
+  /* Lime circle X button */
+  .cat-close {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--color-content-accent, #bdff5d);
+    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .cat-close:hover { opacity: 0.85; }
 
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
-    .toggle     { left: 16px; bottom: 20px; }
-    .filter-btn { right: 16px; bottom: 20px; font-size: 14px; width: auto; padding: 10px 14px; }
-    .cat-panel  { width: 100vw; padding: 100px 24px 120px; }
-    .cat-item   { font-size: 28px; }
-    .cat-list   { gap: 28px; }
+    .toggle      { left: 16px; bottom: 20px; }
+    .filter-btn  { right: 16px; bottom: 20px; }
+    .cat-overlay { width: 100vw; padding-right: 24px; padding-bottom: 32px; gap: 48px; }
+    .cat-item    { font-size: 24px; }
+    .cat-items   { gap: 24px; }
   }
 </style>

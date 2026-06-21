@@ -107,10 +107,10 @@
     type="button"
     onclick={goBack}
   >
-    <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true">
+    <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true" style="flex-shrink:0">
       <path d="M17 5H1M1 5L6 1M1 5L6 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    INDIETRO
+    <span class="back-btn-label">INDIETRO</span>
   </button>
 
   <!-- ── Hero name (always visible, both modes) ────────────────── -->
@@ -302,22 +302,29 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 12px 20px;
     border: 2px solid var(--color-content-accent, #bdff5d);
     border-radius: 999px;
-    background: transparent;
+    background: #0e0e0e;
     color: #fafafa;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .back-btn-label {
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background 0.2s ease, color 0.2s ease;
+    width: 98px;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.22s ease;
   }
 
-  .back-btn:hover {
-    background: var(--color-content-accent, #bdff5d);
-    color: #0e0e0e;
+  /* Hover: text blooms with blur, arrow stays sharp */
+  .back-btn:hover .back-btn-label {
+    filter: blur(4px);
   }
 
   /* ── Hero name ───────────────────────────────────────────────────── */

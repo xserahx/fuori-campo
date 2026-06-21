@@ -153,7 +153,7 @@
       </div>
     </div>
 
-    <!-- + button → navigate to full profile page -->
+    <!-- "SCOPRI DI PIÙ" → navigate to full profile page -->
     <button
       class="expand-btn"
       type="button"
@@ -163,7 +163,7 @@
         goto(search ? `/volunteer/${currentSlug}/profile?${search}` : `/volunteer/${currentSlug}/profile`);
       }}
     >
-      <span aria-hidden="true">+</span>
+      <span class="expand-btn-label">SCOPRI DI PIÙ</span>
     </button>
   </div>
 
@@ -347,31 +347,44 @@
     text-transform: uppercase;
   }
 
-  /* ── Expand / profile button ────────────────────────────────────── */
+  /* ── "SCOPRI DI PIÙ" pill button ───────────────────────────────── */
   .expand-btn {
     position: absolute;
-    bottom: 16px;
-    right: 16px;
+    bottom: 18px;
+    right: 18px;
     z-index: 3;
-    width: 32px;
-    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 0;
-    background: transparent;
-    color: var(--color-content-accent, #bdff5d);
-    font-size: 30px;
-    font-weight: 300;
-    line-height: 1;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 2px solid var(--color-content-accent, #bdff5d);
+    background: #0e0e0e;
     cursor: pointer;
-    padding: 0;
-    transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .expand-btn:hover {
-    opacity: 0.75;
-    transform: scale(1.18);
+    transform: scale(1.04);
+  }
+
+  .expand-btn-label {
+    font-family: 'Forma DJR Display', sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 26px;
+    width: 141px;
+    text-align: center;
+    color: #fafafa;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.22s ease;
+  }
+
+  /* Hover: text blooms with blur (white stays white, per Figma) */
+  .expand-btn:hover .expand-btn-label {
+    filter: blur(4px);
   }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
