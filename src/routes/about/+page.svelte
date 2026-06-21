@@ -28,6 +28,33 @@
     background: #bdff5d;
   }
 
+  /* ── COSMOS entrance keyframes (dark → lime context, inverted) ── */
+  @keyframes about-rise {
+    from {
+      opacity: 0;
+      filter: blur(28px);
+      transform: translateY(28px) scale(1.02);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0px) scale(1);
+    }
+  }
+
+  @keyframes about-slide {
+    from {
+      opacity: 0;
+      filter: blur(16px);
+      transform: translateX(-24px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateX(0px);
+    }
+  }
+
   .about-page {
     min-height: calc(100dvh - var(--navbar-height));
     background: #bdff5d;
@@ -52,6 +79,7 @@
     line-height: 1;
     font-weight: 800;
     letter-spacing: 0;
+    animation: about-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
   }
 
   .hero p {
@@ -65,6 +93,7 @@
     line-height: 0.95;
     letter-spacing: 0;
     white-space: normal;
+    animation: about-rise 1000ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
   }
 
   .team {
@@ -79,6 +108,7 @@
     margin-top: clamp(24px, 3vw, 40px);
     display: flex;
     justify-content: flex-start;
+    animation: about-slide 700ms cubic-bezier(0.22, 1, 0.36, 1) 500ms both;
   }
 
   .team-copy {

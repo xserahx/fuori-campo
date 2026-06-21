@@ -248,8 +248,8 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
-    width: 28px;
-    height: 50px;
+    width: 48px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -257,15 +257,55 @@
     background: transparent;
     cursor: pointer;
     padding: 0;
-    transition: opacity 0.2s ease;
+    transition:
+      opacity   0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      filter    0.28s ease;
+    will-change: transform;
   }
 
-  .arrow:hover { opacity: 0.65; }
+  .arrow--prev {
+    left: 4px;
+    transform: translateY(-50%) translateX(0);
+  }
+  .arrow--prev:hover {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-6px);
+    filter: drop-shadow(-4px 0 12px rgba(189, 255, 93, 0.28));
+  }
+  .arrow--prev:active {
+    transform: translateY(-50%) translateX(-10px) scale(0.92);
+    transition-duration: 80ms;
+  }
 
-  .arrow--prev { left: 8px; }
-  .arrow--next { right: 8px; }
+  .arrow--next {
+    right: 4px;
+    transform: translateY(-50%) translateX(0);
+  }
+  .arrow--next:hover {
+    opacity: 1;
+    transform: translateY(-50%) translateX(6px);
+    filter: drop-shadow(4px 0 12px rgba(189, 255, 93, 0.28));
+  }
+  .arrow--next:active {
+    transform: translateY(-50%) translateX(10px) scale(0.92);
+    transition-duration: 80ms;
+  }
 
   /* ── Main photo frame ───────────────────────────────────────────── */
+  @keyframes frame-enter {
+    from {
+      opacity: 0;
+      filter: blur(18px) saturate(0.4);
+      transform: translate(-50%, calc(-50% + 18px)) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0px) saturate(1);
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
   .photo-frame {
     position: absolute;
     left: 50%;
@@ -277,6 +317,7 @@
     overflow: hidden;
     box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
     background: #111;
+    animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .photo-img {
@@ -361,11 +402,22 @@
     border: 2px solid var(--color-content-accent, #bdff5d);
     background: #0e0e0e;
     cursor: pointer;
-    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+    transition:
+      transform    0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      background   0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow   0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
   }
 
   .expand-btn:hover {
-    transform: scale(1.04);
+    transform: scale(1.05);
+    background: rgba(189, 255, 93, 0.08);
+    box-shadow: 0 0 24px rgba(189, 255, 93, 0.25), inset 0 0 12px rgba(189, 255, 93, 0.06);
+  }
+  .expand-btn:active {
+    transform: scale(0.97);
+    transition-duration: 80ms;
   }
 
   .expand-btn-label {
@@ -379,12 +431,13 @@
     white-space: nowrap;
     pointer-events: none;
     user-select: none;
-    transition: filter 0.22s ease;
+    transition: filter 0.28s ease, color 0.28s ease;
   }
 
-  /* Hover: text blooms with blur (white stays white, per Figma) */
+  /* Hover: text blooms with blur */
   .expand-btn:hover .expand-btn-label {
     filter: blur(4px);
+    color: var(--color-content-accent, #bdff5d);
   }
 
   /* ── Responsive ─────────────────────────────────────────────────── */

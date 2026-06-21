@@ -92,24 +92,42 @@
 	/* ── Page transitions (View Transitions API) ─────────────────
 	   @keyframes are always global in Svelte; the pseudo-element
 	   selectors need :global() so Svelte doesn't scope them away. */
-	@keyframes vt-out        { to   { opacity: 0; } }
-	@keyframes vt-in         { from { opacity: 0; } }
+
+	/* Exit: quick upward drift with blur-out — cinematic "film cut" feel */
+	@keyframes vt-out {
+		to {
+			opacity: 0;
+			filter: blur(10px) saturate(0.6);
+			transform: scale(1.025) translateY(-10px);
+		}
+	}
+
+	/* Enter: bloom in from below with deep blur dissolving to sharp */
+	@keyframes vt-in {
+		from {
+			opacity: 0;
+			filter: blur(22px) saturate(0.5);
+			transform: scale(0.975) translateY(14px);
+		}
+	}
+
+	/* Gallery-specific bloom (existing, now richer) */
 	@keyframes gallery-bloom {
-		0%   { opacity: 0; filter: blur(40px); transform: scale(0.97); }
-		100% { opacity: 1; filter: blur(0px);  transform: scale(1);    }
+		0%   { opacity: 0; filter: blur(40px) saturate(0); transform: scale(0.96); }
+		100% { opacity: 1; filter: blur(0px)  saturate(1); transform: scale(1);    }
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
 		:global(::view-transition-old(root)) {
-			animation: 280ms ease-out both vt-out;
+			animation: 200ms cubic-bezier(0.55, 0, 1, 0.45) both vt-out;
 		}
 		:global(::view-transition-new(root)) {
-			animation: 360ms ease-out both vt-in;
+			animation: 500ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both vt-in;
 		}
 
-		/* Gallery entry — blur blooms in from darkness */
+		/* Gallery entry — bloom from darkness, unchanged timing */
 		:global(html[data-gallery-entry="1"]::view-transition-old(root)) {
-			animation: 200ms ease-out both vt-out;
+			animation: 180ms cubic-bezier(0.55, 0, 1, 0.45) both vt-out;
 		}
 		:global(html[data-gallery-entry="1"]::view-transition-new(root)) {
 			animation: 960ms cubic-bezier(0, 0, 0.2, 1) 80ms both gallery-bloom;

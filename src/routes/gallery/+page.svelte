@@ -1,7 +1,8 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { fade } from 'svelte/transition';
+  import { fade }   from 'svelte/transition';
+  import { cubicOut, cubicIn } from 'svelte/easing';
   import '../../lib/styles/tokens.css';
   import Navbar from '$lib/components/Navbar.svelte';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
@@ -46,6 +47,34 @@
     activeFilter    = activeFilter === id ? null : id;
     filterPanelOpen = false;
   };
+
+  function slideBlur(node: Element, { duration = 360, x = 40 }: { duration?: number; x?: number } = {}) {
+    return {
+      duration,
+      css: (t: number) => {
+        const eased = cubicOut(t);
+        return `
+          opacity: ${eased};
+          transform: translateX(${(1 - eased) * x}px);
+          filter: blur(${(1 - eased) * 8}px);
+        `;
+      }
+    };
+  }
+
+  function slideBlurOut(node: Element, { duration = 220, x = 24 }: { duration?: number; x?: number } = {}) {
+    return {
+      duration,
+      css: (t: number) => {
+        const eased = cubicIn(t);
+        return `
+          opacity: ${1 - eased};
+          transform: translateX(${eased * x}px);
+          filter: blur(${eased * 6}px);
+        `;
+      }
+    };
+  }
 </script>
 
 <svelte:head>
@@ -109,7 +138,8 @@
     <div
       class="cat-overlay"
       role="presentation"
-      transition:fade={{ duration: 220 }}
+      in:slideBlur={{ duration: 380, x: 48 }}
+      out:slideBlurOut={{ duration: 200, x: 28 }}
       onclick={() => { filterPanelOpen = false; }}
     >
       <div class="cat-items">
@@ -230,8 +260,14 @@
     border-radius: 995px;
     border: 2px solid var(--color-content-accent, #bdff5d);
     background: transparent;
-    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 12px rgba(189, 255, 93, 0.22), inset 0 0 8px rgba(189, 255, 93, 0.06);
+    transition:
+      transform   0.42s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow  0.42s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
+  }
+  .toggle-track:hover .toggle-selected {
+    box-shadow: 0 0 20px rgba(189, 255, 93, 0.35), inset 0 0 12px rgba(189, 255, 93, 0.1);
   }
 
   /* Shift pill to right when NOMI is active: 190 - 97 = 93 */
@@ -250,8 +286,9 @@
     z-index: 2;
     display: flex;
     align-items: center;
-    transition: filter 0.22s ease;
+    transition: filter 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
+  .toggle-option:active { transform: scale(0.96); transition-duration: 80ms; }
 
   .toggle-option--photos {
     left: 0;
@@ -301,8 +338,17 @@
     border: 2px solid var(--color-content-accent, #bdff5d);
     background: #0e0e0e;
     cursor: pointer;
-    transition: background 0.22s ease;
+    transition:
+      background   0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      transform    0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow   0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
   }
+  .filter-btn:hover {
+    transform: scale(1.025);
+    box-shadow: 0 0 22px rgba(189, 255, 93, 0.2);
+  }
+  .filter-btn:active { transform: scale(0.97); transition-duration: 80ms; }
 
   .filter-btn-label {
     display: block;
@@ -313,7 +359,7 @@
     text-align: center;
     white-space: nowrap;
     color: #fafafa;
-    transition: color 0.22s ease, filter 0.22s ease;
+    transition: color 0.28s ease, filter 0.28s ease;
   }
 
   /* Hover (default, no active filter): text turns lime with bloom blur */
@@ -322,9 +368,13 @@
     filter: blur(4px);
   }
 
-  /* Active state (a filter is selected): lime fill, dark text, no blur on hover */
+  /* Active state (a filter is selected): lime fill, dark text */
   .filter-btn--active {
     background: var(--color-content-accent, #bdff5d);
+    box-shadow: 0 0 28px rgba(189, 255, 93, 0.3);
+  }
+  .filter-btn--active:hover {
+    box-shadow: 0 0 36px rgba(189, 255, 93, 0.45);
   }
   .filter-btn--active .filter-btn-label {
     color: #0e0e0e;
@@ -371,18 +421,27 @@
     cursor: pointer;
     padding: 0;
     text-shadow: 0 0 4px rgba(0, 0, 0, 0.25), 0 0 4px rgba(0, 0, 0, 0.25);
-    transition: color 0.18s ease, filter 0.18s ease;
+    transition:
+      color     0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      filter    0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Hover: blur whole element + lime — text-shadow stays (Figma: blur-[4px] on root) */
+  /* Hover: slide left + bloom blur + lime */
   .cat-item:hover {
     color: var(--color-content-accent, #bdff5d);
     filter: blur(4px);
+    transform: translateX(-10px);
   }
 
-  /* Selected: lime only, no blur, text-shadow stays */
+  /* Selected: lime only, no blur, nudge left */
   .cat-item--active {
     color: var(--color-content-accent, #bdff5d);
+    transform: translateX(-6px);
+  }
+  .cat-item--active:hover {
+    filter: none;
+    transform: translateX(-10px);
   }
 
   /* Lime circle X button */
@@ -398,11 +457,20 @@
     justify-content: center;
     cursor: pointer;
     padding: 0;
-    transition: filter 0.18s ease;
+    transition:
+      transform  0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      filter     0.22s ease;
   }
 
-  /* Hover: blur the whole circle (Figma: blur-[4px] on root) */
-  .cat-close:hover { filter: blur(4px); }
+  .cat-close:hover {
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 20px rgba(189, 255, 93, 0.4);
+  }
+  .cat-close:active {
+    transform: rotate(90deg) scale(0.94);
+    transition-duration: 80ms;
+  }
 
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
