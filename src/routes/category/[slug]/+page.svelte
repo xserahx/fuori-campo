@@ -3,10 +3,6 @@
   import { goto } from '$app/navigation';
   import '$lib/styles/tokens.css';
 
-  const DOT_DEFAULT = 'https://www.figma.com/api/mcp/asset/606ddbd4-d9de-491d-9c57-da9f6aaf06d2';
-  const DOT_SELECTED = 'https://www.figma.com/api/mcp/asset/a1d0bb60-3e1f-4bd0-85f5-81a39a3cb364';
-  const ARROW_LEFT = 'https://www.figma.com/api/mcp/asset/f7620798-7f09-495b-b322-b355e4a96104';
-  const ARROW_RIGHT = 'https://www.figma.com/api/mcp/asset/78aab99b-e7d5-4046-b398-8911b7a7cfea';
   const BACK_ICON = 'https://www.figma.com/api/mcp/asset/b6c50607-8d2b-4867-bea0-12bc527e0378';
 
   type CategoryInfo = {
@@ -272,7 +268,6 @@
 
   const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
   const roleCount = $derived(activeSummary.roles.length);
-  const visibleDotCount = $derived(Math.min(5, roleCount));
 </script>
 
 <svelte:head>
@@ -305,18 +300,6 @@
         <div class="summary-top">
           <div class="summary-meta">
             <p class="summary-eyebrow">{activeRole.title}</p>
-            <div class="summary-nav" aria-label="Navigazione categorie">
-              {#if prevCat}
-                <button class="nav-arrow" type="button" aria-label="Categoria precedente" onclick={() => goto(`/category/${prevCat.slug}`)}>
-                  <img src={ARROW_LEFT} alt="" width="11" height="21" draggable="false" />
-                </button>
-              {/if}
-              {#if nextCat}
-                <button class="nav-arrow" type="button" aria-label="Categoria successiva" onclick={() => goto(`/category/${nextCat.slug}`)}>
-                  <img src={ARROW_RIGHT} alt="" width="11" height="21" draggable="false" />
-                </button>
-              {/if}
-            </div>
           </div>
 
           <div class="summary-copy">
@@ -325,25 +308,36 @@
           </div>
         </div>
 
-        <div class="summary-dots" aria-label="Sub-roles">
-          {#each Array.from({ length: visibleDotCount }) as _, index}
-            <button
-              type="button"
-              class="dot"
-              class:dot--active={index === activeRoleIndex}
-              aria-label={`Mostra sub-ruolo ${index + 1}`}
-              aria-pressed={index === activeRoleIndex}
-              onclick={() => { activeRoleIndex = index; }}
-            >
-              <img
-                alt=""
-                src={index === activeRoleIndex ? DOT_SELECTED : DOT_DEFAULT}
-                width="16"
-                height="16"
-                draggable="false"
-              />
-            </button>
-          {/each}
+        <div class="dot-frecce">
+          <div class="dot-nav" aria-label="Sub-roles">
+            {#each Array.from({ length: roleCount }) as _, index}
+              <button
+                type="button"
+                class="dot"
+                class:dot--active={index === activeRoleIndex}
+                aria-label={`Mostra sub-ruolo ${index + 1}`}
+                aria-pressed={index === activeRoleIndex}
+                onclick={() => { activeRoleIndex = index; }}
+              ></button>
+            {/each}
+          </div>
+
+          <div class="frecce" aria-label="Navigazione categorie">
+            {#if prevCat}
+              <button class="arrow-circle" type="button" aria-label="Categoria precedente" onclick={() => goto(`/category/${prevCat.slug}`)}>
+                <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+                  <path d="M12 2L2 14L12 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            {/if}
+            {#if nextCat}
+              <button class="arrow-circle" type="button" aria-label="Categoria successiva" onclick={() => goto(`/category/${nextCat.slug}`)}>
+                <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+                  <path d="M2 2L12 14L2 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            {/if}
+          </div>
         </div>
       </section>
     </div>
@@ -512,31 +506,87 @@
     color: #baff44;
   }
 
-  .summary-nav {
+  .dot-frecce {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    width: min(665px, 100%);
+  }
+
+  .dot-nav {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .dot {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
     display: flex;
     align-items: center;
-    margin-left: auto;
-    gap: var(--spacing-5);
+    justify-content: center;
+    flex-shrink: 0;
   }
 
-  .nav-arrow {
-    width: 29px;
-    height: 32px;
-    padding: 0;
-    border: 0;
+  .dot::before {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(189, 255, 93, 0.3);
+    transition:
+      background 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .dot:hover::before {
+    background: rgba(189, 255, 93, 0.6);
+  }
+
+  .dot.dot--active::before {
+    background: #bdff5d;
+    box-shadow: 0 0 10px rgba(189, 255, 93, 0.55);
+  }
+
+  .frecce {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .arrow-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 999px;
+    border: 2px solid #bdff5d;
     background: transparent;
-    color: #baff44;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 0;
     cursor: pointer;
+    padding: 0;
+    transition:
+      background  300ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow  300ms ease,
+      transform   280ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
   }
 
-  .nav-arrow img {
-    width: 10.5px;
-    height: 21px;
-    display: block;
+  .arrow-circle:hover {
+    background: rgba(189, 255, 93, 0.08);
+    box-shadow: 0 0 20px rgba(189, 255, 93, 0.22);
+    transform: scale(1.07);
+  }
+
+  .arrow-circle:active {
+    transform: scale(0.94);
+    transition-duration: 80ms;
   }
 
   .summary-copy {
@@ -565,31 +615,6 @@
     line-height: 26px;
     font-style: italic;
     color: rgba(250, 250, 250, 0.96);
-  }
-
-  .summary-dots {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 112px;
-    overflow: hidden;
-    padding-bottom: 0;
-  }
-
-  .dot {
-    appearance: none;
-    border: 0;
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .dot img {
-    display: block;
-    width: 16px;
-    height: 16px;
   }
 
   .not-found {
@@ -641,16 +666,16 @@
       line-height: 24px;
     }
 
-    .dot {
-      width: 14px;
-      height: 14px;
+    .arrow-circle {
+      width: 48px;
+      height: 48px;
     }
 
     .summary-card {
       position: static;
       width: auto;
       margin-top: auto;
-      padding: 0 var(--spacing-5) var(--spacing-5);
+      padding: 0 0 var(--spacing-5) var(--spacing-5);
     }
 
     .summary-top,
@@ -703,7 +728,7 @@
     }
 
     .summary-card {
-      padding: 0 var(--spacing-4);
+      padding: 0 0 var(--spacing-4) var(--spacing-4);
     }
 
     .summary-eyebrow {
@@ -716,9 +741,14 @@
       line-height: 20px;
     }
 
-    .dot {
-      width: 12px;
-      height: 12px;
+    .arrow-circle {
+      width: 40px;
+      height: 40px;
+    }
+
+    .arrow-circle svg {
+      width: 10px;
+      height: 20px;
     }
   }
 </style>
