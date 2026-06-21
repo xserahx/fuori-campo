@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+  import { goto, afterNavigate, beforeNavigate } from "$app/navigation";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import ScrollArrow from "../lib/components/ScrollArrow.svelte";
@@ -52,6 +52,7 @@
 
   /* Gallery transition state — shared between click handler and scroll engine */
   let galleryTransitionPending = false;
+  let galleryTimeline: gsap.core.Timeline | null = null;
 
   function navigateToGallery() {
     if (galleryTransitionPending) return;
@@ -59,12 +60,33 @@
     document.documentElement.dataset.galleryEntry = '1';
 
     const landing = document.querySelector<HTMLElement>('.landing');
-    const tl = gsap.timeline();
+    galleryTimeline = gsap.timeline();
     /* Blur + scale the page content out while the overlay fades in */
-    if (landing) tl.to(landing, { filter: 'blur(28px)', scale: 1.04, opacity: 0, duration: 0.48, ease: 'power2.in' }, 0);
-    if (transitionOverlay) tl.to(transitionOverlay, { opacity: 1, duration: 0.52, ease: 'power2.in' }, 0.06);
-    tl.call(() => goto('/gallery'));
+    if (landing) galleryTimeline.to(landing, { filter: 'blur(28px)', scale: 1.04, opacity: 0, duration: 0.48, ease: 'power2.in' }, 0);
+    if (transitionOverlay) galleryTimeline.to(transitionOverlay, { opacity: 1, duration: 0.52, ease: 'power2.in' }, 0.06);
+    galleryTimeline.call(() => { galleryTimeline = null; goto('/gallery'); });
   }
+
+  /* Kill any in-flight gallery animation before a non-gallery navigation
+     (e.g. logo click while the blur-out is still playing). */
+  beforeNavigate(({ to }) => {
+    if (to?.url.pathname !== '/gallery' && galleryTimeline) {
+      galleryTimeline.kill();
+      galleryTimeline = null;
+    }
+  });
+
+  /* Arriving (back) on the homepage — reset every gallery animation flag and
+     restore the landing element so scrolling works normally. */
+  afterNavigate(() => {
+    galleryTimeline?.kill();
+    galleryTimeline = null;
+    galleryTransitionPending = false;
+    delete document.documentElement.dataset.galleryEntry;
+    const landing = document.querySelector<HTMLElement>('.landing');
+    if (landing) gsap.set(landing, { clearProps: 'filter,transform,opacity' });
+    if (transitionOverlay) gsap.set(transitionOverlay, { opacity: 0 });
+  });
 
   /* ── Timers ──────────────────────────────────────────────────── */
   let interval: ReturnType<typeof setInterval> | undefined;
@@ -181,6 +203,10 @@
     let locked: S | null = null;
     let heroDocTop = 0, heroDocBot = 0;
     let galleryReady = false;
+    /* Prevents accidental re-trigger when the browser restores scroll to the
+       bottom (e.g. back-navigation).  Lifted once the user scrolls ≥ 120 px
+       away from the bottom, proving they are intentionally navigating down. */
+    let galleryGuard = false;
 
     /* ── Setup ───────────────────────────────────────────────────── */
     const setup = () => {
@@ -424,10 +450,14 @@
 
       vTarget = clamp(vTarget + delta, 0, maxScroll());
 
+      /* Lift guard once the user has scrolled ≥ 120 px away from the bottom. */
+      if (galleryGuard && vTarget < maxScroll() - 120) galleryGuard = false;
+
       /* Gallery scroll trigger — requires two scroll events at the bottom:
-         first lands at maxScroll (sets galleryReady), second fires the exit. */
+         first lands at maxScroll (sets galleryReady), second fires the exit.
+         galleryGuard blocks this entirely when the page opened already-at-bottom. */
       if (delta > 0) {
-        if (vTarget >= maxScroll()) {
+        if (!galleryGuard && vTarget >= maxScroll()) {
           if (galleryReady) { navigateToGallery(); }
           else              { galleryReady = true;  }
         }
@@ -495,6 +525,10 @@
     requestAnimationFrame(() => {
       cacheSpans();
       setup();
+      /* If the page was restored to (or near) the bottom — e.g. browser back —
+         arm the guard so the gallery cannot fire until the user first scrolls
+         meaningfully upward. */
+      galleryGuard = window.scrollY >= maxScroll() - 120;
       rafId = requestAnimationFrame(tick);
     });
 

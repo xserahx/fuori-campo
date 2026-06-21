@@ -8,9 +8,20 @@
   import { readGalleryContext } from '$lib/data/gallery-context';
 
   onMount(() => {
+    /* Lock scroll on the root while the gallery is mounted.
+       Done as inline styles (not CSS rules) so they are removed on unmount —
+       SvelteKit never unloads a page's CSS after first visit, so a :global rule
+       would keep overflow:hidden on every subsequent page. */
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
     /* Remove the gallery-entry marker after the bloom animation finishes (960ms + 80ms delay + margin). */
     const t = setTimeout(() => { delete document.documentElement.dataset.galleryEntry; }, 1200);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
   });
 
   const initialContext = readGalleryContext(page.url.searchParams);
@@ -124,7 +135,6 @@
   /* ── Global resets ─────────────────────────────────────────────── */
   :global(html), :global(body) {
     margin: 0;
-    overflow: hidden;
     background: #0e0e0e;
   }
 
