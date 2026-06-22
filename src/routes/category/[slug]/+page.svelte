@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { fade } from 'svelte/transition';
   import '$lib/styles/tokens.css';
 
   const BACK_ICON = 'https://www.figma.com/api/mcp/asset/b6c50607-8d2b-4867-bea0-12bc527e0378';
@@ -38,9 +39,6 @@
   const catIdx = $derived(CATEGORIES.findIndex(c => c.slug === slug || legacySlugify(c.label) === slug));
   const cat    = $derived(catIdx >= 0 ? CATEGORIES[catIdx] : null);
   const lines  = $derived(cat ? splitTitle(cat.label) : []);
-
-  const prevCat = $derived(catIdx >= 0 ? CATEGORIES[(catIdx - 1 + CATEGORIES.length) % CATEGORIES.length] : null);
-  const nextCat = $derived(catIdx >= 0 ? CATEGORIES[(catIdx + 1) % CATEGORIES.length] : null);
 
   type SubRole = {
     title: string;
@@ -297,15 +295,19 @@
       </section>
 
       <section class="summary-card" aria-label="Categoria e sottocategoria">
-        <div class="summary-top">
-          <div class="summary-meta">
-            <p class="summary-eyebrow">{activeRole.title}</p>
-          </div>
+        <div class="summary-top-wrap">
+          {#key activeRoleIndex}
+            <div class="summary-top" in:fade={{ duration: 300, delay: 120 }} out:fade={{ duration: 180 }}>
+              <div class="summary-meta">
+                <p class="summary-eyebrow">{activeRole.title}</p>
+              </div>
 
-          <div class="summary-copy">
-            <p>{activeRole.description}</p>
-            <p class="summary-footer">{activeRole.role}</p>
-          </div>
+              <div class="summary-copy">
+                <p>{activeRole.description}</p>
+                <p class="summary-footer">{activeRole.role}</p>
+              </div>
+            </div>
+          {/key}
         </div>
 
         <div class="dot-frecce">
@@ -322,21 +324,17 @@
             {/each}
           </div>
 
-          <div class="frecce" aria-label="Navigazione categorie">
-            {#if prevCat}
-              <button class="arrow-circle" type="button" aria-label="Categoria precedente" onclick={() => goto(`/category/${prevCat.slug}`)}>
-                <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-                  <path d="M12 2L2 14L12 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            {/if}
-            {#if nextCat}
-              <button class="arrow-circle" type="button" aria-label="Categoria successiva" onclick={() => goto(`/category/${nextCat.slug}`)}>
-                <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-                  <path d="M2 2L12 14L2 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-            {/if}
+          <div class="frecce" aria-label="Navigazione sotto-ruoli">
+            <button class="arrow-circle" type="button" aria-label="Sotto-ruolo precedente" onclick={() => { activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount; }}>
+              <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+                <path d="M12 2L2 14L12 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button class="arrow-circle" type="button" aria-label="Sotto-ruolo successivo" onclick={() => { activeRoleIndex = (activeRoleIndex + 1) % roleCount; }}>
+              <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+                <path d="M2 2L12 14L2 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
       </section>
@@ -481,11 +479,22 @@
     gap: 16px;
   }
 
+  .summary-top-wrap {
+    position: relative;
+    width: min(780px, 100%);
+    /* holds height during cross-fade so dot-frecce doesn't jump */
+    display: grid;
+  }
+
+  .summary-top-wrap > :global(*) {
+    grid-area: 1 / 1;
+  }
+
   .summary-top {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-4);
-    width: min(780px, 100%);
+    width: 100%;
   }
 
   .summary-meta {
