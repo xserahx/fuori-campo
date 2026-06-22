@@ -2,7 +2,6 @@
   import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import * as THREE from 'three';
-  import Navbar from '$lib/components/Navbar.svelte';
   import '$lib/styles/tokens.css';
 
   type Category = { id: number; label: string; image: string };

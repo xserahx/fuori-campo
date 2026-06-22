@@ -4,7 +4,6 @@
   import { fade }   from 'svelte/transition';
   import { cubicOut, cubicIn } from 'svelte/easing';
   import '../../lib/styles/tokens.css';
-  import Navbar from '$lib/components/Navbar.svelte';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
   import NamesView from '$lib/components/gallery/NamesView.svelte';
   import { readGalleryContext } from '$lib/data/gallery-context';
@@ -86,8 +85,6 @@
   <title>Gallery — Fuori Campo</title>
 </svelte:head>
 
-<Navbar pinned />
-
 <main class="gallery-page">
   <div class="bg-noise"></div>
 
@@ -137,13 +134,6 @@
       <span class="filter-btn-label">FILTRA PER CATEGORIA</span>
     </button>
   {/if}
-
-  <!-- ── Right vertical nav ───────────────────────────────────────── -->
-  <nav class="right-nav" aria-label="Navigazione principale">
-    <a class="right-nav__link" class:active={page.url.pathname.startsWith('/gallery')}  href="/gallery">GALLERIA</a>
-    <a class="right-nav__link" class:active={page.url.pathname.startsWith('/category')} href="/category">CATEGORIE</a>
-    <a class="right-nav__link" class:active={page.url.pathname.startsWith('/about')}    href="/about">ABOUT</a>
-  </nav>
 
   <!-- ── Category overlay (right gradient panel) ───────────────── -->
   {#if filterPanelOpen}

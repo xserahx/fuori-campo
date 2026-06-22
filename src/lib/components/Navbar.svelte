@@ -3,8 +3,8 @@
   import { page } from '$app/state';
   import { imgNavbar } from '$lib/design/assets';
 
-  let { transparent = false, pinned = false } = $props<{ transparent?: boolean; pinned?: boolean }>();
-  const logoColor = '#BDFF5D';
+  let { transparent = false, pinned = false, inverted = false } = $props<{ transparent?: boolean; pinned?: boolean; inverted?: boolean }>();
+  const logoColor = $derived(inverted ? '#0e0e0e' : '#BDFF5D');
 
   type NavItem = {
     href: string;
@@ -206,11 +206,12 @@
 <header
   class="navbar"
   class:navbar--transparent={transparent}
+  class:navbar--inverted={inverted}
   class:visible
   class:hidden={!visible}
   aria-label="Main navigation"
 >
-  {#if !transparent}
+  {#if !transparent && !inverted}
     <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
   {/if}
 

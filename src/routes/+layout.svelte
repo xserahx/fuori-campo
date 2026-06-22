@@ -10,6 +10,7 @@
 
 	const isAboutPage = $derived(page.url.pathname === '/about');
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
+	const isGalleryPage = $derived(page.url.pathname === '/gallery');
 
 	$effect(() => {
 		if (!browser) return;
@@ -17,6 +18,13 @@
 			'--page-top-padding',
 			isVolunteerPage ? '0px' : 'var(--navbar-height)'
 		);
+	});
+
+	$effect(() => {
+		if (!browser) return;
+		const accentBg = '#bdff5d';
+		document.body.style.backgroundColor = isAboutPage ? accentBg : '';
+		document.documentElement.style.backgroundColor = isAboutPage ? accentBg : '';
 	});
 
 	/* Keep html { zoom } in sync with the viewport on mount and resize.
@@ -74,7 +82,7 @@
 </svelte:head>
 
 {#if !isVolunteerPage}
-	<Navbar transparent={isAboutPage} />
+	<Navbar inverted={isAboutPage} pinned={isGalleryPage} />
 {/if}
 
 {#if showIntro && introSrc}
