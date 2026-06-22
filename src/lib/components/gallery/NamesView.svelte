@@ -198,7 +198,6 @@
           type="button"
         >
           <span class="names-interaction__label">{formatDisplayName(person)}</span>
-          <div class="item-underline" class:visible={selectedIndex === index} aria-hidden="true"></div>
         </button>
       {/each}
     </div>
@@ -240,7 +239,6 @@
 
     --names-active-shift: var(--spacing-7);
     --names-inline-end: var(--spacing-11);
-    --names-underline-thickness: 2px;
   }
 
   .names-stage {
@@ -272,9 +270,11 @@
     left: 0;
     right: 0;
     height: 120px;
-    font-size: clamp(44px, 6vw, 90px);
-    line-height: clamp(54px, 7vw, 120px);
-    color: var(--color-content-body);
+    font-size: 90px;
+    font-weight: 500;
+    font-style: normal;
+    line-height: normal;
+    color: var(--color-content-body, #fafafa);
     text-transform: uppercase;
     letter-spacing: 0;
     white-space: nowrap;
@@ -323,8 +323,10 @@
     width: 100%;
 
     font-family: var(--font-display);
-    font-size: clamp(44px, 6vw, 90px);
-    line-height: clamp(54px, 7vw, 120px);
+    font-size: 90px;
+    font-weight: 500;
+    font-style: normal;
+    line-height: normal;
 
     padding: 0 var(--names-inline-end) 20px 0;
     margin: 0;
@@ -344,7 +346,6 @@
   .names-interaction__item.selected {
     color: var(--gallery-accent, var(--color-content-accent));
     transform: translateX(var(--names-active-shift));
-    line-height: clamp(47px, 5.8vw, 100px);
   }
 
   .names-interaction__label {
@@ -363,31 +364,8 @@
     display: inline-block;
   }
 
-  .item-underline {
-    position: absolute;
-    left: 0;
-    /* Stop before the sidebar: sidebar is at right:72px and 23px wide.
-       With the active shift (+~56px), right:92px keeps a clear gap. */
-    right: calc(var(--names-inline-end, 72px) + 20px);
-    bottom: 0;
-
-    height: var(--names-underline-thickness);
-    background: var(--gallery-accent, var(--color-content-accent));
-    box-shadow: 0 0 8px rgba(189, 255, 93, 0.4);
-
-    opacity: 0;
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition:
-      opacity   300ms cubic-bezier(0.22, 1, 0.36, 1),
-      transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 480ms ease;
-  }
-
-  .item-underline.visible {
-    opacity: 1;
-    transform: scaleX(1);
-    box-shadow: 0 0 14px rgba(189, 255, 93, 0.55);
+  .names-interaction__item:hover {
+    color: var(--gallery-accent, var(--color-content-accent));
   }
 
   .names-veil {
