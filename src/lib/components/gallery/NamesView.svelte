@@ -44,32 +44,44 @@
   );
 
   let selectedIndex = $state<number>(0);
+  let hoveredIndex = $state<number>(-1);
   let copied = $state(false);
   let bgScroll = $state<number>(initialContext.namesScroll);
 
   let bgContainerRef: HTMLDivElement;
   let namesInteractionRef: HTMLDivElement;
 
-  function getVisiblePeople() {
-    return activeFilter
-      ? people.filter((p) => p.tags.includes(activeFilter as string))
-      : people;
+  const LETTER_BREAK_HEIGHT = 86;
+
+  function normalizeFirstLetter(s: string): string {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().charAt(0);
   }
 
   function formatDisplayName(person: Person) {
     return person.displayName.toUpperCase();
   }
 
-  /* ── Alphabet sidebar ──────────────────────────────────────────── */
-  function normalizeFirstLetter(s: string): string {
-    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().charAt(0);
-  }
+  /* ── Visible list with cumulative offsets accounting for letter breaks ── */
+  type PersonWithOffset = Person & { topOffset: number; letterBreakBefore: boolean };
 
+  const visibleWithOffsets = $derived.by((): PersonWithOffset[] => {
+    const visible = activeFilter
+      ? people.filter(p => p.tags.includes(activeFilter!))
+      : people;
+    let cumulative = 0;
+    return visible.map((p, i) => {
+      const letterBreakBefore = i > 0 &&
+        normalizeFirstLetter(p.cognome) !== normalizeFirstLetter(visible[i - 1].cognome);
+      if (letterBreakBefore) cumulative += LETTER_BREAK_HEIGHT;
+      return { ...p, topOffset: cumulative + i * ROW_HEIGHT, letterBreakBefore };
+    });
+  });
+
+  /* ── Alphabet sidebar ──────────────────────────────────────────── */
   const availableLetters = $derived.by(() => {
-    const visible = activeFilter ? people.filter(p => p.tags.includes(activeFilter!)) : people;
     const seen = new Set<string>();
     const result: string[] = [];
-    for (const p of visible) {
+    for (const p of visibleWithOffsets) {
       const l = normalizeFirstLetter(p.cognome);
       if (l && !seen.has(l)) { seen.add(l); result.push(l); }
     }
@@ -77,17 +89,15 @@
   });
 
   const activeLetter = $derived.by(() => {
-    const visible = activeFilter ? people.filter(p => p.tags.includes(activeFilter!)) : people;
-    const person = visible[selectedIndex];
+    const person = visibleWithOffsets[selectedIndex];
     return person ? normalizeFirstLetter(person.cognome) : '';
   });
 
   function jumpToLetter(letter: string) {
     if (!namesInteractionRef) return;
-    const visible = activeFilter ? people.filter(p => p.tags.includes(activeFilter!)) : people;
-    const idx = visible.findIndex(p => normalizeFirstLetter(p.cognome) === letter);
-    if (idx === -1) return;
-    namesInteractionRef.scrollTo({ top: idx * ROW_HEIGHT, behavior: 'smooth' });
+    const target = visibleWithOffsets.find(p => normalizeFirstLetter(p.cognome) === letter);
+    if (!target) return;
+    namesInteractionRef.scrollTo({ top: target.topOffset, behavior: 'smooth' });
   }
 
   function openVolunteer(person: Person) {
@@ -117,20 +127,21 @@
   function updateSelectedFromScroll() {
     if (!namesInteractionRef) return;
 
-    const visiblePeople = getVisiblePeople();
-
-    if (!visiblePeople.length) {
-      selectedIndex = -1;
-      return;
-    }
+    const visible = visibleWithOffsets;
+    if (!visible.length) { selectedIndex = -1; return; }
 
     const styles = getComputedStyle(namesInteractionRef);
     const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
-
     const viewportCenter = namesInteractionRef.scrollTop + namesInteractionRef.clientHeight / 2;
-    const indexAtCenter = Math.round((viewportCenter - paddingTop - ROW_HEIGHT / 2) / ROW_HEIGHT);
+    const targetOffset = viewportCenter - paddingTop - ROW_HEIGHT / 2;
 
-    selectedIndex = Math.max(0, Math.min(indexAtCenter, visiblePeople.length - 1));
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < visible.length; i++) {
+      const dist = Math.abs(visible[i].topOffset - targetOffset);
+      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+    }
+    selectedIndex = bestIdx;
   }
 
   function restoreScroll(node: HTMLDivElement) {
@@ -157,7 +168,7 @@
   <div class="names-stage">
     <div class="names-bg" bind:this={bgContainerRef} aria-hidden="true">
       <div class="names-bg-inner" style={`transform: translateY(${-bgScroll}px)`}>
-        {#each getVisiblePeople() as person, i}
+        {#each visibleWithOffsets as person, i}
           {@const distance = i - selectedIndex}
           {@const isActive = distance === 0}
           {@const absDistance = Math.abs(distance)}
@@ -165,8 +176,9 @@
           <div
             class="names-bg__item"
             class:selected={isActive}
+            class:hovered={i === hoveredIndex}
             style={`
-              top: calc(var(--names-center-padding) + ${i * ROW_HEIGHT}px);
+              top: calc(var(--names-center-padding) + ${person.topOffset}px);
               opacity: ${isActive ? 0 : Math.max(0.18, 1 - Math.min(0.72, absDistance * 0.18))};
               filter: blur(${Math.min(7, Math.pow(absDistance, 1.15) * 1.2)}px);
               transform: scale(${1 - Math.min(0.05, absDistance * 0.012)});
@@ -189,11 +201,16 @@
       tabindex="0"
       onscroll={syncScroll}
     >
-      {#each getVisiblePeople() as person, index}
+      {#each visibleWithOffsets as person, index}
+        {#if person.letterBreakBefore}
+          <div class="letter-spacer" aria-hidden="true"></div>
+        {/if}
         <button
           class="names-interaction__item"
           class:selected={selectedIndex === index}
           onclick={() => openVolunteer(person)}
+          onmouseenter={() => (hoveredIndex = index)}
+          onmouseleave={() => (hoveredIndex = -1)}
           aria-label={`Open ${formatDisplayName(person)}`}
           type="button"
         >
@@ -280,8 +297,9 @@
     white-space: nowrap;
   }
 
-  .names-bg__item.selected {
-    opacity: 0;
+  .names-bg__item.selected,
+  .names-bg__item.hovered {
+    opacity: 0 !important;
     filter: none;
     transform: none;
   }
@@ -310,6 +328,13 @@
     display: none;
     width: 0;
     height: 0;
+  }
+
+  .letter-spacer {
+    height: 86px;
+    flex-shrink: 0;
+    width: 100%;
+    pointer-events: none;
   }
 
   .names-interaction__item {
