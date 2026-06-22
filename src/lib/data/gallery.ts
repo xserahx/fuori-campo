@@ -17,22 +17,22 @@ export type Person = {
 };
 
 export const imagesRaw: GalleryImage[] = [
-  { src: 'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb', left: 1384.95, top: 494.84, width: 223.864, height: 298.485, tags: ['organizzativa'], name: 'Michele Tomolillo' },
+  { src: 'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb', left: 1384.95, top: 494.84, width: 223.864, height: 298.485, tags: ['organizzativa'], name: 'Tomolillo Michele' },
   { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06 },
-  { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06, tags: ['logistica'], name: 'Michele Tomolillo' },
+  { src: 'https://www.figma.com/api/mcp/asset/0a1bd32a-57a9-4d4d-847d-b271d6ec91ae', left: 1704.64, top: 689.31, width: 138.746, height: 104.06, tags: ['logistica'], name: 'Tomolillo Michele' },
   { src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e', left: 628.47, top: 155.8, width: 161.035, height: 286.285, tags: ['gestione'], name: 'Filippi Elisa' },
   {
     src: 'https://www.figma.com/api/mcp/asset/cf92030a-f76a-466e-83d6-f94316719d6e',
     left: 470.12, top: 340.6, width: 185.5, height: 247.3,
     tags: ['sport'],
-    name: 'Francesca Aquila Muraca',
+    name: 'Muraca Francesca Aquila',
     dayDescription: 'I turni erano variabili, potevano essere al mattino verso le 8:30 o al pomeriggio verso le 13. Raggiungevo il luogo di gara prendendo prima il treno per arrivare a Milano, la metro da Cadorna a Rogoredo e poi il pullman o la navetta. Durante la giornata mi occupavo degli accessi nei relativi luoghi. Ho costruito un bel rapporto con i volontari e i vari membri dello staff.'
   },
   { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425 },
   { src: 'https://www.figma.com/api/mcp/asset/d76c1003-06b2-4d2e-ad1b-add1e8c85403', left: 951.22, top: 986.6, width: 136.567, height: 102.425, tags: ['relazioni'], name: 'Lacchin Adriano' },
   { src: 'https://www.figma.com/api/mcp/asset/9dc12179-c0fb-4d55-988b-c055d87fecb1', left: 320.99, top: 1041.6, width: 184.303, height: 138.452, tags: ['cerimonie'], name: 'Marzorati Guido' },
   { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938 },
-  { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938, tags: ['sport'], name: 'Rudy Bre' },
+  { src: 'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1', left: 1759.39, top: 222.99, width: 167.216, height: 361.938, tags: ['sport'], name: 'Brezzi Rodolfo' },
   { src: 'https://www.figma.com/api/mcp/asset/005b2d2c-0afe-4335-9bff-7580699b45c3', left: 1509.16, top: 889.88, width: 263.09, height: 199.246, tags: ['organizzativa'], name: 'Terraneo Chiara' },
   { src: 'https://www.figma.com/api/mcp/asset/8fe95570-1827-4cd2-8aef-1d6997c1b9b0', left: 317.94, top: 155.8, width: 164.939, height: 219.919 },
   { src: 'https://www.figma.com/api/mcp/asset/8fe95570-1827-4cd2-8aef-1d6997c1b9b0', left: 317.94, top: 155.8, width: 164.939, height: 219.919, tags: ['logistica'], name: 'Marzorati Guido' },
@@ -56,14 +56,14 @@ export const imagesRaw: GalleryImage[] = [
   { src: 'https://www.figma.com/api/mcp/asset/6af4e78a-2f35-4668-9df7-22785806e913', left: 1390.04, top: 176.16, width: 289.152, height: 216.864, tags: ['gestione'], name: 'Toscano Maria Grazia' },
   { src: 'https://www.figma.com/api/mcp/asset/bd2e4233-abf8-4255-b73b-9c2060bdbf2d', left: -198.26, top: 309.54, width: 203.567, height: 152.675, tags: ['organizzativa'], name: 'Guerrini Valentina' },
   { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963 },
-  { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963, tags: ['logistica'], name: 'Michele Tomolillo' },
-  { src: 'https://www.figma.com/api/mcp/asset/fd4440df-10b0-46de-9533-973bb268cf89', left: 626.66, top: 388.45, width: 155.829, height: 161.1, tags: ['relazioni'], name: 'Michele Tomolillo' },
+  { src: 'https://www.figma.com/api/mcp/asset/862fb2d7-86cc-4cb1-8c79-84a421f7c78a', left: 913.57, top: 352.16, width: 198.917, height: 159.963, tags: ['logistica'], name: 'Tomolillo Michele' },
+  { src: 'https://www.figma.com/api/mcp/asset/fd4440df-10b0-46de-9533-973bb268cf89', left: 626.66, top: 388.45, width: 155.829, height: 161.1, tags: ['relazioni'], name: 'Tomolillo Michele' },
   { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633 },
-  { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633, tags: ['cerimonie'], name: 'Michele Tomolillo' },
+  { src: 'https://www.figma.com/api/mcp/asset/3f2318b0-e639-404a-8e54-8fc2b88d4965', left: 639.92, top: 843.61, width: 248.237, height: 139.633, tags: ['cerimonie'], name: 'Tomolillo Michele' },
   { src: 'https://www.figma.com/api/mcp/asset/721f6cef-83d5-4035-be4d-9652b82b9c81', left: 1049.7, top: 780.99, width: 359.169, height: 215.501, tags: ['relazioni'], name: 'Giovanessi Laura' },
   { src: 'https://www.figma.com/api/mcp/asset/e99ac53f-6fba-4a2e-ba86-d6f12f9eb068', left: 244.8, top: 810.1, width: 248.122, height: 186.092, tags: ['organizzativa'], name: 'Lisa Liz' },
   { src: 'https://www.figma.com/api/mcp/asset/c42edf09-a934-400c-bae9-0eaf96a509bd', left: 390, top: 593, width: 250.15, height: 187.612, tags: ['gestione'], name: 'Marzorati Guido' },
-  { src: 'https://www.figma.com/api/mcp/asset/f47cc2c2-c580-4acf-ad82-83302c739cc7', left: 749.52, top: 565.56, width: 361.128, height: 192.267, tags: ['sport'], name: 'Anna Passarella' }
+  { src: 'https://www.figma.com/api/mcp/asset/f47cc2c2-c580-4acf-ad82-83302c739cc7', left: 749.52, top: 565.56, width: 361.128, height: 192.267, tags: ['sport'], name: 'Passarella Anna Filomena' }
 ];
 
 export function slugify(name: string | undefined, index: number) {
@@ -188,7 +188,7 @@ export const volunteersNames: string[] = [
   "Airaghi Giuseppe",
   "Amedeo Aureliano",
   "Angelini Carlotta",
-  "Francesca Aquila Muraca",
+  "Muraca Francesca Aquila",
   "Aramini Ivan",
   "Bandini Daniele",
   "Barrel Paola",
@@ -281,7 +281,7 @@ export const volunteersNames: string[] = [
   "Guerrini Valentina",
   "Guglielmino Alfio",
   "Iacona Melania",
-  "Impilli Marco Franco",
+  "Impilli Franco",
   "Inno Simone",
   "Lacchin Adriano",
   "Lamera Serenella",

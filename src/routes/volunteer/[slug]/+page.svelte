@@ -2,20 +2,19 @@
   import '../../../lib/styles/tokens.css';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { imagesRaw, slugify, volunteersNames, type GalleryImage } from '$lib/data/gallery';
+  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { fetchVolunteer, getImageUrl, type VolunteerRow } from '$lib/supabase';
+  import { getImageUrl } from '$lib/supabase';
+  import type { PageData } from './$types';
 
-  /* ── Extended volunteer type ─────────────────────────────────── */
-  type Volunteer = GalleryImage & {
-    city?:   string;
-    region?: string;
-    role?:   string;
-    age?:    number;
-  };
+  /* ── Page data (dbVol pre-fetched by load function) ─────────── */
+  let { data }: { data: PageData } = $props();
+  const dbVol = $derived(data.dbVol);
 
-  /* ── Build ordered unique-volunteer list ─────────────────────── */
+  type Volunteer = GalleryImage & { city?: string; region?: string; role?: string };
+
+  /* ── Build ordered unique-volunteer list (for arrow navigation) ── */
   type VolEntry = { slug: string; name: string; src: string };
   const volunteerList: VolEntry[] = [];
   {
@@ -28,52 +27,32 @@
     }
   }
 
-  /* ── Background scatter ──────────────────────────────────────── */
   const CANVAS_W = 1920;
   const CANVAS_H = 1200;
   const bgPhotos = imagesRaw as Volunteer[];
 
   /* ── Reactive state from URL ─────────────────────────────────── */
-  const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
+  const currentSlug    = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
   const volunteer = $derived(
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
   );
 
-  /* ── Supabase volunteer data ─────────────────────────────────── */
-  let dbVol = $state<VolunteerRow | null>(null);
-
-  $effect(() => {
-    const slug = currentSlug;
-    let cancelled = false;
-    fetchVolunteer(slug).then(v => { if (!cancelled) dbVol = v; });
-    return () => { cancelled = true; };
-  });
-
-  /* ── Image load state ────────────────────────────────────────── */
   let imgError = $state(false);
   $effect(() => { currentSlug; imgError = false; });
 
-  /* ── Resolved display values (DB takes priority) ─────────────── */
+  /* ── Display values — DB is the single source of truth ──────── */
   const volunteerTitle = $derived(
-    dbVol
-      ? `${dbVol.cognome} ${dbVol.nome}`
-      : (volunteer?.name
-          ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
-          ?? 'Volunteer')
+    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : (volunteer?.name ?? '')
   );
 
   const volunteerRole = $derived(
-    dbVol
-      ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? 'Volunteer').toUpperCase()
-      : (volunteer?.role ?? 'Event Services Volunteer').toUpperCase()
+    dbVol ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? '').toUpperCase() : ''
   );
 
   const resolvedVenue = $derived(
-    dbVol
-      ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase()
-      : locationLine(volunteer)
+    dbVol ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase() : ''
   );
 
   const resolvedSrc = $derived(
@@ -94,13 +73,6 @@
 
   function goBackToGallery() {
     goto(buildGalleryHref(currentContext));
-  }
-
-  /* ── Helpers ─────────────────────────────────────────────────── */
-  function locationLine(vol: Volunteer | null): string {
-    if (!vol) return 'BORMIO - STELVIO SKI CENTER';
-    const parts = [vol.city, vol.region].filter(Boolean);
-    return parts.length ? parts.join(' - ').toUpperCase() : 'BORMIO - STELVIO SKI CENTER';
   }
 </script>
 

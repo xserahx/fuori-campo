@@ -65,6 +65,21 @@ export async function fetchVolunteer(slug: string): Promise<VolunteerRow | null>
 	}
 }
 
+export type VolunteerSummary = Pick<VolunteerRow, 'slug' | 'nome' | 'cognome' | 'ruolo_generale'>;
+
+export async function fetchAllVolunteers(): Promise<VolunteerSummary[]> {
+	try {
+		const res = await fetch(
+			`${PUBLIC_SUPABASE_URL}/rest/v1/volunteers?select=slug,nome,cognome,ruolo_generale&order=cognome.asc,nome.asc`,
+			{ headers: HEADERS }
+		);
+		if (!res.ok) return [];
+		return (await res.json()) as VolunteerSummary[];
+	} catch {
+		return [];
+	}
+}
+
 export async function fetchVolunteerSlugs(): Promise<string[]> {
 	try {
 		const res = await fetch(

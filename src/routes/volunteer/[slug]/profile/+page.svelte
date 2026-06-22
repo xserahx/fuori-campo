@@ -2,104 +2,62 @@
   import '../../../../lib/styles/tokens.css';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { imagesRaw, slugify, volunteersNames, type GalleryImage } from '$lib/data/gallery';
+  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
-  import { fetchVolunteer, getImageUrl, getImageUrls, type VolunteerRow } from '$lib/supabase';
+  import { getImageUrls } from '$lib/supabase';
+  import type { PageData } from './$types';
 
-  /* ── Extended volunteer type ─────────────────────────────────── */
-  type Volunteer = GalleryImage & {
-    city?:           string;
-    region?:         string;
-    role?:           string;
-    age?:            number;
-    quote?:          string;
-    responses?:      string[];
-    dayDescription?: string;
-  };
+  /* ── Page data (dbVol pre-fetched by load function) ─────────── */
+  let { data }: { data: PageData } = $props();
+  const dbVol = $derived(data.dbVol);
 
-  /* ── Reactive volunteer from URL ─────────────────────────────── */
+  /* ── Extended volunteer type (for Figma photo fallback only) ─── */
+  type Volunteer = GalleryImage & { dayDescription?: string };
+
+  /* ── Reactive slug / context ─────────────────────────────────── */
   const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
+  // Figma image entry — used only as photo fallback when volunteer has no DB photos
   const volunteer = $derived(
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
   );
 
-  /* ── Supabase volunteer data ─────────────────────────────────── */
-  let dbVol = $state<VolunteerRow | null>(null);
-
-  $effect(() => {
-    const slug = currentSlug;
-    let cancelled = false;
-    fetchVolunteer(slug).then(v => { if (!cancelled) dbVol = v; });
-    return () => { cancelled = true; };
-  });
-
-  /* ── Resolved display values (DB takes priority) ─────────────── */
-  const isManualVolunteer = $derived(!volunteer);
-
+  /* ── Display values — DB is the single source of truth ──────── */
   const volunteerTitle = $derived(
-    dbVol
-      ? `${dbVol.cognome} ${dbVol.nome}`
-      : (volunteer?.name
-          ?? volunteersNames.find((name, i) => slugify(name, i) === currentSlug)
-          ?? 'Volunteer')
+    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : (volunteer?.name ?? '')
   );
 
   const volunteerRole = $derived(
-    dbVol
-      ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? 'Volunteer').toUpperCase()
-      : (volunteer?.role ?? 'Event Services Volunteer').toUpperCase()
+    dbVol ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? '').toUpperCase() : ''
   );
 
-  /* ── Name display ────────────────────────────────────────────── */
-  const nameParts = $derived(volunteerTitle.trim().split(/\s+/).filter(Boolean));
-  const nameSurname = $derived(
-    dbVol
-      ? dbVol.cognome.toUpperCase()
-      : isManualVolunteer
-        ? nameParts[0]?.toUpperCase() ?? ''
-        : nameParts.slice(1).join(' ').toUpperCase()
-  );
-  const nameFirstname = $derived(
-    dbVol
-      ? dbVol.nome.toUpperCase()
-      : isManualVolunteer
-        ? nameParts.slice(1).join(' ').toUpperCase()
-        : nameParts[0]?.toUpperCase() ?? ''
-  );
+  const nameSurname   = $derived(dbVol?.cognome.toUpperCase() ?? '');
+  const nameFirstname = $derived(dbVol?.nome.toUpperCase()    ?? '');
 
-  /* ── Resolved location / detail lines ───────────────────────── */
   const resolvedLocation = $derived(
-    dbVol
-      ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase()
-      : locationLine(volunteer)
+    dbVol ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase() : ''
   );
 
   const resolvedDetail = $derived(
     dbVol
-      ? [dbVol.regione, dbVol.eta ? `${dbVol.eta} anni` : null].filter(Boolean).join(', ') || ''
-      : detailLine(volunteer)
+      ? [dbVol.regione, dbVol.eta ? `${dbVol.eta} anni` : null].filter(Boolean).join(', ')
+      : ''
   );
 
-  /* ── Quote ───────────────────────────────────────────────────── */
   const resolvedQuote = $derived(
-    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : (volunteer?.quote ?? null)
+    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : null
   );
 
-  /* ── Photo (main, for hero) ──────────────────────────────────── */
-  const resolvedSrc = $derived(
-    dbVol?.ha_immagini ? getImageUrl(dbVol.image_path) : null
+  /* ── Photos: DB storage first, Figma images as fallback ─────── */
+  const dbPhotos      = $derived(dbVol ? getImageUrls(dbVol) : []);
+  const figmaPhotos   = $derived(
+    imagesRaw
+      .filter(img => img.name && volunteer?.name && img.name === volunteer.name)
+      .map(img => img.src)
   );
-
-  /* ── All photos from Storage (preferred) or Figma fallback ───── */
-  const dbPhotos = $derived(dbVol ? getImageUrls(dbVol) : []);
-  const volunteerPhotos = $derived(
-    dbPhotos.length > 0
-      ? dbPhotos
-      : imagesRaw.filter(img => img.name && volunteer?.name && img.name === volunteer.name).map(img => img.src)
-  );
+  const volunteerPhotos = $derived(dbPhotos.length > 0 ? dbPhotos : figmaPhotos);
 
   /* ── Q&A responses ───────────────────────────────────────────── */
   const dbResponses = $derived(
@@ -116,10 +74,6 @@
       : null
   );
 
-  /* ── Image load state ────────────────────────────────────────── */
-  let imgError = $state(false);
-  $effect(() => { currentSlug; imgError = false; });
-
   /* ── Q&A accordion ───────────────────────────────────────────── */
   const questionTitles = [
     'LA MIA GIORNATA (QUASI) NORMALE',
@@ -132,22 +86,7 @@
   ];
 
   let openQ = $state(-1);
-
   $effect(() => { currentSlug; openQ = -1; });
-
-  /* ── Helpers ─────────────────────────────────────────────────── */
-  function locationLine(vol: Volunteer | null): string {
-    if (!vol) return 'BORMIO - STELVIO SKI CENTER';
-    const parts = [vol.city, vol.region].filter(Boolean);
-    return parts.length ? parts.join(' - ').toUpperCase() : 'BORMIO - STELVIO SKI CENTER';
-  }
-
-  function detailLine(vol: Volunteer | null): string {
-    const parts: string[] = [];
-    if (vol?.region) parts.push(vol.region);
-    if (vol?.age)    parts.push(`${vol.age} anni`);
-    return parts.join(', ') || 'Lombardia, 59 anni';
-  }
 
   function goBack() {
     goto(buildGalleryHref(currentContext));
@@ -212,7 +151,7 @@
     <div class="photo-fade photo-fade--top" aria-hidden="true"></div>
     <div class="photo-fade photo-fade--bottom" aria-hidden="true"></div>
     <div class="photo-scroll">
-      {#each volunteerPhotos as img (img.src + img.left)}
+      {#each volunteerPhotos as photoUrl (photoUrl)}
         <button
           class="photo-btn"
           type="button"
@@ -220,43 +159,13 @@
           onclick={() => goto(`/volunteer/${currentSlug}`)}
         >
           <img
-            src={img.src}
-            alt={img.name ?? 'foto volunteer'}
+            src={photoUrl}
+            alt={volunteerTitle || 'foto volunteer'}
             class="photo-img"
             draggable="false"
           />
         </button>
       {/each}
-      {#if volunteerPhotos.length === 0 && resolvedSrc && !imgError}
-        <button
-          class="photo-btn"
-          type="button"
-          aria-label="Vedi foto grande"
-          onclick={() => goto(`/volunteer/${currentSlug}`)}
-        >
-          <img
-            src={resolvedSrc}
-            alt={volunteerTitle}
-            class="photo-img"
-            draggable="false"
-            onerror={() => { imgError = true; }}
-          />
-        </button>
-      {:else if volunteerPhotos.length === 0 && volunteer?.src}
-        <button
-          class="photo-btn"
-          type="button"
-          aria-label="Vedi foto grande"
-          onclick={() => goto(`/volunteer/${currentSlug}`)}
-        >
-          <img
-            src={volunteer.src}
-            alt={volunteer?.name ?? 'foto volunteer'}
-            class="photo-img"
-            draggable="false"
-          />
-        </button>
-      {/if}
     </div>
   </div>
 

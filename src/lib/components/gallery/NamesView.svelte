@@ -1,41 +1,46 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { page } from '$app/state';
-  import { buildPeople, imagesRaw, slugify, volunteersNames } from '$lib/data/gallery';
+  import { imagesRaw, slugify } from '$lib/data/gallery';
+  import type { VolunteerSummary } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 
   const ROW_HEIGHT = 120;
 
-  let { activeFilter = null }: { activeFilter?: string | null } = $props();
+  let {
+    activeFilter = null,
+    volunteers = []
+  }: {
+    activeFilter?: string | null;
+    volunteers?: VolunteerSummary[];
+  } = $props();
 
   const initialContext = readGalleryContext(page.url.searchParams);
 
-  type Person = { name: string; tags: string[]; source: 'image' | 'manual' };
+  type Person = { slug: string; displayName: string; cognome: string; tags: string[] };
 
-  const peopleFromImages: Person[] = buildPeople(imagesRaw).map((person) => ({
-    ...person,
-    source: 'image'
-  }));
-
-  const manualPeople: Person[] = volunteersNames.map((n) => ({
-    name: n,
-    tags: [],
-    source: 'manual'
-  }));
-
-  const peopleMap = new Map<string, Person>();
-  for (const p of peopleFromImages) peopleMap.set(p.name, p);
-  for (const p of manualPeople) if (!peopleMap.has(p.name)) peopleMap.set(p.name, p);
-
-  function surnameKey(p: Person): string {
-    const parts = p.name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length <= 1) return p.name;
-    return p.source === 'manual' ? parts[0] : parts.slice(1).join(' ');
+  // Build slug → tags[] from Figma image data for the category filter
+  const imageTagsBySlug = new Map<string, string[]>();
+  for (const img of imagesRaw) {
+    if (!img.name) continue;
+    const s = slugify(img.name, 0);
+    const existing = imageTagsBySlug.get(s) ?? [];
+    for (const tag of img.tags ?? []) {
+      if (!existing.includes(tag)) existing.push(tag);
+    }
+    imageTagsBySlug.set(s, existing);
   }
 
-  const people: Person[] = Array.from(peopleMap.values()).sort((a, b) =>
-    surnameKey(a).localeCompare(surnameKey(b), 'it', { sensitivity: 'base' })
+  const people = $derived<Person[]>(
+    volunteers
+      .map(vol => ({
+        slug: vol.slug,
+        displayName: `${vol.cognome} ${vol.nome}`,
+        cognome: vol.cognome,
+        tags: imageTagsBySlug.get(vol.slug) ?? []
+      }))
+      .sort((a, b) => a.cognome.localeCompare(b.cognome, 'it', { sensitivity: 'base' }))
   );
 
   let selectedIndex = $state<number>(0);
@@ -51,33 +56,50 @@
       : people;
   }
 
-  function findImageIndexByName(name: string | undefined) {
-    if (!name) return 0;
-    return imagesRaw.findIndex((img) => img.name === name) || 0;
+  function formatDisplayName(person: Person) {
+    return person.displayName.toUpperCase();
   }
 
-  function formatDisplayName(person: Person) {
-    const { name, source } = person;
-    const parts = name.trim().split(/\s+/).filter(Boolean);
+  /* ── Alphabet sidebar ──────────────────────────────────────────── */
+  function normalizeFirstLetter(s: string): string {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().charAt(0);
+  }
 
-    if (!parts.length) return '';
-    if (parts.length === 1) return name.toUpperCase();
+  const availableLetters = $derived.by(() => {
+    const visible = activeFilter ? people.filter(p => p.tags.includes(activeFilter!)) : people;
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const p of visible) {
+      const l = normalizeFirstLetter(p.cognome);
+      if (l && !seen.has(l)) { seen.add(l); result.push(l); }
+    }
+    return result;
+  });
 
-    return source === 'manual'
-      ? name.toUpperCase()
-      : `${parts.slice(1).join(' ')} ${parts[0]}`.toUpperCase();
+  const activeLetter = $derived.by(() => {
+    const visible = activeFilter ? people.filter(p => p.tags.includes(activeFilter!)) : people;
+    const person = visible[selectedIndex];
+    return person ? normalizeFirstLetter(person.cognome) : '';
+  });
+
+  function jumpToLetter(letter: string) {
+    if (!namesInteractionRef) return;
+    const visible = activeFilter ? people.filter(p => p.tags.includes(activeFilter!)) : people;
+    const idx = visible.findIndex(p => normalizeFirstLetter(p.cognome) === letter);
+    if (idx === -1) return;
+    namesInteractionRef.scrollTo({ top: idx * ROW_HEIGHT, behavior: 'smooth' });
   }
 
   function openVolunteer(person: Person) {
-    const imageIndex = findImageIndexByName(person.name);
-    const slug = slugify(person.name, imageIndex);
     const search = buildGallerySearchParams({
       view: 'names',
       filter: activeFilter,
       namesScroll: namesInteractionRef?.scrollTop ?? 0
     });
 
-    const href = search ? `/volunteer/${slug}/profile?${search}` : `/volunteer/${slug}/profile`;
+    const href = search
+      ? `/volunteer/${person.slug}/profile?${search}`
+      : `/volunteer/${person.slug}/profile`;
 
     if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
       navigator.clipboard
@@ -188,6 +210,20 @@
     <div class="names-veil__zone names-veil__zone--middle-b"></div>
     <div class="names-veil__zone names-veil__zone--bottom"></div>
   </div>
+
+  <nav class="alpha-sidebar" aria-label="Navigazione alfabetica">
+    {#each availableLetters as letter}
+      <button
+        class="alpha-sidebar__btn"
+        class:active={activeLetter === letter}
+        type="button"
+        aria-label={`Vai alla lettera ${letter}`}
+        onclick={() => jumpToLetter(letter)}
+      >
+        {letter}
+      </button>
+    {/each}
+  </nav>
 
   <div class="copy-toast" aria-hidden={!copied} class:visible={copied}>Link copied</div>
 </div>
@@ -330,7 +366,9 @@
   .item-underline {
     position: absolute;
     left: 0;
-    right: 0;
+    /* Stop before the sidebar: sidebar is at right:72px and 23px wide.
+       With the active shift (+~56px), right:92px keeps a clear gap. */
+    right: calc(var(--names-inline-end, 72px) + 20px);
     bottom: 0;
 
     height: var(--names-underline-thickness);
@@ -466,5 +504,58 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
     box-shadow: 0 0 16px rgba(189, 255, 93, 0.18);
+  }
+
+  /* ── Alphabet sidebar ─────────────────────────────────────────────── */
+  .alpha-sidebar {
+    position: absolute;
+    right: var(--spacing-11, 72px);
+    /* Anchor near the top of the view (not centered) so it never
+       overlaps the "FILTRA PER CATEGORIA" button at the bottom.
+       Font/gap scale with vh so the full list always fits. */
+    top: clamp(24px, 6vh, 120px);
+    z-index: 35;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(5px, 1.4vh, 13.5px);
+
+    width: 23px;
+    padding: 0;
+    margin: 0;
+    pointer-events: auto;
+  }
+
+  .alpha-sidebar__btn {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+
+    font-family: var(--font-display);
+    font-size: clamp(13px, 2vh, 21.647px);
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--color-content-body, #fafafa);
+    width: 23px;
+
+    transition: color 180ms ease, opacity 180ms ease;
+  }
+
+  .alpha-sidebar__btn.active {
+    color: var(--color-content-accent, #bdff5d);
+  }
+
+  .alpha-sidebar__btn:hover:not(.active) {
+    opacity: 0.55;
+  }
+
+  @media (max-width: 1100px) {
+    .alpha-sidebar {
+      right: var(--spacing-5, 24px);
+      width: 18px;
+    }
   }
 </style>

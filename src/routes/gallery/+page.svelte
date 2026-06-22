@@ -8,6 +8,9 @@
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
   import NamesView from '$lib/components/gallery/NamesView.svelte';
   import { readGalleryContext } from '$lib/data/gallery-context';
+  import { fetchAllVolunteers, type VolunteerSummary } from '$lib/supabase';
+
+  let dbVolunteers = $state<VolunteerSummary[]>([]);
 
   onMount(() => {
     /* Lock scroll on the root while the gallery is mounted.
@@ -16,6 +19,8 @@
        would keep overflow:hidden on every subsequent page. */
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+
+    fetchAllVolunteers().then(vols => { dbVolunteers = vols; });
 
     /* Remove the gallery-entry marker after the bloom animation finishes (960ms + 80ms delay + margin). */
     const t = setTimeout(() => { delete document.documentElement.dataset.galleryEntry; }, 1200);
@@ -89,7 +94,7 @@
   {#if activeToggle === 'photos'}
     <PhotosView {activeFilter} />
   {:else}
-    <NamesView {activeFilter} />
+    <NamesView {activeFilter} volunteers={dbVolunteers} />
   {/if}
 
   <!-- Edge fades -->
