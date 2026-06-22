@@ -138,6 +138,13 @@
     </button>
   {/if}
 
+  <!-- ── Right vertical nav ───────────────────────────────────────── -->
+  <nav class="right-nav" aria-label="Navigazione principale">
+    <a class="right-nav__link" class:active={page.url.pathname.startsWith('/gallery')}  href="/gallery">GALLERIA</a>
+    <a class="right-nav__link" class:active={page.url.pathname.startsWith('/category')} href="/category">CATEGORIE</a>
+    <a class="right-nav__link" class:active={page.url.pathname.startsWith('/about')}    href="/about">ABOUT</a>
+  </nav>
+
   <!-- ── Category overlay (right gradient panel) ───────────────── -->
   {#if filterPanelOpen}
     <div
