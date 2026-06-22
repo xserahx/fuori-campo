@@ -132,7 +132,9 @@ function getVisibleStyles(
 
 function applyStyles(node: HTMLElement, styles: Partial<CSSStyleDeclaration>) {
   for (const [key, value] of Object.entries(styles)) {
-    (node.style as Record<string, string>)[key] = value as string;
+    if (typeof value === "string") {
+      (node.style as any)[key] = value;
+    }
   }
 }
 
