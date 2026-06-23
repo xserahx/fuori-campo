@@ -5,12 +5,14 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import LoadingIntro from '$lib/components/LoadingIntro.svelte';
 	import { imagesRaw } from '$lib/data/gallery';
+	import { navbarInverted } from '$lib/stores/navbar';
 
 	let { children } = $props();
 
 	const isAboutPage = $derived(page.url.pathname === '/about');
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
 	const isGalleryPage = $derived(page.url.pathname === '/gallery');
+	const isHomePage = $derived(page.url.pathname === '/');
 
 	$effect(() => {
 		if (!browser) return;
@@ -82,7 +84,7 @@
 </svelte:head>
 
 {#if !isVolunteerPage}
-	<Navbar inverted={isAboutPage} pinned={isGalleryPage} />
+	<Navbar inverted={isAboutPage || $navbarInverted} pinned={isGalleryPage || isHomePage} />
 {/if}
 
 {#if showIntro && introSrc}
@@ -105,7 +107,7 @@
 	@keyframes vt-out {
 		to {
 			opacity: 0;
-			filter: blur(10px) saturate(0.6);
+			filter: blur(10px);
 			transform: scale(1.025) translateY(-10px);
 		}
 	}
@@ -114,15 +116,15 @@
 	@keyframes vt-in {
 		from {
 			opacity: 0;
-			filter: blur(22px) saturate(0.5);
+			filter: blur(22px);
 			transform: scale(0.975) translateY(14px);
 		}
 	}
 
 	/* Gallery-specific bloom (existing, now richer) */
 	@keyframes gallery-bloom {
-		0%   { opacity: 0; filter: blur(40px) saturate(0); transform: scale(0.96); }
-		100% { opacity: 1; filter: blur(0px)  saturate(1); transform: scale(1);    }
+		0%   { opacity: 0; filter: blur(40px); transform: scale(0.96); }
+		100% { opacity: 1; filter: blur(0px);  transform: scale(1);    }
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

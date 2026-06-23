@@ -1,6 +1,7 @@
 
 export type GalleryImage = {
   src: string;
+  path?: string;   // storage path (relative); used to reopen the exact image in zoom view
   slug?: string;
   left: number;
   top: number;

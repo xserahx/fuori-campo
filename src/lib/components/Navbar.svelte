@@ -92,6 +92,10 @@
     if (underlineInitialized) syncActiveUnderline();
   });
 
+  $effect(() => {
+    if (pinned) visible = true;
+  });
+
   // Update browser title to match active nav section (client-only)
   $effect(() => {
     activeNavIndex;

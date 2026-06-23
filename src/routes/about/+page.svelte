@@ -24,10 +24,6 @@
 </main>
 
 <style>
-  :global(body) {
-    background: #bdff5d;
-  }
-
   /* ── COSMOS entrance keyframes (dark → lime context, inverted) ── */
   @keyframes about-rise {
     from {

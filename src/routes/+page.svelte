@@ -8,6 +8,7 @@
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
   import { fetchAllVolunteers, getCachedVolunteers, getImageUrl } from '$lib/supabase';
+  import { navbarInverted } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────── */
@@ -401,6 +402,20 @@
       else if (vDelta >  5)  { navbarVisible = false; }
       else if (vDelta < -5)  { navbarVisible = true;  }
 
+      /* 9b ─ Navbar invert: follow the lime/dark dissolve in question sections */
+      if (inQ && s1.slide > 0) {
+        const t2     = clamp(s1.hSmooth / VW, 0, 2.9999);
+        const i2     = Math.floor(t2);
+        const l2     = t2 - i2;
+        const blend2 = clamp((l2 - 0.28) / 0.44, 0, 1);
+        const eb2    = ss(blend2);
+        const ni2    = Math.min(i2 + 1, 3);
+        const green  = Math.round(panelBg[i2][1] + (panelBg[ni2][1] - panelBg[i2][1]) * eb2);
+        navbarInverted.set(green > 128);
+      } else {
+        navbarInverted.set(false);
+      }
+
       rafId = requestAnimationFrame(tick);
     };
 
@@ -559,6 +574,7 @@
 
     return () => {
       dissolving = false;
+      navbarInverted.set(false);
       if (transitionOverlay) gsap.killTweensOf(transitionOverlay);
       cancelAnimationFrame(rafId);
       window.removeEventListener('wheel',       handleWheel);

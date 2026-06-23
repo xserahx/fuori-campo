@@ -68,15 +68,41 @@ export async function fetchVolunteer(slug: string): Promise<VolunteerRow | null>
 
 export type VolunteerSummary = Pick<VolunteerRow, 'slug' | 'nome' | 'cognome' | 'ruolo_generale' | 'ha_immagini' | 'image_path' | 'image_paths'>;
 
+// Maps the uppercase role code (prefix before " - ") to the gallery filter tag.
+// Derived from all distinct ruolo_generale values in the volunteers table.
+const ROLE_CODE_TO_TAG: Record<string, string> = {
+	ACR: 'organizzativa', // Accreditations
+	PEM: 'organizzativa', // People Management
+	CER: 'cerimonie',     // Ceremonies
+	REV: 'cerimonie',     // Revenue
+	EVM: 'gestione',      // Event Management
+	EVS: 'gestione',      // Event Services / Fan Experience
+	NCS: 'gestione',      // NOC Service
+	VIL: 'gestione',      // Village
+	LOG: 'logistica',     // Logistics
+	TRA: 'logistica',     // Transport
+	COM: 'relazioni',     // Communication
+	INT: 'relazioni',     // Interactions / Protocol
+	LAN: 'relazioni',     // Language Services
+	PRS: 'relazioni',     // Press
+	DOP: 'sport',         // Doping Control
+	XALP: 'sport',        // Alpine Skiing
+	XCUR: 'sport',        // Curling
+	XFSK: 'sport',        // Figure Skating
+	XIHO: 'sport',        // Ice Hockey
+	XSJP: 'sport',        // Ski Jumping
+	XSSK: 'sport',        // Speed Skating
+	XSTK: 'sport',        // Short Track Speed Skating
+};
+
 export function ruoloToTag(ruolo: string | null): string | null {
 	if (!ruolo) return null;
+	// Extract the code prefix before " - " (e.g. "TRA" from "TRA - Transport")
+	const match = ruolo.match(/^([A-Z]+)\s*-/);
+	if (match) return ROLE_CODE_TO_TAG[match[1]] ?? null;
+	// Fallback for non-coded entries (e.g. "Belli Sciatore Esperto")
 	const r = ruolo.toLowerCase();
-	if (r.includes('organizzat')) return 'organizzativa';
-	if (r.includes('cerimoni')) return 'cerimonie';
-	if (r.includes('gestione') || r.includes('fan')) return 'gestione';
-	if (r.includes('logistica') || r.includes('territorio')) return 'logistica';
-	if (r.includes('relazioni') || r.includes('comunicazione')) return 'relazioni';
-	if (r.includes('sport') || r.includes('disciplin')) return 'sport';
+	if (r.includes('sciator') || r.includes('ski') || r.includes('sport')) return 'sport';
 	return null;
 }
 
@@ -128,7 +154,8 @@ export function buildGalleryFromVolunteers(volunteers: VolunteerSummary[]): Gall
 			if (round >= vol.paths.length) continue;
 			const ar = GALLERY_ASPECT_RATIOS[result.length % GALLERY_ASPECT_RATIOS.length];
 			result.push({
-				src: getImageUrl(vol.paths[round]) ?? '',
+				src:  getImageUrl(vol.paths[round]) ?? '',
+				path: vol.paths[round],
 				slug: vol.slug,
 				name: vol.name,
 				left: 0,

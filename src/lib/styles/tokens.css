@@ -258,8 +258,9 @@ body::-webkit-scrollbar,
   box-sizing: border-box;
   z-index: 40;
   transition:
-    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity   240ms cubic-bezier(0.22, 1, 0.36, 1);
+    transform   240ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity     240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background  320ms ease;
 }
 
 .navbar--transparent {
@@ -283,7 +284,7 @@ body::-webkit-scrollbar,
   background: transparent;
 }
 
-.navbar--inverted .navbar-bg       { display: none; }
+.navbar--inverted .navbar-bg       { opacity: 0; }
 .navbar--inverted .nav-link        { color: #444; opacity: 1; text-shadow: none; }
 .navbar--inverted .nav-link:hover,
 .navbar--inverted .nav-link:focus  { color: #0e0e0e; transform: translateY(-3px); text-shadow: none; }
@@ -303,6 +304,7 @@ body::-webkit-scrollbar,
   height: 100%;
   object-fit: cover;
   pointer-events: none;
+  transition: opacity 320ms ease;
 }
 
 .navbar-inner {
@@ -450,14 +452,14 @@ body::-webkit-scrollbar,
   margin-left: auto;
   text-align:  right;
   max-width:   var(--figma-story-width);
-  margin-top:  var(--story-numbers-gap);
+  margin-top:  380px;
 }
 
 .story--intro  { margin-top: 0; }
 
 .story--summary {
   max-width:  980px;
-  margin-top: 192px;
+  margin-top: 260px;
 }
 
 /* Quote sub-variant */
@@ -473,14 +475,14 @@ body::-webkit-scrollbar,
 
 .story--quote-left {
   margin-left:  0;
-  margin-top:   var(--spacing-19);
+  margin-top:   620px;
   text-align:   left;
   padding-left: var(--spacing-11);
 }
 
 .story--quote-right {
   margin-left:   auto;
-  margin-top:    var(--spacing-15);
+  margin-top:    380px;
   text-align:    right;
   padding-right: var(--spacing-11);
 }

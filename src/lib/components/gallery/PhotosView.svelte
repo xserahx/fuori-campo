@@ -102,13 +102,14 @@
 
   function openVolunteer(image: GalleryImage) {
     const slug = image.slug ?? slugify(image.name, 0);
-    const search = buildGallerySearchParams({
+    const params = new URLSearchParams(buildGallerySearchParams({
       view: 'photos',
       filter: activeFilter,
       photoX: currentX,
       photoY: currentY,
-    });
-    goto(search ? `/volunteer/${slug}?${search}` : `/volunteer/${slug}`);
+    }));
+    if (image.path) params.set('img', image.path);
+    goto(`/volunteer/${slug}?${params.toString()}`);
   }
 
   function hoverVolunteer(image: GalleryImage) {

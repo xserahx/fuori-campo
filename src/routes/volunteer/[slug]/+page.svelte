@@ -3,7 +3,6 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/supabase';
   import type { PageData } from './$types';
@@ -24,15 +23,6 @@
   let { data }: { data: PageData } = $props();
   const dbVol = $derived(data.dbVol);
 
-  /* ── Background: this volunteer's own photos only ────────────── */
-  const bgPaths = $derived(
-    dbVol?.ha_immagini
-      ? (dbVol.image_paths && dbVol.image_paths.length > 0
-          ? dbVol.image_paths.slice(0, 8)
-          : dbVol.image_path ? [dbVol.image_path] : [])
-      : []
-  );
-
   /* ── Navigation peers — from cache if available, otherwise lazy ─ */
   let allVols = $state<VolunteerSummary[]>(getCachedVolunteers());
 
@@ -43,14 +33,42 @@
   /* ── Reactive state from URL ─────────────────────────────────── */
   const currentSlug    = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
+  const imgParam       = $derived(page.url.searchParams.get('img'));
 
-  let imgError   = $state(false);
-  let isPortrait = $state(false);
-  $effect(() => { currentSlug; imgError = false; isPortrait = false; });
+  /* ── Background: volunteer's own photos + random filler if sparse ── */
+  const bgPaths = $derived.by(() => {
+    if (!dbVol?.ha_immagini) return [];
+    const own = dbVol.image_paths && dbVol.image_paths.length > 0
+      ? dbVol.image_paths
+      : dbVol.image_path ? [dbVol.image_path] : [];
+    if (own.length >= 4) return own.slice(0, 8);
+
+    // Fill remaining slots with photos from other volunteers (stable, seed-based order)
+    const seed = currentSlug.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+    const others = allVols.filter(v => v.slug !== currentSlug && v.ha_immagini);
+    const fill = [...own];
+    for (let i = 0; fill.length < 6 && i < others.length; i++) {
+      const vol = others[(seed + i) % others.length];
+      const p = vol.image_paths?.[0] ?? vol.image_path;
+      if (p) fill.push(p);
+    }
+    return fill;
+  });
+
+  let imgError      = $state(false);
+  let detectedRatio = $state<'16-9' | '4-3' | '3-4' | '9-16'>('16-9');
+  const isPortrait  = $derived(detectedRatio === '3-4' || detectedRatio === '9-16');
+
+  $effect(() => { currentSlug; imgParam; imgError = false; detectedRatio = '16-9'; });
 
   function handleImageLoad(e: Event) {
     const img = e.currentTarget as HTMLImageElement;
-    isPortrait = img.naturalHeight > img.naturalWidth;
+    const r = img.naturalWidth / img.naturalHeight;
+    // Geometric midpoints between adjacent supported ratios
+    if      (r < 0.649) detectedRatio = '9-16'; // < √(9/16 × 3/4)
+    else if (r < 1.0)   detectedRatio = '3-4';  // < √(3/4 × 4/3) = 1
+    else if (r < 1.540) detectedRatio = '4-3';  // < √(4/3 × 16/9)
+    else                detectedRatio = '16-9';
   }
 
   /* ── Display values — DB is the single source of truth ──────── */
@@ -67,7 +85,9 @@
   );
 
   const resolvedSrc = $derived(
-    dbVol?.ha_immagini ? getImageUrl(dbVol.image_path) : null
+    dbVol?.ha_immagini
+      ? getImageUrl(imgParam ?? dbVol.image_path)
+      : null
   );
 
   /* ── Navigation: same role, volunteers with images ───────────── */
@@ -98,8 +118,6 @@
   <title>{volunteerTitle} — {volunteerRole} — Fuori Campo</title>
 </svelte:head>
 
-<Navbar pinned />
-
 <main class="lb">
 
   <!-- ── Blurred background: only this volunteer's photos ──────── -->
@@ -129,8 +147,12 @@
     onclick={goBackToGallery}
   ></button>
 
-  <!-- ── Close × button (top-right) ───────────────────────────────── -->
-  <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>×</button>
+  <!-- ── Close × button (top-right, per Figma) ───────────────────── -->
+  <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+      <path d="M2 2L20 20M20 2L2 20" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
 
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
   <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
@@ -146,7 +168,7 @@
   </button>
 
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
-  <div class="photo-frame" class:photo-frame--portrait={isPortrait}>
+  <div class="photo-frame photo-frame--{detectedRatio}" class:photo-frame--portrait={isPortrait}>
 
     <!-- Main image -->
     {#if resolvedSrc && !imgError}
@@ -261,14 +283,14 @@
     padding: 0;
   }
 
-  /* ── Close × button ────────────────────────────────────────────── */
+  /* ── Close × button — Figma: left:1614px top:173px in 1728px canvas ── */
   .close-x {
     position: fixed;
-    top: clamp(18px, 3.2vh, 48px);
-    right: clamp(18px, 3.2vw, 56px);
+    top: 61px;    /* 173px - 112px browser chrome */
+    right: 82px;  /* 1728 - 1614 - 32 */
     z-index: 25;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -276,30 +298,26 @@
     background: transparent;
     cursor: pointer;
     padding: 0;
-    font-size: 36px;
-    line-height: 1;
-    color: var(--color-content-accent, #bdff5d);
     transition:
-      opacity   0.24s ease,
       transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
       filter    0.24s ease;
     will-change: transform;
   }
 
   .close-x:hover {
-    transform: scale(1.18) rotate(5deg);
+    transform: scale(1.2) rotate(8deg);
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.5));
   }
 
   .close-x:active {
-    transform: scale(0.9);
+    transform: scale(0.88);
     transition-duration: 80ms;
   }
 
   /* ── Navigation arrows ──────────────────────────────────────────── */
   .arrow {
     position: fixed;
-    top: 50%;
+    top: 56vh;
     transform: translateY(-50%);
     z-index: 20;
     width: 48px;
@@ -319,7 +337,7 @@
   }
 
   .arrow--prev {
-    left: 4px;
+    left: 70px;
     transform: translateY(-50%) translateX(0);
   }
   .arrow--prev:hover {
@@ -333,7 +351,7 @@
   }
 
   .arrow--next {
-    right: 4px;
+    right: 69px;
     transform: translateY(-50%) translateX(0);
   }
   .arrow--next:hover {
@@ -360,35 +378,36 @@
     }
   }
 
+  /* ── Base frame (positioning only, no size) ────────────────────── */
   .photo-frame {
     position: absolute;
     left: 50%;
     top: 56vh;
     transform: translate(-50%, -50%);
     z-index: 5;
-    width: min(1091px, 63vw);   /* landscape default */
-    min-height: 180px;
     overflow: hidden;
-    border: 2px solid #fafafa;
+    border: 2px solid #bdff5d;
     background: #111;
     animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Portrait: narrower frame — matches Figma 588px / 34vw × 784px tall */
-  .photo-frame--portrait {
-    width: min(588px, 34vw);
-    max-height: min(784px, 84vh);
-  }
+  /* ── Frame size per snapped ratio ───────────────────────────────
+     Width = min(Figma-max, vw-cap, height-cap derived from 80vh).
+     This ensures the frame never exceeds 80 vh in height at any
+     viewport size while keeping proportions exact.               */
+  .photo-frame--16-9 { width: min(1091px, 63vw, calc(80vh * 16 / 9)); aspect-ratio: 16 / 9; }
+  .photo-frame--4-3  { width: min(1091px, 63vw, calc(78vh * 4  / 3)); aspect-ratio: 4  / 3; }
+  .photo-frame--3-4  { width: min(588px,  34vw, calc(80vh * 3  / 4)); aspect-ratio: 3  / 4; }
+  .photo-frame--9-16 { width: min(588px,  34vw, calc(80vh * 9  / 16)); aspect-ratio: 9 / 16; }
 
-  /* Portrait image: scale to fit within max-height without cropping */
-  .photo-frame--portrait .photo-img {
-    max-height: min(784px, 84vh);
-    object-fit: contain;
-  }
+  /* Portrait button moves to top-right (avoids caption overlap) */
+  .photo-frame--portrait .expand-btn { bottom: auto; top: 18px; }
 
+  /* ── Image: always contain, never crop or distort ───────────── */
   .photo-img {
     width: 100%;
-    height: auto;   /* natural proportions, never cropped */
+    height: 100%;
+    object-fit: contain;
     display: block;
     pointer-events: none;
     user-select: none;
@@ -397,7 +416,7 @@
 
   .photo-placeholder {
     width: 100%;
-    aspect-ratio: 1091 / 581; /* keeps a reasonable frame when no image */
+    height: 100%;
     background: linear-gradient(135deg, #111 0%, #1c1c1c 100%);
   }
 
@@ -483,12 +502,6 @@
     transition-duration: 80ms;
   }
 
-  /* Portrait: button at top-right */
-  .photo-frame--portrait .expand-btn {
-    bottom: auto;
-    top: 18px;
-  }
-
   .expand-btn-label {
     font-family: 'Forma DJR Display', sans-serif;
     font-size: 24px;
@@ -511,18 +524,26 @@
 
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1300px) {
-    .photo-frame               { width: min(900px, 80vw); top: 54vh; }
-    .photo-frame--portrait     { width: min(500px, 44vw); }
+    .photo-frame        { top: 54vh; }
+    .photo-frame--16-9  { width: min(900px, 80vw, calc(80vh * 16 / 9)); }
+    .photo-frame--4-3   { width: min(900px, 80vw, calc(78vh * 4  / 3)); }
+    .photo-frame--3-4   { width: min(500px, 44vw, calc(80vh * 3  / 4)); }
+    .photo-frame--9-16  { width: min(500px, 44vw, calc(80vh * 9  / 16)); }
   }
 
   @media (max-width: 1100px) {
-    .photo-frame               { width: min(900px, 90vw); }
-    .photo-frame--portrait     { width: min(460px, 50vw); }
+    .photo-frame--16-9  { width: min(900px, 90vw, calc(80vh * 16 / 9)); }
+    .photo-frame--4-3   { width: min(900px, 90vw, calc(78vh * 4  / 3)); }
+    .photo-frame--3-4   { width: min(460px, 50vw, calc(80vh * 3  / 4)); }
+    .photo-frame--9-16  { width: min(460px, 50vw, calc(80vh * 9  / 16)); }
   }
 
   @media (max-width: 700px) {
-    .photo-frame               { width: 96vw; top: 52vh; }
-    .photo-frame--portrait     { width: min(360px, 82vw); }
+    .photo-frame        { top: 52vh; }
+    .photo-frame--16-9  { width: min(96vw,  calc(80vh * 16 / 9)); }
+    .photo-frame--4-3   { width: min(96vw,  calc(78vh * 4  / 3)); }
+    .photo-frame--3-4   { width: min(82vw,  calc(80vh * 3  / 4)); }
+    .photo-frame--9-16  { width: min(82vw,  calc(80vh * 9  / 16)); }
     .cap-location { font-size: 10px; }
     .cap-role     { font-size: 14px; }
     .cap-name     { font-size: 20px; }
