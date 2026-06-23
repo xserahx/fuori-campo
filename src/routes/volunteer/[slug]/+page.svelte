@@ -374,9 +374,16 @@
     animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  /* Portrait: narrower frame — matches Figma 588px / 34vw */
+  /* Portrait: narrower frame — matches Figma 588px / 34vw × 784px tall */
   .photo-frame--portrait {
     width: min(588px, 34vw);
+    max-height: min(784px, 84vh);
+  }
+
+  /* Portrait image: scale to fit within max-height without cropping */
+  .photo-frame--portrait .photo-img {
+    max-height: min(784px, 84vh);
+    object-fit: contain;
   }
 
   .photo-img {
