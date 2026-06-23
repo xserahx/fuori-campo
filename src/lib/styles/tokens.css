@@ -612,7 +612,7 @@ body::-webkit-scrollbar,
   flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
-  padding: 80px var(--spacing-11) 120px;
+  padding: 287px var(--spacing-11) 120px;
   align-items: flex-start;
 }
 

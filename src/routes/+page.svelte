@@ -7,7 +7,7 @@
   import { blurReveal } from "../lib/actions/blurReveal";
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
-  import { imgNavbar, imgStatusDefault, galleryImages } from "../lib/design/assets";
+  import { fetchAllVolunteers, getCachedVolunteers, getImageUrl } from '$lib/supabase';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────── */
@@ -46,9 +46,24 @@
   let q3h2: HTMLElement | null = null;
   let q4h2: HTMLElement | null = null;
 
-  /* ── Gallery / scroll cue ─────────────────────────────────────── */
+  /* ── Gallery photos from Supabase ───────────────────────────────── */
   const galleryCount = 12;
   const offsetCount = 6;
+
+  function buildHomepagePhotos(vols: ReturnType<typeof getCachedVolunteers>): string[] {
+    return vols
+      .filter(v => v.ha_immagini)
+      .flatMap(v =>
+        v.image_paths && v.image_paths.length > 0
+          ? v.image_paths.slice(0, 2)
+          : v.image_path ? [v.image_path] : []
+      )
+      .map(p => getImageUrl(p))
+      .filter((u): u is string => !!u)
+      .slice(0, 28);
+  }
+
+  let homepagePhotos = $state<string[]>(buildHomepagePhotos(getCachedVolunteers()));
 
   /* Gallery transition state — shared between click handler and scroll engine */
   let galleryTransitionPending = false;
@@ -540,6 +555,8 @@
     window.addEventListener('pointermove', handlePointerMove, { passive: true  });
     window.addEventListener('resize',      handleResize,      { passive: true  });
 
+    fetchAllVolunteers().then(vols => { homepagePhotos = buildHomepagePhotos(vols); });
+
     return () => {
       dissolving = false;
       if (transitionOverlay) gsap.killTweensOf(transitionOverlay);
@@ -665,7 +682,7 @@
 
     <!-- Gallery preview teaser -->
     <section class="gallery" aria-label="Gallery preview">
-      {#each galleryImages as src, index}
+      {#each homepagePhotos as src, index}
         <figure
           class="gallery-item"
           style={`width:var(--gallery-width-${(index % galleryCount) + 1}); margin-top:var(--gallery-offset-${(index % offsetCount) + 1});`}
