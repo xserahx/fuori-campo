@@ -663,12 +663,6 @@
       </p>
     </section>
 
-    <!-- Scroll cue — Figma: H3 36px accent, ls 0.72px + arrow -->
-    <div class="scroll-cue"
-      use:blurReveal={{ direction: "left", threshold: 0.5, blur: 10, translateX: 20, duration: 600 }}>
-      <ScrollArrow onclick={navigateToGallery} />
-    </div>
-
     <!-- Gallery preview teaser -->
     <section class="gallery" aria-label="Gallery preview">
       {#each galleryImages as src, index}
