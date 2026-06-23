@@ -644,7 +644,7 @@
     background-repeat: no-repeat;
     /* Blur erases any seam or hard edge under the panel */
     filter: blur(20px) saturate(1.08);
-    -webkit-filter: blur(20px) saturate(1.08);
+    -webkit-filter: blur(12px) saturate(1.08);
     will-change: opacity;
   }
 
