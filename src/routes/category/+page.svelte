@@ -125,7 +125,14 @@
     void main(){
       vec4 c = texture2D(uTex, vUv);
       c.rgb  += grain(vUv, uTime);
-      gl_FragColor = vec4(c.rgb, uFade);
+
+      // Feather all four edges so the centre card has no hard rectangular
+      // border — it dissolves softly into the blurred layer behind it,
+      // killing the boxy seam / double-exposure look during drag.
+      float edge = smoothstep(0.0, 0.16, vUv.x) * smoothstep(0.0, 0.16, 1.0 - vUv.x)
+                 * smoothstep(0.0, 0.16, vUv.y) * smoothstep(0.0, 0.16, 1.0 - vUv.y);
+
+      gl_FragColor = vec4(c.rgb, uFade * edge);
     }`;
 
   // ─── GLSL: side card — zoom-blur + barrel + grain + vignette ─────
@@ -329,8 +336,9 @@
       slot.sMesh.rotation.set(0, ry, 0);
       // Ensure side meshes remain visible as blurred previews at the edges
       slot.sMesh.visible               = true;
-      // keep a minimum fade so side items never fully disappear
-      slot.sMat.uniforms.uFade.value    = Math.max(sf, 0.24);
+      // keep a small minimum fade so side items never fully disappear,
+      // but low enough that stacked side panels don't haze through the centre
+      slot.sMat.uniforms.uFade.value    = Math.max(sf, 0.12);
       slot.sMat.uniforms.uTime.value    = t;
       slot.sMat.uniforms.uSide.value    = signD;
       slot.sMat.uniforms.uDist.value    = normDist;
