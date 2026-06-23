@@ -44,8 +44,14 @@
   const currentSlug    = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
-  let imgError = $state(false);
-  $effect(() => { currentSlug; imgError = false; });
+  let imgError   = $state(false);
+  let isPortrait = $state(false);
+  $effect(() => { currentSlug; imgError = false; isPortrait = false; });
+
+  function handleImageLoad(e: Event) {
+    const img = e.currentTarget as HTMLImageElement;
+    isPortrait = img.naturalHeight > img.naturalWidth;
+  }
 
   /* ── Display values — DB is the single source of truth ──────── */
   const volunteerTitle = $derived(
@@ -140,7 +146,7 @@
   </button>
 
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
-  <div class="photo-frame">
+  <div class="photo-frame" class:photo-frame--portrait={isPortrait}>
 
     <!-- Main image -->
     {#if resolvedSrc && !imgError}
@@ -149,6 +155,7 @@
         alt={volunteerTitle}
         class="photo-img"
         draggable="false"
+        onload={handleImageLoad}
         onerror={() => { imgError = true; }}
       />
     {:else}
@@ -359,13 +366,17 @@
     top: 56vh;
     transform: translate(-50%, -50%);
     z-index: 5;
-    width: min(1091px, 63vw);
-    /* No aspect-ratio — height is determined by the image's natural proportions */
-    min-height: 180px; /* dark placeholder while image loads */
+    width: min(1091px, 63vw);   /* landscape default */
+    min-height: 180px;
     overflow: hidden;
-    box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
+    border: 2px solid #fafafa;
     background: #111;
     animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Portrait: narrower frame — matches Figma 588px / 34vw */
+  .photo-frame--portrait {
+    width: min(588px, 34vw);
   }
 
   .photo-img {
@@ -436,7 +447,7 @@
   /* ── "SCOPRI DI PIÙ" pill button ───────────────────────────────── */
   .expand-btn {
     position: absolute;
-    bottom: 18px;
+    bottom: 18px;   /* landscape: bottom-right */
     right: 18px;
     z-index: 3;
     display: flex;
@@ -465,6 +476,12 @@
     transition-duration: 80ms;
   }
 
+  /* Portrait: button at top-right */
+  .photo-frame--portrait .expand-btn {
+    bottom: auto;
+    top: 18px;
+  }
+
   .expand-btn-label {
     font-family: 'Forma DJR Display', sans-serif;
     font-size: 24px;
@@ -486,17 +503,19 @@
   }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
-  /* Small laptop 1024–1300 px */
   @media (max-width: 1300px) {
-    .photo-frame { width: min(900px, 80vw); top: 54vh; }
+    .photo-frame               { width: min(900px, 80vw); top: 54vh; }
+    .photo-frame--portrait     { width: min(500px, 44vw); }
   }
 
   @media (max-width: 1100px) {
-    .photo-frame { width: min(900px, 90vw); }
+    .photo-frame               { width: min(900px, 90vw); }
+    .photo-frame--portrait     { width: min(460px, 50vw); }
   }
 
   @media (max-width: 700px) {
-    .photo-frame { width: 96vw; top: 52vh; }
+    .photo-frame               { width: 96vw; top: 52vh; }
+    .photo-frame--portrait     { width: min(360px, 82vw); }
     .cap-location { font-size: 10px; }
     .cap-role     { font-size: 14px; }
     .cap-name     { font-size: 20px; }
