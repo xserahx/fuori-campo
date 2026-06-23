@@ -11,6 +11,8 @@ export type GalleryImage = {
   name?: string;
   /** Full-width lime card testimonial — shown on profile page */
   dayDescription?: string;
+  /** When true the photo appears in the layout but clicking does nothing */
+  noClick?: boolean;
 };
 
 export type Person = {
@@ -170,8 +172,11 @@ export function buildSpacedImages(rawImages: GalleryImage[], designWidth = 1920)
  * pseudo-random (deterministic) position inside its cell so images are
  * spread in both X and Y with no visible column pattern.
  */
-export function buildScatterLayout(rawImages: GalleryImage[], canvasWidth = 3840) {
-  if (rawImages.length === 0) return { images: [] as GalleryImage[], canvasHeight: 1080 };
+export function buildScatterLayout(
+  rawImages: GalleryImage[],
+  canvasWidth = 3840
+): { images: GalleryImage[]; canvasHeight: number } {
+  if (rawImages.length === 0) return { images: [], canvasHeight: 1080 };
 
   const COLS     = 15;
   const CELL_W   = canvasWidth / COLS;

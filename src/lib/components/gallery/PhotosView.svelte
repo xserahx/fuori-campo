@@ -167,11 +167,12 @@
       <button
         class="collage-item"
         class:img-unmatched={isUnmatched}
+        class:img-no-click={img.noClick}
         type="button"
         style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
         onpointerdown={(e) => e.stopPropagation()}
-        onpointerenter={() => hoverVolunteer(img)}
-        onclick={() => openVolunteer(img)}
+        onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
+        onclick={() => { if (!img.noClick) openVolunteer(img); }}
       >
         <div class="img-bw-layer">
           <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
@@ -278,6 +279,13 @@
   .collage-item:hover .img-color-layer .collage-img {
     filter: brightness(1.06) saturate(1.08) contrast(1.02);
   }
+
+  /* ── Non-clickable photos (no DB entry) ──────────────────────── */
+  .img-no-click {
+    cursor: default;
+  }
+  .img-no-click:hover .img-color-layer::after { opacity: 0; }
+  .img-no-click:hover .collage-img { transform: scale(1); }
 
   /* ── Filter state ─────────────────────────────────────────────── */
   .img-unmatched {

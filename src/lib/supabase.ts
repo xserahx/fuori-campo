@@ -118,14 +118,49 @@ const GALLERY_ASPECT_RATIOS = [
 	{ w: 289, h: 217 },
 ];
 
+// Volunteers not in the DB — photos exist in storage, appear in gallery but open no zoom view.
+const STATIC_GALLERY_EXTRAS: { name: string; tag: null; paths: string[]; noClick: true }[] = [
+	{
+		name: 'Robin Christine',
+		tag: null,
+		noClick: true,
+		paths: [
+			'robin-christine/image0.webp',
+			'robin-christine/image1.webp',
+			'robin-christine/image2.webp',
+			'robin-christine/image3.webp',
+			'robin-christine/image4.webp',
+			'robin-christine/image5.webp',
+		],
+	},
+	{
+		name: 'Munaro Emanuela',
+		tag: null,
+		noClick: true,
+		paths: [
+			'munaro-emanuela/1000073160.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_15921.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16142.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16239.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16258.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16259.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16262.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16263.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16266.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16267.webp',
+			'munaro-emanuela/fa0e0a54-be32-4ea3-9770-b612e6c41050-1_all_16470.webp',
+		],
+	},
+];
+
 let _galleryCache: { key: VolunteerSummary[]; images: GalleryImage[] } | null = null;
 
 export function buildGalleryFromVolunteers(volunteers: VolunteerSummary[]): GalleryImage[] {
 	// Return the exact same array reference if input didn't change — keeps $derived stable.
 	if (_galleryCache?.key === volunteers) return _galleryCache.images;
 
-	// Collect all photos per volunteer
-	const perVol: { slug: string; name: string; tag: string | null; paths: string[] }[] = [];
+	// Collect all photos per volunteer (DB rows + static extras)
+	const perVol: { slug?: string; name: string; tag: string | null; paths: string[]; noClick?: true }[] = [];
 
 	for (const vol of volunteers) {
 		if (!vol.ha_immagini) continue;
@@ -144,6 +179,11 @@ export function buildGalleryFromVolunteers(volunteers: VolunteerSummary[]): Gall
 		});
 	}
 
+	// Append static extras so they spread evenly through the round-robin layout
+	for (const extra of STATIC_GALLERY_EXTRAS) {
+		perVol.push(extra);
+	}
+
 	// Round-robin interleave across volunteers so different faces spread evenly
 	// through the gallery rather than clustering by surname.
 	const result: GalleryImage[] = [];
@@ -154,15 +194,15 @@ export function buildGalleryFromVolunteers(volunteers: VolunteerSummary[]): Gall
 			if (round >= vol.paths.length) continue;
 			const ar = GALLERY_ASPECT_RATIOS[result.length % GALLERY_ASPECT_RATIOS.length];
 			result.push({
-				src:  getImageUrl(vol.paths[round]) ?? '',
-				path: vol.paths[round],
-				slug: vol.slug,
-				name: vol.name,
-				left: 0,
-				top: 0,
-				width: ar.w,
-				height: ar.h,
-				tags: vol.tag ? [vol.tag] : [],
+				src:     getImageUrl(vol.paths[round]) ?? '',
+				path:    vol.paths[round],
+				slug:    vol.slug,
+				name:    vol.name,
+				left: 0, top: 0,
+				width:   ar.w,
+				height:  ar.h,
+				tags:    vol.tag ? [vol.tag] : [],
+				noClick: vol.noClick,
 			});
 		}
 	}
