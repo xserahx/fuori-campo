@@ -58,11 +58,11 @@
   // ─── arc geometry constants ──────────────────────────────────────
   const ARC_R     = 4.1;   // cylinder radius — smaller = deeper curve
   const ARC_THETA = 0.25;  // angular step between card centres (radians)
-  const CARD_W    = 4.25;  // world-units — card width
-  const CARD_H    = 4.25;
+  const CARD_W    = 3.2;   // world-units — card width
+  const CARD_H    = 3.2;
 
-  const SIDE_W    = 4.9;
-  const SIDE_H    = 4.9;
+  const SIDE_W    = 3.7;
+  const SIDE_H    = 3.7;
 
   // ─── helpers ─────────────────────────────────────────────────────
   const N = () => categories.length;
@@ -620,7 +620,9 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: min(26vw, 400px);
+    /* Wide enough to fully overlap the sharp side-image junctions and
+       dissolve into the centre with no visible seam */
+    width: min(30vw, 460px);
     pointer-events: none;
     z-index: 2;
     overflow: hidden;
@@ -632,8 +634,9 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    filter: blur(18px) saturate(1.08);
-    -webkit-filter: blur(18px) saturate(1.08);
+    /* Blur erases any seam or hard edge under the panel */
+    filter: blur(20px) saturate(1.08);
+    -webkit-filter: blur(20px) saturate(1.08);
     will-change: opacity;
   }
 
@@ -642,8 +645,10 @@
     border-radius: 0 32px 32px 0;
     transform-origin: left center;
     transform: scaleX(1.22);
-    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
-    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
+    /* Solid blur at the outer edge, then a long gradual feather so the
+       blur melts into the sharp centre image without a perceptible line */
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 0.55) 78%, rgba(0, 0, 0, 0.2) 92%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 0.55) 78%, rgba(0, 0, 0, 0.2) 92%, rgba(0, 0, 0, 0) 100%);
   }
 
   .edge-panel--right {
@@ -651,8 +656,8 @@
     border-radius: 32px 0 0 32px;
     transform-origin: right center;
     transform: scaleX(1.22);
-    mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
-    -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.98) 66%, rgba(0, 0, 0, 0.72) 84%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 0.55) 78%, rgba(0, 0, 0, 0.2) 92%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.9) 60%, rgba(0, 0, 0, 0.55) 78%, rgba(0, 0, 0, 0.2) 92%, rgba(0, 0, 0, 0) 100%);
   }
 
   .edge-panel::after {
