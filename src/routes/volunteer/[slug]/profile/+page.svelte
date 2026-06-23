@@ -176,7 +176,6 @@
           onclick={() => { openQ = openQ === i ? -1 : i; }}
         >
           <span class="qa-title">{q}</span>
-          <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">+</span>
         </button>
         <div class="qa-sep" class:qa-sep--open={openQ === i}>
           {#if openQ === i}
