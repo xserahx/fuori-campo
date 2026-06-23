@@ -108,6 +108,9 @@
     onclick={goBackToGallery}
   ></button>
 
+  <!-- ── Close × button (top-right) ───────────────────────────────── -->
+  <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>×</button>
+
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
   <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
     <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
@@ -234,6 +237,41 @@
     border: 0;
     cursor: pointer;
     padding: 0;
+  }
+
+  /* ── Close × button ────────────────────────────────────────────── */
+  .close-x {
+    position: fixed;
+    top: clamp(18px, 3.2vh, 48px);
+    right: clamp(18px, 3.2vw, 56px);
+    z-index: 25;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    font-size: 36px;
+    line-height: 1;
+    color: var(--color-content-accent, #bdff5d);
+    transition:
+      opacity   0.24s ease,
+      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      filter    0.24s ease;
+    will-change: transform;
+  }
+
+  .close-x:hover {
+    transform: scale(1.18) rotate(5deg);
+    filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.5));
+  }
+
+  .close-x:active {
+    transform: scale(0.9);
+    transition-duration: 80ms;
   }
 
   /* ── Navigation arrows ──────────────────────────────────────────── */

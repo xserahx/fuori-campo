@@ -163,6 +163,54 @@ export function buildSpacedImages(rawImages: GalleryImage[], designWidth = 1920)
   };
 }
 
+/**
+ * True 2D jittered-grid scatter layout.
+ * Divides the canvas into COLS × ROWS cells and places each image at a
+ * pseudo-random (deterministic) position inside its cell so images are
+ * spread in both X and Y with no visible column pattern.
+ */
+export function buildScatterLayout(rawImages: GalleryImage[], canvasWidth = 3840) {
+  if (rawImages.length === 0) return { images: [] as GalleryImage[], canvasHeight: 1080 };
+
+  const COLS     = 15;
+  const CELL_W   = canvasWidth / COLS;
+  const CELL_H   = CELL_W * 1.55; // portrait-biased cells for dense vertical coverage
+  const ROWS     = Math.ceil(rawImages.length / COLS);
+  const TOP_PAD  = 80;
+  const BOT_PAD  = 120;
+
+  // Deterministic integer hash → 0–1
+  function h(n: number): number {
+    let x = (n ^ 0xdeadbeef) | 0;
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = x ^ (x >>> 16);
+    return ((x >>> 0) % 1e6) / 1e6;
+  }
+
+  const images = rawImages.map((img, i) => {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+
+    // Image size: 55–88 % of cell width, aspect preserved
+    const scale = 0.55 + h(i * 2 + 3) * 0.33;
+    const imgW  = CELL_W * scale;
+    const imgH  = imgW * (img.height / img.width);
+
+    // Jitter: large enough to break the grid, bounded to avoid clipping at canvas edges
+    const jX = (h(i * 7 + 1) - 0.5) * CELL_W * 0.72;
+    const jY = (h(i * 11 + 5) - 0.5) * CELL_H * 0.55;
+
+    const left = col * CELL_W + (CELL_W - imgW) / 2 + jX;
+    const top  = TOP_PAD + row * CELL_H + (CELL_H - imgH) / 2 + jY;
+
+    return { ...img, left, top, width: imgW, height: imgH };
+  });
+
+  const maxBottom = images.reduce((m, img) => Math.max(m, img.top + img.height), 0);
+  return { images, canvasHeight: Math.max(1080, maxBottom + BOT_PAD) };
+}
+
 export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
   const expanded: GalleryImage[] = [];
 

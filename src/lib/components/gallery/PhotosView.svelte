@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import gsap from 'gsap';
-  import { buildInfiniteImages, buildSpacedImages, imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildInfiniteImages, buildScatterLayout, imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/supabase';
 
@@ -16,7 +16,7 @@
   let innerRef: HTMLDivElement;
   let scale = 1;
 
-  const designWidth = 1920;
+  const designWidth = 3840;
 
   const initialContext = readGalleryContext(page.url.searchParams);
 
@@ -41,6 +41,7 @@
       velY *= FRICTION;
       targetX += velX;
       targetY += velY;
+      clampPosition();
     }
 
     currentX += (targetX - currentX) * LERP;
@@ -71,6 +72,7 @@
     targetY += (e.clientY - lastY) * 1.2;
     velX = ((e.clientX - lastX) / dt) * 16;
     velY = ((e.clientY - lastY) / dt) * 16;
+    clampPosition();
     lastX = e.clientX;
     lastY = e.clientY;
     lastTime = performance.now();
@@ -82,6 +84,14 @@
 
   function updateScale() {
     scale = Math.min(window.innerWidth / designWidth, window.innerHeight / designHeight);
+  }
+
+  // Clamp drag so the canvas always covers the viewport — no black edges visible.
+  function clampPosition() {
+    const maxX = Math.max(0, designWidth / 2 - window.innerWidth / 2);
+    const maxY = Math.max(0, designHeight / 2 - window.innerHeight / 2);
+    targetX = Math.min(maxX, Math.max(-maxX, targetX));
+    targetY = Math.min(maxY, Math.max(-maxY, targetY));
   }
 
   function openVolunteer(image: GalleryImage, index: number) {
@@ -98,7 +108,8 @@
   const rawImages = $derived(
     dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : imagesRaw
   );
-  const photoLayout = $derived(buildSpacedImages(buildInfiniteImages(rawImages, 3), designWidth));
+  // Repeat images 3× so the canvas is tall enough to feel truly infinite in Y.
+  const photoLayout = $derived(buildScatterLayout(buildInfiniteImages(rawImages, 3), designWidth));
   const positionedImages = $derived(photoLayout.images);
   const designHeight = $derived(photoLayout.canvasHeight);
 
