@@ -89,7 +89,7 @@
   <div class="bg-noise"></div>
 
   {#if activeToggle === 'photos'}
-    <PhotosView {activeFilter} />
+    <PhotosView {activeFilter} {dbVolunteers} />
   {:else}
     <NamesView {activeFilter} volunteers={dbVolunteers} />
   {/if}

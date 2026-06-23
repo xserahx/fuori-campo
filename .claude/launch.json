@@ -2,6 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "fuori-campo-dev",
+      "runtimeExecutable": "wsl.exe",
+      "runtimeArgs": ["-d", "Ubuntu", "bash", "-c", "source /home/serah/.nvm/nvm.sh && cd /home/serah/developer/fuori-campo && npx vite dev --host 0.0.0.0 --port 5173"],
+      "port": 5173,
+      "autoPort": true
+    },
+    {
       "name": "fuori-campo-preview",
       "runtimeExecutable": "wsl.exe",
       "runtimeArgs": ["-d", "Ubuntu", "bash", "-c", "source /home/serah/.nvm/nvm.sh && cd /home/serah/developer/fuori-campo && npx vite preview --host 0.0.0.0 --port 4173"],

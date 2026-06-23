@@ -5,15 +5,18 @@
   import gsap from 'gsap';
   import { buildInfiniteImages, buildSpacedImages, imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
+  import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/supabase';
 
-  let { activeFilter = null }: { activeFilter?: string | null } = $props();
+  let { activeFilter = null, dbVolunteers = [] }: {
+    activeFilter?: string | null;
+    dbVolunteers?: VolunteerSummary[];
+  } = $props();
 
   let collageRef: HTMLDivElement;
   let innerRef: HTMLDivElement;
   let scale = 1;
 
   const designWidth = 1920;
-  let designHeight = $state<number>(1080);
 
   const initialContext = readGalleryContext(page.url.searchParams);
 
@@ -82,19 +85,24 @@
   }
 
   function openVolunteer(image: GalleryImage, index: number) {
+    const slug = image.slug ?? slugify(image.name, index);
     const search = buildGallerySearchParams({
       view: 'photos',
       filter: activeFilter,
       photoX: currentX,
       photoY: currentY,
     });
-    goto(search ? `/volunteer/${slugify(image.name, index)}?${search}` : `/volunteer/${slugify(image.name, index)}`);
+    goto(search ? `/volunteer/${slug}?${search}` : `/volunteer/${slug}`);
   }
 
-  const infiniteImagesRaw = buildInfiniteImages(imagesRaw, 9);
-  const photoLayout = buildSpacedImages(infiniteImagesRaw, designWidth);
-  const positionedImages = photoLayout.images;
-  designHeight = photoLayout.canvasHeight;
+  const rawImages = $derived(
+    dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : imagesRaw
+  );
+  const photoLayout = $derived(buildSpacedImages(buildInfiniteImages(rawImages, 3), designWidth));
+  const positionedImages = $derived(photoLayout.images);
+  const designHeight = $derived(photoLayout.canvasHeight);
+
+  $effect(() => { updateScale(); void designHeight; });
 
   onMount(() => {
     updateScale();
@@ -136,10 +144,10 @@
         onclick={() => openVolunteer(img, i)}
       >
         <div class="img-bw-layer">
-          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
+          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" loading="lazy" />
         </div>
         <div class="img-color-layer">
-          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" draggable="false" />
+          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" draggable="false" loading="lazy" />
         </div>
         <div class="img-noise"></div>
         <div class="img-vignette"></div>

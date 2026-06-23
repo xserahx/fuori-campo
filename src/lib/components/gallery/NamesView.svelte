@@ -1,8 +1,8 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { page } from '$app/state';
-  import { imagesRaw, slugify } from '$lib/data/gallery';
   import type { VolunteerSummary } from '$lib/supabase';
+  import { ruoloToTag } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 
@@ -20,26 +20,17 @@
 
   type Person = { slug: string; displayName: string; cognome: string; tags: string[] };
 
-  // Build slug → tags[] from Figma image data for the category filter
-  const imageTagsBySlug = new Map<string, string[]>();
-  for (const img of imagesRaw) {
-    if (!img.name) continue;
-    const s = slugify(img.name, 0);
-    const existing = imageTagsBySlug.get(s) ?? [];
-    for (const tag of img.tags ?? []) {
-      if (!existing.includes(tag)) existing.push(tag);
-    }
-    imageTagsBySlug.set(s, existing);
-  }
-
   const people = $derived<Person[]>(
     volunteers
-      .map(vol => ({
-        slug: vol.slug,
-        displayName: `${vol.cognome} ${vol.nome}`,
-        cognome: vol.cognome,
-        tags: imageTagsBySlug.get(vol.slug) ?? []
-      }))
+      .map(vol => {
+        const tag = ruoloToTag(vol.ruolo_generale);
+        return {
+          slug: vol.slug,
+          displayName: `${vol.cognome} ${vol.nome}`,
+          cognome: vol.cognome,
+          tags: tag ? [tag] : []
+        };
+      })
       .sort((a, b) => a.cognome.localeCompare(b.cognome, 'it', { sensitivity: 'base' }))
   );
 

@@ -1,6 +1,7 @@
 
 export type GalleryImage = {
   src: string;
+  slug?: string;
   left: number;
   top: number;
   width: number;

@@ -2,49 +2,34 @@
   import '../../../lib/styles/tokens.css';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildSpacedImages } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { getImageUrl } from '$lib/supabase';
+  import { getImageUrl, buildGalleryFromVolunteers } from '$lib/supabase';
   import type { PageData } from './$types';
 
-  /* ── Page data (dbVol pre-fetched by load function) ─────────── */
+  /* ── Page data ────────────────────────────────────────────────── */
   let { data }: { data: PageData } = $props();
-  const dbVol = $derived(data.dbVol);
+  const dbVol  = $derived(data.dbVol);
+  const allVols = $derived(data.allVols ?? []);
 
-  type Volunteer = GalleryImage & { city?: string; region?: string; role?: string };
-
-  /* ── Build ordered unique-volunteer list (for arrow navigation) ── */
-  type VolEntry = { slug: string; name: string; src: string };
-  const volunteerList: VolEntry[] = [];
-  {
-    const seen = new Set<string>();
-    for (let i = 0; i < imagesRaw.length; i++) {
-      const img = imagesRaw[i];
-      if (!img.name) continue;
-      const s = slugify(img.name, i);
-      if (!seen.has(s)) { seen.add(s); volunteerList.push({ slug: s, name: img.name, src: img.src }); }
-    }
-  }
-
+  /* ── Background scatter: all volunteers with images ─────────── */
   const CANVAS_W = 1920;
-  const CANVAS_H = 1200;
-  const bgPhotos = imagesRaw as Volunteer[];
+  const bgRawImages  = $derived(buildGalleryFromVolunteers(allVols));
+  const bgLayout     = $derived(buildSpacedImages(bgRawImages, CANVAS_W));
+  const bgPhotos     = $derived(bgLayout.images);
+  const bgCanvasH    = $derived(bgLayout.canvasHeight);
 
   /* ── Reactive state from URL ─────────────────────────────────── */
   const currentSlug    = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
-
-  const volunteer = $derived(
-    (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
-  );
 
   let imgError = $state(false);
   $effect(() => { currentSlug; imgError = false; });
 
   /* ── Display values — DB is the single source of truth ──────── */
   const volunteerTitle = $derived(
-    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : (volunteer?.name ?? '')
+    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : ''
   );
 
   const volunteerRole = $derived(
@@ -56,15 +41,22 @@
   );
 
   const resolvedSrc = $derived(
-    dbVol?.ha_immagini ? getImageUrl(dbVol.image_path) : (volunteer?.src ?? null)
+    dbVol?.ha_immagini ? getImageUrl(dbVol.image_path) : null
   );
 
-  const vIdx = $derived(volunteerList.findIndex(v => v.slug === currentSlug));
+  /* ── Navigation: same role, volunteers with images ───────────── */
+  const peers = $derived(
+    dbVol?.ruolo_generale
+      ? allVols.filter(v => v.ruolo_generale === dbVol!.ruolo_generale && v.ha_immagini)
+      : allVols.filter(v => v.ha_immagini)
+  );
 
-  /* ── Navigation ──────────────────────────────────────────────── */
+  const vIdx = $derived(peers.findIndex(v => v.slug === currentSlug));
+
   function goTo(offset: number) {
-    const len    = volunteerList.length;
-    const target = volunteerList[((vIdx + offset) % len + len) % len];
+    const len    = peers.length;
+    if (len === 0) return;
+    const target = peers[((vIdx + offset) % len + len) % len];
     if (target) {
       const search = buildGallerySearchParams(currentContext);
       goto(search ? `/volunteer/${target.slug}?${search}` : `/volunteer/${target.slug}`);
@@ -95,7 +87,7 @@
         draggable="false"
         style="
           left: {((img.left ?? 0) / CANVAS_W * 100).toFixed(2)}vw;
-          top:  {((img.top  ?? 0) / CANVAS_H * 100).toFixed(2)}vh;
+          top:  {((img.top  ?? 0) / bgCanvasH * 100).toFixed(2)}vh;
           width:{((img.width ?? 160) / CANVAS_W * 100).toFixed(2)}vw;
         "
       />
