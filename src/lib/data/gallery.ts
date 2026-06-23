@@ -230,6 +230,20 @@ export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
   return expanded;
 }
 
+// Ref-equality cache: same rawImages array → same layout object → $derived stays stable.
+let _layoutCacheKey: GalleryImage[] | null = null;
+let _layoutCacheValue: ReturnType<typeof buildScatterLayout> | null = null;
+
+export function buildScatterLayoutCached(
+  rawImages: GalleryImage[],
+  canvasWidth = 3840
+): ReturnType<typeof buildScatterLayout> {
+  if (_layoutCacheKey === rawImages && _layoutCacheValue !== null) return _layoutCacheValue;
+  _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages, 3), canvasWidth);
+  _layoutCacheKey = rawImages;
+  return _layoutCacheValue;
+}
+
 // Manually maintained list of volunteer names to ensure full coverage in the
 // names view. Kept as plain strings so it can be merged with the people
 // derived from `imagesRaw` at render time.

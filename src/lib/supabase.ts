@@ -92,7 +92,12 @@ const GALLERY_ASPECT_RATIOS = [
 	{ w: 289, h: 217 },
 ];
 
+let _galleryCache: { key: VolunteerSummary[]; images: GalleryImage[] } | null = null;
+
 export function buildGalleryFromVolunteers(volunteers: VolunteerSummary[]): GalleryImage[] {
+	// Return the exact same array reference if input didn't change — keeps $derived stable.
+	if (_galleryCache?.key === volunteers) return _galleryCache.images;
+
 	// Collect all photos per volunteer
 	const perVol: { slug: string; name: string; tag: string | null; paths: string[] }[] = [];
 
@@ -135,20 +140,41 @@ export function buildGalleryFromVolunteers(volunteers: VolunteerSummary[]): Gall
 		}
 	}
 
+	_galleryCache = { key: volunteers, images: result };
 	return result;
 }
 
+// Module-level cache — survives component unmounts, so navigating gallery → volunteer → gallery
+// returns data instantly without a second network round-trip.
+let _volunteersCache: VolunteerSummary[] | null = null;
+let _volunteersFetch: Promise<VolunteerSummary[]> | null = null;
+
+export function getCachedVolunteers(): VolunteerSummary[] {
+	return _volunteersCache ?? [];
+}
+
 export async function fetchAllVolunteers(): Promise<VolunteerSummary[]> {
-	try {
-		const res = await fetch(
-			`${PUBLIC_SUPABASE_URL}/rest/v1/volunteers?select=slug,nome,cognome,ruolo_generale,ha_immagini,image_path,image_paths&order=cognome.asc,nome.asc`,
-			{ headers: HEADERS }
-		);
-		if (!res.ok) return [];
-		return (await res.json()) as VolunteerSummary[];
-	} catch {
-		return [];
-	}
+	if (_volunteersCache) return _volunteersCache;
+	if (_volunteersFetch) return _volunteersFetch;
+
+	_volunteersFetch = (async () => {
+		try {
+			const res = await fetch(
+				`${PUBLIC_SUPABASE_URL}/rest/v1/volunteers?select=slug,nome,cognome,ruolo_generale,ha_immagini,image_path,image_paths&order=cognome.asc,nome.asc`,
+				{ headers: HEADERS }
+			);
+			if (!res.ok) return [];
+			const data = (await res.json()) as VolunteerSummary[];
+			_volunteersCache = data;
+			return data;
+		} catch {
+			return [];
+		} finally {
+			_volunteersFetch = null;
+		}
+	})();
+
+	return _volunteersFetch;
 }
 
 export async function fetchVolunteerSlugs(): Promise<string[]> {

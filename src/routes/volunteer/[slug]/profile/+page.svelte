@@ -152,19 +152,14 @@
     <div class="photo-fade photo-fade--bottom" aria-hidden="true"></div>
     <div class="photo-scroll">
       {#each volunteerPhotos as photoUrl (photoUrl)}
-        <button
-          class="photo-btn"
-          type="button"
-          aria-label="Vedi foto grande"
-          onclick={() => goto(`/volunteer/${currentSlug}`)}
-        >
+        <div class="photo-item">
           <img
             src={photoUrl}
             alt={volunteerTitle || 'foto volunteer'}
             class="photo-img"
             draggable="false"
           />
-        </button>
+        </div>
       {/each}
     </div>
   </div>
@@ -441,20 +436,13 @@
 
   .photo-scroll::-webkit-scrollbar { display: none; }
 
-  .photo-btn {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    cursor: pointer;
+  .photo-item {
     display: block;
     width: 100%;
     flex-shrink: 0;
-    transition: opacity 0.2s ease;
     border-radius: 4px;
     overflow: hidden;
   }
-
-  .photo-btn:hover { opacity: 0.82; }
 
   .photo-img {
     width: 100%;

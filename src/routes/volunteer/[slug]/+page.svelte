@@ -1,24 +1,44 @@
 <script lang="ts">
   import '../../../lib/styles/tokens.css';
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { buildSpacedImages } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { getImageUrl, buildGalleryFromVolunteers } from '$lib/supabase';
+  import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/supabase';
   import type { PageData } from './$types';
+
+  /* ── Fixed positions for the blurred background photos ──────── */
+  const BG_POS = [
+    'left:3%;top:5%;width:24%;',
+    'right:2%;top:3%;width:20%;',
+    'left:58%;top:35%;width:22%;',
+    'left:2%;bottom:4%;width:28%;',
+    'right:2%;bottom:6%;width:22%;',
+    'left:30%;top:8%;width:18%;',
+    'left:42%;bottom:10%;width:20%;',
+    'left:18%;top:45%;width:16%;',
+  ];
 
   /* ── Page data ────────────────────────────────────────────────── */
   let { data }: { data: PageData } = $props();
-  const dbVol  = $derived(data.dbVol);
-  const allVols = $derived(data.allVols ?? []);
+  const dbVol = $derived(data.dbVol);
 
-  /* ── Background scatter: all volunteers with images ─────────── */
-  const CANVAS_W = 1920;
-  const bgRawImages  = $derived(buildGalleryFromVolunteers(allVols));
-  const bgLayout     = $derived(buildSpacedImages(bgRawImages, CANVAS_W));
-  const bgPhotos     = $derived(bgLayout.images);
-  const bgCanvasH    = $derived(bgLayout.canvasHeight);
+  /* ── Background: this volunteer's own photos only ────────────── */
+  const bgPaths = $derived(
+    dbVol?.ha_immagini
+      ? (dbVol.image_paths && dbVol.image_paths.length > 0
+          ? dbVol.image_paths.slice(0, 8)
+          : dbVol.image_path ? [dbVol.image_path] : [])
+      : []
+  );
+
+  /* ── Navigation peers — from cache if available, otherwise lazy ─ */
+  let allVols = $state<VolunteerSummary[]>(getCachedVolunteers());
+
+  onMount(() => {
+    fetchAllVolunteers().then(vols => { allVols = vols; });
+  });
 
   /* ── Reactive state from URL ─────────────────────────────────── */
   const currentSlug    = $derived((page.params as Record<string, string>).slug ?? '');
@@ -76,20 +96,15 @@
 
 <main class="lb">
 
-  <!-- ── Blurred background scatter ─────────────────────────────── -->
+  <!-- ── Blurred background: only this volunteer's photos ──────── -->
   <div class="bg-scatter" aria-hidden="true">
-    {#each bgPhotos as img}
+    {#each bgPaths as path, i (path)}
       <img
-        src={img.src}
+        src={getImageUrl(path)}
         alt=""
         class="bg-photo"
-        loading="lazy"
         draggable="false"
-        style="
-          left: {((img.left ?? 0) / CANVAS_W * 100).toFixed(2)}vw;
-          top:  {((img.top  ?? 0) / bgCanvasH * 100).toFixed(2)}vh;
-          width:{((img.width ?? 160) / CANVAS_W * 100).toFixed(2)}vw;
-        "
+        style={BG_POS[i]}
       />
     {/each}
   </div>
@@ -345,7 +360,8 @@
     transform: translate(-50%, -50%);
     z-index: 5;
     width: min(1091px, 63vw);
-    aspect-ratio: 1091 / 581;
+    /* No aspect-ratio — height is determined by the image's natural proportions */
+    min-height: 180px; /* dark placeholder while image loads */
     overflow: hidden;
     box-shadow: 0 0 7px rgba(0, 0, 0, 0.25);
     background: #111;
@@ -353,11 +369,8 @@
   }
 
   .photo-img {
-    position: absolute;
-    inset: 0;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;   /* natural proportions, never cropped */
     display: block;
     pointer-events: none;
     user-select: none;
@@ -365,8 +378,8 @@
   }
 
   .photo-placeholder {
-    position: absolute;
-    inset: 0;
+    width: 100%;
+    aspect-ratio: 1091 / 581; /* keeps a reasonable frame when no image */
     background: linear-gradient(135deg, #111 0%, #1c1c1c 100%);
   }
 

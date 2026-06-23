@@ -7,9 +7,10 @@
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
   import NamesView from '$lib/components/gallery/NamesView.svelte';
   import { readGalleryContext } from '$lib/data/gallery-context';
-  import { fetchAllVolunteers, type VolunteerSummary } from '$lib/supabase';
+  import { fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/supabase';
 
-  let dbVolunteers = $state<VolunteerSummary[]>([]);
+  // Pre-seed from cache so returning users see photos instantly (no loading flash).
+  let dbVolunteers = $state<VolunteerSummary[]>(getCachedVolunteers());
 
   onMount(() => {
     /* Lock scroll on the root while the gallery is mounted.
