@@ -1,4 +1,4 @@
-import { fetchVolunteer } from '$lib/supabase';
+import { fetchVolunteer } from '$lib/data/volunteers';
 import type { PageLoad } from './$types';
 
 export const ssr = false;

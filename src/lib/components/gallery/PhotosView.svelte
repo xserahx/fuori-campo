@@ -5,7 +5,7 @@
   import gsap from 'gsap';
   import { buildScatterLayoutCached, snapToStdFrame, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/supabase';
+  import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
   let { activeFilter = null, dbVolunteers = [] }: {
     activeFilter?: string | null;

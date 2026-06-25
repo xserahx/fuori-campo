@@ -8,7 +8,7 @@
   import { blurReveal } from "../lib/actions/blurReveal";
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
-  import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/supabase';
+  import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/data/volunteers';
   import { navbarInverted } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
@@ -22,9 +22,9 @@
 
   /* Volunteer portrait photos (Figma CDN) — cycle every 20 % of progress */
   const volunteers = [
-    'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1',  // Rudy Bre
-    'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb',  // Michele Tomolillo
-    'https://www.figma.com/api/mcp/asset/331fa98b-1d4f-4c52-84df-2f4e0da7c169',  // Valentina Guerrini
+    '/volunteer-images/brezzi-rodolfo/IMG_1450.webp',                       // Rodolfo Brezzi
+    '/volunteer-images/guerrini-valentina/inbound2904151259508105914.webp', // Valentina Guerrini
+    '/volunteer-images/amedeo-aureliano/unnamed.webp',                      // Aureliano Amedeo
   ];
   let loaderPhotoSrc = $state(volunteers[0]);
   let activeLoaderSet = $state(0);

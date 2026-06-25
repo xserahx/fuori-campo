@@ -5,7 +5,7 @@
   import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
-  import { getImageUrls } from '$lib/supabase';
+  import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
   /* ── Page data (dbVol pre-fetched by load function) ─────────── */

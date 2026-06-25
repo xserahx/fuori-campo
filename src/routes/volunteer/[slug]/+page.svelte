@@ -4,7 +4,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/supabase';
+  import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
   /* ── Fixed positions for the blurred background photos ──────── */

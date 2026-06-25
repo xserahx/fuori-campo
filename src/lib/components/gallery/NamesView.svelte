@@ -1,8 +1,8 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { page } from '$app/state';
-  import type { VolunteerSummary } from '$lib/supabase';
-  import { ruoloToTag } from '$lib/supabase';
+  import type { VolunteerSummary } from '$lib/data/volunteers';
+  import { ruoloToTag } from '$lib/data/volunteers';
   import { goto } from '$app/navigation';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 

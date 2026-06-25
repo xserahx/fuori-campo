@@ -11,9 +11,9 @@
 
   /* ── Photo pool ─────────────────────────────────────────────────── */
   const PHOTOS = [
-    'https://www.figma.com/api/mcp/asset/42fc7859-bcfe-4ad5-a6fe-eff45eb6b8b1',  // Rudy Bre
-    'https://www.figma.com/api/mcp/asset/aa1bcc44-33a0-48b1-a75c-913f2d3630eb',  // Michele Tomolillo
-    'https://www.figma.com/api/mcp/asset/331fa98b-1d4f-4c52-84df-2f4e0da7c169',  // Valentina Guerrini
+    '/volunteer-images/brezzi-rodolfo/IMG_1450.webp',                       // Rodolfo Brezzi
+    '/volunteer-images/guerrini-valentina/inbound2904151259508105914.webp', // Valentina Guerrini
+    '/volunteer-images/amedeo-aureliano/unnamed.webp',                      // Aureliano Amedeo
   ] as const;
 
   const N      = PHOTOS.length;      // 3 photo cycles
