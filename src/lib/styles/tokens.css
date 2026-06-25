@@ -181,27 +181,6 @@
   --figma-summary-top: 6164px;
   --figma-scroll-top:  6821px;
   --quote-grid-height: 540px;
-
-  /* Gallery masonry sizing */
-  --gallery-width-1:  140px;
-  --gallery-width-2:  180px;
-  --gallery-width-3:  160px;
-  --gallery-width-4:  200px;
-  --gallery-width-5:  130px;
-  --gallery-width-6:  170px;
-  --gallery-width-7:  120px;
-  --gallery-width-8:  190px;
-  --gallery-width-9:  150px;
-  --gallery-width-10: 160px;
-  --gallery-width-11: 130px;
-  --gallery-width-12: 180px;
-
-  --gallery-offset-1: 0px;
-  --gallery-offset-2: 32px;
-  --gallery-offset-3: 12px;
-  --gallery-offset-4: 40px;
-  --gallery-offset-5: 18px;
-  --gallery-offset-6: 56px;
 }
 
 /* ================================================================
@@ -607,22 +586,6 @@ body::-webkit-scrollbar,
   transform: rotate(90deg);
   margin-top: 24px;
 }
-
-/* ================================================================
- * GALLERY PREVIEW
- * ================================================================ */
-
-.gallery {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  padding: 287px var(--spacing-11) 120px;
-  align-items: flex-start;
-}
-
-.gallery-item       { margin: 0; flex: 0 0 auto; }
-.gallery-item img   { width: 100%; height: auto; display: block; object-fit: cover; }
 
 /* ================================================================
  * ARCHIVIO LINK

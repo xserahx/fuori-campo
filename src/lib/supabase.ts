@@ -41,6 +41,23 @@ export function getImageUrl(imagePath: string | null | undefined): string | null
 	return `${PUBLIC_SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${imagePath}`;
 }
 
+/* Optimized, on-the-fly resized + compressed image (Supabase render endpoint).
+   Use for thumbnails/teasers where the original full-res file is wasteful —
+   a ~440px teaser drops from ~340KB to ~90KB. Browsers receive WebP via the
+   Accept header automatically. */
+export function getOptimizedImageUrl(
+	imagePath: string | null | undefined,
+	{ width, quality = 68, resize = 'cover' }: { width: number; quality?: number; resize?: 'cover' | 'contain' }
+): string | null {
+	if (!imagePath) return null;
+	const params = new URLSearchParams({
+		width: String(width),
+		quality: String(quality),
+		resize
+	});
+	return `${PUBLIC_SUPABASE_URL}/storage/v1/render/image/public/${BUCKET}/${imagePath}?${params.toString()}`;
+}
+
 export function getImageUrls(vol: { ha_immagini?: boolean | null; image_paths?: string[] | null; image_path?: string | null }): string[] {
 	if (!vol.ha_immagini) return [];
 	if (vol.image_paths && vol.image_paths.length > 0) {

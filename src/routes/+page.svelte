@@ -8,7 +8,7 @@
   import { blurReveal } from "../lib/actions/blurReveal";
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
-  import { fetchAllVolunteers, getCachedVolunteers, getImageUrl } from '$lib/supabase';
+  import { fetchAllVolunteers } from '$lib/supabase';
   import { navbarInverted } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
@@ -51,25 +51,6 @@
   let q3h2: HTMLElement | null = null;
   let q4h2: HTMLElement | null = null;
 
-  /* ── Gallery photos from Supabase ───────────────────────────────── */
-  const galleryCount = 12;
-  const offsetCount = 6;
-
-  function buildHomepagePhotos(vols: ReturnType<typeof getCachedVolunteers>): string[] {
-    return vols
-      .filter(v => v.ha_immagini)
-      .flatMap(v =>
-        v.image_paths && v.image_paths.length > 0
-          ? v.image_paths.slice(0, 2)
-          : v.image_path ? [v.image_path] : []
-      )
-      .map(p => getImageUrl(p))
-      .filter((u): u is string => !!u)
-      .slice(0, 28);
-  }
-
-  let homepagePhotos = $state<string[]>(buildHomepagePhotos(getCachedVolunteers()));
-
   /* Gallery transition state — shared between click handler and scroll engine */
   let galleryTransitionPending = false;
   let galleryTimeline: gsap.core.Timeline | null = null;
@@ -81,9 +62,13 @@
 
     const landing = document.querySelector<HTMLElement>('.landing');
     galleryTimeline = gsap.timeline();
-    /* Blur + scale the page content out while the overlay fades in */
-    if (landing) galleryTimeline.to(landing, { filter: 'blur(28px)', scale: 1.04, opacity: 0, duration: 0.48, ease: 'power2.in' }, 0);
-    if (transitionOverlay) galleryTimeline.to(transitionOverlay, { opacity: 1, duration: 0.52, ease: 'power2.in' }, 0.06);
+    /* Scale + fade the page content out while the overlay fades in.
+       Only transform + opacity are animated (both GPU-composited) — the old
+       full-page filter:blur(28px) forced a giant offscreen blur every frame and
+       was the main cause of stutter on the way into the gallery. The overlay
+       fade carries the cinematic dissolve instead. */
+    if (landing) galleryTimeline.to(landing, { scale: 1.04, opacity: 0, duration: 0.44, ease: 'power2.in' }, 0);
+    if (transitionOverlay) galleryTimeline.to(transitionOverlay, { opacity: 1, duration: 0.5, ease: 'power2.in' }, 0.04);
     galleryTimeline.call(() => { galleryTimeline = null; goto('/gallery'); });
   }
 
@@ -587,7 +572,9 @@
     window.addEventListener('pointermove', handlePointerMove, { passive: true  });
     window.addEventListener('resize',      handleResize,      { passive: true  });
 
-    fetchAllVolunteers().then(vols => { homepagePhotos = buildHomepagePhotos(vols); });
+    /* Warm the volunteer cache so the gallery opens instantly when the
+       vertical scroll reaches its end — the transition feels continuous. */
+    fetchAllVolunteers();
 
     return () => {
       dissolving = false;
@@ -713,22 +700,21 @@
       </p>
     </section>
 
-    <!-- Gallery preview teaser -->
-    <section class="gallery" aria-label="Gallery preview">
-      {#each homepagePhotos as src, index}
-        <figure
-          class="gallery-item"
-          style={`width:var(--gallery-width-${(index % galleryCount) + 1}); margin-top:var(--gallery-offset-${(index % offsetCount) + 1});`}
-          use:blurReveal={{ direction: index % 2 === 0 ? "left" : "right", threshold: 0.1, blur: 12, translateX: 30, duration: 700 }}>
-          <img src={src} alt="gallery sample" />
-        </figure>
-      {/each}
-    </section>
+    <!-- Scroll runway — no images here anymore. The end of the vertical
+         sequence flows straight into the gallery via the same dissolve. -->
+    <div class="gallery-gate" aria-hidden="true"></div>
 
   </main>
 </div>
 
 <style>
+  /* Dark tail after the closing line — gives the end-of-scroll a moment of
+     breathing room so the gallery dissolve feels like a continuation rather
+     than an abrupt cut. Sits flush with the page background. */
+  .gallery-gate {
+    height: 55vh;
+  }
+
   .archivio-link {
     text-decoration: none;
   }
