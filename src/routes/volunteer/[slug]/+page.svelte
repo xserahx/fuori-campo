@@ -166,20 +166,20 @@
   <!-- ── Close × button (top-right, per Figma) ───────────────────── -->
   <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M2 2L20 20M20 2L2 20" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round"/>
+      <path d="M2 2L20 20M20 2L2 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </svg>
   </button>
 
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
   <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
     <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
-      <path d="M24 4L4 25L24 46" stroke="#BDFF5D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M24 4L4 25L24 46" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
   <button class="arrow arrow--next" type="button" aria-label="Volunteer successivo" onclick={() => goTo(1)}>
     <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
-      <path d="M4 4L24 25L4 46" stroke="#BDFF5D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M4 4L24 25L4 46" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
@@ -314,13 +314,16 @@
     background: transparent;
     cursor: pointer;
     padding: 0;
+    color: #fafafa;
     transition:
       transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.24s ease;
+      filter    0.24s ease,
+      color     0.24s ease;
     will-change: transform;
   }
 
   .close-x:hover {
+    color: var(--color-content-accent, #bdff5d);
     transform: scale(1.2) rotate(8deg);
     filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.5));
   }
@@ -345,10 +348,12 @@
     background: transparent;
     cursor: pointer;
     padding: 0;
+    color: #fafafa;
     transition:
       opacity   0.28s cubic-bezier(0.22, 1, 0.36, 1),
       transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.28s ease;
+      filter    0.28s ease,
+      color     0.24s ease;
     will-change: transform;
   }
 
@@ -418,11 +423,11 @@
   /* Portrait button moves to top-right (avoids caption overlap) */
   .photo-frame--portrait .expand-btn { bottom: auto; top: 18px; }
 
-  /* ── Image: always contain, never crop or distort ───────────── */
+  /* ── Image: cover fills the frame — no black bars ───────────── */
   .photo-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
     pointer-events: none;
     user-select: none;
