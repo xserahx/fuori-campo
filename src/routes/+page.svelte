@@ -310,13 +310,20 @@
       const sy = window.scrollY;
       pageZoom = parseFloat(document.documentElement.style.zoom) || 1;
 
-      if (shell1 && track1) {
+      const isMobile = vw < 600;
+      if (!isMobile && shell1 && track1) {
         s1.slide = (track1.children.length - 1) * vw;  // physical px; 4 panels → 3 × vw
         /* Shell height must be in zoomed CSS space: physical distance ÷ zoom.
            window.innerWidth/Height are physical px, but style.height is
            interpreted in the zoomed coord system where 100vw ≈ 1728px. */
         shell1.style.height = `${(vh + s1.slide) / pageZoom}px`;
         s1.top   = shell1.getBoundingClientRect().top + sy;
+      } else if (isMobile && shell1) {
+        /* Mobile: questions stack vertically — no horizontal lock. */
+        s1.slide   = 0;
+        s1.hTarget = 0;
+        s1.hSmooth = 0;
+        shell1.style.height = '';
       }
       if (heroSection) {
         const r    = heroSection.getBoundingClientRect();

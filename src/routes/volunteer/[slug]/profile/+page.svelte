@@ -1,92 +1,103 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
-  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
-  import { getImageUrls } from '$lib/data/volunteers';
+  import { getImageUrls, getImageUrl, fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
-  /* ── Page data (dbVol pre-fetched by load function) ─────────── */
   let { data }: { data: PageData } = $props();
   const dbVol = $derived(data.dbVol);
 
-  /* ── Extended volunteer type (for Figma photo fallback only) ─── */
-  type Volunteer = GalleryImage & {dayDescription?: string; responses?: string[];};
+  /* ── Lazy-loaded neighbour volunteers (for bg scatter only) ───── */
+  let allVols = $state<VolunteerSummary[]>(getCachedVolunteers());
+  onMount(() => { fetchAllVolunteers().then(vs => { allVols = vs; }); });
 
-  /* ── Reactive slug / context ─────────────────────────────────── */
-  const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
+  /* ── URL context ───────────────────────────────────────────────── */
+  const currentSlug    = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
-  // Figma image entry — used only as photo fallback when volunteer has no DB photos
-  const volunteer = $derived(
-    (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
+  /* ── Display values ────────────────────────────────────────────── */
+  const volunteerCognome = $derived(dbVol?.cognome?.toUpperCase() ?? '');
+  const volunteerNome    = $derived(dbVol?.nome?.toUpperCase() ?? '');
+  const volunteerTitle   = $derived(dbVol ? `${dbVol.cognome} ${dbVol.nome}` : '');
+  const volunteerRole    = $derived((dbVol?.ruolo_specifico ?? dbVol?.ruolo_generale ?? '').toUpperCase());
+  const resolvedVenue    = $derived((dbVol?.venue_montagna ?? dbVol?.venue_milano ?? '').toUpperCase());
+  const venueDisplay     = $derived(
+    [resolvedVenue, dbVol?.eta ? `${dbVol.eta} ANNI` : ''].filter(Boolean).join('  ·  ')
   );
 
-  /* ── Display values — DB is the single source of truth ──────── */
-  const volunteerTitle = $derived(
-    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : (volunteer?.name ?? '')
+  /* Hero quote comes from commento_positivo when responses are authorised */
+  const heroQuote = $derived(
+    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? '') : ''
   );
 
-  const volunteerRole = $derived(
-    dbVol ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? '').toUpperCase() : ''
+  /* ── Same-volunteer photo carousel ────────────────────────────── */
+  const volunteerPhotos = $derived(dbVol ? getImageUrls(dbVol) : []);
+  const hasPhoto        = $derived(volunteerPhotos.length > 0);
+  let photoIdx   = $state(0);
+  let imgError   = $state(false);
+
+  $effect(() => { currentSlug; photoIdx = 0; imgError = false; });
+
+  const currentPhoto = $derived(
+    hasPhoto ? (volunteerPhotos[photoIdx] ?? null) : null
   );
 
-  const nameSurname   = $derived(dbVol?.cognome.toUpperCase() ?? '');
-  const nameFirstname = $derived(dbVol?.nome.toUpperCase()    ?? '');
+  function prevPhoto() {
+    const len = volunteerPhotos.length;
+    if (len < 2) return;
+    photoIdx = ((photoIdx - 1) + len) % len;
+    imgError = false;
+  }
+  function nextPhoto() {
+    const len = volunteerPhotos.length;
+    if (len < 2) return;
+    photoIdx = (photoIdx + 1) % len;
+    imgError = false;
+  }
 
-  const resolvedLocation = $derived(
-    dbVol ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase() : ''
+  /* ── Background scatter: neighbouring volunteers' photos ───────── */
+  const neighborSlugs = $derived(
+    (page.url.searchParams.get('neighbors') ?? '').split(',').map(s => s.trim()).filter(Boolean)
   );
+  const bgPaths = $derived.by(() => {
+    const paths: string[] = [];
+    if (neighborSlugs.length > 0) {
+      for (const s of neighborSlugs) {
+        if (paths.length >= 4) break;
+        const vol = allVols.find(v => v.slug === s);
+        if (!vol?.ha_immagini) continue;
+        const p = vol.image_paths?.[0] ?? vol.image_path;
+        if (p) paths.push(getImageUrl(p) ?? '');
+      }
+    } else {
+      const seed = currentSlug.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      const others = allVols.filter(v => v.slug !== currentSlug && v.ha_immagini);
+      for (let i = 0; paths.length < 4 && i < others.length; i++) {
+        const vol = others[(seed + i) % others.length];
+        const p = vol.image_paths?.[0] ?? vol.image_path;
+        if (p) paths.push(getImageUrl(p) ?? '');
+      }
+    }
+    return paths.filter(Boolean);
+  });
 
-  const resolvedDetail = $derived(
-    dbVol
-      ? [dbVol.regione, dbVol.eta ? `${dbVol.eta} anni` : null].filter(Boolean).join(', ')
-      : ''
-  );
+  /* ── Q&A accordion ─────────────────────────────────────────────── */
+  const QUESTIONS = [
+    { label: 'LA MIA GIORNATA (QUASI) NORMALE', field: 'giornata_tipo'        },
+    { label: 'COME MI VEDEVANO GLI ALTRI',       field: 'percezione_pubblico'  },
+    { label: 'IL MIO MOMENTO PREFERITO',          field: 'commento_positivo'    },
+    { label: 'QUELLO CHE VORREI DIMENTICARE',     field: 'commento_negativo'    },
+    { label: 'COSA MI PORTO A CASA',              field: 'cosa_porti'           },
+    { label: 'COSA (NON) MI AVETE CHIESTO',       field: 'commenti_generali'    },
+    { label: 'LA MIA RISPOSTA ONESTA',            field: 'rifai'                },
+  ] as const;
 
-  const resolvedQuote = $derived(
-    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : null
-  );
-
-  /* ── Photos: DB storage first, Figma images as fallback ─────── */
-  const dbPhotos      = $derived(dbVol ? getImageUrls(dbVol) : []);
-  const figmaPhotos   = $derived(
-    imagesRaw
-      .filter(img => img.name && volunteer?.name && img.name === volunteer.name)
-      .map(img => img.src)
-  );
-  const volunteerPhotos = $derived(dbPhotos.length > 0 ? dbPhotos : figmaPhotos);
-
-  /* ── Q&A responses ───────────────────────────────────────────── */
-  const dbResponses = $derived(
-    dbVol?.autorizzazione_risposte
-      ? [
-          dbVol.giornata_tipo,
-          dbVol.percezione_pubblico,
-          dbVol.commento_positivo,
-          dbVol.commento_negativo,
-          dbVol.cosa_porti,
-          dbVol.commenti_generali,
-          dbVol.rifai,
-        ]
-      : null
-  );
-
-  /* ── Q&A accordion ───────────────────────────────────────────── */
-  const questionTitles = [
-    'LA MIA GIORNATA (QUASI) NORMALE',
-    'COME MI VEDEVANO GLI ALTRI',
-    'IL MIO MOMENTO PREFERITO',
-    'QUELLO CHE VORREI DIMENTICARE',
-    'COSA MI PORTO A CASA',
-    'COSA (NON) MI AVETE CHIESTO',
-    'LA MIA RISPOSTA ONESTA',
-  ];
-
-  let openQ = $state(-1);
-  $effect(() => { currentSlug; openQ = -1; });
+  let openIdx = $state<number | null>(null);
+  function toggleQ(i: number) { openIdx = openIdx === i ? null : i; }
 
   function goBack() {
     goto(buildGalleryHref(currentContext));
@@ -99,100 +110,113 @@
 
 <Navbar pinned />
 
-<main class="profile" id="main-content">
+<main class="vol-page" id="main-content">
 
-  <!-- ── INDIETRO button ──────────────────────────────────────────── -->
-  <button
-    class="back-btn"
-    type="button"
-    onclick={goBack}
-  >
-    <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true" style="flex-shrink:0">
-      <path d="M17 5H1M1 5L6 1M1 5L6 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <span class="back-btn-label">INDIETRO</span>
-  </button>
+  <!-- ── Back ────────────────────────────────────────────────────── -->
+  <div class="back-wrap">
+    <button class="back-btn" type="button" aria-label="Torna alla galleria" onclick={goBack}>
+      <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true">
+        <path d="M17 5H1M5 1L1 5L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>INDIETRO</span>
+    </button>
+  </div>
 
-  <!-- ── Hero name ─────────────────────────────────────────────────── -->
-  <div
-    class="name-hero"
-    role="img"
-    aria-label={volunteerTitle}
-  >
-    {#if nameSurname}
-      <div class="name-surname" aria-hidden="true">{nameSurname}</div>
+  <!-- ── Hero: name + quote ──────────────────────────────────────── -->
+  <section class="hero">
+    <div class="name-block" role="img" aria-label={volunteerTitle}>
+      {#if volunteerCognome}
+        <div class="name-row name-row--filled" aria-hidden="true">{volunteerCognome}</div>
+      {/if}
+      <div class="name-row name-row--outline" aria-hidden="true">{volunteerNome}</div>
+    </div>
+
+    {#if heroQuote}
+    <blockquote class="hero-quote" aria-label="Citazione del volontario">
+      <span class="qmark qmark--open" aria-hidden="true">&ldquo;</span>
+      <p class="qtext">{heroQuote}</p>
+      <span class="qmark qmark--close" aria-hidden="true">&rdquo;</span>
+    </blockquote>
+    {:else}
+    <blockquote class="hero-quote hero-quote--dim" aria-hidden="true">
+      <span class="qmark qmark--open">&ldquo;</span>
+      <p class="qtext">Un'esperienza che non dimenticherò mai.</p>
+      <span class="qmark qmark--close">&rdquo;</span>
+    </blockquote>
     {/if}
-    <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
+  </section>
+
+  <!-- ── Meta: role + venue ──────────────────────────────────────── -->
+  <div class="meta-block">
+    {#if volunteerRole}<p class="meta-role">{volunteerRole}</p>{/if}
+    {#if venueDisplay}<p class="meta-venue">{venueDisplay}</p>{/if}
   </div>
 
-  <!-- ── Quote (top-right) ─────────────────────────────────────────── -->
-  {#if resolvedQuote}
-    <blockquote class="vol-quote">
-      <span class="qmark qmark--open" aria-hidden="true">“</span>
-      <p class="quote-body">{resolvedQuote}</p>
-      <span class="qmark qmark--close" aria-hidden="true">”</span>
-    </blockquote>
-  {:else}
-    <blockquote class="vol-quote vol-quote--dim">
-      <span class="qmark qmark--open" aria-hidden="true">“</span>
-      <p class="quote-body">Un'esperienza che non dimenticherò mai.</p>
-      <span class="qmark qmark--close" aria-hidden="true">”</span>
-    </blockquote>
-  {/if}
+  <!-- ── Photo section ───────────────────────────────────────────── -->
+  {#if hasPhoto && currentPhoto && !imgError}
+  <section class="photo-wrap" aria-label="Foto del volontario">
 
-  <!-- ── Volunteer info (left, below name) ─────────────────────────── -->
-  <div class="vol-info">
-    <p class="info-role">{volunteerRole}</p>
-    <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
-  </div>
-
-  <!-- ── Photo column (left) ───────────────────────────────────────── -->
-  <div class="photo-col">
-    <div class="photo-fade photo-fade--top" aria-hidden="true"></div>
-    <div class="photo-fade photo-fade--bottom" aria-hidden="true"></div>
-    <div class="photo-scroll">
-      {#each volunteerPhotos as photoUrl (photoUrl)}
-        <div class="photo-item">
-          <img
-            src={photoUrl}
-            alt={volunteerTitle || 'foto volunteer'}
-            class="photo-img"
-            draggable="false"
-          />
-        </div>
+    <!-- Background scatter (other volunteers, blurred) -->
+    {#if bgPaths.length}
+    <div class="bg-scatter" aria-hidden="true">
+      {#each bgPaths as src, i (src)}
+        <img src={src} alt="" class="bg-img bg-img--{i}" draggable="false" />
       {/each}
     </div>
-  </div>
+    {/if}
 
-  <!-- ── Q&A accordion (right column) ─────────────────────────────── -->
-  <div class="qa-wrap" role="list">
-    {#each questionTitles as q, i}
-      <div class="qa-item" role="listitem">
+    <!-- Main photo -->
+    <img
+      src={currentPhoto}
+      alt={volunteerTitle}
+      class="main-photo"
+      draggable="false"
+      onerror={() => { imgError = true; }}
+    />
+
+    <!-- Carousel arrows (only when multiple photos) -->
+    {#if volunteerPhotos.length > 1}
+    <div class="frecce">
+      <button class="arr arr--prev" type="button" aria-label="Foto precedente" onclick={prevPhoto}>
+        <svg viewBox="0 0 14 28" fill="none" aria-hidden="true">
+          <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="arr arr--next" type="button" aria-label="Foto successiva" onclick={nextPhoto}>
+        <svg viewBox="0 0 14 28" fill="none" aria-hidden="true">
+          <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    {/if}
+  </section>
+  {/if}
+
+  <!-- ── Q&A accordion ────────────────────────────────────────────── -->
+  {#if dbVol?.autorizzazione_risposte}
+  <section class="qa" class:qa--no-photo={!hasPhoto || imgError} aria-label="Risposte del volontario">
+    {#each QUESTIONS as q, i}
+      {@const answer = (dbVol as any)[q.field] as string | null}
+      {#if answer}
+      <div class="qa-item">
         <button
-          class="qa-row"
-          class:qa-row--open={openQ === i}
+          class="qa-q"
           type="button"
-          aria-expanded={openQ === i}
-          onclick={() => { openQ = openQ === i ? -1 : i; }}
+          onclick={() => toggleQ(i)}
+          aria-expanded={openIdx === i}
         >
-          <span class="qa-title">{q}</span>
+          <span class="qa-label">{q.label}</span>
+          <span class="qa-plus" aria-hidden="true">{openIdx === i ? '−' : '+'}</span>
         </button>
-        <div class="qa-sep" class:qa-sep--open={openQ === i}>
-          {#if openQ === i}
-            <div class="qa-answer" role="region" aria-live="polite">
-              {#if dbResponses}
-                <p>{dbResponses[i] ?? 'Nessuna risposta disponibile.'}</p>
-              {:else if i === 0 && volunteer?.dayDescription}
-                <p>{volunteer.dayDescription}</p>
-              {:else}
-                <p>{volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.'}</p>
-              {/if}
-            </div>
-          {/if}
-        </div>
+        <div class="qa-line"></div>
+        {#if openIdx === i}
+        <p class="qa-answer">{answer}</p>
+        {/if}
       </div>
+      {/if}
     {/each}
-  </div>
+  </section>
+  {/if}
 
 </main>
 
@@ -200,457 +224,342 @@
   /* ── Global ─────────────────────────────────────────────────────── */
   :global(html), :global(body) {
     margin: 0;
-    background: #0e0e0e;
+    background: #0d0d0d;
     color: #fafafa;
+    overflow-x: hidden;
   }
-
-  :global(*) {
-    box-sizing: border-box;
-    font-family: var(--font-display);
-  }
+  :global(*) { box-sizing: border-box; font-family: var(--font-display); }
 
   /* ── Page shell ─────────────────────────────────────────────────── */
-  .profile {
-    position: relative;
-    width: 100vw;
-    height: 100dvh;
-    overflow: hidden;
-    background: #0e0e0e;
-    color: #fafafa;
+  .vol-page {
+    padding-top: var(--navbar-height, 125px);
+    background: #0d0d0d;
+    min-height: 100dvh;
   }
 
-  /* ── INDIETRO button ─────────────────────────────────────────────── */
-  /* Figma 6103-10525: border-2 lime, px-20 py-12, gap-12, radius-999, w-168px */
+  /* ── Back button ─────────────────────────────────────────────────── */
+  /* Figma: 168×48px pill, padding 12/20, gap 12 */
+  .back-wrap {
+    padding: 24px 0 0 72px;
+  }
+
   .back-btn {
-    position: absolute;
-    left: 72px;
-    top: calc(var(--navbar-height, 125px) + 24px);
-    z-index: 30;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 12px;
+    height: 48px;
     padding: 12px 20px;
-    width: 168px;
+    background: #0d0d0d;
     border: 2px solid var(--color-content-accent, #bdff5d);
     border-radius: 999px;
-    background: #0e0e0e;
     color: #fafafa;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .back-btn-label {
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;
-    width: 98px;
-    text-align: center;
-    pointer-events: none;
-    user-select: none;
-    transition: filter 0.22s ease;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    transition:
+      transform   0.36s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow  0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
   }
-
-  .back-btn:hover .back-btn-label {
-    filter: blur(4px);
+  .back-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 24px rgba(189, 255, 93, 0.25), inset 0 0 12px rgba(189, 255, 93, 0.06);
   }
+  .back-btn:hover svg,
+  .back-btn:hover span {
+    filter: blur(2px);
+    color: var(--color-content-accent, #bdff5d);
+  }
+  .back-btn:active { transform: scale(0.97); transition-duration: 80ms; }
+  .back-btn svg { flex-shrink: 0; transition: filter 0.28s ease, color 0.28s ease; }
+  .back-btn span { transition: filter 0.28s ease, color 0.28s ease; }
 
-  /* ── Hero name ───────────────────────────────────────────────────── */
-  /* Figma 6103:7013: container top 337px (frame) = 225px, py-20px
-     → surname text starts at 245px. Leading: 116px. mb-[-8px] on surname.  */
-  .name-hero {
-    position: absolute;
-    left: 0;
-    top: 225px;
-    width: 100%;
+  /* ── Hero ────────────────────────────────────────────────────────── */
+  /* Figma: section gap from back-wrap bottom = 28px, padding 20px top & bottom */
+  .hero {
+    position: relative;
+    margin-top: 28px;
     padding: 20px 0;
-    pointer-events: auto;
-    z-index: 5;
+    overflow: visible;
   }
 
-  /* Figma h1: Forma DJR Display Extra Bold, 116/116, letter-spacing 0.
-     Fixed px — the global html { zoom } scales it responsively. */
-  .name-surname,
-  .name-firstname {
+  .name-block { display: flex; flex-direction: column; }
+
+  .name-row {
     font-size: 116px;
     font-weight: 800;
     line-height: 116px;
     letter-spacing: 0;
-    text-transform: uppercase;
     white-space: nowrap;
-    display: block;
   }
 
-  .name-surname {
-    padding-left: 72px;
+  /* Figma: surname filled lime, firstname outline lime, −8px overlap */
+  .name-row--filled {
+    margin-left: 72px;
+    color: var(--color-content-accent, #bdff5d);
     margin-bottom: -8px;
-    color: var(--color-content-accent, #bdff5d);
   }
-
-  .name-firstname {
-    padding-left: 340px;
+  .name-row--outline {
+    margin-left: 340px;
     color: transparent;
-    -webkit-text-stroke: 2px var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: 1.5px var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Volunteer info (left) ───────────────────────────────────────── */
-  /* Figma 6103:7015: left 74px, top 629px (frame) = 517px viewport */
-  /* Figma 6103:7015: left 74px, top 629px (frame) = 517px, w 513px */
-  .vol-info {
+  /* ── Hero quote — absolute, right side ──────────────────────────── */
+  /* Figma: right 67px, top 20px (within hero padding), width 393px */
+  .hero-quote {
     position: absolute;
-    left: 74px;
-    top: 517px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    width: 513px;
-  }
-
-  /* Figma H3: 36px Medium, tracking 4% = 1.44px. Box height 43px → lh 1.2. */
-  .info-role {
-    margin: 0;
-    align-self: stretch;
-    font-size: 36px;
-    font-size: var(--unit-36, 36px);
-    font-style: medium;
-    font-weight: 500;
-    line-height: normal;
-    letter-spacing: 1.44px;
-    font-weight: 500;
-    line-height: 1.2;
-    letter-spacing: 1.44px;
-    color: var(--color-content-accent, #bdff5d);
-  }
-
-  /* Figma H4: 24px Medium, tracking 4% = 0.96px. 2 lines in 58px → lh 1.2. */
-  .info-location {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 500;
-    font-style: medium;
-    line-height: 1.2;
-    letter-spacing: 0.96px;
-    white-space: pre-wrap;
-    color: #fafafa;
-  }
-
-  /* ── Quote (top-right) ───────────────────────────────────────────── */
-  /* Figma 6103:7018: left calc(66.67%+80px), top 357px (frame) = 245px viewport
-     Container: w-429px h-176px. Text: w-393px, Bold 32px, right-aligned.
-     Quote marks: 84px Medium, transparent (text-stroke).                      */
-  .vol-quote {
-    position: absolute;
-    left: 1232px;
-    top: 245px;
-    width: 429px;
-    height: 176px;
+    top: 20px;
+    right: 67px;
+    width: 393px;
     margin: 0;
     padding: 0;
-    z-index: 6;
-    font-style: normal;
   }
+  .hero-quote--dim { opacity: 0.45; }
 
-  .vol-quote--dim { opacity: 0.55; }
-
-  /* Opening " — top-left of the container, transparent outline */
-  .qmark--open {
-    position: absolute;
-    left: 0;
-    top: 0;
+  /* Figma: 84px Medium, solid semi-transparent (NOT outline) */
+  .qmark {
     font-size: 84px;
     font-weight: 500;
     line-height: 80px;
-    color: transparent;
-    -webkit-text-stroke: 2px #fafafa;
+    color: rgba(250, 250, 250, 0.45);
+    display: block;
     user-select: none;
   }
+  .qmark--open  { margin-left: -4px; }
+  .qmark--close { text-align: right; margin-right: -4px; }
 
-  /* Closing " — bottom-right */
-  .qmark--close {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    font-size: 84px;
-    font-weight: 500;
-    line-height: 80px;
-    color: transparent;
-    -webkit-text-stroke: 2px #fafafa;
-    user-select: none;
-  }
-
-  /* Quote text — 32px Bold, right-aligned, w-393px, right-edge of container */
-  .quote-body {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 393px;
+  /* Figma: 32px Bold, white, ls 0.96, lh 32px */
+  .qtext {
     margin: 0;
     font-size: 32px;
     font-weight: 700;
     line-height: 32px;
     letter-spacing: 0.96px;
     color: #fafafa;
-    text-align: right;
-    white-space: pre-wrap;
-  }
-
-  /* ── Photo column (left) ─────────────────────────────────────────── */
-  /* Figma 6103:7000: left 72px, top 757px (frame) = 645px viewport, w 782px, h 570px */
-  .photo-col {
-    position: absolute;
-    left: 72px;
-    top: 645px;
-    width: 782px;
-    height: 570px;
+    padding: 0 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    z-index: 8;
   }
 
-  /* Figma 6103:7008-7012: edge fades 175px tall, backdrop-blur 6px (unit/12). */
-  .photo-fade {
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 2;
-    pointer-events: none;
-    height: 175px;
+  /* ── Meta ────────────────────────────────────────────────────────── */
+  /* Figma: 28px gap from hero, ml 74px */
+  .meta-block {
+    margin-top: 28px;
+    margin-left: 74px;
   }
 
-  .photo-fade--top {
-    top: 0;
-    background: linear-gradient(to bottom, #0e0e0e 0%, transparent 100%);
-    backdrop-filter: blur(6px);
-    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  /* Figma: 36px/500, ls 1.44, accent */
+  .meta-role {
+    margin: 0;
+    font-size: 36px;
+    font-weight: 500;
+    line-height: 43.2px;
+    letter-spacing: 1.44px;
+    color: var(--color-content-accent, #bdff5d);
+    text-transform: uppercase;
   }
 
-  .photo-fade--bottom {
-    bottom: 0;
-    background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
-    backdrop-filter: blur(6px);
-    mask-image: linear-gradient(to top, black 60%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
+  /* Figma: 24px/500, white, ls 0.96, lh 28.8 */
+  .meta-venue {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 28.8px;
+    letter-spacing: 0.96px;
+    color: #fafafa;
+    text-transform: uppercase;
   }
 
-  .photo-scroll {
+  /* ── Photo section ───────────────────────────────────────────────── */
+  /* Figma: 135px gap from meta, photo 588×784 centered, arrows at ±72px */
+  .photo-wrap {
+    position: relative;
+    margin-top: 135px;
+    height: 784px;
+    overflow: visible;
+  }
+
+  /* Background scatter (blurred, other volunteers) */
+  .bg-scatter {
     position: absolute;
     inset: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 0;   /* Figma scroll fills the frame edge-to-edge (fades overlay) */
+    z-index: 0;
+    pointer-events: none;
+    overflow: visible;
   }
 
-  .photo-scroll::-webkit-scrollbar { display: none; }
-
-  .photo-item {
-    display: block;
-    width: 100%;
-    flex-shrink: 0;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .photo-img {
-    width: 100%;
-    height: auto;
-    display: block;
+  .bg-img {
+    position: absolute;
     object-fit: cover;
     pointer-events: none;
     user-select: none;
-    -webkit-user-drag: none;
-    border-radius: 4px;
   }
 
-  /* ── Q&A accordion (right column) ───────────────────────────────── */
-  /* Figma 6103:15338: w-1059px, gap-20px (var --spacing/4,5), right: 73px.
-     All items uniform: font var(--unit/48)=48px, tracking 1.92px.
-     Title: w-879px. Icon: size-52px. Separator: h-2.417px.               */
-  /* Figma layout across 1728: 72 (margin) + 782 (photo) + 74 (gap)
-     + 726 (accordion) + 74 (right margin). */
-  .qa-wrap {
+  /* Figma scatter positions (pixel-exact from design) */
+  .bg-img--0 { left: 330px;  top: 121px; width: 799px; height: 599px; opacity: 0.70; filter: blur(10px); }
+  .bg-img--1 { left: 603px;  top: 125px; width: 786px; height: 590px; opacity: 0.70; filter: blur(10px); }
+  .bg-img--2 { left: 206px;  top: 252px; width: 327px; height: 338px; opacity: 0.35; filter: blur(15px); }
+  .bg-img--3 { left: 1195px; top: 250px; width: 327px; height: 338px; opacity: 0.35; filter: blur(15px); }
+
+  /* Figma: 588×784px centered (570px margin each side at 1728px ref) */
+  .main-photo {
+    display: block;
+    position: relative;
+    z-index: 1;
+    width: 588px;
+    height: 784px;
+    object-fit: cover;
+    margin: 0 auto;
+  }
+
+  /* Full-width row, vertically centered on photo, pointer-events on arrows only */
+  .frecce {
     position: absolute;
-    right: 74px;
-    top: 589px;
-    width: 726px;
-    bottom: 40px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .qa-wrap::-webkit-scrollbar { display: none; }
-
-  .qa-item { display: flex; flex-direction: column; }
-
-  /* Figma 6103:6999 — exact spec: 32.82px Medium, tracking 1.313px,
-     0.39px text-stroke (faux-bold), left-aligned, full-width separator. */
-  .qa-row {
-    width: 601.015px;
+    inset: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    padding: 0;
-    border: 0;
-    background: transparent;
+    justify-content: space-between;
+    padding: 0 72px;
+    pointer-events: none;
+  }
+
+  /* Figma: 60×60px circle, 1px subtle border */
+  .arr {
+    width: 60px;
+    height: 60px;
+    border-radius: 999px;
+    border: 1px solid rgba(250, 250, 250, 0.22);
+    background: rgba(13, 13, 13, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: all;
     color: #fafafa;
-    font-size: 32.82px;
-    font-weight: 500;
-    line-height: normal;
-    text-transform: uppercase;
-    letter-spacing: 1.313px;
+    flex-shrink: 0;
+    transition: color 0.24s ease, border-color 0.24s ease, filter 0.24s ease;
+  }
+  .arr svg { width: 14px; height: 28px; }
+  .arr--prev { padding: 16px 16px 16px 12px; }
+  .arr--next { padding: 16px 12px 16px 16px; }
+  .arr:hover {
+    color: var(--color-content-accent, #bdff5d);
+    border-color: var(--color-content-accent, #bdff5d);
+    filter: drop-shadow(0 0 8px rgba(189, 255, 93, 0.38));
+  }
+
+  /* ── Q&A accordion ───────────────────────────────────────────────── */
+  /* Figma: ml 597px, mr 72px, gap 20px between items */
+  .qa {
+    margin-top: 125px;
+    padding-left: 597px;
+    padding-right: 72px;
+    padding-bottom: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Without photo: less top gap (meta bottom → qa = 96px) */
+  .qa--no-photo { margin-top: 96px; }
+
+  /* Question row: label + circular +/- toggle */
+  .qa-q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 52px;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 4px 0;
     cursor: pointer;
     text-align: left;
-    transition: color 0.15s ease;
   }
 
-  .qa-row:hover,
-  .qa-row--open { color: var(--color-content-accent, #bdff5d); }
-
-  .qa-row:hover + .qa-sep:not(.qa-sep--open) { background: #bdff5d; }
-
-  .qa-title {
-    width: 601.015px;   /* Figma title box; separator spans the full 726px row */
-    -webkit-text-stroke: 0.39px currentColor;  /* Figma faux-bold; follows hover color */
-  }
-
-  /* Figma: full-width separator under each title → hover lime → expanded lime card */
-  .qa-sep {
-    height: 2px;
-    background: #fafafa;
-    flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-    transition: background 200ms ease;
-  }
-
-  .qa-sep--open {
-    height: auto;
-    min-height: 320px;
-    background: #bdff5d;
-  }
-
-  .qa-answer {
-    padding: 48px 64px;
-  }
-
-  .qa-answer p {
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: 28px;
+  /* Figma: 36px/500, ls 1.44, lh 43.2, white, uppercase */
+  .qa-label {
+    font-size: 36px;
     font-weight: 500;
-    line-height: 1.4;
-    letter-spacing: 0.04em;
-    color: #0e0e0e;
+    line-height: 43.2px;
+    letter-spacing: 1.44px;
+    color: #fafafa;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+  .qa-q:hover .qa-label,
+  .qa-q[aria-expanded='true'] .qa-label {
+    color: var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Focus states for accordion ────────────────────────────────── */
-  .qa-row:focus-visible {
-    outline: 2px solid var(--color-content-accent);
+  /* Circular +/- button — hidden until hover or open */
+  .qa-plus {
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1;
+    color: #fafafa;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid rgba(250, 250, 250, 0.3);
+    border-radius: 999px;
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .qa-q:hover .qa-plus {
+    opacity: 1;
+    color: var(--color-content-accent, #bdff5d);
+    border-color: var(--color-content-accent, #bdff5d);
+  }
+  .qa-q[aria-expanded='true'] .qa-plus {
+    opacity: 1;
+    color: var(--color-content-accent, #bdff5d);
+    border-color: var(--color-content-accent, #bdff5d);
+  }
+
+  /* Figma: 2px white separator */
+  .qa-line {
+    height: 2px;
+    background: rgba(250, 250, 250, 1);
+    transition: background 0.2s ease;
+  }
+  .qa-q[aria-expanded='true'] + .qa-line {
+    background: var(--color-content-accent, #bdff5d);
+  }
+
+  /* Figma: 24px/500, white, lh 26px — plain text on dark bg */
+  .qa-answer {
+    margin: 20px 0 0;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 26px;
+    letter-spacing: 0;
+    color: #fafafa;
+    white-space: pre-line;
+  }
+
+  /* ── Focus styles ────────────────────────────────────────────────── */
+  .back-btn:focus-visible,
+  .arr:focus-visible,
+  .qa-q:focus-visible {
+    outline: 2px solid var(--color-content-accent, #bdff5d);
     outline-offset: 3px;
-    border-radius: 4px;
   }
 
-  .back-btn:focus-visible {
-    outline: 2px solid var(--color-content-accent);
-    outline-offset: 3px;
-  }
-
-  /* ── Responsive ─────────────────────────────────────────────────── */
-  @media (max-width: 1280px) {
-    .name-surname  { padding-left: 3.2vw; }
-    .name-firstname { padding-left: 15vw; }
-    .vol-info  { left: 3.2vw; }
-    .vol-quote { left: calc(64% + 2vw); width: clamp(140px, 20vw, 360px); }
-    .photo-col { left: 3.2vw; width: 45vw; }
-    .qa-wrap   { right: 3.2vw; width: 42vw; }
-  }
-
-  @media (max-width: 1100px) {
-    .name-firstname { padding-left: 12vw; }
-    .vol-quote    { left: 62%; width: clamp(120px, 18vw, 300px); }
-    .quote-body   { font-size: clamp(12px, 1.5vw, 26px); }
-    .qmark        { font-size: clamp(28px, 4.5vw, 56px); }
-    .photo-col    { left: 3vw; width: 44vw; }
-    .qa-wrap      { right: 3vw; width: 40vw; }
-  }
-
-  @media (max-width: 768px) {
-    .profile { overflow-y: auto; height: auto; min-height: 100dvh; }
-
-    .name-hero      { position: relative; top: auto; margin-top: 120px; }
-    .name-surname   { padding-left: 16px; font-size: clamp(48px, 11vw, 116px); line-height: 1; }
-    .name-firstname { padding-left: 48px; font-size: clamp(48px, 11vw, 116px); line-height: 1; }
-
-    .vol-quote {
-      position: relative;
-      left: auto; top: auto;
-      width: 100%;
-      height: auto;
-      padding: 20px 16px;
-    }
-
-    .qmark--open  { position: static; font-size: 40px; line-height: 1; }
-    .qmark--close { position: static; font-size: 40px; line-height: 1; display: block; text-align: right; }
-    .quote-body   { position: static; width: 100%; font-size: 18px; text-align: right; line-height: 1.4; }
-
-    .vol-info {
-      position: relative;
-      left: auto; top: auto;
-      width: 100%;
-      padding: 24px 16px 0;
-    }
-
-    .photo-col {
-      position: relative;
-      left: auto; top: auto;
-      width: 100%;
-      height: 60vh;
-      margin: 16px 0;
-    }
-
-    .back-btn {
-      position: fixed;
-      left: 16px;
-      top: calc(var(--navbar-height, 125px) + 8px);
-    }
-
-    .qa-wrap {
-      position: relative;
-      left: auto; right: auto; top: auto; bottom: auto;
-      width: 100%;
-      overflow: visible;
-      padding: 16px;
-    }
-
-    .qa-row       { font-size: 20px; width: 100%; }
-    .qa-title     { width: 100%; }
-    .qa-answer p  { font-size: 18px; }
-  }
-
-  /* ── Touch target compensation ──────────────────────────────────── */
-  @media (pointer: coarse) {
-    .qa-row {
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
-      padding-top:    max(8px, calc(8px / var(--page-zoom, 1)));
-      padding-bottom: max(8px, calc(8px / var(--page-zoom, 1)));
-    }
-    .back-btn {
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
-    }
-  }
-
-  /* ── Reduced motion ─────────────────────────────────────────────── */
+  /* ── Reduced motion ──────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .qa-sep {
-      transition: none;
-    }
+    .back-btn, .arr, .qa-label, .qa-plus, .qa-line { transition: none; }
   }
 </style>

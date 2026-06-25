@@ -37,7 +37,8 @@
 		if (!browser) return;
 		const update = () => {
 			document.documentElement.style.zoom = '1';
-			const z = window.innerWidth / 1728;
+			const vw = window.innerWidth;
+			const z  = vw < 600 ? 1 : vw / 1728;
 			document.documentElement.style.zoom = String(z);
 			document.documentElement.style.setProperty('--page-zoom', String(z));
 		};

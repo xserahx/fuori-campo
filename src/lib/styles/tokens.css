@@ -705,3 +705,139 @@ body::-webkit-scrollbar,
     animation: 360ms ease-out both vt-in;
   }
 }
+
+/* ================================================================
+ * MOBILE  (≤ 599 px — matches layout.svelte zoom=1 breakpoint)
+ * Pixel values from Figma node 6197-9283 "Home-mobile" (402 × 5786 px)
+ * ================================================================ */
+@media (max-width: 599px) {
+
+  /* Correct navbar-height CSS var so body padding-top matches actual nav */
+  :root {
+    --navbar-height: 96px;
+  }
+
+  /* Navbar */
+  .navbar {
+    padding:    24px 27px;
+    min-height: 96px;
+  }
+
+  /* Hero title area */
+  .hero-inner {
+    transform: none;
+  }
+
+  /* Story / scrolling text */
+  .story,
+  .lead-paragraph,
+  .story--quote,
+  .quote {
+    font-size:   24px;
+    line-height: 28.8px;
+    font-weight: 500;
+    padding-left:  24px;
+    padding-right: 24px;
+    max-width: 100%;
+  }
+
+  .lead-paragraph {
+    margin-top: 30px;
+  }
+
+  .story--left {
+    max-width: 100%;
+    margin-top: 40px;
+  }
+
+  /* Figma: "18.000" numbers block is right-aligned on mobile too */
+  .story--right {
+    max-width:   100%;
+    margin-left: auto;
+    text-align:  right;
+    margin-top:  100px;
+  }
+
+  .story--intro {
+    margin-top: 0;
+  }
+
+  .story--summary {
+    max-width:  100%;
+    margin-top: 300px;
+  }
+
+  .story--quote-left {
+    max-width:    100%;
+    margin-left:  0;
+    margin-top:   353px;
+    text-align:   left;
+    padding-left: 24px;
+  }
+
+  .story--quote-right {
+    max-width:     100%;
+    margin-left:   0;
+    margin-top:    100px;
+    text-align:    left;
+    padding-right: 24px;
+  }
+
+  /* Question section — vertical stack, no horizontal scroll */
+  .question-shell {
+    margin-top: 345px;
+  }
+
+  .question-sticky {
+    position:       relative;
+    height:         auto;
+    overflow:       visible;
+    padding-top:    400px;
+    padding-bottom: 400px;
+  }
+
+  .question-blur-veil {
+    display: none;
+  }
+
+  .question-track {
+    flex-direction: column;
+    height:         auto;
+  }
+
+  .question {
+    width:      100%;
+    height:     auto;
+    min-height: 0;
+    padding:    0 24px;
+  }
+
+  .question + .question {
+    margin-top: 400px;
+  }
+
+  .question h2 {
+    font-size:   36px;
+    line-height: 32px;
+  }
+
+  /* All 4 questions left-aligned on mobile — Figma shows no right-aligned panels */
+  .question--right {
+    align-items: flex-start;
+  }
+
+  .question--right h2 {
+    text-align: left;
+  }
+
+  /* On lime background: ghost outline becomes solid dark text */
+  .question .ghost {
+    color:                    #0e0e0e;
+    -webkit-text-fill-color:  #0e0e0e;
+    -webkit-text-stroke-width: 0;
+  }
+
+  .question .accent {
+    color: #0e0e0e;
+  }
+}

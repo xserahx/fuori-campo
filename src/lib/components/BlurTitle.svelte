@@ -97,6 +97,23 @@
     100% { opacity: 1; filter: blur(0px);  transform: translateY(0px) scale(1); }
   }
 
+  @media (max-width: 599px) {
+    .char {
+      font-size:   75px;
+      line-height: 62.5px;
+    }
+    /* Left-align title block: FUORI/CAMPO left edge at 24px from screen left */
+    .title-wrap {
+      left:      24px;
+      transform:
+        translate(0, calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)))
+        scale(calc(1 - var(--hero-scroll-p, 0) * 0.06));
+      width: auto;
+    }
+    .fuori,
+    .campo { text-align: left; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .char {
       animation: none;
