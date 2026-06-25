@@ -118,7 +118,7 @@
   <title>{volunteerTitle} — {volunteerRole} — Fuori Campo</title>
 </svelte:head>
 
-<main class="lb">
+<main class="lb" id="main-content">
 
   <!-- ── Blurred background: only this volunteer's photos ──────── -->
   <div class="bg-scatter" aria-hidden="true">
@@ -547,5 +547,47 @@
     .cap-location { font-size: 10px; }
     .cap-role     { font-size: 14px; }
     .cap-name     { font-size: 20px; }
+    /* Keep arrows in-viewport on small screens */
+    .arrow--prev { left: 20px; }
+    .arrow--next { right: 20px; }
+    /* Close button safe area */
+    .close-x { top: 24px; right: 24px; }
+  }
+
+  /* ── Touch target compensation ──────────────────────────────────── */
+  /* Extend hit areas via pseudo-element without changing visual size. */
+  @media (pointer: coarse) {
+    .arrow {
+      position: fixed; /* keep fixed for coarse-pointer layers */
+    }
+    .arrow::after,
+    .close-x::after,
+    .expand-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      min-width:  max(48px, calc(44px / var(--page-zoom, 1)));
+      min-height: max(80px, calc(44px / var(--page-zoom, 1)));
+    }
+    .close-x::after {
+      min-width:  max(44px, calc(44px / var(--page-zoom, 1)));
+      min-height: max(44px, calc(44px / var(--page-zoom, 1)));
+    }
+    .expand-btn::after {
+      min-width:  100%;
+      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
+    }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .photo-frame {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: translate(-50%, -50%) !important;
+    }
   }
 </style>

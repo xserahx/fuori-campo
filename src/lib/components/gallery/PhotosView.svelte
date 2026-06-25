@@ -94,8 +94,14 @@
   }
 
   function clampPosition() {
-    const maxX = Math.max(0, designWidth / 2 - window.innerWidth / 2);
-    const maxY = Math.max(0, designHeight / 2 - window.innerHeight / 2);
+    /* Use the CSS-zoom viewport width/height (≈1728px at 1440px physical with
+       zoom=0.833) so the canvas bounds match the CSS `left: calc(50vw - N px)`
+       positioning. window.innerWidth is physical and would under-clamp, letting
+       the canvas edge show dark background at the gallery boundary. */
+    const cssVw = document.documentElement.clientWidth  || window.innerWidth;
+    const cssVh = document.documentElement.clientHeight || window.innerHeight;
+    const maxX = Math.max(0, designWidth  / 2 - cssVw / 2);
+    const maxY = Math.max(0, designHeight / 2 - cssVh / 2);
     targetX = Math.min(maxX, Math.max(-maxX, targetX));
     targetY = Math.min(maxY, Math.max(-maxY, targetY));
   }
@@ -127,8 +133,10 @@
   const visibleImages = $derived.by(() => {
     void windowX; void windowY; void resizeCount; void designHeight;
     if (typeof window === 'undefined') return positionedImages;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    /* clientWidth/Height are in the CSS zoom coordinate space (≈1728px wide at
+       zoom=0.833), matching the canvas's `left: calc(50vw - N px)` positioning. */
+    const vw = document.documentElement.clientWidth  || window.innerWidth;
+    const vh = document.documentElement.clientHeight || window.innerHeight;
     const cx = vw / 2 - designWidth / 2;
     const cy = vh / 2 - designHeight / 2;
     const minL = -cx - windowX - VIRT_MARGIN;

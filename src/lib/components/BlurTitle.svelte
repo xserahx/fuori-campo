@@ -38,8 +38,11 @@
   .campo {
     display: block;
     font-family: var(--font-display);
-    font-size:   300px;
-    line-height: 250px;
+    /* Compensate for the html{zoom} system so the title maintains a near-constant
+       physical size at any viewport: figma_px / zoom ≈ constant physical pixels.
+       Clamped so it never exceeds 520px CSS (safe cap) nor drops below 180px. */
+    font-size:   clamp(180px, calc(300px / max(var(--page-zoom, 1), 0.65)), 520px);
+    line-height: clamp(150px, calc(250px / max(var(--page-zoom, 1), 0.65)), 430px);
     font-weight: 800;
     letter-spacing: -0.02em;
     text-transform: uppercase;
@@ -87,5 +90,15 @@
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
     animation: word-in 1600ms cubic-bezier(0.16, 1, 0.3, 1) var(--campo-delay) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fuori,
+    .campo {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
   }
 </style>

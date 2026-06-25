@@ -230,7 +230,7 @@
       </svg>
     </a>
 
-    <nav class="nav-links" bind:this={navContainer} onmouseleave={clearHover}>
+    <nav class="nav-links" aria-label="Navigazione principale" bind:this={navContainer} onmouseleave={clearHover}>
       {#each navItems as item, index}
         <a
           class="nav-link"

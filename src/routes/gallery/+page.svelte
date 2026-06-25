@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { fade }   from 'svelte/transition';
+  import { beforeNavigate } from '$app/navigation';
   import { cubicOut, cubicIn } from 'svelte/easing';
   import '../../lib/styles/tokens.css';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
@@ -11,6 +12,14 @@
 
   // Pre-seed from cache so returning users see photos instantly (no loading flash).
   let dbVolunteers = $state<VolunteerSummary[]>(getCachedVolunteers());
+
+  /* Clear overflow lock the instant navigation away starts, before any
+     view-transition overlap window where the homepage could mount
+     with overflow:hidden still in place from the gallery. */
+  beforeNavigate(() => {
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  });
 
   onMount(() => {
     /* Lock scroll on the root while the gallery is mounted.
@@ -86,7 +95,7 @@
   <title>Gallery — Fuori Campo</title>
 </svelte:head>
 
-<main class="gallery-page">
+<main class="gallery-page" id="main-content">
   <div class="bg-noise"></div>
 
   {#if activeToggle === 'photos'}
@@ -211,6 +220,8 @@
     position: fixed;
     pointer-events: none;
     z-index: 10;
+    /* GPU layer prevents 1-px rendering seams at non-integer zoom levels */
+    transform: translateZ(0);
   }
 
   .edge-fade--top {
@@ -482,5 +493,51 @@
     .cat-overlay { width: 100vw; padding-right: 24px; padding-bottom: 32px; gap: 48px; }
     .cat-item    { font-size: 24px; }
     .cat-items   { gap: 24px; }
+  }
+
+  /* ── Touch target compensation using --page-zoom ────────────────── */
+  /* At narrow viewports the zoom factor shrinks all elements;
+     scale interactive targets up so physical tap area stays ≥ 44px. */
+  @media (pointer: coarse) {
+    .toggle-track {
+      min-height: max(45px, calc(44px / var(--page-zoom, 1)));
+    }
+    .toggle-option {
+      min-height: max(45px, calc(44px / var(--page-zoom, 1)));
+    }
+    .filter-btn {
+      min-height: max(45px, calc(44px / var(--page-zoom, 1)));
+    }
+    .cat-item {
+      padding: max(8px, calc(8px / var(--page-zoom, 1))) 0;
+    }
+    .cat-close {
+      width:  max(48px, calc(44px / var(--page-zoom, 1)));
+      height: max(48px, calc(44px / var(--page-zoom, 1)));
+    }
+  }
+
+  /* ── Very small viewports (phones in portrait) ───────────────────── */
+  @media (max-width: 640px) {
+    /* Stack toggle and filter vertically so they don't overlap */
+    .toggle     { left: 16px; bottom: 80px; }
+    .filter-btn { right: 16px; bottom: 16px; width: auto; min-width: 180px; }
+    /* Overlay covers full screen, items scroll if many */
+    .cat-overlay {
+      width: 100vw;
+      padding-right: 20px;
+      padding-left: 20px;
+      padding-bottom: 24px;
+      gap: 32px;
+      align-items: flex-end;
+    }
+    .cat-item { font-size: 20px; }
+    .cat-items { gap: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-selected {
+      transition: none;
+    }
   }
 </style>

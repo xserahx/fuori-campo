@@ -37,7 +37,9 @@
 		if (!browser) return;
 		const update = () => {
 			document.documentElement.style.zoom = '1';
-			document.documentElement.style.zoom = String(window.innerWidth / 1728);
+			const z = window.innerWidth / 1728;
+			document.documentElement.style.zoom = String(z);
+			document.documentElement.style.setProperty('--page-zoom', String(z));
 		};
 		update();
 		window.addEventListener('resize', update, { passive: true });
@@ -82,6 +84,8 @@
 	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 	<link rel="stylesheet" href="https://use.typekit.net/rja4qrb.css" />
 </svelte:head>
+
+<a href="#main-content" class="skip-link">Vai al contenuto</a>
 
 {#if !isVolunteerPage}
 	<Navbar inverted={isAboutPage || $navbarInverted} pinned={isGalleryPage || isHomePage} />

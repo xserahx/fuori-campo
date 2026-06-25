@@ -410,6 +410,8 @@
 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    /* Force GPU compositing to avoid sub-pixel seams at non-integer zoom */
+    transform: translateZ(0);
 
     mask-image: linear-gradient(
       to bottom,
@@ -443,6 +445,7 @@
 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    transform: translateZ(0);
 
     mask-image: linear-gradient(
       to top,
@@ -550,6 +553,39 @@
     .alpha-sidebar {
       right: var(--spacing-5, 24px);
       width: 18px;
+    }
+  }
+
+  /* ── Focus visible ─────────────────────────────────────────────── */
+  .names-interaction__item:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 4px;
+    border-radius: 4px;
+    color: var(--gallery-accent, var(--color-content-accent));
+  }
+
+  .alpha-sidebar__btn:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 4px;
+    border-radius: 2px;
+    color: var(--color-content-accent);
+  }
+
+  /* ── Touch target compensation for alphabet sidebar ─────────────── */
+  @media (pointer: coarse) {
+    .alpha-sidebar__btn {
+      min-width:  max(23px, calc(32px / var(--page-zoom, 1)));
+      min-height: max(18px, calc(32px / var(--page-zoom, 1)));
+    }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .names-interaction__item {
+      transition: color 0.01ms;
+    }
+    .copy-toast {
+      transition: opacity 0.01ms;
     }
   }
 </style>

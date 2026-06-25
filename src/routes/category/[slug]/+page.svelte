@@ -273,7 +273,7 @@
 </svelte:head>
 
 {#if cat}
-  <main class="category-page" class:category-sport={cat?.slug === 'sport'}>
+  <main class="category-page" id="main-content" class:category-sport={cat?.slug === 'sport'}>
     <div class="category-shell">
       <button class="back-button" type="button" aria-label="Indietro" onclick={() => goto('/category')}>
         <img class="back-icon" src={BACK_ICON} alt="" width="18" height="10" draggable="false" />
@@ -358,7 +358,7 @@
     min-height: 100dvh;
     background: #0e0e0e;
     color: #fafafa;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   .category-shell {
@@ -424,7 +424,7 @@
   .title-fill,
   .title-outline {
     font-family: var(--font-display);
-    font-size: clamp(56px, 6.75vw, 116px);
+    font-size: clamp(56px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px);
     font-weight: 800;
     text-transform: uppercase;
     /* Figma h1: letterSpacing: 0, leading-[unit/116] = 1:1 with font size */
@@ -458,7 +458,7 @@
     max-width: calc(100% - var(--spacing-11) - 16px);
     text-align: right;
     font-family: var(--font-display);
-    font-size: clamp(34px, 4.9vw, 84px);
+    font-size: clamp(34px, calc(84px / max(var(--page-zoom, 1), 0.65)), 145px);
     font-weight: 500;
     line-height: 0.952;
     letter-spacing: 0;
@@ -467,12 +467,9 @@
   }
 
   .summary-card {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: static;
     width: auto;
-    margin: 0;
+    margin-top: auto;
     padding: 0 0 var(--spacing-7) var(--spacing-11);
     display: flex;
     flex-direction: column;
@@ -680,9 +677,6 @@
     }
 
     .summary-card {
-      position: static;
-      width: auto;
-      margin-top: auto;
       padding: 0 0 var(--spacing-5) var(--spacing-5);
     }
 
@@ -757,6 +751,44 @@
     .arrow-circle svg {
       width: 10px;
       height: 20px;
+    }
+  }
+
+  /* ── Touch target compensation ──────────────────────────────────── */
+  @media (pointer: coarse) {
+    .dot {
+      min-width:  max(16px, calc(44px / var(--page-zoom, 1)));
+      min-height: max(16px, calc(44px / var(--page-zoom, 1)));
+    }
+    .arrow-circle {
+      min-width:  max(60px, calc(44px / var(--page-zoom, 1)));
+      min-height: max(60px, calc(44px / var(--page-zoom, 1)));
+    }
+    .back-button {
+      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
+    }
+  }
+
+  /* ── Focus visible ──────────────────────────────────────────────── */
+  .back-button:focus-visible,
+  .arrow-circle:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 3px;
+  }
+
+  .dot:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 4px;
+    border-radius: 50%;
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .arrow-circle {
+      transition: none;
+    }
+    .dot::before {
+      transition: none;
     }
   }
 </style>

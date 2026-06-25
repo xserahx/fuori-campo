@@ -99,7 +99,7 @@
 
 <Navbar pinned />
 
-<main class="profile">
+<main class="profile" id="main-content">
 
   <!-- ── INDIETRO button ──────────────────────────────────────────── -->
   <button
@@ -551,6 +551,18 @@
     color: #0e0e0e;
   }
 
+  /* ── Focus states for accordion ────────────────────────────────── */
+  .qa-row:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .back-btn:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 3px;
+  }
+
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1280px) {
     .name-surname  { padding-left: 3.2vw; }
@@ -574,18 +586,20 @@
     .profile { overflow-y: auto; height: auto; min-height: 100dvh; }
 
     .name-hero      { position: relative; top: auto; margin-top: 120px; }
-    .name-surname   { padding-left: 16px; }
-    .name-firstname { padding-left: 48px; }
+    .name-surname   { padding-left: 16px; font-size: clamp(48px, 11vw, 116px); line-height: 1; }
+    .name-firstname { padding-left: 48px; font-size: clamp(48px, 11vw, 116px); line-height: 1; }
 
     .vol-quote {
       position: relative;
       left: auto; top: auto;
       width: 100%;
+      height: auto;
       padding: 20px 16px;
     }
 
-    .quote-body { font-size: 18px; text-align: right; }
-    .qmark      { font-size: 40px; }
+    .qmark--open  { position: static; font-size: 40px; line-height: 1; }
+    .qmark--close { position: static; font-size: 40px; line-height: 1; display: block; text-align: right; }
+    .quote-body   { position: static; width: 100%; font-size: 18px; text-align: right; line-height: 1.4; }
 
     .vol-info {
       position: relative;
@@ -602,6 +616,12 @@
       margin: 16px 0;
     }
 
+    .back-btn {
+      position: fixed;
+      left: 16px;
+      top: calc(var(--navbar-height, 125px) + 8px);
+    }
+
     .qa-wrap {
       position: relative;
       left: auto; right: auto; top: auto; bottom: auto;
@@ -610,6 +630,27 @@
       padding: 16px;
     }
 
-    .qa-row { font-size: 20px; }
+    .qa-row       { font-size: 20px; width: 100%; }
+    .qa-title     { width: 100%; }
+    .qa-answer p  { font-size: 18px; }
+  }
+
+  /* ── Touch target compensation ──────────────────────────────────── */
+  @media (pointer: coarse) {
+    .qa-row {
+      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
+      padding-top:    max(8px, calc(8px / var(--page-zoom, 1)));
+      padding-bottom: max(8px, calc(8px / var(--page-zoom, 1)));
+    }
+    .back-btn {
+      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
+    }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .qa-sep {
+      transition: none;
+    }
   }
 </style>

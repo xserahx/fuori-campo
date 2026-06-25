@@ -6,7 +6,7 @@
   <title>About — Fuori Campo</title>
 </svelte:head>
 
-<main class="about-page">
+<main class="about-page" id="main-content">
   <section class="hero">
     <h1>FUORI CAMPO</h1>
 
@@ -71,7 +71,7 @@
 
   .hero h1 {
     margin: 0;
-    font-size: clamp(48px, 8vw, 116px);
+    font-size: clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px);
     line-height: 1;
     font-weight: 800;
     letter-spacing: 0;
@@ -84,7 +84,7 @@
     max-width: 1311px;
     color: #000;
     font-family: var(--font-display);
-    font-size: clamp(26px, 5.8vw, 84px);
+    font-size: clamp(26px, calc(84px / max(var(--page-zoom, 1), 0.65)), 145px);
     font-weight: 500;
     line-height: 0.95;
     letter-spacing: 0;
@@ -115,5 +115,16 @@
 
   .team-copy p {
     margin: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero h1,
+    .hero p,
+    .team {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
   }
 </style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { goto } from '$app/navigation';
+  import { goto, beforeNavigate } from '$app/navigation';
   import * as THREE from 'three';
   import '$lib/styles/tokens.css';
 
@@ -404,6 +404,13 @@
     if (slug) await goto(`/category/${slug}`);
   }
 
+  /* Restore overflow the moment navigation away starts — prevents the
+     homepage scroll engine from initialising with body.overflow='hidden'. */
+  beforeNavigate(() => {
+    document.body.style.overflow   = '';
+    document.body.style.paddingTop = '';
+  });
+
   onMount(() => {
     // Override layout's padding-top and prevent scroll for the full-bleed carousel
     const prev = { pt: document.body.style.paddingTop, ov: document.body.style.overflow };
@@ -479,7 +486,7 @@
 
 </script>
 
-<section class="carousel" bind:this={containerEl}
+<section class="carousel" id="main-content" bind:this={containerEl}
   onpointerdown={onPointerDown}
   onpointermove={onPointerMove}
   onpointerup={onPointerUp}
@@ -638,13 +645,14 @@
 
   .edge-panel__layer {
     position: absolute;
-    inset: -4% -3%;
+    /* Extend well beyond the panel boundary so the blur radius never
+       reaches the element edge and leaves a dark seam at any zoom level. */
+    inset: -8% -6%;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    /* Blur erases any seam or hard edge under the panel */
     filter: blur(20px) saturate(1.08);
-    -webkit-filter: blur(12px) saturate(1.08);
+    -webkit-filter: blur(20px) saturate(1.08);
     will-change: opacity;
   }
 
@@ -727,7 +735,7 @@
 
   .title {
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(48px, 7.5vw, 116px);
+    font-size: clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px);
     font-weight: 800;
     font-style: normal;
     text-transform: uppercase;
@@ -761,7 +769,7 @@
     display: block;
     white-space: nowrap;
     /* Figma: Outline row px-[spacing/17, 340px] — 340px at 1728px viewport */
-    margin-left: clamp(var(--spacing-11), 19.7vw, 340px);
+    margin-left: clamp(var(--spacing-11), calc(340px / max(var(--page-zoom, 1), 0.65)), 580px);
   }
 
   /* SPORT: shorter first word, keep distinct stagger */
@@ -770,6 +778,37 @@
   }
   .title.category-sport .title-outline {
     margin-left: clamp(var(--spacing-8), 24.5vw, 340px);
+  }
+
+  /* ── Prevent title text overflow on very narrow viewports ───────── */
+  @media (max-width: 700px) {
+    .title-fill,
+    .title-outline {
+      white-space: normal;
+      word-break: break-word;
+    }
+    .title-outline {
+      margin-left: var(--spacing-11);
+    }
+    .title.category-sport .title-outline {
+      margin-left: var(--spacing-8);
+    }
+  }
+
+  /* ── Touch target compensation for carousel arrows ───────────────── */
+  @media (pointer: coarse) {
+    .arrow {
+      min-width:  max(44px, calc(44px / var(--page-zoom, 1)));
+      min-height: max(52px, calc(44px / var(--page-zoom, 1)));
+    }
+  }
+
+  /* ── Reduced motion ─────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .title-fill,
+    .title-outline {
+      transition: none;
+    }
   }
 
 </style>

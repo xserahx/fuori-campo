@@ -106,6 +106,13 @@
     galleryTransitionPending = true;
     document.documentElement.dataset.galleryEntry = '1';
 
+    const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (noMotion) {
+      galleryTimeline = null;
+      goto('/gallery');
+      return;
+    }
+
     const landing = document.querySelector<HTMLElement>('.landing');
     galleryTimeline = gsap.timeline();
     /* Scale + fade the page content out while the overlay fades in.
@@ -214,6 +221,14 @@
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
 
+    /* Belt-and-suspenders: the gallery and category carousel both set
+       overflow:hidden via inline styles. beforeNavigate on those pages
+       already clears them, but view-transition overlap windows can still
+       leave the lock active when this scroll engine initialises. */
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.paddingTop = '';
+
     /* ── Global smooth scroll state ─────────────────────────────── */
     let vTarget = window.scrollY;
     let vSmooth = window.scrollY;
@@ -227,6 +242,10 @@
     /* Blur-veil state */
     let fb1 = 0;
     let h1p = 0;
+    /* Mirrors document.documentElement.style.zoom — refreshed in setup().
+       Used to convert physical scroll units → CSS zoom-space values for
+       style.height and translateX (100vw ≈ 1728px at every viewport). */
+    let pageZoom = parseFloat(document.documentElement.style.zoom) || 1;
 
     /* ── Color dissolve palette ─────────────────────────────────────
        4 panels: lime, dark, lime, dark — bg and text are inverses.
@@ -280,10 +299,14 @@
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const sy = window.scrollY;
+      pageZoom = parseFloat(document.documentElement.style.zoom) || 1;
 
       if (shell1 && track1) {
-        s1.slide = (track1.children.length - 1) * vw;  // 4 panels → 3 × vw
-        shell1.style.height = `${vh + s1.slide}px`;
+        s1.slide = (track1.children.length - 1) * vw;  // physical px; 4 panels → 3 × vw
+        /* Shell height must be in zoomed CSS space: physical distance ÷ zoom.
+           window.innerWidth/Height are physical px, but style.height is
+           interpreted in the zoomed coord system where 100vw ≈ 1728px. */
+        shell1.style.height = `${(vh + s1.slide) / pageZoom}px`;
         s1.top   = shell1.getBoundingClientRect().top + sy;
       }
       if (heroSection) {
@@ -344,7 +367,7 @@
 
       if (s1.slide > 0 && track1) {
         s1.hSmooth = lerp(s1.hSmooth, s1.hTarget, LERP_H);
-        track1.style.transform = `translateX(${(-s1.hSmooth).toFixed(2)}px)`;
+        track1.style.transform = `translateX(${(-s1.hSmooth / pageZoom).toFixed(2)}px)`;
         const velBlur = Math.abs(s1.hSmooth - h1p) * 0.045;
         const b1      = Math.min(fb1 + velBlur, 22);
         if (veil1) veil1.style.backdropFilter = b1 > 0.08 ? `blur(${b1.toFixed(1)}px)` : '';
@@ -418,9 +441,10 @@
              Exit pulse: only when the shell is still near the viewport
              (backward exit), not after the dissolve overlay exit.     */
       if (locked !== prevLocked) {
+        const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (locked === s1 && track1) {
           const enteringFromTop = s1.hSmooth < s1.slide * 0.08;
-          if (enteringFromTop) {
+          if (enteringFromTop && !noMotion) {
             gsap.fromTo(track1,
               { scale: 1.014 },
               { scale: 1, duration: 0.70, ease: 'power3.out', overwrite: true }
@@ -429,7 +453,7 @@
         }
         if (prevLocked === s1 && locked === null && track1) {
           const shellNearViewport = Math.abs(vSmooth - s1.top) < vh * 1.5;
-          if (shellNearViewport) {
+          if (shellNearViewport && !noMotion) {
             gsap.fromTo(track1,
               { scale: 0.988 },
               { scale: 1, duration: 0.55, ease: 'power2.out', overwrite: true }
@@ -614,7 +638,7 @@
     };
 
     /* ── Resize ──────────────────────────────────────────────────── */
-    const handleResize = () => { locked = null; cacheSpans(); setup(); };
+    const handleResize = () => { locked = null; cacheSpans(); requestAnimationFrame(setup); };
 
     /* ── Init ────────────────────────────────────────────────────── */
     requestAnimationFrame(() => {
@@ -670,7 +694,7 @@
   <!-- Fixed overlay for cinematic H→V dissolve transition -->
   <div class="transition-overlay" bind:this={transitionOverlay}></div>
 
-  <main class="landing">
+  <main class="landing" id="main-content">
 
     <!-- ── Hero ────────────────────────────────────────────────── -->
     <section class="hero-outer" bind:this={heroSection}>
