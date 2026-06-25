@@ -405,7 +405,7 @@
             const sv  = clamp(vis - si * 0.05, 0, 1);
             const sv3 = ss(sv);
             const span = spans[si];
-            if (sv3 >= 0.9995) {
+            if (sv3 >= 0.9995 || vis >= 0.9995) {
               span.style.opacity   = '1';
               span.style.filter    = '';
               span.style.transform = 'none';
