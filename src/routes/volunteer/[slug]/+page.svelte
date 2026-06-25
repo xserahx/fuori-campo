@@ -317,7 +317,7 @@
   /* ── Navigation arrows ──────────────────────────────────────────── */
   .arrow {
     position: fixed;
-    top: 56vh;
+    top: 50%;
     transform: translateY(-50%);
     z-index: 20;
     width: 48px;
@@ -382,7 +382,7 @@
   .photo-frame {
     position: absolute;
     left: 50%;
-    top: 56vh;
+    top: 50%;
     transform: translate(-50%, -50%);
     z-index: 5;
     overflow: hidden;
@@ -524,7 +524,7 @@
 
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1300px) {
-    .photo-frame        { top: 54vh; }
+    .photo-frame        { top: 50%; }
     .photo-frame--16-9  { width: min(900px, 80vw, calc(80vh * 16 / 9)); }
     .photo-frame--4-3   { width: min(900px, 80vw, calc(78vh * 4  / 3)); }
     .photo-frame--3-4   { width: min(500px, 44vw, calc(80vh * 3  / 4)); }
@@ -539,7 +539,7 @@
   }
 
   @media (max-width: 700px) {
-    .photo-frame        { top: 52vh; }
+    .photo-frame        { top: 50%; }
     .photo-frame--16-9  { width: min(96vw,  calc(80vh * 16 / 9)); }
     .photo-frame--4-3   { width: min(96vw,  calc(78vh * 4  / 3)); }
     .photo-frame--3-4   { width: min(82vw,  calc(80vh * 3  / 4)); }

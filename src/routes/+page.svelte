@@ -1,3 +1,10 @@
+<script module lang="ts">
+  /* Module-scoped so it survives in-app (soft) navigations: returning to the
+     homepage via the logo will NOT replay the intro. A full browser refresh
+     reloads this module and resets the flag, so a refresh DOES replay it. */
+  let introPlayed = false;
+</script>
+
 <script lang="ts">
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
@@ -13,25 +20,14 @@
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────── */
-  /* Play the loading intro only on the first homepage visit of the session.
-     Returning to the homepage (e.g. clicking the logo) must NOT replay it. */
-  const introSeen = browser && sessionStorage.getItem('homeIntroSeen') === '1';
+  /* Plays on first load and on every full refresh of the homepage; an in-app
+     return to the homepage (logo click) skips it — see `introPlayed` above. */
+  const introSeen = browser && introPlayed;
   let showIntro = $state(!introSeen);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
 
-  /* Volunteer portrait photos (Figma CDN) — cycle every 20 % of progress */
-  const volunteers = [
-    '/volunteer-images/brezzi-rodolfo/IMG_1450.webp',                       // Rodolfo Brezzi
-    '/volunteer-images/guerrini-valentina/inbound2904151259508105914.webp', // Valentina Guerrini
-    '/volunteer-images/amedeo-aureliano/unnamed.webp',                      // Aureliano Amedeo
-  ];
-  let loaderPhotoSrc = $state(volunteers[0]);
-  let activeLoaderSet = $state(0);
 
-  const loaderBlockLayouts: never[][] = [];
-
-  
   /* ── Navbar state ─────────────────────────────────────────────── */
   let navbarVisible = $state(true);
   let navbarFixed = $state(true);
@@ -158,7 +154,7 @@
   });
 
   /* ── Timers ──────────────────────────────────────────────────── */
-  let interval: ReturnType<typeof setInterval> | undefined;
+  let loaderRaf = 0;
   let exitTimeout: ReturnType<typeof setTimeout> | undefined;
 
   /* ── blurReveal configs ──────────────────────────────────────── */
@@ -181,27 +177,39 @@
    * MOUNT — intro loader
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
-    /* Already shown this session — skip the loader entirely on return visits. */
+    /* Already shown (in-app return to homepage) — skip the loader. */
     if (introSeen) return;
 
-    interval = setInterval(() => {
-      loaderProgress += 2;
+    /* Smooth rAF-driven progress. easeInOutSine keeps the middle near-linear so
+       each of the three faces gets roughly equal screen time, with soft ends.
+       Slow on purpose (~1.6s per face) so each reveal reads as intentional. */
+    const DURATION = 4800; // ms
+    const ease = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
+    let startT: number | null = null;
 
-      if (loaderProgress % 20 === 0) {
-        activeLoaderSet = (activeLoaderSet + 1) % loaderBlockLayouts.length;
-        loaderPhotoSrc = volunteers[Math.floor(Math.random() * volunteers.length)];
+    const step = (now: number) => {
+      if (startT === null) startT = now;
+      const t = Math.min(1, (now - startT) / DURATION);
+      loaderProgress = ease(t) * 100;
+
+      if (t < 1) {
+        loaderRaf = requestAnimationFrame(step);
+        return;
       }
-
-      if (loaderProgress >= 100) {
+      loaderProgress = 100;
+      introPlayed = true;
+      /* Hold the fully-assembled final face for a beat, then dissolve it into
+         the dark background and only afterwards reveal the homepage. Unmount
+         once the photo fade (≈1.3s) + background reveal (≈2s total) is done. */
+      exitTimeout = setTimeout(() => {
         introExiting = true;
-        sessionStorage.setItem('homeIntroSeen', '1');
-        exitTimeout = setTimeout(() => { showIntro = false; }, 600);
-        if (interval) clearInterval(interval);
-      }
-    }, 60);
+        exitTimeout = setTimeout(() => { showIntro = false; }, 2100);
+      }, 560);
+    };
+    loaderRaf = requestAnimationFrame(step);
 
     return () => {
-      if (interval) clearInterval(interval);
+      if (loaderRaf) cancelAnimationFrame(loaderRaf);
       if (exitTimeout) clearTimeout(exitTimeout);
     };
   });
@@ -683,9 +691,6 @@
 <IntroLoader
   {showIntro}
   {introExiting}
-  {loaderPhotoSrc}
-  {loaderBlockLayouts}
-  {activeLoaderSet}
   {loaderProgress}
 />
 
