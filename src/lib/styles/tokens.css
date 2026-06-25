@@ -208,7 +208,11 @@
  * GLOBAL RESET & BASE
  * ================================================================ */
 
-html, body, #svelte { height: 100%; }
+html, body, #svelte { 
+  height: 100%;
+  font-family: var(--font-display);
+  font-display: swap; 
+ }
 
 body {
   margin: 0;

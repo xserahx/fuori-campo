@@ -58,7 +58,7 @@
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-    font-family: "Forma DJR Display", sans-serif;
+    font-family: var(--font-display);
     padding-bottom: 24px;
     display: flex;
     flex-direction: column;
@@ -83,7 +83,7 @@
     margin: clamp(12px, 1.5vw, 18px) 0 0 clamp(0px, 18vw, 260px);
     max-width: 1311px;
     color: #000;
-    font-family: "Forma DJR Display", sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(26px, 5.8vw, 84px);
     font-weight: 500;
     line-height: 0.95;

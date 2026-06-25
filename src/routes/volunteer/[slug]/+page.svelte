@@ -221,7 +221,7 @@
 
   :global(*) {
     box-sizing: border-box;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
   }
 
   /* ── Lightbox shell ─────────────────────────────────────────────── */
@@ -503,7 +503,7 @@
   }
 
   .expand-btn-label {
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;

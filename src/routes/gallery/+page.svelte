@@ -182,7 +182,7 @@
   }
 
   :global(*) {
-    font-family: 'Forma DJR Display', 'FormaDJRDisplay', ui-sans-serif, sans-serif;
+    font-family: var(--font-display);
     box-sizing: border-box;
   }
 
@@ -306,7 +306,7 @@
   }
 
   .toggle-label {
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;
@@ -355,7 +355,7 @@
 
   .filter-btn-label {
     display: block;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 24px;
     font-weight: 500;
     line-height: 26px;
@@ -413,7 +413,7 @@
     border: 0;
     background: transparent;
     color: #fafafa;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 32px;
     font-weight: 500;
     line-height: 1;

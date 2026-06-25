@@ -423,7 +423,7 @@
 
   .title-fill,
   .title-outline {
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(56px, 6.75vw, 116px);
     font-weight: 800;
     text-transform: uppercase;
@@ -457,7 +457,7 @@
     width: 1318px;
     max-width: calc(100% - var(--spacing-11) - 16px);
     text-align: right;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: clamp(34px, 4.9vw, 84px);
     font-weight: 500;
     line-height: 0.952;
@@ -506,7 +506,7 @@
 
   .summary-eyebrow {
     margin: 0;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 32px;
     font-weight: 700;
     line-height: 32px;
@@ -603,7 +603,7 @@
     gap: 0;
     margin: 0;
     max-width: 780px;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 24px;
     line-height: 26px;
     color: #fafafa;
@@ -630,7 +630,7 @@
     align-items: center;
     justify-content: center;
     min-height: 100dvh;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 24px;
     color: rgba(250, 250, 250, 0.38);
   }
