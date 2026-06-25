@@ -166,6 +166,27 @@
 
   function openVolunteer(image: GalleryImage) {
     const slug = image.slug ?? slugify(image.name, 0);
+
+    // Find the 8 spatially nearest distinct volunteers (by card-center distance)
+    // so the lightbox background shows contextual neighbours, not self-photos.
+    const cx = image.left + image.width  / 2;
+    const cy = image.top  + image.height / 2;
+    const seen = new Set<string>([slug]);
+    const neighborSlugs: string[] = [];
+    const byDist = positionedImages
+      .filter(img => img.slug && !img.noClick)
+      .map(img => ({
+        slug: img.slug!,
+        d: Math.hypot((img.left + img.width / 2) - cx, (img.top + img.height / 2) - cy),
+      }))
+      .sort((a, b) => a.d - b.d);
+    for (const { slug: s } of byDist) {
+      if (seen.has(s)) continue;
+      seen.add(s);
+      neighborSlugs.push(s);
+      if (neighborSlugs.length >= 8) break;
+    }
+
     const params = new URLSearchParams(buildGallerySearchParams({
       view: 'photos',
       filter: activeFilter,
@@ -173,6 +194,7 @@
       photoY: currentY,
     }));
     if (image.path) params.set('img', image.path);
+    if (neighborSlugs.length > 0) params.set('neighbors', neighborSlugs.join(','));
     goto(`/volunteer/${slug}?${params.toString()}`);
   }
 
@@ -334,20 +356,6 @@
 
   .collage-item:hover .collage-img { transform: scale(1.04); }
 
-  /* Lime glow on hover */
-  .img-color-layer::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    border-radius: 5px;
-    box-shadow: inset 0 0 40px rgba(189,255,93,0.18), 0 0 28px rgba(189,255,93,0.12);
-    mix-blend-mode: screen;
-    opacity: 0;
-    transition: opacity 220ms ease;
-    z-index: 6;
-  }
-  .collage-item:hover .img-color-layer::after { opacity: 1; }
 
   .collage-item:hover .img-color-layer .collage-img {
     filter: brightness(1.06) saturate(1.08) contrast(1.02);

@@ -50,13 +50,11 @@ function getHiddenStyles(
 ): Partial<CSSStyleDeclaration> {
   const tx = direction === "left" ? -translateX : translateX;
 
-  /* Base: horizontal slide + upward drift + slight scale-down.
-     The Y + scale combination gives every reveal a sense of depth —
-     elements feel like they're surfacing from behind the page.      */
+  /* Base: horizontal slide + upward drift + scale-down for depth. */
   const base: Partial<CSSStyleDeclaration> = {
     opacity:   "0",
     filter:    `blur(${blur}px)`,
-    transform: `translateX(${tx}px) translateY(20px) scale(0.96)`,
+    transform: `translateX(${tx}px) translateY(20px) scale(0.94)`,
   };
 
   if (variant === "skew") {
@@ -82,12 +80,12 @@ function getHiddenStyles(
     base.transform = "translateY(32px) scale(0.96)";
   }
 
-  /* cinema — deep blur + strong vertical rise + subtle scale.
-     Used for sections that immediately follow a horizontal zone
-     to signal the return to vertical narrative with cinematic weight. */
+  /* cinema — deep blur + strong vertical rise + notable scale-down.
+     Used for sections that follow a horizontal zone, signaling the
+     return to vertical narrative with cinematic weight.            */
   if (variant === "cinema") {
     base.filter    = `blur(${blur}px)`;
-    base.transform = `translateX(${tx * 0.2}px) translateY(56px) scale(0.93)`;
+    base.transform = `translateX(${tx * 0.15}px) translateY(72px) scale(0.91)`;
   }
 
   return base;
@@ -142,9 +140,9 @@ export function blurReveal(node: HTMLElement, options: BlurRevealOptions = {}) {
   let {
     direction  = "left",
     threshold  = 0.25,
-    blur       = 26,       // slightly richer hidden blur
+    blur       = 26,
     translateX = 64,
-    duration   = 1000,     // slightly longer for more presence
+    duration   = 1000,
     delay      = 0,
     variant    = "slide",
   } = options;
@@ -159,12 +157,16 @@ export function blurReveal(node: HTMLElement, options: BlurRevealOptions = {}) {
 
   const enter = () => {
     visible = true;
+    /* data-br="visible" lets CSS child selectors trigger accent animations
+       (e.g. .story[data-br="visible"] .accent { animation: accent-bloom ... }) */
+    node.dataset.br = 'visible';
     node.style.transition = buildTransition(duration, hideDuration, variant, true);
     applyStyles(node, getVisibleStyles(variant));
   };
 
   const leave = () => {
     visible = false;
+    delete node.dataset.br;
     if (enterTimer) { clearTimeout(enterTimer); enterTimer = null; }
     node.style.transition = buildTransition(duration, hideDuration, variant, false);
     applyStyles(node, getHiddenStyles(direction, translateX, blur, variant));

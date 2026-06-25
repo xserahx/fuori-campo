@@ -33,6 +33,11 @@
     cursor: pointer;
     padding: 0;
     color: currentColor;
+    transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .scroll-arrow:hover {
+    transform: translateY(-4px);
   }
 
   .arrow-svg {
@@ -48,6 +53,7 @@
     stroke-dasharray: 44;
     stroke-dashoffset: 44;
     animation: shaft-draw 1.4s cubic-bezier(0.16,1,0.3,1) forwards;
+    transition: stroke 280ms ease, filter 280ms ease;
   }
 
   .head {
@@ -59,12 +65,25 @@
     stroke-dasharray: 40;
     stroke-dashoffset: 40;
     animation: head-draw 0.5s cubic-bezier(0.16,1,0.3,1) 1s forwards;
+    transition: stroke 280ms ease, filter 280ms ease;
   }
 
   .drop {
     fill: currentColor;
     opacity: 0;
     transform-origin: center;
+    transition: fill 280ms ease, filter 280ms ease;
+  }
+
+  .scroll-arrow:hover .shaft,
+  .scroll-arrow:hover .head {
+    stroke: var(--color-content-accent, #bdff5d);
+    filter: drop-shadow(0 0 5px rgba(189, 255, 93, 0.7));
+  }
+
+  .scroll-arrow:hover .drop {
+    fill: var(--color-content-accent, #bdff5d);
+    filter: drop-shadow(0 0 6px rgba(189, 255, 93, 0.8));
   }
 
   .drop--1 { animation: drop-fall 2.8s cubic-bezier(0.4,0,1,1) 1.6s infinite; }
@@ -78,7 +97,12 @@
     text-transform: none;
     color: var(--color-content-title);
     opacity: 0;
-    animation: label-in 0.6s cubic-bezier(0.16,1,0.3,1) 1.8s forwards;
+    animation: label-in 0.9s cubic-bezier(0.16,1,0.3,1) 1.8s forwards;
+    transition: opacity 240ms ease;
+  }
+
+  .scroll-arrow:hover .label {
+    opacity: 0.85;
   }
 
   @keyframes shaft-draw {
@@ -97,7 +121,8 @@
   }
 
   @keyframes label-in {
-    to { opacity: 0.45; transform: translateY(0px); }
+    from { opacity: 0; transform: translateY(10px); filter: blur(6px); }
+    to   { opacity: 0.45; transform: translateY(0px); filter: blur(0px); }
   }
 
   .scroll-arrow:hover .shaft {
@@ -110,8 +135,5 @@
     animation-duration: 1.2s;
   }
 
-  .scroll-arrow:hover .label {
-    opacity: 0.8;
-    transition: opacity 0.3s ease;
-  }
+  /* hover label handled via transition on .label above */
 </style>

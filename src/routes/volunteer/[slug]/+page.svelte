@@ -35,24 +35,40 @@
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
   const imgParam       = $derived(page.url.searchParams.get('img'));
 
-  /* ── Background: volunteer's own photos + random filler if sparse ── */
-  const bgPaths = $derived.by(() => {
-    if (!dbVol?.ha_immagini) return [];
-    const own = dbVol.image_paths && dbVol.image_paths.length > 0
-      ? dbVol.image_paths
-      : dbVol.image_path ? [dbVol.image_path] : [];
-    if (own.length >= 4) return own.slice(0, 8);
+  /* ── Background: spatially adjacent volunteers passed from the gallery ──
+     When arriving from PhotosView the URL carries `neighbors=slug1,slug2,…`
+     (the 8 gallery cards closest to the clicked photo). Arrow navigation
+     strips the param so we fall back to a seed-stable selection instead.  */
+  const neighborSlugs = $derived(
+    (page.url.searchParams.get('neighbors') ?? '')
+      .split(',').map(s => s.trim()).filter(Boolean)
+  );
 
-    // Fill remaining slots with photos from other volunteers (stable, seed-based order)
-    const seed = currentSlug.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-    const others = allVols.filter(v => v.slug !== currentSlug && v.ha_immagini);
-    const fill = [...own];
-    for (let i = 0; fill.length < 6 && i < others.length; i++) {
-      const vol = others[(seed + i) % others.length];
-      const p = vol.image_paths?.[0] ?? vol.image_path;
-      if (p) fill.push(p);
+  const bgPaths = $derived.by(() => {
+    const paths: string[] = [];
+
+    if (neighborSlugs.length > 0) {
+      // Ordered by gallery proximity — use one photo per neighbour volunteer.
+      for (const s of neighborSlugs) {
+        if (paths.length >= 8) break;
+        const vol = allVols.find(v => v.slug === s);
+        if (!vol?.ha_immagini) continue;
+        const p = vol.image_paths?.[0] ?? vol.image_path;
+        if (p) paths.push(p);
+      }
+    } else {
+      // Fallback (direct navigation / arrow nav): seed-stable selection from
+      // other volunteers so the background is never the current subject.
+      const seed = currentSlug.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      const others = allVols.filter(v => v.slug !== currentSlug && v.ha_immagini);
+      for (let i = 0; paths.length < 8 && i < others.length; i++) {
+        const vol = others[(seed + i) % others.length];
+        const p = vol.image_paths?.[0] ?? vol.image_path;
+        if (p) paths.push(p);
+      }
     }
-    return fill;
+
+    return paths;
   });
 
   let imgError      = $state(false);
@@ -386,7 +402,6 @@
     transform: translate(-50%, -50%);
     z-index: 5;
     overflow: hidden;
-    border: 2px solid #bdff5d;
     background: #111;
     animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
@@ -428,12 +443,15 @@
     right: 0;
     z-index: 2;
     pointer-events: none;
+    /* gradient fade zone — must extend well above the tallest text line */
+    padding-top: 110px;
   }
 
   .caption-grad {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
+    /* opaque at bottom, fully transparent only at the very top of the padding zone */
+    background: linear-gradient(to top, #0e0e0e 0%, rgba(14,14,14,0.9) 45%, transparent 100%);
   }
 
   .caption-text {
@@ -441,16 +459,19 @@
     padding: 0 26px 18px;
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 0;
   }
 
   .cap-location {
-    margin: 0;
+    margin: 0 0 10px;
     font-size: clamp(9px, 0.64vw, 13px);
     font-weight: 500;
-    line-height: 4.12;
+    line-height: 1.4;
     color: #fafafa;
-    white-space: nowrap;
+    /* allow long venue names to wrap instead of overflowing */
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .cap-role {

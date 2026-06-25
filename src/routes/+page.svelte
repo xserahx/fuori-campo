@@ -58,13 +58,14 @@
   /* Fixed scatter positions + per-image drift (px), resting blur (px) and a
      gallery-style frame ratio (16/9, 3/2, 4/3, 3/4) — a varied mix of
      landscape and portrait, like the real gallery tiles. */
+  /* --rot: resting tilt (deg) each image starts at; settles to 0 as gate-p → 1 */
   const previewLayout = [
-    { left: '7%',  top: '16%', w: 250, dx: -64, dy: 28, b: 22, ar: '4 / 3'  },
-    { left: '68%', top: '11%', w: 300, dx:  72, dy: 22, b: 26, ar: '16 / 9' },
-    { left: '52%', top: '57%', w: 220, dx:  44, dy: 52, b: 20, ar: '3 / 4'  },
-    { left: '16%', top: '60%', w: 280, dx: -52, dy: 46, b: 24, ar: '3 / 2'  },
-    { left: '37%', top: '33%', w: 320, dx:   0, dy: 60, b: 18, ar: '16 / 9' },
-    { left: '81%', top: '62%', w: 210, dx:  84, dy: 38, b: 28, ar: '4 / 3'  },
+    { left: '7%',  top: '16%', w: 250, dx: -64, dy: 28, b: 22, ar: '4 / 3',  rot: -1.4 },
+    { left: '68%', top: '11%', w: 300, dx:  72, dy: 22, b: 26, ar: '16 / 9', rot:  0.9 },
+    { left: '52%', top: '57%', w: 220, dx:  44, dy: 52, b: 20, ar: '3 / 4',  rot:  1.2 },
+    { left: '16%', top: '60%', w: 280, dx: -52, dy: 46, b: 24, ar: '3 / 2',  rot: -0.8 },
+    { left: '37%', top: '33%', w: 320, dx:   0, dy: 60, b: 18, ar: '16 / 9', rot:  0.4 },
+    { left: '81%', top: '62%', w: 210, dx:  84, dy: 38, b: 28, ar: '4 / 3',  rot:  1.6 },
   ];
 
   function buildPreviewPhotos(vols: ReturnType<typeof getCachedVolunteers>): string[] {
@@ -396,13 +397,14 @@
 
         for (let pi = 0; pi < 4; pi++) {
           const dist = Math.abs(hp - centers[pi]) / VW;   // 0=centred, 1=adjacent
-          const raw  = clamp(1 - dist * 1.65, 0, 1);
+          /* Tighter visible window → crisper entrance/exit at panel edges */
+          const raw  = clamp(1 - dist * 1.72, 0, 1);
           const vis  = ss(raw);                            // smoothstep visibility
 
           const spans = pSpans[pi];
           for (let si = 0; si < spans.length; si++) {
-            /* Stagger: later spans lag by 0.05 per index */
-            const sv  = clamp(vis - si * 0.05, 0, 1);
+            /* 0.07 stagger: more pronounced cascade — earlier spans lead, later follow */
+            const sv  = clamp(vis - si * 0.07, 0, 1);
             const sv3 = ss(sv);
             const span = spans[si];
             if (sv3 >= 0.9995 || vis >= 0.9995) {
@@ -413,14 +415,14 @@
               const inv = 1 - sv3;
               span.style.opacity = sv3.toFixed(3);
               if (goingBack) {
-                /* Backward scroll: gentle fade only — no heavy blur/drift.
-                   Panels surface softly rather than re-performing their entry. */
-                span.style.filter    = inv > 0.02 ? `blur(${(inv * 4).toFixed(1)}px)` : '';
-                span.style.transform = `translateY(${(inv * 10).toFixed(1)}px) scale(${(1 - inv * 0.015).toFixed(4)})`;
+                /* Backward: text drifts left, mirroring the reverse scroll direction */
+                span.style.filter    = inv > 0.02 ? `blur(${(inv * 7).toFixed(1)}px)` : '';
+                span.style.transform = `translateX(${(-inv * 14).toFixed(1)}px) translateY(${(inv * 14).toFixed(1)}px) scale(${(1 - inv * 0.018).toFixed(4)})`;
               } else {
-                /* Forward scroll: full cinematic entrance */
-                span.style.filter    = `blur(${(inv * 26).toFixed(1)}px)`;
-                span.style.transform = `translateY(${(inv * 36).toFixed(1)}px) scale(${(1 - inv * 0.06).toFixed(4)})`;
+                /* Forward: deep blur + text arrives from the right (matching scroll momentum)
+                   + strong vertical rise + scale-in for maximum cinematic presence */
+                span.style.filter    = `blur(${(inv * 38).toFixed(1)}px)`;
+                span.style.transform = `translateX(${(inv * 20).toFixed(1)}px) translateY(${(inv * 54).toFixed(1)}px) scale(${(1 - inv * 0.075).toFixed(4)})`;
               }
             }
           }
@@ -454,8 +456,8 @@
           const enteringFromTop = s1.hSmooth < s1.slide * 0.08;
           if (enteringFromTop && !noMotion) {
             gsap.fromTo(track1,
-              { scale: 1.014 },
-              { scale: 1, duration: 0.70, ease: 'power3.out', overwrite: true }
+              { scale: 1.026 },
+              { scale: 1, duration: 0.80, ease: 'power3.out', overwrite: true }
             );
           }
         }
@@ -463,8 +465,8 @@
           const shellNearViewport = Math.abs(vSmooth - s1.top) < vh * 1.5;
           if (shellNearViewport && !noMotion) {
             gsap.fromTo(track1,
-              { scale: 0.988 },
-              { scale: 1, duration: 0.55, ease: 'power2.out', overwrite: true }
+              { scale: 0.982 },
+              { scale: 1, duration: 0.65, ease: 'power2.out', overwrite: true }
             );
           }
         }
@@ -807,7 +809,7 @@
             loading="eager"
             decoding="async"
             draggable="false"
-            style={`left:${previewLayout[i].left}; top:${previewLayout[i].top}; width:${previewLayout[i].w}px; aspect-ratio:${previewLayout[i].ar}; --dx:${previewLayout[i].dx}px; --dy:${previewLayout[i].dy}px; --b:${previewLayout[i].b}px;`}
+            style={`left:${previewLayout[i].left}; top:${previewLayout[i].top}; width:${previewLayout[i].w}px; aspect-ratio:${previewLayout[i].ar}; --dx:${previewLayout[i].dx}px; --dy:${previewLayout[i].dy}px; --b:${previewLayout[i].b}px; --rot:${previewLayout[i].rot}deg;`}
           />
         {/each}
       </div>
@@ -833,16 +835,16 @@
   }
 
   /* Each thumb: low opacity + heavy blur that both ease as --gate-p → 1,
-     plus a per-image drift that settles. Only opacity/filter/transform — all
-     GPU-composited. --gate-p is written every frame by the scroll engine. */
+     plus a per-image drift + rotation that settles. Only opacity/filter/transform —
+     all GPU-composited. --gate-p is written every frame by the scroll engine. */
   .anticip-img {
     position: absolute;
     display: block;
     border-radius: 6px;
-    height: auto;            /* height derives from width + aspect-ratio */
-    object-fit: cover;       /* fill the frame ratio without distorting */
+    height: auto;
+    object-fit: cover;
     box-shadow: 0 10px 44px rgba(0, 0, 0, 0.55);
-    opacity: calc(var(--gate-p, 0) * 0.34);
+    opacity: calc(var(--gate-p, 0) * 0.42);
     filter: blur(calc(var(--b, 18px) + (1 - var(--gate-p, 0)) * 16px));
     transform:
       translate3d(
@@ -850,7 +852,8 @@
         calc(var(--dy, 0px) * (1 - var(--gate-p, 0))),
         0
       )
-      scale(calc(0.92 + var(--gate-p, 0) * 0.08));
+      scale(calc(0.90 + var(--gate-p, 0) * 0.10))
+      rotate(calc(var(--rot, 0deg) * (1 - var(--gate-p, 0))));
     will-change: transform, opacity, filter;
     backface-visibility: hidden;
   }
@@ -861,10 +864,12 @@
 
   .archivio-link {
     text-decoration: none;
+    transition: text-shadow 280ms ease, text-decoration-color 280ms ease;
   }
   .archivio-link:hover {
     text-decoration: underline;
     text-underline-offset: 4px;
+    text-shadow: 0 0 24px rgba(189, 255, 93, 0.65);
   }
 
   /* GSAP transforms require block/inline-block — spans are inline by default */

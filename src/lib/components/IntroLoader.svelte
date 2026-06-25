@@ -168,15 +168,21 @@
     overflow: hidden;
   }
 
-  /* Subtle cinematic vignette for depth (fades out on exit). */
+  /* Cinematic vignette that breathes very gently — adds depth and life. */
   .intro-loader::before {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(120% 90% at 50% 44%, transparent 52%, rgba(0, 0, 0, 0.55) 100%);
+    background: radial-gradient(120% 90% at 50% 44%, transparent 52%, rgba(0, 0, 0, 0.62) 100%);
     opacity: 1;
     transition: opacity 360ms ease;
+    animation: vignette-breathe 5s ease-in-out infinite;
+  }
+
+  @keyframes vignette-breathe {
+    0%, 100% { opacity: 0.75; }
+    50%       { opacity: 1; }
   }
 
   /* ── Exit: the final face dissolves into the dark background FIRST, then  *
@@ -218,9 +224,12 @@
     will-change: transform;
   }
 
+  /* Slightly more organic breathe: scale + drift + micro-rotation */
   @keyframes breathe {
-    0%, 100% { transform: scale(1)     translateY(0); }
-    50%      { transform: scale(1.014) translateY(-5px); }
+    0%   { transform: scale(1)     translateY(0px)  rotate(0deg); }
+    33%  { transform: scale(1.018) translateY(-7px) rotate(0.28deg); }
+    66%  { transform: scale(1.011) translateY(-4px) rotate(-0.18deg); }
+    100% { transform: scale(1)     translateY(0px)  rotate(0deg); }
   }
 
   .mosaic {
@@ -231,10 +240,10 @@
     transition: filter 280ms ease, transform 280ms ease;
   }
 
-  /* Photo hand-off: a soft blur + micro-contract masks the image swap. */
+  /* Photo hand-off: deeper blur + desaturation + stronger contract */
   .mosaic--swap {
-    filter: blur(8px);
-    transform: scale(0.986);
+    filter: blur(14px) saturate(0.25);
+    transform: scale(0.972);
   }
 
   /* ── Tile ─────────────────────────────────────────────────────── */
@@ -256,7 +265,7 @@
     background-repeat: no-repeat;
 
     opacity:   0;
-    transform: translateY(16px) scale(0.78);
+    transform: translateY(22px) scale(0.72);
     filter:    blur(var(--blur, 8px));
     will-change: opacity, transform, filter;
     transition:
