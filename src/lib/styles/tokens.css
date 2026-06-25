@@ -4,14 +4,14 @@
 
   /* Background */
   --color-background-primary:     #0e0e0e;              /* Color/Background/Primary     */
-  --color-background-transparent: rgba(26, 26, 26, 0);  /* Color/Background/Transparent */
-  --color-background-secondary:   #ebeeef;              /* Color/Background/secondary   */
+  --color-background-transparent: rgba(14, 14, 14, 0);  /* Color/Background/Transparent */
+  --color-background-secondary:   #ebeeef;              /* Color/Background/secondary — browser-chrome mockup grey */
 
   /* Content */
   --color-content-accent:     #bdff5d;  /* Color/Content/Accent     — neon lime   */
   --color-content-body:       #fafafa;  /* Color/Content/Body                     */
   --color-content-body-black: #0e0e0e;  /* Color/Content/Body-black               */
-  --color-content-primary:    #202426;  /* Color/Content/primary                  */
+  --color-content-primary:    #444444;  /* Color/Content/primary — dark text on light bg (inverted navbar) */
 
   /* Links */
   --color-link-selected: #bdff5d;
@@ -53,10 +53,10 @@
   --ts-scrolling-line-height:    64px;
   --ts-scrolling-letter-spacing: 0em;
 
-  /* H3 — quotes, labels  (Medium 500 · 36 px · lh 100% · ls 0.72 px) */
+  /* H3 — quotes, labels  (Medium 500 · 36 px · lh 43.2 px · ls 0.72 px) */
   --ts-h3-size:           36px;
   --ts-h3-weight:         500;
-  --ts-h3-line-height:    1;
+  --ts-h3-line-height:    43.2px;
   --ts-h3-letter-spacing: 0.72px;
 
   /* Scrollitelling — question headings  (ExtraBold 800 · 116 px · lh 106 px) */
@@ -65,23 +65,59 @@
   --ts-scrollitelling-line-height:    106px;
   --ts-scrollitelling-letter-spacing: 0em;
 
-  /* Filter + labels  (Medium 500 · 20 px) */
+  /* Filter + labels  (Medium 500 · 20 px · lh 24 px) */
   --ts-filter-size:           20px;
   --ts-filter-weight:         500;
-  --ts-filter-line-height:    1;
+  --ts-filter-line-height:    24px;
   --ts-filter-letter-spacing: 0em;
 
-  /* Navigation toggles  (Bold 700 · 16 px) */
+  /* Navigation toggles  (Bold 700 · 16 px · lh 19.2 px) */
   --ts-navigation-size:           16px;
   --ts-navigation-weight:         700;
-  --ts-navigation-line-height:    1;
+  --ts-navigation-line-height:    19.2px;
   --ts-navigation-letter-spacing: 0em;
 
-  /* Top-bar nav links  (Medium 500 · 24 px · lh 26 px) */
+  /* Top-bar nav links / h5 / back-button  (Medium 500 · 24 px · lh 26 px) */
   --ts-nav-link-size:           24px;
   --ts-nav-link-weight:         500;
   --ts-nav-link-line-height:    26px;
   --ts-nav-link-letter-spacing: 0em;
+
+  /* h1 — large category headings  (ExtraBold 800 · 116 px · lh 116 px) */
+  --ts-h1-size:           116px;
+  --ts-h1-weight:         800;
+  --ts-h1-line-height:    116px;
+  --ts-h1-letter-spacing: 0em;
+
+  /* H2 — names, about body, descriptions  (Medium 500 · 84 px · lh 80 px) */
+  --ts-h2-size:           84px;
+  --ts-h2-weight:         500;
+  --ts-h2-line-height:    80px;
+  --ts-h2-letter-spacing: 0em;
+
+  /* Volunteer name — gallery list  (Medium 500 · 48 px · lh 57.6 px) */
+  --ts-volunteer-name-size:           48px;
+  --ts-volunteer-name-weight:         500;
+  --ts-volunteer-name-line-height:    57.6px;
+  --ts-volunteer-name-letter-spacing: 0em;
+
+  /* Volunteer role  (Medium 500 · 24 px · lh 28.8 px · ls 0.96 px) */
+  --ts-volunteer-role-size:           24px;
+  --ts-volunteer-role-weight:         500;
+  --ts-volunteer-role-line-height:    28.8px;
+  --ts-volunteer-role-letter-spacing: 0.96px;
+
+  /* Volunteer location  (Medium 500 · 16 px · lh 19.2 px) */
+  --ts-volunteer-location-size:           16px;
+  --ts-volunteer-location-weight:         500;
+  --ts-volunteer-location-line-height:    19.2px;
+  --ts-volunteer-location-letter-spacing: 0em;
+
+  /* Accordion / ACCORDION  (Medium 500 · 16 px · lh 19.2 px) */
+  --ts-accordion-size:           16px;
+  --ts-accordion-weight:         500;
+  --ts-accordion-line-height:    19.2px;
+  --ts-accordion-letter-spacing: 0em;
 
   /* ── Unit scale  (Figma: Unit/*) ─────────────────────────────── */
   --unit-0:   0px;

@@ -356,8 +356,8 @@
 
   .category-page {
     min-height: 100dvh;
-    background: #0e0e0e;
-    color: #fafafa;
+    background: var(--color-background-primary);
+    color: var(--color-content-body);
     overflow-x: hidden;
   }
 
@@ -603,7 +603,7 @@
     font-family: var(--font-display);
     font-size: 24px;
     line-height: 26px;
-    color: #fafafa;
+    color: var(--color-content-body);
   }
 
   .summary-copy p {

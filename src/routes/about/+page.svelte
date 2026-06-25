@@ -53,8 +53,8 @@
 
   .about-page {
     min-height: calc(100dvh - var(--navbar-height));
-    background: #bdff5d;
-    color: #000;
+    background: var(--color-content-accent);
+    color: var(--color-content-body-black);
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
@@ -82,7 +82,7 @@
     /* Indent scales: zero on narrow, up to 260 px on 1440 px+ */
     margin: clamp(12px, 1.5vw, 18px) 0 0 clamp(0px, 18vw, 260px);
     max-width: 1311px;
-    color: #000;
+    color: var(--color-content-body-black);
     font-family: var(--font-display);
     font-size: clamp(26px, calc(84px / max(var(--page-zoom, 1), 0.65)), 145px);
     font-weight: 500;
@@ -97,7 +97,7 @@
     left: 0;
     right: 0;
     padding: 0 clamp(24px, 5vw, 72px) 10px;
-    color: #000;
+    color: var(--color-content-body-black);
     font-size: clamp(14px, 1.5vw, 24px);
     line-height: 1.3;
     font-weight: 500;

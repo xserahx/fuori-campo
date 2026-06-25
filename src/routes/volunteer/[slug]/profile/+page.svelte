@@ -206,7 +206,7 @@
 
   :global(*) {
     box-sizing: border-box;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
   }
 
   /* ── Page shell ─────────────────────────────────────────────────── */
@@ -311,7 +311,7 @@
     margin: 0;
     align-self: stretch;
     font-size: 36px;
-    font-size: var(--Unit-36, 36px);
+    font-size: var(--unit-36, 36px);
     font-style: medium;
     font-weight: 500;
     line-height: normal;
@@ -543,7 +543,7 @@
 
   .qa-answer p {
     margin: 0;
-    font-family: 'Forma DJR Display', sans-serif;
+    font-family: var(--font-display);
     font-size: 28px;
     font-weight: 500;
     line-height: 1.4;
