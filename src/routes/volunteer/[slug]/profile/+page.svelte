@@ -13,7 +13,7 @@
   const dbVol = $derived(data.dbVol);
 
   /* ── Extended volunteer type (for Figma photo fallback only) ─── */
-  type Volunteer = GalleryImage & { dayDescription?: string };
+  type Volunteer = GalleryImage & {dayDescription?: string; responses?: string[];};
 
   /* ── Reactive slug / context ─────────────────────────────────── */
   const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
