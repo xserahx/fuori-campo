@@ -8,7 +8,7 @@
   import { blurReveal } from "../lib/actions/blurReveal";
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
-  import { fetchAllVolunteers } from '$lib/supabase';
+  import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/supabase';
   import { navbarInverted } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
@@ -44,12 +44,58 @@
   let track1:           HTMLElement | null = null;
   let veil1:            HTMLElement | null = null;
   let transitionOverlay: HTMLElement | null = null;  // fixed dissolve overlay for H→V exit
+  let galleryGate: HTMLElement | null = null;        // dark scroll runway → drives gallery anticipation
 
   // Question panel h2 refs — per-frame content animation targets
   let q1h2: HTMLElement | null = null;
   let q2h2: HTMLElement | null = null;
   let q3h2: HTMLElement | null = null;
   let q4h2: HTMLElement | null = null;
+
+  /* ── Gallery anticipation preview ─────────────────────────────────
+     A few blurred, low-opacity gallery thumbnails that bloom into the
+     background during the final stretch of the scroll (driven by the
+     --gate-p scroll-progress var), so the gallery feels like it is
+     materialising behind the page just before it opens. */
+  const PREVIEW_WIDTH = 420;
+
+  /* Fixed scatter positions + per-image drift (px), resting blur (px) and a
+     gallery-style frame ratio (16/9, 3/2, 4/3, 3/4) — a varied mix of
+     landscape and portrait, like the real gallery tiles. */
+  const previewLayout = [
+    { left: '7%',  top: '16%', w: 250, dx: -64, dy: 28, b: 22, ar: '4 / 3'  },
+    { left: '68%', top: '11%', w: 300, dx:  72, dy: 22, b: 26, ar: '16 / 9' },
+    { left: '52%', top: '57%', w: 220, dx:  44, dy: 52, b: 20, ar: '3 / 4'  },
+    { left: '16%', top: '60%', w: 280, dx: -52, dy: 46, b: 24, ar: '3 / 2'  },
+    { left: '37%', top: '33%', w: 320, dx:   0, dy: 60, b: 18, ar: '16 / 9' },
+    { left: '81%', top: '62%', w: 210, dx:  84, dy: 38, b: 28, ar: '4 / 3'  },
+  ];
+
+  function buildPreviewPhotos(vols: ReturnType<typeof getCachedVolunteers>): string[] {
+    return vols
+      .filter(v => v.ha_immagini)
+      .flatMap(v =>
+        v.image_paths && v.image_paths.length > 0
+          ? v.image_paths.slice(0, 1)
+          : v.image_path ? [v.image_path] : []
+      )
+      .slice(0, previewLayout.length)
+      /* contain = keep the photo's native proportions, never crop to a box. */
+      .map(p => getOptimizedImageUrl(p, { width: PREVIEW_WIDTH, resize: 'contain' }))
+      .filter((u): u is string => !!u);
+  }
+
+  let previewPhotos = $state<string[]>(buildPreviewPhotos(getCachedVolunteers()));
+
+  /* Preload the preview thumbnails so the anticipation never pops in. */
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    for (const src of previewPhotos) {
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = src;
+    }
+  });
 
   /* Gallery transition state — shared between click handler and scroll engine */
   let galleryTransitionPending = false;
@@ -92,10 +138,12 @@
     galleryTimeline = null;
     galleryTransitionPending = false;
 
-    /* Drop any leftover gallery scroll-lock + entry marker. */
+    /* Drop any leftover gallery scroll-lock + entry marker, and reset the
+       anticipation preview so it starts hidden on a fresh homepage. */
     delete document.documentElement.dataset.galleryEntry;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
+    document.documentElement.style.setProperty('--gate-p', '0');
 
     const landing = document.querySelector<HTMLElement>('.landing');
     if (landing) gsap.set(landing, { clearProps: 'filter,transform,opacity' });
@@ -220,6 +268,7 @@
 
     let locked: S | null = null;
     let heroDocTop = 0, heroDocBot = 0;
+    let gateTop = 0, gateHeight = 0;  // gallery-anticipation scroll window
     let galleryReady = false;
     /* Prevents accidental re-trigger when the browser restores scroll to the
        bottom (e.g. back-navigation).  Lifted once the user scrolls ≥ 120 px
@@ -241,6 +290,11 @@
         const r    = heroSection.getBoundingClientRect();
         heroDocTop = r.top    + sy;
         heroDocBot = r.bottom + sy;
+      }
+      if (galleryGate) {
+        const r    = galleryGate.getBoundingClientRect();
+        gateTop    = r.top + sy;
+        gateHeight = r.height;
       }
     };
 
@@ -390,6 +444,15 @@
         const heroLen = (heroDocBot - heroDocTop) * 0.70;
         const heroP   = clamp((sy - heroDocTop) / heroLen, 0, 1);
         document.documentElement.style.setProperty('--hero-scroll-p', heroP.toFixed(3));
+      }
+
+      /* 8b ─ Gallery anticipation: 0 when the gate enters from the bottom,
+              1 at the very end of the scroll. A 12% dead-zone keeps the
+              closing line clean before the preview starts blooming. */
+      if (gateHeight > 0) {
+        const raw   = clamp((sy - gateTop + vh) / gateHeight, 0, 1);
+        const gateP = ss(clamp((raw - 0.12) / 0.88, 0, 1));
+        document.documentElement.style.setProperty('--gate-p', gateP.toFixed(3));
       }
 
       /* 9 ─ Navbar */
@@ -573,8 +636,9 @@
     window.addEventListener('resize',      handleResize,      { passive: true  });
 
     /* Warm the volunteer cache so the gallery opens instantly when the
-       vertical scroll reaches its end — the transition feels continuous. */
-    fetchAllVolunteers();
+       vertical scroll reaches its end — the transition feels continuous —
+       and fill the anticipation preview with real gallery photos. */
+    fetchAllVolunteers().then(vols => { previewPhotos = buildPreviewPhotos(vols); });
 
     return () => {
       dissolving = false;
@@ -700,19 +764,69 @@
       </p>
     </section>
 
-    <!-- Scroll runway — no images here anymore. The end of the vertical
-         sequence flows straight into the gallery via the same dissolve. -->
-    <div class="gallery-gate" aria-hidden="true"></div>
+    <!-- Gallery anticipation — the end of the vertical sequence. A few
+         blurred, low-opacity gallery photos bloom into the dark as the user
+         scrolls the final screen, so the gallery feels like it is surfacing
+         behind the page just before the dissolve carries them into it. -->
+    <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
+      <div class="gallery-anticipation">
+        {#each previewPhotos as src, i}
+          <img
+            class="anticip-img"
+            src={src}
+            alt=""
+            loading="eager"
+            decoding="async"
+            draggable="false"
+            style={`left:${previewLayout[i].left}; top:${previewLayout[i].top}; width:${previewLayout[i].w}px; aspect-ratio:${previewLayout[i].ar}; --dx:${previewLayout[i].dx}px; --dy:${previewLayout[i].dy}px; --b:${previewLayout[i].b}px;`}
+          />
+        {/each}
+      </div>
+    </div>
 
   </main>
 </div>
 
 <style>
-  /* Dark tail after the closing line — gives the end-of-scroll a moment of
-     breathing room so the gallery dissolve feels like a continuation rather
-     than an abrupt cut. Sits flush with the page background. */
+  /* Dark final screen after the closing line. One viewport tall so that, at
+     the very end of the scroll, the summary has cleared and the anticipation
+     preview fills the frame — a continuation rather than an abrupt cut. */
   .gallery-gate {
-    height: 55vh;
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .gallery-anticipation {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Each thumb: low opacity + heavy blur that both ease as --gate-p → 1,
+     plus a per-image drift that settles. Only opacity/filter/transform — all
+     GPU-composited. --gate-p is written every frame by the scroll engine. */
+  .anticip-img {
+    position: absolute;
+    display: block;
+    border-radius: 6px;
+    height: auto;            /* keep each photo's natural shape — never stretch */
+    box-shadow: 0 10px 44px rgba(0, 0, 0, 0.55);
+    opacity: calc(var(--gate-p, 0) * 0.34);
+    filter: blur(calc(var(--b, 18px) + (1 - var(--gate-p, 0)) * 16px));
+    transform:
+      translate3d(
+        calc(var(--dx, 0px) * (1 - var(--gate-p, 0))),
+        calc(var(--dy, 0px) * (1 - var(--gate-p, 0))),
+        0
+      )
+      scale(calc(0.92 + var(--gate-p, 0) * 0.08));
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .anticip-img { transition: none; transform: none; }
   }
 
   .archivio-link {
