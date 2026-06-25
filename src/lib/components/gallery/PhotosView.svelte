@@ -15,6 +15,20 @@
   let collageRef: HTMLDivElement;
   let innerRef: HTMLDivElement;
 
+  // Keyed by "left|top" (the Svelte key). Stores corrected heights once each
+  // image's natural dimensions are known — fixes portrait images in landscape
+  // frames and vice versa.
+  let corrections = $state<Record<string, number>>({});
+
+  function handleImageLoad(e: Event, img: GalleryImage) {
+    const el = e.currentTarget as HTMLImageElement;
+    if (!el.naturalWidth || !el.naturalHeight) return;
+    const naturalH = img.width * (el.naturalHeight / el.naturalWidth);
+    if (Math.abs(naturalH - img.height) < 0.5) return; // already correct
+    const key = `${Math.round(img.left)}|${Math.round(img.top)}`;
+    corrections[key] = naturalH;
+  }
+
   const designWidth = 3840;
   const initialContext = readGalleryContext(page.url.searchParams);
 
@@ -171,19 +185,21 @@
     style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth/2}px);top:calc(50vh - {designHeight/2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
   >
     {#each visibleImages as img (`${Math.round(img.left)}|${Math.round(img.top)}`)}
+      {@const key = `${Math.round(img.left)}|${Math.round(img.top)}`}
+      {@const h = corrections[key] ?? img.height}
       {@const isUnmatched = !!(activeFilter && !(img.tags?.includes(activeFilter)))}
       <button
         class="collage-item"
         class:img-unmatched={isUnmatched}
         class:img-no-click={img.noClick}
         type="button"
-        style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
+        style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{h}px;"
         onpointerdown={(e) => e.stopPropagation()}
         onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
         onclick={() => { if (!img.noClick) openVolunteer(img); }}
       >
         <div class="img-bw-layer">
-          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
+          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" onload={(e) => handleImageLoad(e, img)} />
         </div>
         <div class="img-color-layer">
           <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" draggable="false" />
@@ -248,11 +264,11 @@
     transition: opacity 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
   }
 
-  /* object-fit: contain → full image always visible, never cropped */
+  /* object-fit: cover → no letterboxing; frame is corrected to natural ratio on load */
   .collage-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
     user-select: none;
     -webkit-user-drag: none;

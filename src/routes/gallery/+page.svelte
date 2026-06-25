@@ -133,17 +133,16 @@
     </div>
   </section>
 
-  <!-- ── FILTRA PER CATEGORIA button — hidden while panel is open ── -->
-  {#if !filterPanelOpen}
-    <button
-      class="filter-btn"
-      class:filter-btn--active={activeFilter !== null}
-      type="button"
-      onclick={() => { filterPanelOpen = true; }}
-    >
-      <span class="filter-btn-label">FILTRA PER CATEGORIA</span>
-    </button>
-  {/if}
+  <!-- ── FILTRA PER CATEGORIA button — always visible, acts as toggle ── -->
+  <button
+    class="filter-btn"
+    class:filter-btn--active={activeFilter !== null}
+    class:filter-btn--open={filterPanelOpen}
+    type="button"
+    onclick={() => { filterPanelOpen = !filterPanelOpen; }}
+  >
+    <span class="filter-btn-label">FILTRA PER CATEGORIA</span>
+  </button>
 
   <!-- ── Category overlay (right gradient panel) ───────────────── -->
   {#if filterPanelOpen}
@@ -166,21 +165,31 @@
           </button>
         {/each}
       </div>
-
-      <!-- Lime circle X — closes the panel -->
-      <button
-        class="cat-close"
-        type="button"
-        aria-label="Chiudi filtri"
-        onclick={(e) => { e.stopPropagation(); filterPanelOpen = false; }}
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-          <line x1="3" y1="3" x2="17" y2="17" stroke="#0e0e0e" stroke-width="2" stroke-linecap="round"/>
-          <line x1="17" y1="3" x2="3" y2="17" stroke="#0e0e0e" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
     </div>
   {/if}
+
+  <!-- Figma node 6197-16451: filter1_dd (two centred drop-shadows) + filter0_f (outer blur=4) -->
+  <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+    <defs>
+      <filter id="figma-cat-hover" x="-20%" y="-50%" width="160%" height="200%" color-interpolation-filters="sRGB">
+        <feFlood flood-opacity="0" result="bg"/>
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="alpha1"/>
+        <feOffset in="alpha1" result="offset1"/>
+        <feGaussianBlur in="offset1" stdDeviation="2" result="blurAlpha1"/>
+        <feComposite in="blurAlpha1" in2="alpha1" operator="out" result="shadow1out"/>
+        <feColorMatrix in="shadow1out" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" result="shadow1"/>
+        <feBlend mode="normal" in="shadow1" in2="bg" result="shadow1Blend"/>
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="alpha2"/>
+        <feOffset in="alpha2" result="offset2"/>
+        <feGaussianBlur in="offset2" stdDeviation="2" result="blurAlpha2"/>
+        <feComposite in="blurAlpha2" in2="alpha2" operator="out" result="shadow2out"/>
+        <feColorMatrix in="shadow2out" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" result="shadow2"/>
+        <feBlend mode="normal" in="shadow2" in2="shadow1Blend" result="shadow2Blend"/>
+        <feBlend mode="normal" in="SourceGraphic" in2="shadow2Blend" result="withShadows"/>
+        <feGaussianBlur in="withShadows" stdDeviation="4"/>
+      </filter>
+    </defs>
+  </svg>
 </main>
 
 <style>
@@ -226,14 +235,14 @@
 
   .edge-fade--top {
     top: 0; left: 0; right: 0;
-    height: 214px;
-    background: linear-gradient(to bottom, var(--gallery-background, #0e0e0e), transparent);
+    height: 276px;
+    background: linear-gradient(to bottom, #1a1a1a, rgba(26, 26, 26, 0));
   }
 
   .edge-fade--bottom {
     bottom: 0; left: 0; right: 0;
-    height: 130px;
-    background: linear-gradient(to top, var(--gallery-background, #0e0e0e), transparent);
+    height: 227px;
+    background: linear-gradient(to top, var(--gallery-background, #0e0e0e), rgba(26, 26, 26, 0));
   }
 
   .edge-fade--left {
@@ -264,7 +273,7 @@
     background: var(--gallery-background, #0e0e0e);
   }
 
-  /* Outlined sliding pill — lime border, transparent fill */
+  /* Outlined sliding pill — 2px lime border, transparent fill (Figma: no glow) */
   .toggle-selected {
     position: absolute;
     top: 0;
@@ -274,14 +283,8 @@
     border-radius: 995px;
     border: 2px solid var(--color-content-accent, #bdff5d);
     background: transparent;
-    box-shadow: 0 0 12px rgba(189, 255, 93, 0.22), inset 0 0 8px rgba(189, 255, 93, 0.06);
-    transition:
-      transform   0.42s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow  0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
-  }
-  .toggle-track:hover .toggle-selected {
-    box-shadow: 0 0 20px rgba(189, 255, 93, 0.35), inset 0 0 12px rgba(189, 255, 93, 0.1);
   }
 
   /* Shift pill to right when NOMI is active: 190 - 97 = 93 */
@@ -300,7 +303,6 @@
     z-index: 2;
     display: flex;
     align-items: center;
-    transition: filter 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .toggle-option:active { transform: scale(0.96); transition-duration: 80ms; }
 
@@ -329,21 +331,16 @@
     user-select: none;
   }
 
-  /* Any hovered side: text turns lime */
+  /* Hover: lime text + progressive blur (Figma blurType=PROGRESSIVE radius=4) */
   .toggle-option:hover .toggle-label {
     color: var(--color-content-accent, #bdff5d);
-  }
-
-  /* Hovering the ALREADY-SELECTED side adds a cinematic bloom blur */
-  .toggle-track:not(.toggle--names) .toggle-option--photos:hover,
-  .toggle-track.toggle--names       .toggle-option--names:hover {
-    filter: blur(4px);
+    filter: url(#figma-cat-hover);
   }
 
   /* ── FILTRA PER CATEGORIA button ───────────────────────────────── */
   .filter-btn {
     position: fixed;
-    right: clamp(24px, 5vw, 81px);
+    right: clamp(24px, 4.5vw, 72px);
     bottom: clamp(24px, 3.5vh, 48px);
     z-index: 100;
     width: 275px;
@@ -406,9 +403,9 @@
     flex-direction: column;
     align-items: flex-end;
     justify-content: flex-end;
-    padding-bottom: 48px;
+    /* padding-bottom = filter-btn bottom (48) + filter-btn height (48) + gap (80) */
+    padding-bottom: 176px;
     padding-right: 72px;
-    gap: 80px;
     background: linear-gradient(to left, #0e0e0e 0%, rgba(26, 26, 26, 0) 100%);
     cursor: default;
   }
@@ -420,79 +417,44 @@
     gap: 36px;
   }
 
+  /* ── Filtri categoria stati — Desktop Unselected ────────────────── */
   .cat-item {
     border: 0;
     background: transparent;
-    color: #fafafa;
+    color: var(--color-content-body);
     font-family: var(--font-display);
     font-size: 32px;
     font-weight: 500;
-    line-height: 1;
-    text-transform: uppercase;
+    line-height: 32px;
     letter-spacing: 1.28px;
+    text-transform: uppercase;
     text-align: right;
     white-space: pre-line;
     cursor: pointer;
     padding: 0;
-    text-shadow: 0 0 4px rgba(0, 0, 0, 0.25), 0 0 4px rgba(0, 0, 0, 0.25);
-    transition:
-      color     0.22s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.22s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* Hover: slide left + bloom blur + lime */
+  /* Desktop Hover — Figma node 6197-16451: blur(4) + two centred drop-shadows */
   .cat-item:hover {
-    color: var(--color-content-accent, #bdff5d);
-    filter: blur(4px);
-    transform: translateX(-10px);
+    color: var(--color-content-accent);
+    filter: url(#figma-cat-hover);
   }
 
-  /* Selected: lime only, no blur, nudge left */
+  /* Desktop Selected — sharp lime */
   .cat-item--active {
-    color: var(--color-content-accent, #bdff5d);
-    transform: translateX(-6px);
-  }
-  .cat-item--active:hover {
-    filter: none;
-    transform: translateX(-10px);
-  }
-
-  /* Lime circle X button */
-  .cat-close {
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    border-radius: 999px;
-    background: var(--color-content-accent, #bdff5d);
-    border: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition:
-      transform  0.36s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-      filter     0.22s ease;
-  }
-
-  .cat-close:hover {
-    transform: rotate(90deg) scale(1.1);
-    box-shadow: 0 0 20px rgba(189, 255, 93, 0.4);
-  }
-  .cat-close:active {
-    transform: rotate(90deg) scale(0.94);
-    transition-duration: 80ms;
+    color: var(--color-content-accent);
   }
 
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
     .toggle      { left: 16px; bottom: 20px; }
     .filter-btn  { right: 16px; bottom: 20px; }
-    .cat-overlay { width: 100vw; padding-right: 24px; padding-bottom: 32px; gap: 48px; }
-    .cat-item    { font-size: 24px; }
-    .cat-items   { gap: 24px; }
+    /* padding-bottom = btn-bottom (20) + btn-height (48) + gap (48) */
+    .cat-overlay { width: 100vw; padding-right: 24px; padding-bottom: 116px; }
+    /* Mobile Unselected / Selected — 24px / lh24 / ls0.96 */
+    .cat-item  { font-size: 24px; line-height: 24px; letter-spacing: 0.96px; }
+    .cat-items { gap: 40px; }
   }
 
   /* ── Touch target compensation using --page-zoom ────────────────── */
@@ -511,10 +473,6 @@
     .cat-item {
       padding: max(8px, calc(8px / var(--page-zoom, 1))) 0;
     }
-    .cat-close {
-      width:  max(48px, calc(44px / var(--page-zoom, 1)));
-      height: max(48px, calc(44px / var(--page-zoom, 1)));
-    }
   }
 
   /* ── Very small viewports (phones in portrait) ───────────────────── */
@@ -522,16 +480,42 @@
     /* Stack toggle and filter vertically so they don't overlap */
     .toggle     { left: 16px; bottom: 80px; }
     .filter-btn { right: 16px; bottom: 16px; width: auto; min-width: 180px; }
-    /* Overlay covers full screen, items scroll if many */
+
+    /* Mobile toggle: 180×56px track, 98px pill (Figma Mobile variant) */
+    .toggle-track {
+      width: 180px;
+      height: 56px;
+    }
+    .toggle-selected {
+      width: 98px;
+      height: 56px;
+    }
+    /* NOMI shift: 180 - 98 = 82px */
+    .toggle--names .toggle-selected {
+      transform: translateX(82px);
+    }
+    .toggle-option {
+      width: 90px;
+      height: 56px;
+    }
+    .toggle-option--photos { padding-left: 27px; }
+    .toggle-option--names  { padding-right: 27px; }
+    .toggle-label {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: normal;
+      width: 43px;
+    }
+
+    /* padding-bottom = btn-bottom (16) + btn-height (48) + gap (32) */
     .cat-overlay {
       width: 100vw;
       padding-right: 20px;
       padding-left: 20px;
-      padding-bottom: 24px;
-      gap: 32px;
+      padding-bottom: 96px;
       align-items: flex-end;
     }
-    .cat-item { font-size: 20px; }
+    .cat-item  { font-size: 20px; line-height: 20px; letter-spacing: 0.8px; }
     .cat-items { gap: 16px; }
   }
 
