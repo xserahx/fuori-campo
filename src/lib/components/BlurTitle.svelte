@@ -1,4 +1,10 @@
-<div class="title-wrap" aria-label="FUORI CAMPO">
+<script lang="ts">
+  /* `quick` is set when the intro loader is skipped (return visits) so the
+     title blooms in promptly instead of waiting for the loader's timeline. */
+  let { quick = false } = $props<{ quick?: boolean }>();
+</script>
+
+<div class="title-wrap" class:title-wrap--quick={quick} aria-label="FUORI CAMPO">
   <span class="fuori">FUORI</span>
   <span class="campo">CAMPO</span>
 </div>
@@ -60,15 +66,26 @@
     }
   }
 
+  /* First visit: delays sync with the intro loader's 3600ms finish.
+     Return visit (.title-wrap--quick): no loader, so start almost immediately. */
+  .title-wrap {
+    --fuori-delay: 2800ms;
+    --campo-delay: 3080ms;
+  }
+  .title-wrap--quick {
+    --fuori-delay: 150ms;
+    --campo-delay: 430ms;
+  }
+
   .fuori {
     color: var(--color-content-accent, #bdff5d);
-    animation: word-in 1600ms cubic-bezier(0.16, 1, 0.3, 1) 2800ms both;
+    animation: word-in 1600ms cubic-bezier(0.16, 1, 0.3, 1) var(--fuori-delay) both;
   }
 
   .campo {
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
-    animation: word-in 1600ms cubic-bezier(0.16, 1, 0.3, 1) 3080ms both;
+    animation: word-in 1600ms cubic-bezier(0.16, 1, 0.3, 1) var(--campo-delay) both;
   }
 </style>

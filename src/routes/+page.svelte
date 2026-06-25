@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import { goto, afterNavigate, beforeNavigate } from "$app/navigation";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
@@ -12,7 +13,10 @@
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────── */
-  let showIntro = $state(true);
+  /* Play the loading intro only on the first homepage visit of the session.
+     Returning to the homepage (e.g. clicking the logo) must NOT replay it. */
+  const introSeen = browser && sessionStorage.getItem('homeIntroSeen') === '1';
+  let showIntro = $state(!introSeen);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
 
@@ -92,13 +96,22 @@
     }
   });
 
-  /* Arriving (back) on the homepage — reset every gallery animation flag and
-     restore the landing element so scrolling works normally. */
+  /* Arriving (back) on the homepage — fully reset every gallery state so the
+     page regains its default vertical scrolling. The gallery locks scroll via
+     inline overflow:hidden and marks the root with data-gallery-entry; because
+     navigation runs through a view transition (old/new DOM overlap), those can
+     still be in place when the homepage scroll engine initializes, leaving the
+     page unscrollable. Clear them here defensively (idempotent). */
   afterNavigate(() => {
     galleryTimeline?.kill();
     galleryTimeline = null;
     galleryTransitionPending = false;
+
+    /* Drop any leftover gallery scroll-lock + entry marker. */
     delete document.documentElement.dataset.galleryEntry;
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+
     const landing = document.querySelector<HTMLElement>('.landing');
     if (landing) gsap.set(landing, { clearProps: 'filter,transform,opacity' });
     if (transitionOverlay) gsap.set(transitionOverlay, { opacity: 0 });
@@ -128,6 +141,9 @@
    * MOUNT — intro loader
    * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
+    /* Already shown this session — skip the loader entirely on return visits. */
+    if (introSeen) return;
+
     interval = setInterval(() => {
       loaderProgress += 2;
 
@@ -138,6 +154,7 @@
 
       if (loaderProgress >= 100) {
         introExiting = true;
+        sessionStorage.setItem('homeIntroSeen', '1');
         exitTimeout = setTimeout(() => { showIntro = false; }, 600);
         if (interval) clearInterval(interval);
       }
@@ -607,7 +624,7 @@
     <!-- ── Hero ────────────────────────────────────────────────── -->
     <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
-        <BlurTitle />
+        <BlurTitle quick={introSeen} />
       </div>
     </section>
 
