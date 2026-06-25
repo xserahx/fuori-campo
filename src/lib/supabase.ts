@@ -123,16 +123,19 @@ export function ruoloToTag(ruolo: string | null): string | null {
 	return null;
 }
 
+// All-portrait presets so handleImageLoad can only shrink frames (never grow
+// them into the card below). Landscape images correct down to 4:3 or 16:9 on
+// load; portrait images stay at or near their preset. No overlap risk.
 const GALLERY_ASPECT_RATIOS = [
-	{ w: 224, h: 298 },
-	{ w: 185, h: 247 },
-	{ w: 263, h: 197 },
-	{ w: 161, h: 286 },
-	{ w: 214, h: 161 },
-	{ w: 167, h: 250 },
-	{ w: 248, h: 186 },
-	{ w: 173, h: 230 },
-	{ w: 289, h: 217 },
+	{ w: 3, h: 4  },  // 3:4
+	{ w: 9, h: 16 },  // 9:16
+	{ w: 3, h: 4  },  // 3:4
+	{ w: 9, h: 16 },  // 9:16
+	{ w: 3, h: 4  },  // 3:4
+	{ w: 3, h: 4  },  // 3:4
+	{ w: 9, h: 16 },  // 9:16
+	{ w: 3, h: 4  },  // 3:4
+	{ w: 3, h: 4  },  // 3:4
 ];
 
 // Volunteers not in the DB — photos exist in storage, appear in gallery but open no zoom view.

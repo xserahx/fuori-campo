@@ -166,11 +166,24 @@ export function buildSpacedImages(rawImages: GalleryImage[], designWidth = 1920)
   };
 }
 
+/** The four permitted frame shapes (width ÷ height). */
+export const STD_FRAME_RATIOS = [16 / 9, 4 / 3, 3 / 4, 9 / 16] as const;
+
+/** Returns the standard frame ratio closest to the supplied natural w/h ratio. */
+export function snapToStdFrame(wPerH: number): number {
+  return STD_FRAME_RATIOS.reduce((best, r) =>
+    Math.abs(r - wPerH) < Math.abs(best - wPerH) ? r : best
+  );
+}
+
 /**
- * True 2D jittered-grid scatter layout.
- * Divides the canvas into COLS × ROWS cells and places each image at a
- * pseudo-random (deterministic) position inside its cell so images are
- * spread in both X and Y with no visible column pattern.
+ * Masonry scatter layout with AABB collision detection.
+ *
+ * Base algorithm: shortest-column masonry (guarantees vertical coverage).
+ * Scatter: horizontal jitter within each slot + vertical stagger between columns.
+ * Collision safety: each candidate position is tested with AABB + PAD gap;
+ *   on collision the jitter is reduced iteratively until clear, with a hard
+ *   downward scan as final fallback.
  */
 export function buildScatterLayout(
   rawImages: GalleryImage[],
@@ -178,43 +191,116 @@ export function buildScatterLayout(
 ): { images: GalleryImage[]; canvasHeight: number } {
   if (rawImages.length === 0) return { images: [], canvasHeight: 1080 };
 
-  const COLS     = 15;
-  const CELL_W   = canvasWidth / COLS;
-  const CELL_H   = CELL_W * 1.55; // portrait-biased cells for dense vertical coverage
-  const ROWS     = Math.ceil(rawImages.length / COLS);
-  const TOP_PAD  = 80;
-  const BOT_PAD  = 120;
+  const COLS      = 12;
+  const PAD       = 48;   // minimum pixel gap between any two cards
+  const EDGE      = 80;   // canvas left/right margin
+  const TOP_PAD   = 96;
+  const BOT_PAD   = 144;
+  const MIN_SCALE = 0.60; // fraction of slot width
+  const MAX_SCALE = 0.94;
 
-  // Deterministic integer hash → 0–1
+  // Deterministic hash: index → 0..1
   function h(n: number): number {
-    let x = (n ^ 0xdeadbeef) | 0;
+    let x = ((n ^ 0xdeadbeef) | 0);
     x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
     x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
-    x = x ^ (x >>> 16);
-    return ((x >>> 0) % 1e6) / 1e6;
+    return ((x ^ (x >>> 16)) >>> 0) / 0x100000000;
   }
 
-  const images = rawImages.map((img, i) => {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
+  const usableW = canvasWidth - EDGE * 2;
+  const colW    = (usableW - PAD * (COLS - 1)) / COLS;
+  // Bottom of last placed card per column (masonry tracking)
+  const colBots = new Array<number>(COLS).fill(TOP_PAD);
 
-    // Image size: 55–88 % of cell width, aspect preserved
-    const scale = 0.55 + h(i * 2 + 3) * 0.33;
-    const imgW  = CELL_W * scale;
-    const imgH  = imgW * (img.height / img.width);
+  // ── Spatial-hash collision grid ────────────────────────────────────
+  const BUCKET = 380;
+  const buckets = new Map<number, number[]>();
+  const placed: GalleryImage[] = [];
 
-    // Jitter: large enough to break the grid, bounded to avoid clipping at canvas edges
-    const jX = (h(i * 7 + 1) - 0.5) * CELL_W * 0.72;
-    const jY = (h(i * 11 + 5) - 0.5) * CELL_H * 0.55;
+  function bid(gx: number, gy: number) { return gx * 100_000 + gy; }
 
-    const left = col * CELL_W + (CELL_W - imgW) / 2 + jX;
-    const top  = TOP_PAD + row * CELL_H + (CELL_H - imgH) / 2 + jY;
+  function register(idx: number) {
+    const { left: l, top: t, width: w, height: hh } = placed[idx];
+    for (let gx = Math.floor(l / BUCKET); gx <= Math.floor((l + w) / BUCKET); gx++)
+      for (let gy = Math.floor(t / BUCKET); gy <= Math.floor((t + hh) / BUCKET); gy++) {
+        const b = buckets.get(bid(gx, gy));
+        if (b) b.push(idx); else buckets.set(bid(gx, gy), [idx]);
+      }
+  }
 
-    return { ...img, left, top, width: imgW, height: imgH };
-  });
+  function collides(l: number, t: number, w: number, hh: number): boolean {
+    const p = PAD;
+    const seen = new Set<number>();
+    for (let gx = Math.floor((l - p) / BUCKET); gx <= Math.floor((l + w + p) / BUCKET); gx++)
+      for (let gy = Math.floor((t - p) / BUCKET); gy <= Math.floor((t + hh + p) / BUCKET); gy++)
+        for (const idx of (buckets.get(bid(gx, gy)) ?? [])) {
+          if (seen.has(idx)) continue; seen.add(idx);
+          const c = placed[idx];
+          if (l < c.left + c.width  + p && l + w  + p > c.left &&
+              t < c.top  + c.height + p && t + hh + p > c.top) return true;
+        }
+    return false;
+  }
 
-  const maxBottom = images.reduce((m, img) => Math.max(m, img.top + img.height), 0);
-  return { images, canvasHeight: Math.max(1080, maxBottom + BOT_PAD) };
+  // ── Placement loop ─────────────────────────────────────────────────
+  for (let i = 0; i < rawImages.length; i++) {
+    const raw  = rawImages[i];
+    const seed = i * 137 + 5381;
+
+    // Span: mostly 1-col, occasionally 2-col for visual variety
+    const span = h(seed) < 0.74 ? 1 : 2;
+
+    // Shortest-column selection with a tiny random tie-break
+    let bestCol = 0, bestScore = Infinity;
+    for (let c = 0; c <= COLS - span; c++) {
+      const laneH = Math.max(...colBots.slice(c, c + span));
+      const score = laneH + h(seed + c * 23) * 44;
+      if (score < bestScore) { bestScore = score; bestCol = c; }
+    }
+
+    // Image dimensions — snapped to the nearest standard frame (16:9 / 4:3 / 3:4 / 9:16)
+    const scale      = MIN_SCALE + h(seed + 1) * (MAX_SCALE - MIN_SCALE);
+    const slotW      = colW * span + PAD * (span - 1);
+    const imgW       = slotW * scale;
+    const frameRatio = snapToStdFrame(raw.width / raw.height);
+    const imgH       = imgW / frameRatio;
+    const laneBot = Math.max(...colBots.slice(bestCol, bestCol + span));
+
+    // Horizontal jitter within available whitespace, vertical stagger
+    const maxJX = Math.max(0, (slotW - imgW) * 0.5 - 2);
+    const jx    = (h(seed + 2) - 0.5) * 2 * maxJX;
+    const jy    = h(seed + 3) * 44;
+
+    const baseL = EDGE + bestCol * (colW + PAD) + (slotW - imgW) / 2 + jx;
+    const baseT = laneBot + jy;
+
+    // Try up to 28 positions fading jitter to zero
+    let finalL = baseL, finalT = baseT, ok = false;
+    for (let a = 0; a <= 28 && !ok; a++) {
+      const f  = 1 - a / 20;
+      const tL = EDGE + bestCol * (colW + PAD) + (slotW - imgW) / 2 + jx * f;
+      const tT = laneBot + jy * Math.max(0, f);
+      if (!collides(tL, tT, imgW, imgH)) { finalL = tL; finalT = tT; ok = true; }
+    }
+    // Hard fallback: scan downward from laneBot until clear
+    if (!ok) {
+      finalL = EDGE + bestCol * (colW + PAD) + (slotW - imgW) / 2;
+      finalT = laneBot;
+      let guard = 0;
+      while (collides(finalL, finalT, imgW, imgH) && guard++ < 500) finalT += 8;
+    }
+
+    const img: GalleryImage = { ...raw, left: finalL, top: finalT, width: imgW, height: imgH };
+    placed.push(img);
+    register(placed.length - 1);
+
+    const newBot = finalT + imgH + PAD;
+    for (let c = bestCol; c < bestCol + span; c++)
+      if (newBot > colBots[c]) colBots[c] = newBot;
+  }
+
+  const maxBot = placed.reduce((m, img) => Math.max(m, img.top + img.height), 0);
+  return { images: placed, canvasHeight: Math.max(1080, maxBot + BOT_PAD) };
 }
 
 export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {

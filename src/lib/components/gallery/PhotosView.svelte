@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import { goto, preloadData } from '$app/navigation';
   import gsap from 'gsap';
-  import { buildScatterLayoutCached, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildScatterLayoutCached, snapToStdFrame, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/supabase';
 
@@ -23,10 +23,54 @@
   function handleImageLoad(e: Event, img: GalleryImage) {
     const el = e.currentTarget as HTMLImageElement;
     if (!el.naturalWidth || !el.naturalHeight) return;
-    const naturalH = img.width * (el.naturalHeight / el.naturalWidth);
-    if (Math.abs(naturalH - img.height) < 0.5) return; // already correct
+    const frameRatio = snapToStdFrame(el.naturalWidth / el.naturalHeight);
+    const correctH   = img.width / frameRatio;
+    // Never grow the frame — only shrink. Growing pushes into the card below.
+    // Landscape images in portrait slots shrink to their correct frame here;
+    // portrait images either match the preset or adjust between 3:4 and 9:16.
+    if (correctH >= img.height - 0.5) return;
     const key = `${Math.round(img.left)}|${Math.round(img.top)}`;
-    corrections[key] = naturalH;
+    corrections[key] = correctH;
+  }
+
+  // ── 3D card tilt ──────────────────────────────────────────────────
+  // Runs entirely through GSAP on the DOM element — zero Svelte re-renders.
+  const TILT_MAX  = 14;   // max degrees
+  const TILT_DEAD = 0.28; // central dead-zone (fraction of half-card dimension)
+
+  function onTiltMove(e: MouseEvent) {
+    if (isDragging) return;
+    const card = e.currentTarget as HTMLElement;
+    const rect  = card.getBoundingClientRect();
+    // Normalised -1..1 from card centre
+    const nx = (e.clientX - (rect.left + rect.width  * 0.5)) / (rect.width  * 0.5);
+    const ny = (e.clientY - (rect.top  + rect.height * 0.5)) / (rect.height * 0.5);
+    // Clamp and apply dead zone
+    const ax = Math.max(0, (Math.abs(nx) - TILT_DEAD) / (1 - TILT_DEAD));
+    const ay = Math.max(0, (Math.abs(ny) - TILT_DEAD) / (1 - TILT_DEAD));
+    const rotY =  Math.sign(nx) * ax * TILT_MAX;
+    const rotX = -Math.sign(ny) * ay * TILT_MAX * 0.75;
+    // Directional shadow follows tilt
+    const sdx =  rotY * 1.6;
+    const sdy = -rotX * 1.1 + 7;
+    const sbl =  28 + (Math.abs(rotX) + Math.abs(rotY)) * 0.9;
+    gsap.to(card, {
+      rotateX: rotX, rotateY: rotY,
+      z: 10,
+      transformPerspective: 720,
+      transformOrigin: '50% 50%',
+      boxShadow: `${sdx}px ${sdy}px ${sbl}px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)`,
+      duration: 0.22, ease: 'power2.out', overwrite: 'auto',
+    });
+  }
+
+  function onTiltLeave(e: MouseEvent) {
+    const card = e.currentTarget as HTMLElement;
+    gsap.to(card, {
+      rotateX: 0, rotateY: 0, z: 0,
+      boxShadow: '0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)',
+      duration: 0.55, ease: 'power3.out', overwrite: 'auto',
+    });
   }
 
   const designWidth = 3840;
@@ -197,6 +241,8 @@
         onpointerdown={(e) => e.stopPropagation()}
         onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
         onclick={() => { if (!img.noClick) openVolunteer(img); }}
+        onmousemove={onTiltMove}
+        onmouseleave={onTiltLeave}
       >
         <div class="img-bw-layer">
           <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" onload={(e) => handleImageLoad(e, img)} />
@@ -232,17 +278,20 @@
     overflow: hidden;
     border-radius: 5px;
     box-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
-    transition: box-shadow 0.4s ease, opacity 0.45s ease;
+    /* box-shadow is animated by GSAP on hover; opacity handled here */
+    transition: opacity 0.45s ease;
     cursor: pointer;
     pointer-events: auto;
     border: 0;
     padding: 0;
     background: transparent;
+    will-change: transform;
+    transform-style: preserve-3d;
   }
 
   .collage-item:hover {
     z-index: 50;
-    box-shadow: 0 8px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.07);
+    /* box-shadow intentionally omitted — GSAP drives it with tilt direction */
   }
 
   /* ── Image layers ─────────────────────────────────────────────── */
