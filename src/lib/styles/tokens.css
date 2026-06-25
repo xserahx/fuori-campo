@@ -208,10 +208,9 @@
  * GLOBAL RESET & BASE
  * ================================================================ */
 
-html, body, #svelte { 
+html, body { 
   height: 100%;
   font-family: var(--font-display);
-  font-display: swap; 
  }
 
 body {
