@@ -173,13 +173,13 @@
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
   <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
     <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
-      <path d="M24 4L4 25L24 46" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 4L6 25L22 46" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
   <button class="arrow arrow--next" type="button" aria-label="Volunteer successivo" onclick={() => goTo(1)}>
     <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
-      <path d="M4 4L24 25L4 46" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M6 4L22 25L6 46" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
@@ -362,6 +362,7 @@
     transform: translateY(-50%) translateX(0);
   }
   .arrow--prev:hover {
+    color: var(--color-content-accent, #bdff5d);
     opacity: 1;
     transform: translateY(-50%) translateX(-6px);
     filter: drop-shadow(-4px 0 12px rgba(189, 255, 93, 0.28));
@@ -376,6 +377,7 @@
     transform: translateY(-50%) translateX(0);
   }
   .arrow--next:hover {
+    color: var(--color-content-accent, #bdff5d);
     opacity: 1;
     transform: translateY(-50%) translateX(6px);
     filter: drop-shadow(4px 0 12px rgba(189, 255, 93, 0.28));
@@ -520,7 +522,7 @@
 
   .expand-btn:hover {
     transform: scale(1.05);
-    background: rgba(189, 255, 93, 0.08);
+    background: #0e0e0e;
     box-shadow: 0 0 24px rgba(189, 255, 93, 0.25), inset 0 0 12px rgba(189, 255, 93, 0.06);
   }
   .expand-btn:active {

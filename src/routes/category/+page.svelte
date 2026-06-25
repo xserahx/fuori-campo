@@ -9,9 +9,6 @@
   const IMG_FIGMA_204 = '/figma/cat-1.jpg';
   const IMG_FIGMA_58  = '/figma/cat-5.jpg';
   const IMG_FIGMA_232 = '/figma/cat-8.jpg';
-  const CAROUSEL_ARROW_LEFT = 'https://www.figma.com/api/mcp/asset/149b18f8-4f5d-4cff-af7a-a6ea33c892be';
-  const CAROUSEL_ARROW_RIGHT = 'https://www.figma.com/api/mcp/asset/65eb55ac-70a4-455b-9a7b-693132669895';
-
   const defaultCategories: Category[] = [
     { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: IMG_FIGMA_204 },
     { id: 2, label: 'CERIMONIE E REVENUE',       image: IMG_FIGMA_58 },
@@ -520,7 +517,9 @@
   <button class="arrow arrow-left" type="button" aria-label="Previous category"
     onpointerdown={(e) => onArrowPointerDown(-1, e)}
   >
-    <img src={CAROUSEL_ARROW_LEFT} alt="" width="14" height="28" draggable="false" />
+    <svg viewBox="0 0 14 28" fill="none" aria-hidden="true" width="14" height="28">
+      <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
   </button>
 
   <button
@@ -529,7 +528,9 @@
     aria-label="Next category"
     onpointerdown={(e) => onArrowPointerDown(1, e)}
   >
-    <img src={CAROUSEL_ARROW_RIGHT} alt="" width="14" height="28" draggable="false" />
+    <svg viewBox="0 0 14 28" fill="none" aria-hidden="true" width="14" height="28">
+      <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
   </button>
 
   <div class="curve-frame" aria-hidden="true">
@@ -601,12 +602,13 @@
     cursor: pointer;
     border: none;
     box-shadow: none;
+    color: #fafafa;
+    transition: color 0.24s ease, filter 0.24s ease;
   }
 
-  .arrow img {
-    width: 14px;
-    height: 28px;
-    display: block;
+  .arrow:hover {
+    color: var(--color-content-accent, #bdff5d);
+    filter: drop-shadow(0 0 8px rgba(189, 255, 93, 0.4));
   }
 
   .arrow:focus-visible {
