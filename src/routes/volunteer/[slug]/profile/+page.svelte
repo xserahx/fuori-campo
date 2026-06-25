@@ -309,7 +309,13 @@
   /* Figma H3: 36px Medium, tracking 4% = 1.44px. Box height 43px → lh 1.2. */
   .info-role {
     margin: 0;
+    align-self: stretch;
     font-size: 36px;
+    font-size: var(--Unit-36, 36px);
+    font-style: medium;
+    font-weight: 500;
+    line-height: normal;
+    letter-spacing: 1.44px;
     font-weight: 500;
     line-height: 1.2;
     letter-spacing: 1.44px;
@@ -321,6 +327,7 @@
     margin: 0;
     font-size: 24px;
     font-weight: 500;
+    font-style: medium;
     line-height: 1.2;
     letter-spacing: 0.96px;
     white-space: pre-wrap;
@@ -462,11 +469,13 @@
   /* Figma 6103:15338: w-1059px, gap-20px (var --spacing/4,5), right: 73px.
      All items uniform: font var(--unit/48)=48px, tracking 1.92px.
      Title: w-879px. Icon: size-52px. Separator: h-2.417px.               */
+  /* Figma layout across 1728: 72 (margin) + 782 (photo) + 74 (gap)
+     + 726 (accordion) + 74 (right margin). */
   .qa-wrap {
     position: absolute;
-    right: 73px;
-    top: 689px;
-    width: 926px;
+    right: 74px;
+    top: 589px;
+    width: 726px;
     bottom: 40px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -484,7 +493,7 @@
   /* Figma 6103:6999 — exact spec: 32.82px Medium, tracking 1.313px,
      0.39px text-stroke (faux-bold), left-aligned, full-width separator. */
   .qa-row {
-    width: 100%;
+    width: 601.015px;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -507,7 +516,10 @@
 
   .qa-row:hover + .qa-sep:not(.qa-sep--open) { background: #bdff5d; }
 
-  .qa-title { flex: 1; }
+  .qa-title {
+    width: 601.015px;   /* Figma title box; separator spans the full 726px row */
+    -webkit-text-stroke: 0.39px currentColor;  /* Figma faux-bold; follows hover color */
+  }
 
   /* Figma: full-width separator under each title → hover lime → expanded lime card */
   .qa-sep {
