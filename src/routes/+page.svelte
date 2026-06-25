@@ -810,7 +810,8 @@
     position: absolute;
     display: block;
     border-radius: 6px;
-    height: auto;            /* keep each photo's natural shape — never stretch */
+    height: auto;            /* height derives from width + aspect-ratio */
+    object-fit: cover;       /* fill the frame ratio without distorting */
     box-shadow: 0 10px 44px rgba(0, 0, 0, 0.55);
     opacity: calc(var(--gate-p, 0) * 0.34);
     filter: blur(calc(var(--b, 18px) + (1 - var(--gate-p, 0)) * 16px));

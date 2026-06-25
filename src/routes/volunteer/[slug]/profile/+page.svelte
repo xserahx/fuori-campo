@@ -128,15 +128,15 @@
   <!-- ── Quote (top-right) ─────────────────────────────────────────── -->
   {#if resolvedQuote}
     <blockquote class="vol-quote">
-      <span class="qmark qmark--open" aria-hidden="true">"</span>
+      <span class="qmark qmark--open" aria-hidden="true">“</span>
       <p class="quote-body">{resolvedQuote}</p>
-      <span class="qmark qmark--close" aria-hidden="true">"</span>
+      <span class="qmark qmark--close" aria-hidden="true">”</span>
     </blockquote>
   {:else}
     <blockquote class="vol-quote vol-quote--dim">
-      <span class="qmark qmark--open" aria-hidden="true">"</span>
+      <span class="qmark qmark--open" aria-hidden="true">“</span>
       <p class="quote-body">Un'esperienza che non dimenticherò mai.</p>
-      <span class="qmark qmark--close" aria-hidden="true">"</span>
+      <span class="qmark qmark--close" aria-hidden="true">”</span>
     </blockquote>
   {/if}
 
@@ -223,7 +223,7 @@
   /* Figma 6103-10525: border-2 lime, px-20 py-12, gap-12, radius-999, w-168px */
   .back-btn {
     position: absolute;
-    left: 4.17vw;
+    left: 72px;
     top: calc(var(--navbar-height, 125px) + 24px);
     z-index: 30;
     display: flex;
@@ -267,11 +267,14 @@
     z-index: 5;
   }
 
+  /* Figma h1: Forma DJR Display Extra Bold, 116/116, letter-spacing 0.
+     Fixed px — the global html { zoom } scales it responsively. */
   .name-surname,
   .name-firstname {
-    font-size: clamp(40px, 6.71vw, 116px);
+    font-size: 116px;
     font-weight: 800;
     line-height: 116px;
+    letter-spacing: 0;
     text-transform: uppercase;
     white-space: nowrap;
     display: block;
@@ -294,7 +297,7 @@
   /* Figma 6103:7015: left 74px, top 629px (frame) = 517px, w 513px */
   .vol-info {
     position: absolute;
-    left: 72px;
+    left: 74px;
     top: 517px;
     z-index: 10;
     display: flex;
@@ -303,22 +306,22 @@
     width: 513px;
   }
 
-  /* font-size: var(--unit/36, 36px), tracking: 1.44px */
+  /* Figma H3: 36px Medium, tracking 4% = 1.44px. Box height 43px → lh 1.2. */
   .info-role {
     margin: 0;
-    font-size: clamp(14px, 2.08vw, 36px);
+    font-size: 36px;
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.2;
     letter-spacing: 1.44px;
     color: var(--color-content-accent, #bdff5d);
   }
 
-  /* font-size: var(--unit/24, 24px), tracking: 0.96px — location + detail in one p */
+  /* Figma H4: 24px Medium, tracking 4% = 0.96px. 2 lines in 58px → lh 1.2. */
   .info-location {
     margin: 0;
-    font-size: clamp(12px, 1.39vw, 24px);
+    font-size: 24px;
     font-weight: 500;
-    line-height: 1.3;
+    line-height: 1.2;
     letter-spacing: 0.96px;
     white-space: pre-wrap;
     color: #fafafa;
@@ -330,7 +333,7 @@
      Quote marks: 84px Medium, transparent (text-stroke).                      */
   .vol-quote {
     position: absolute;
-    left: calc(66.67% + 80px);
+    left: 1232px;
     top: 245px;
     width: 429px;
     height: 176px;
@@ -347,7 +350,7 @@
     position: absolute;
     left: 0;
     top: 0;
-    font-size: clamp(40px, 4.86vw, 84px);
+    font-size: 84px;
     font-weight: 500;
     line-height: 80px;
     color: transparent;
@@ -360,7 +363,7 @@
     position: absolute;
     right: 0;
     bottom: 0;
-    font-size: clamp(40px, 4.86vw, 84px);
+    font-size: 84px;
     font-weight: 500;
     line-height: 80px;
     color: transparent;
@@ -375,7 +378,7 @@
     top: 0;
     width: 393px;
     margin: 0;
-    font-size: clamp(14px, 1.85vw, 32px);
+    font-size: 32px;
     font-weight: 700;
     line-height: 32px;
     letter-spacing: 0.96px;
@@ -396,19 +399,20 @@
     z-index: 8;
   }
 
+  /* Figma 6103:7008-7012: edge fades 175px tall, backdrop-blur 6px (unit/12). */
   .photo-fade {
     position: absolute;
     left: 0;
     right: 0;
     z-index: 2;
     pointer-events: none;
-    height: 120px;
+    height: 175px;
   }
 
   .photo-fade--top {
     top: 0;
     background: linear-gradient(to bottom, #0e0e0e 0%, transparent 100%);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
     -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   }
@@ -416,7 +420,7 @@
   .photo-fade--bottom {
     bottom: 0;
     background: linear-gradient(to top, #0e0e0e 0%, transparent 100%);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
     mask-image: linear-gradient(to top, black 60%, transparent 100%);
     -webkit-mask-image: linear-gradient(to top, black 60%, transparent 100%);
   }
@@ -430,7 +434,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 40px 0;
+    padding: 0;   /* Figma scroll fills the frame edge-to-edge (fades overlay) */
   }
 
   .photo-scroll::-webkit-scrollbar { display: none; }
@@ -462,7 +466,7 @@
     position: absolute;
     right: 73px;
     top: 689px;
-    width: 1059px;
+    width: 926px;
     bottom: 40px;
     overflow-y: auto;
     overflow-x: hidden;
@@ -470,28 +474,29 @@
     z-index: 10;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
   }
 
   .qa-wrap::-webkit-scrollbar { display: none; }
 
   .qa-item { display: flex; flex-direction: column; }
 
+  /* Figma 6103:6999 — exact spec: 32.82px Medium, tracking 1.313px,
+     0.39px text-stroke (faux-bold), left-aligned, full-width separator. */
   .qa-row {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 4px 0;
+    justify-content: flex-start;
+    padding: 0;
     border: 0;
     background: transparent;
     color: #fafafa;
-    font-size: 48px;
+    font-size: 32.82px;
     font-weight: 500;
-    line-height: 1;
+    line-height: normal;
     text-transform: uppercase;
-    letter-spacing: 1.92px;
+    letter-spacing: 1.313px;
     cursor: pointer;
     text-align: left;
     transition: color 0.15s ease;
@@ -502,27 +507,11 @@
 
   .qa-row:hover + .qa-sep:not(.qa-sep--open) { background: #bdff5d; }
 
-  /* Figma: title w-879px within 1059px item, icon size-52px */
-  .qa-title { flex: 1; max-width: 879px; }
+  .qa-title { flex: 1; }
 
-  .qa-icon {
-    flex-shrink: 0;
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 42px;
-    font-weight: 300;
-    color: var(--color-content-accent, #bdff5d);
-    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .qa-icon--open { transform: rotate(-45deg); }
-
-  /* Figma: separator h-2.417px → hover lime → expanded lime card */
+  /* Figma: full-width separator under each title → hover lime → expanded lime card */
   .qa-sep {
-    height: 2.417px;
+    height: 2px;
     background: #fafafa;
     flex-shrink: 0;
     position: relative;
