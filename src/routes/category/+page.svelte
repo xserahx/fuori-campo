@@ -502,6 +502,31 @@
     ].filter(Boolean);
   })());
 
+  /* Mobile title — Figma keeps the connector "E" on the filled (green)
+     line, e.g. "RELAZIONI E" / "COMUNICA-ZIONE". Long words break with a
+     visible hyphen: we inject a soft hyphen (U+00AD) at the Figma break
+     point and rely on `hyphens: manual` + the fixed 352px text width so
+     the break only renders when the word overflows. */
+  const SHY = '­';
+  const SOFT_HYPHENATE: Record<string, string> = {
+    COMUNICAZIONE: 'COMUNICA' + SHY + 'ZIONE',
+    ORGANIZZATIVA: 'ORGANIZ'  + SHY + 'ZATIVA',
+    EXPERIENCE:    'EXPE'     + SHY + 'RIENCE',
+    DISCIPLINE:    'DISCI'    + SHY + 'PLINE',
+    TERRITORIO:    'TERRI'    + SHY + 'TORIO',
+    GENERALI:      'GENE'     + SHY + 'RALI',
+  };
+  function softHyphenate(text: string) {
+    return text.replace(/[\p{L}]+/gu, (w) => SOFT_HYPHENATE[w.toUpperCase()] ?? w);
+  }
+  let mobileTitleLines = $derived.by(() => {
+    const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
+    const lines = match
+      ? [`${match[1].trim()} E`, match[2].trim()]
+      : titleLines;
+    return lines.map(softHyphenate).filter(Boolean);
+  });
+
 </script>
 
 {#if isMobile}
@@ -518,35 +543,36 @@
     ></div>
   {/key}
 
-  <div class="mobile-gradient" aria-hidden="true"></div>
+  <!-- Figma "BLUR EFFECT" — 6px backdrop blur + dark gradient, top & bottom -->
+  <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
+  <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
 
-  <div class="mobile-content">
-    <div class="mobile-main-row">
-      <div class="mobile-title" aria-live="polite">
-        {#each titleLines as line, i}
-          {#if i === 0}
-            <span class="title-fill">{line}</span>
-          {:else}
-            <span class="title-outline">{line}</span>
-          {/if}
-        {/each}
-      </div>
+  <!-- Title (full width, above the controls) -->
+  <div class="mobile-title" aria-live="polite" lang="it">
+    {#each mobileTitleLines as line, i}
+      {#if i === 0}
+        <span class="title-fill">{line}</span>
+      {:else}
+        <span class="title-outline">{line}</span>
+      {/if}
+    {/each}
+  </div>
 
-      <div class="mobile-nav-circles">
-        <button class="nav-circle" type="button" aria-label="Categoria precedente" onclick={() => navigate(-1)}>
-          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true">
-            <path d="M1 11L10 2L19 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-        <button class="nav-circle" type="button" aria-label="Categoria successiva" onclick={() => navigate(1)}>
-          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true">
-            <path d="M1 1L10 10L19 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
+  <!-- Scopri di più (bottom-left) -->
+  <a class="scopri-btn" href="/category/{categorySlug(currentLabel)}">SCOPRI DI PIÙ</a>
 
-    <a class="scopri-btn" href="/category/{categorySlug(currentLabel)}">SCOPRI DI PIÙ</a>
+  <!-- Vertical arrows (bottom-right) -->
+  <div class="mobile-nav-circles">
+    <button class="nav-circle" type="button" aria-label="Categoria precedente" onclick={() => navigate(-1)}>
+      <svg width="16" height="9" viewBox="0 0 16 9" fill="none" aria-hidden="true">
+        <path d="M1 8L8 1L15 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="nav-circle" type="button" aria-label="Categoria successiva" onclick={() => navigate(1)}>
+      <svg width="16" height="9" viewBox="0 0 16 9" fill="none" aria-hidden="true">
+        <path d="M1 1L8 8L15 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
 </section>
 {:else}
@@ -905,51 +931,55 @@
     background-repeat: no-repeat;
   }
 
-  .mobile-gradient {
-    position: absolute;
-    inset: 0;
-    /* Strong dark scrim — heavy black blur from ~45% down, fully opaque at 80% */
-    background: linear-gradient(
-      to bottom,
-      rgba(14,14,14,0.10) 0%,
-      rgba(14,14,14,0)    18%,
-      rgba(14,14,14,0)    36%,
-      rgba(14,14,14,0.28) 50%,
-      rgba(14,14,14,0.70) 60%,
-      rgba(14,14,14,0.90) 70%,
-      rgba(14,14,14,1)    80%,
-      rgba(14,14,14,1)    100%
-    );
-    pointer-events: none;
-  }
-
-  .mobile-content {
+  /* ── Figma "BLUR EFFECT": 6px backdrop blur + dark gradient ──────
+     Top band darkens behind the navbar; bottom band fades the image
+     into solid #0e0e0e so the title/controls stay legible. The mask
+     feathers the blur so it dissolves toward the sharp middle. */
+  .mobile-blur {
     position: absolute;
     left: 0;
     right: 0;
+    height: 44%;            /* 388 / 874 from Figma */
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .mobile-blur--top {
+    top: 0;
+    background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .mobile-blur--bottom {
     bottom: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    padding: 0 24px 48px;
+    background: linear-gradient(
+      0deg,
+      rgba(14, 14, 14, 1)    0%,
+      rgba(14, 14, 14, 1)    28%,
+      rgba(14, 14, 14, 0.7) 50%,
+      rgba(14, 14, 14, 0)    100%
+    );
+    -webkit-mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
   }
 
-  .mobile-main-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
+  /* ── Title — Figma "Title Container": bottom 87, py 32, px 24 ──── */
   .mobile-title {
-    flex: 1;
-    min-width: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 87px;
+    padding: 32px 24px;
     display: flex;
     flex-direction: column;
     gap: 0;
+    pointer-events: none;
+    z-index: 3;
   }
 
-  /* Figma: font-size 43px, font-weight 800, line-height 36px */
+  /* Figma: Forma DJR Display ExtraBold · 43px · line-height 36px · w 352 */
   .mobile-title .title-fill {
     font-family: var(--font-display);
     font-size: 43px;
@@ -958,14 +988,16 @@
     line-height: 36px;
     letter-spacing: 0;
     text-transform: uppercase;
-    color: #BDFF5D;
+    color: var(--color-content-accent);
+    width: 352px;
+    max-width: 100%;
     white-space: normal;
-    word-break: break-word;
-    margin-left: 0;
-    margin-bottom: 0;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+    margin: 0;
   }
 
-  /* Figma: -webkit-text-stroke-width 2px, -webkit-text-stroke-color #BDFF5D */
+  /* Figma: -webkit-text-stroke 2px #bdff5d */
   .mobile-title .title-outline {
     font-family: var(--font-display);
     font-size: 43px;
@@ -976,30 +1008,39 @@
     text-transform: uppercase;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke-width: 2px;
-    -webkit-text-stroke-color: #BDFF5D;
+    -webkit-text-stroke: 2px var(--color-content-accent);
+    width: 352px;
+    max-width: 100%;
     white-space: normal;
-    word-break: break-word;
-    margin-left: 0;
+    hyphens: manual;
+    -webkit-hyphens: manual;
+    margin: 0;
   }
 
+  /* ── Scopri di più — Figma: bottom 36, left 24, width 238 ─────── */
   .scopri-btn {
+    position: absolute;
+    left: 24px;
+    bottom: 36px;
+    width: 238px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 60px;
+    padding: 16px 0;
     border: 2px solid var(--color-content-accent);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-content-body);
+    border-radius: var(--radius-rounded-pill, 999px);
+    background: var(--color-background-primary);
+    color: var(--color-link-default);
     font-family: var(--font-display);
     font-size: 16px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     text-transform: uppercase;
     text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
+    z-index: 4;
     transition: background 220ms ease, box-shadow 220ms ease;
   }
 
@@ -1009,17 +1050,22 @@
     box-shadow: 0 0 16px rgba(189, 255, 93, 0.22);
   }
 
+  /* ── Vertical arrows — Figma: bottom 36, right 24, gap 24 ──────── */
   .mobile-nav-circles {
+    position: absolute;
+    right: 24px;
+    bottom: 36px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    flex-shrink: 0;
+    gap: 24px;
+    z-index: 4;
   }
 
   .nav-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    box-sizing: border-box;
+    border-radius: 999px;
     border: 2px solid var(--color-content-accent);
     background: transparent;
     color: var(--color-content-accent);
