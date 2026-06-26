@@ -21,9 +21,9 @@
 
   let { categories = defaultCategories }: { categories?: Category[] } = $props();
 
-  let canvasEl: HTMLCanvasElement | null = null;
-  let containerEl: HTMLElement | null   = null;
-  let titleEl: HTMLElement | null = null;
+  let canvasEl: HTMLCanvasElement | null = $state(null);
+  let containerEl: HTMLElement | null   = $state(null);
+  let titleEl: HTMLElement | null = $state(null);
   let renderer: any = null;
   let scene: any    = null;
   let camera: any   = null;
