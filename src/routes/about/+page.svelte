@@ -1,5 +1,6 @@
 <script>
   import '../../lib/styles/tokens.css';
+  import SiteFooter from '$lib/components/SiteFooter.svelte';
 </script>
 
 <svelte:head>
@@ -22,6 +23,8 @@
     </div>
   </footer>
 </main>
+
+<SiteFooter />
 
 <style>
   /* ── COSMOS entrance keyframes (dark → lime context, inverted) ── */
@@ -53,8 +56,8 @@
 
   .about-page {
     min-height: calc(100dvh - var(--navbar-height));
-    background: var(--color-content-accent);
-    color: var(--color-content-body-black);
+    background: var(--color-background-primary, #0e0e0e);
+    color: var(--color-content-body, #fafafa);
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
@@ -82,7 +85,7 @@
     /* Indent scales: zero on narrow, up to 260 px on 1440 px+ */
     margin: clamp(12px, 1.5vw, 18px) 0 0 clamp(0px, 18vw, 260px);
     max-width: 1311px;
-    color: var(--color-content-body-black);
+    color: var(--color-content-body, #fafafa);
     font-family: var(--font-display);
     font-size: clamp(26px, calc(84px / max(var(--page-zoom, 1), 0.65)), 145px);
     font-weight: 500;
@@ -97,7 +100,7 @@
     left: 0;
     right: 0;
     padding: 0 clamp(24px, 5vw, 72px) 10px;
-    color: var(--color-content-body-black);
+    color: rgba(250, 250, 250, 0.55);
     font-size: clamp(14px, 1.5vw, 24px);
     line-height: 1.3;
     font-weight: 500;

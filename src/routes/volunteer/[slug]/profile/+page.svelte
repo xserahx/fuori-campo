@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
+  import SiteFooter from '$lib/components/SiteFooter.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
   import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
@@ -227,6 +228,8 @@
 
 </main>
 
+<SiteFooter />
+
 <style>
   /* ── Global ─────────────────────────────────────────────────────── */
   :global(html), :global(body) {
@@ -244,7 +247,7 @@
     position: relative;
     width: 100vw;
     min-height: 100dvh;
-    padding: calc(var(--navbar-height, 125px) + 24px) 0 96px;
+    padding: calc(var(--navbar-height, 125px) + 24px) 0 72px;
     background: #0e0e0e;
     color: #fafafa;
     overflow-x: hidden;

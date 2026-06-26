@@ -9,7 +9,6 @@
 
 	let { children } = $props();
 
-	const isAboutPage = $derived(page.url.pathname === '/about');
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
 	const isGalleryPage = $derived(page.url.pathname === '/gallery');
 	const isHomePage = $derived(page.url.pathname === '/');
@@ -24,9 +23,8 @@
 
 	$effect(() => {
 		if (!browser) return;
-		const accentBg = '#bdff5d';
-		document.body.style.backgroundColor = isAboutPage ? accentBg : '';
-		document.documentElement.style.backgroundColor = isAboutPage ? accentBg : '';
+		document.body.style.backgroundColor = '';
+		document.documentElement.style.backgroundColor = '';
 	});
 
 	/* Keep html { zoom } in sync with the viewport on mount and resize.
@@ -89,7 +87,7 @@
 <a href="#main-content" class="skip-link">Vai al contenuto</a>
 
 {#if !isVolunteerPage}
-	<Navbar inverted={isAboutPage || $navbarInverted} pinned={isGalleryPage || isHomePage} />
+	<Navbar inverted={$navbarInverted} pinned={isGalleryPage || isHomePage} />
 {/if}
 
 {#if showIntro && introSrc}
