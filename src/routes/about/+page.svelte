@@ -60,11 +60,29 @@
     color: var(--color-content-body, #fafafa);
     position: relative;
     overflow-x: hidden;
+    /* Vertical scrolling is gated by viewport height below (responsive only). */
     overflow-y: auto;
     font-family: var(--font-display);
     padding-bottom: 24px;
     display: flex;
     flex-direction: column;
+  }
+
+  /* ── Responsive scroll gate ───────────────────────────────────────
+     The About layout is sized to the 16" Figma reference frame (1728 × 1117).
+     At or above that viewport HEIGHT it stays fixed exactly as in Figma — page
+     scrolling is locked. Vertical scrolling is enabled only on shorter
+     viewports (height < 1117px), where the fixed layout would otherwise clip
+     its content. The real scroll container is the document, so the lock is on
+     <html>; `:has(.about-page)` keeps it scoped to this page only (and it
+     stops matching automatically when you navigate away). */
+  @media (min-height: 1117px) {
+    :global(html:has(.about-page)) {
+      overflow: hidden;
+    }
+    .about-page {
+      overflow-y: hidden;
+    }
   }
 
   .hero {

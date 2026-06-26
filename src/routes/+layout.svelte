@@ -16,8 +16,6 @@
 	let { children } = $props();
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
-	const isGalleryPage = $derived(page.url.pathname === '/gallery');
-	const isHomePage = $derived(page.url.pathname === '/');
 
 	$effect(() => {
 		if (!browser) return;
@@ -84,7 +82,8 @@
 <a href="#main-content" class="skip-link">Vai al contenuto</a>
 
 {#if !isVolunteerPage}
-	<Navbar inverted={$navbarInverted} pinned={isGalleryPage || isHomePage} />
+	<!-- Navbar stays fixed on every page it appears on; never hide-on-scroll. -->
+	<Navbar inverted={$navbarInverted} pinned />
 {/if}
 
 {#if showIntro && introSrc}
