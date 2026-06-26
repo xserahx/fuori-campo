@@ -50,6 +50,7 @@
   const resolvedQuote = $derived(
     dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : null
   );
+  const quoteText = $derived(resolvedQuote ?? 'Un’esperienza che non dimenticherò mai.');
 
   /* ── Photos: this volunteer's own photos (DB first, Figma fallback) ── */
   const dbPhotos    = $derived(dbVol ? getImageUrls(dbVol) : []);
@@ -146,11 +147,8 @@
       <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
     </div>
 
-    <!-- Quote — marks hug the text block so they reflow with its length -->
     <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
-      <span class="qmark qmark--open" aria-hidden="true">“</span>
-      <p class="quote-body">{resolvedQuote ?? "Un'esperienza che non dimenticherò mai."}</p>
-      <span class="qmark qmark--close" aria-hidden="true">”</span>
+      <p class="quote-body"><span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span></p>
     </blockquote>
   </header>
 
@@ -325,28 +323,44 @@
   }
   .vol-quote--dim { opacity: 0.55; }
 
-  /* Quote marks live in the layout flow, so they reposition automatically with
-     the text's length and stay glued to the block — no absolute offsets.
-     Opening mark pins to the top-left, closing mark to the bottom-right. */
+  /* Quote marks — inline spans that flow naturally with any quote length */
   .qmark {
-    font-size: 84px;
+    font-family: var(--font-display);
+    font-size: calc(84px / max(var(--page-zoom, 1), 0.65));
+    font-style: normal;
     font-weight: 500;
-    line-height: 0.66;
     color: transparent;
-    -webkit-text-stroke: 2px #fafafa;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: #fafafa;
+    paint-order: stroke fill;
     user-select: none;
-    pointer-events: none;
   }
-  .qmark--open  { align-self: flex-start; margin-bottom: -0.16em; }
-  .qmark--close { align-self: flex-end;   margin-top: -0.10em; }
+
+  /* Opening mark — baseline of the mark sits on the text baseline */
+  .qmark:first-child {
+    line-height: 0;
+    vertical-align: baseline;
+    margin-right: calc(8px / max(var(--page-zoom, 1), 0.65));
+  }
+
+  /* Closing mark — drops to its own line, right-aligned */
+  .qmark:last-child {
+    display: block;
+    text-align: right;
+    line-height: 1;
+    margin-top: calc(4px / max(var(--page-zoom, 1), 0.65));
+  }
 
   .quote-body {
     width: 393px;
     max-width: 100%;
     margin: 0;
-    font-size: clamp(18px, 1.85vw, 32px);
+    font-family: var(--font-display);
+    font-size: calc(32px / max(var(--page-zoom, 1), 0.65));
+    font-style: normal;
     font-weight: 700;
-    line-height: 1.04;
+    line-height: calc(32px / max(var(--page-zoom, 1), 0.65));
     letter-spacing: 0.96px;
     color: #fafafa;
     text-align: right;
@@ -551,7 +565,6 @@
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1100px) {
     .vol-quote { right: var(--spacing-5, 24px); top: 4px; width: 300px; }
-    .qmark { font-size: 56px; }
     .quote-body { font-size: clamp(14px, 2.4vw, 24px); }
     .vol-info { margin-left: 24px; }
     .qa-wrap { width: calc(100vw - 48px); margin: 56px 24px 0; }
@@ -576,8 +589,6 @@
       margin: 24px 0 0;
       padding: 0.6em 16px;
     }
-    .qmark--open  { left: 8px; }
-    .qmark--close { right: 8px; }
     .quote-body { width: 100%; font-size: 18px; }
     .vol-info { margin: 24px 16px 0; }
     .info-role { font-size: 26px; }

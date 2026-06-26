@@ -317,6 +317,25 @@
     color: rgba(250, 250, 250, 0.5);
   }
 
+  /* ── Mobile — scale the 530px mosaic down to fit the screen ──────
+     transform: scale keeps the layout box at 530px; negative margins on
+     .mosaic-wrap collapse that dead space so the HUD sits correctly.   */
+  @media (max-width: 599px) {
+    .intro-loader { gap: 24px; }
+    .mosaic-wrap {
+      /* (530 × (1 - 0.6)) / 2 = 106px — pulls the layout edges inward */
+      margin: -106px 0;
+    }
+    .mosaic {
+      transform: scale(0.6);
+    }
+    .mosaic--swap {
+      /* combine base mobile scale with the swap pull-back: 0.6 × 0.972 */
+      transform: scale(0.583);
+      filter: blur(14px) saturate(0.25);
+    }
+  }
+
   /* ── Reduced motion — keep it simple and quick ─────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .mosaic-wrap { animation: none; }

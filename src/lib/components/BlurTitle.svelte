@@ -102,16 +102,18 @@
       font-size:   75px;
       line-height: 62.5px;
     }
-    /* Left-align title block: FUORI/CAMPO left edge at 24px from screen left */
     .title-wrap {
-      left:      24px;
+      left: 50%;
       transform:
-        translate(0, calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)))
+        translate(-50%, calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)))
         scale(calc(1 - var(--hero-scroll-p, 0) * 0.06));
       width: auto;
     }
     .fuori,
-    .campo { text-align: left; }
+    .campo { text-align: center; }
+    .campo {
+      -webkit-text-stroke-width: 1.5px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
