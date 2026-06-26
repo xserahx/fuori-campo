@@ -7,6 +7,12 @@
 	import { imagesRaw } from '$lib/data/gallery';
 	import { navbarInverted } from '$lib/stores/navbar';
 
+	// 1. IMPORTAZIONE STILI GLOBALI E TOKEN
+	import '$lib/styles/reset.css';
+	import '$lib/styles/tokens.css';
+	import '$lib/styles/base.css';
+	import '$lib/styles/utilities.css';
+
 	let { children } = $props();
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
@@ -27,26 +33,7 @@
 		document.documentElement.style.backgroundColor = '';
 	});
 
-	/* Keep html { zoom } in sync with the viewport on mount and resize.
-	   Reset to 1 first so innerWidth always reports the physical pixel width,
-	   then scale uniformly: every element maintains its Figma-proportional size
-	   while the layout fills the full viewport on any resolution. */
-	$effect(() => {
-		if (!browser) return;
-		const update = () => {
-			document.documentElement.style.zoom = '1';
-			const vw = window.innerWidth;
-			const z  = vw < 600 ? 1 : vw / 1728;
-			document.documentElement.style.zoom = String(z);
-			document.documentElement.style.setProperty('--page-zoom', String(z));
-		};
-		update();
-		window.addEventListener('resize', update, { passive: true });
-		return () => window.removeEventListener('resize', update);
-	});
-
-
-	// Loading intro: show once per session with a clear volunteer portrait for preview
+	// 2. LOADING INTRO
 	let showIntro = $state(false);
 	let introSrc = $state<string | null>(null);
 
@@ -64,13 +51,7 @@
 		}
 	});
 
-	// Cinematic crossfade between every page navigation.
-	// Graceful degradation: if the browser lacks the API, navigation
-	// happens instantly without any visual glitch.
-	// After every SPA navigation, clear any scroll-lock that a previous page
-	// may have set on body/html (gallery, category, homepage all use overflow:hidden).
-	// beforeNavigate cleanup on those pages can race with the View Transitions API,
-	// so this afterNavigate is the guaranteed safety-net.
+	// 3. TRANSIZIONI E PULIZIA NAVIGAZIONE
 	afterNavigate(() => {
 		document.documentElement.style.overflow = '';
 		document.body.style.overflow = '';
@@ -101,7 +82,10 @@
 {/if}
 
 {#if showIntro && introSrc}
-	<LoadingIntro src={introSrc} on:complete={() => { if (page.url.searchParams.get('intro') !== '1') sessionStorage.setItem('introSeen','1'); showIntro = false; }} />
+	<LoadingIntro src={introSrc} on:complete={() => { 
+		if (page.url.searchParams.get('intro') !== '1') sessionStorage.setItem('introSeen','1'); 
+		showIntro = false;
+	}} />
 {/if}
 
 {@render children()}
@@ -112,11 +96,7 @@
 		padding-top: var(--page-top-padding, var(--navbar-height));
 	}
 
-	/* ── Page transitions (View Transitions API) ─────────────────
-	   @keyframes are always global in Svelte; the pseudo-element
-	   selectors need :global() so Svelte doesn't scope them away. */
-
-	/* Exit: quick upward drift with blur-out — cinematic "film cut" feel */
+	/* View Transitions API (Mantenute le tue animazioni cinematiche) */
 	@keyframes vt-out {
 		to {
 			opacity: 0;
@@ -125,7 +105,6 @@
 		}
 	}
 
-	/* Enter: bloom in from below with deep blur dissolving to sharp */
 	@keyframes vt-in {
 		from {
 			opacity: 0;
@@ -134,10 +113,9 @@
 		}
 	}
 
-	/* Gallery-specific bloom (existing, now richer) */
 	@keyframes gallery-bloom {
 		0%   { opacity: 0; filter: blur(40px); transform: scale(0.96); }
-		100% { opacity: 1; filter: blur(0px);  transform: scale(1);    }
+		100% { opacity: 1; filter: blur(0px);  transform: scale(1); }
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
@@ -148,7 +126,6 @@
 			animation: 500ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both vt-in;
 		}
 
-		/* Gallery entry — bloom from darkness, unchanged timing */
 		:global(html[data-gallery-entry="1"]::view-transition-old(root)) {
 			animation: 180ms cubic-bezier(0.55, 0, 1, 0.45) both vt-out;
 		}
