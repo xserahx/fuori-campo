@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { goto, beforeNavigate } from '$app/navigation';
+  import { fade } from 'svelte/transition';
   import * as THREE from 'three';
   import '$lib/styles/tokens.css';
 
@@ -46,6 +47,10 @@
   let animPos   = 0;  
   let visualPos = $state(0);
   let position  = $state(0); 
+  let isMobile  = $state(false);
+
+  // Touch state (mobile)
+  let touchStartY = 0;
 
   // Drag state
   let isDragging = false;
@@ -394,6 +399,15 @@
     renderer.setSize(w, h);
   }
 
+  function onTouchStart(e: TouchEvent) {
+    touchStartY = e.touches[0].clientY;
+  }
+
+  function onTouchEnd(e: TouchEvent) {
+    const dy = touchStartY - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 40) navigate(dy > 0 ? 1 : -1);
+  }
+
   async function handleTitleClick() {
     const idx = mod(Math.round(animPos || 0), N());
     const label = categories?.[idx]?.label ?? '';
@@ -409,17 +423,24 @@
   });
 
   onMount(() => {
+    const checkMobile = () => { isMobile = window.innerWidth < 600; };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
     // Override layout's padding-top and prevent scroll for the full-bleed carousel
     const prev = { pt: document.body.style.paddingTop, ov: document.body.style.overflow };
     document.body.style.paddingTop = '0';
     document.body.style.overflow   = 'hidden';
 
-    buildScene();
-    window.addEventListener('resize', onResize);
+    if (!isMobile) {
+      buildScene();
+      window.addEventListener('resize', onResize);
+    }
 
     return () => {
       document.body.style.paddingTop = prev.pt;
       document.body.style.overflow   = prev.ov;
+      window.removeEventListener('resize', checkMobile);
     };
   });
   onDestroy(() => {
@@ -483,6 +504,52 @@
 
 </script>
 
+{#if isMobile}
+<section class="mobile-carousel" id="main-content"
+  ontouchstart={onTouchStart}
+  ontouchend={onTouchEnd}
+  aria-label="Category carousel"
+>
+  {#key currentIndex}
+    <div
+      class="mobile-bg"
+      style="background-image: url('{categories[currentIndex]?.image}')"
+      in:fade={{ duration: 400 }}
+    ></div>
+  {/key}
+
+  <div class="mobile-gradient" aria-hidden="true"></div>
+
+  <div class="mobile-content">
+    <div class="mobile-main-row">
+      <div class="mobile-title" aria-live="polite">
+        {#each titleLines as line, i}
+          {#if i === 0}
+            <span class="title-fill">{line}</span>
+          {:else}
+            <span class="title-outline">{line}</span>
+          {/if}
+        {/each}
+      </div>
+
+      <div class="mobile-nav-circles">
+        <button class="nav-circle" type="button" aria-label="Categoria precedente" onclick={() => navigate(-1)}>
+          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true">
+            <path d="M1 11L10 2L19 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="nav-circle" type="button" aria-label="Categoria successiva" onclick={() => navigate(1)}>
+          <svg width="20" height="12" viewBox="0 0 20 12" fill="none" aria-hidden="true">
+            <path d="M1 1L10 10L19 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <a class="scopri-btn" href="/category/{categorySlug(currentLabel)}">SCOPRI DI PIÙ</a>
+  </div>
+</section>
+{:else}
 <section class="carousel" id="main-content" bind:this={containerEl}
   onpointerdown={onPointerDown}
   onpointermove={onPointerMove}
@@ -557,6 +624,7 @@
     </div>
   </div>
 </section>
+{/if}
 
 <style>
   :global(body) {
@@ -795,6 +863,11 @@
     .title.category-sport .title-outline {
       margin-left: var(--spacing-8);
     }
+    /* Mobile title lives inside .mobile-title, not .title — reset stagger */
+    .mobile-title .title-fill,
+    .mobile-title .title-outline {
+      margin-left: 0;
+    }
   }
 
   /* ── Touch target compensation for carousel arrows ───────────────── */
@@ -812,5 +885,165 @@
       transition: none;
     }
   }
+
+  /* ================================================================
+   * MOBILE CAROUSEL  (≤ 599px)
+   * ================================================================ */
+
+  .mobile-carousel {
+    position: fixed;
+    inset: 0;
+    background: var(--color-background-primary);
+    overflow: hidden;
+  }
+
+  .mobile-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .mobile-gradient {
+    position: absolute;
+    inset: 0;
+    /* Strong dark scrim — heavy black blur from ~45% down, fully opaque at 80% */
+    background: linear-gradient(
+      to bottom,
+      rgba(14,14,14,0.10) 0%,
+      rgba(14,14,14,0)    18%,
+      rgba(14,14,14,0)    36%,
+      rgba(14,14,14,0.28) 50%,
+      rgba(14,14,14,0.70) 60%,
+      rgba(14,14,14,0.90) 70%,
+      rgba(14,14,14,1)    80%,
+      rgba(14,14,14,1)    100%
+    );
+    pointer-events: none;
+  }
+
+  .mobile-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 0 24px 48px;
+  }
+
+  .mobile-main-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .mobile-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Figma: font-size 43px, font-weight 800, line-height 36px */
+  .mobile-title .title-fill {
+    font-family: var(--font-display);
+    font-size: 43px;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 36px;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: #BDFF5D;
+    white-space: normal;
+    word-break: break-word;
+    margin-left: 0;
+    margin-bottom: 0;
+  }
+
+  /* Figma: -webkit-text-stroke-width 2px, -webkit-text-stroke-color #BDFF5D */
+  .mobile-title .title-outline {
+    font-family: var(--font-display);
+    font-size: 43px;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 36px;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: #BDFF5D;
+    white-space: normal;
+    word-break: break-word;
+    margin-left: 0;
+  }
+
+  .scopri-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 60px;
+    border: 2px solid var(--color-content-accent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-content-body);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 220ms ease, box-shadow 220ms ease;
+  }
+
+  .scopri-btn:hover,
+  .scopri-btn:focus-visible {
+    background: rgba(189, 255, 93, 0.08);
+    box-shadow: 0 0 16px rgba(189, 255, 93, 0.22);
+  }
+
+  .mobile-nav-circles {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .nav-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--color-content-accent);
+    background: transparent;
+    color: var(--color-content-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background 220ms ease, transform 160ms ease;
+  }
+
+  .nav-circle:hover {
+    background: rgba(189, 255, 93, 0.08);
+  }
+
+  .nav-circle:active {
+    transform: scale(0.92);
+    transition-duration: 80ms;
+  }
+
+  .nav-circle:focus-visible {
+    outline: 2px solid var(--color-content-accent);
+    outline-offset: 3px;
+  }
+
 
 </style>

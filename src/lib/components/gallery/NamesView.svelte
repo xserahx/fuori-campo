@@ -15,7 +15,8 @@
     return () => window.removeEventListener('resize', check);
   });
 
-  const ROW_HEIGHT = $derived(isMobile ? 56 : 120);
+  // 28px text line + 8px bottom padding (see CSS)
+  const ROW_HEIGHT = $derived(isMobile ? 36 : 120);
 
   let {
     activeFilter = null,
@@ -51,7 +52,12 @@
   let bgContainerRef: HTMLDivElement;
   let namesInteractionRef: HTMLDivElement;
 
-  const LETTER_BREAK_HEIGHT = $derived(isMobile ? 72 : 0);
+  // Measured actual heights for each visible item (index → px).
+  // Svelte's bind:offsetHeight sets these synchronously after each render,
+  // so bg absolute-positions always reflect actual DOM heights.
+  let itemHeights = $state<number[]>([]);
+
+  const LETTER_BREAK_HEIGHT = $derived(isMobile ? 66 : 0); // 46px gap + 20px label line-height
 
   function normalizeFirstLetter(s: string): string {
     return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().charAt(0);
@@ -75,7 +81,9 @@
       const letterBreakBefore = i === 0 ||
         normalizeFirstLetter(p.cognome) !== normalizeFirstLetter(visible[i - 1].cognome);
       if (letterBreakBefore) cumulative += LETTER_BREAK_HEIGHT;
-      return { ...p, topOffset: cumulative + i * ROW_HEIGHT, letterBreakBefore };
+      const topOffset = cumulative;
+      cumulative += itemHeights[i] ?? ROW_HEIGHT;
+      return { ...p, topOffset, letterBreakBefore };
     });
   });
 
@@ -149,9 +157,13 @@
   function restoreScroll(node: HTMLDivElement) {
     node.scrollTop = initialContext.namesScroll;
 
-    requestAnimationFrame(() => {
-      syncScroll();
-    });
+    // Only highlight the restored name if the user had actually scrolled before.
+    // At scroll = 0 (fresh open) no name should be pre-selected.
+    if (initialContext.namesScroll > 0) {
+      requestAnimationFrame(() => {
+        syncScroll();
+      });
+    }
 
     return {};
   }
@@ -212,6 +224,7 @@
         <button
           class="names-interaction__item"
           class:selected={selectedIndex === index}
+          bind:offsetHeight={itemHeights[index]}
           onclick={() => openVolunteer(person)}
           onmouseenter={() => (hoveredIndex = index)}
           onmouseleave={() => (hoveredIndex = -1)}
@@ -290,11 +303,11 @@
     position: absolute;
     left: 0;
     right: 0;
-    height: 120px;
+    min-height: 120px;
     font-size: 90px;
     font-weight: 500;
     font-style: normal;
-    line-height: normal;
+    line-height: 120px;
     color: var(--color-content-body, #fafafa);
     text-transform: uppercase;
     letter-spacing: 0;
@@ -336,19 +349,14 @@
   }
 
   .letter-spacer {
-    height: 86px;
-    flex-shrink: 0;
-    width: 100%;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
+    display: none; /* hidden on desktop: LETTER_BREAK_HEIGHT = 0 there */
   }
 
   .letter-label {
     font-family: var(--font-display);
-    font-size: 64px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 1;
+    line-height: 20px;
     color: var(--color-content-accent, #bdff5d);
     text-transform: uppercase;
     letter-spacing: 0;
@@ -361,7 +369,6 @@
     background: transparent;
     color: transparent;
 
-    height: 120px;
     min-height: 120px;
     width: 100%;
 
@@ -369,9 +376,9 @@
     font-size: 90px;
     font-weight: 500;
     font-style: normal;
-    line-height: normal;
+    line-height: 120px;
 
-    padding: 0 var(--names-inline-end) 20px 0;
+    padding: 0 var(--names-inline-end) 0 0;
     margin: 0;
 
     cursor: pointer;
@@ -596,43 +603,47 @@
       --names-inline-end: 8px;
     }
 
-    /* Match JS ROW_HEIGHT = 56 on mobile */
+    /* Match JS ROW_HEIGHT = 28 on mobile */
     .names-stage {
-      --names-center-padding: calc((100dvh - 56px) / 2);
+      --names-center-padding: calc((100dvh - 28px) / 2);
     }
 
     .names-bg__item {
-      height: 56px;
-      font-size: 36px;
-      line-height: 56px;
+      min-height: 28px;
+      font-size: 24px;
+      line-height: 28px;
+      /* Match interaction text width so wrapping is identical */
+      padding-right: var(--names-inline-end);
     }
 
     .names-interaction__item {
-      height: 56px;
-      min-height: 56px;
-      font-size: 36px;
-      line-height: 56px;
-      padding: 0 var(--names-inline-end) 0 0;
+      min-height: 28px;
+      font-size: 24px;
+      line-height: 28px;
+      /* 8px bottom gap creates "little spacing" between names;
+         included in offsetHeight so topOffsets stay in sync */
+      padding: 0 var(--names-inline-end) 8px 0;
     }
 
-    /* Match JS LETTER_BREAK_HEIGHT = 72 on mobile */
+    /* Match JS LETTER_BREAK_HEIGHT = 66 on mobile (46px gap + 20px label) */
     .letter-spacer {
-      height: 72px;
-    }
-
-    .letter-label {
-      font-size: 36px;
+      display: flex;
+      flex-shrink: 0;
+      width: 100%;
+      pointer-events: none;
+      align-items: flex-start;
+      padding-top: 46px;
     }
 
     .alpha-sidebar {
-      right: var(--spacing-2);
+      right: var(--unit-29);
       width: 22px;
       gap: clamp(3px, 1vh, 9px);
       top: clamp(16px, 5vh, 80px);
     }
 
     .alpha-sidebar__btn {
-      font-size: clamp(10px, 1.5vh, 13px);
+      font-size: 16px;
       width: 22px;
     }
   }
