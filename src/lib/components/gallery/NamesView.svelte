@@ -556,6 +556,39 @@
     }
   }
 
+  @media (max-width: 599px) {
+    .names-bg,
+    .names-interaction {
+      left: 16px;
+      right: 40px;
+    }
+
+    .names-view {
+      --names-active-shift: 8px;
+      --names-inline-end: 8px;
+    }
+
+    .names-bg__item {
+      font-size: 40px;
+    }
+
+    .names-interaction__item {
+      font-size: 40px;
+    }
+
+    .alpha-sidebar {
+      right: 4px;
+      width: 22px;
+      gap: clamp(3px, 1vh, 9px);
+      top: clamp(16px, 5vh, 80px);
+    }
+
+    .alpha-sidebar__btn {
+      font-size: clamp(10px, 1.5vh, 13px);
+      width: 22px;
+    }
+  }
+
   /* ── Focus visible ─────────────────────────────────────────────── */
   .names-interaction__item:focus-visible {
     outline: 2px solid var(--color-content-accent);
