@@ -19,13 +19,10 @@
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────── */
-  /* Plays on first load and on every full refresh of the homepage; an in-app
-     return to the homepage (logo click) skips it — see `introPlayed` above. */
   const introSeen = browser && introPlayed;
   let showIntro = $state(!introSeen);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
-
 
   /* ── Navbar state ─────────────────────────────────────────────── */
   let navbarVisible = $state(true);
@@ -33,31 +30,21 @@
 
   /* ── DOM refs ────────────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
-  // Single continuous horizontal shell — all 4 questions in one track
   let shell1:           HTMLElement | null = null;
-  let stickyEl1:        HTMLElement | null = null;  // sticky lens — receives --q-bg/--q-fg
+  let stickyEl1:        HTMLElement | null = null;
   let track1:           HTMLElement | null = null;
   let veil1:            HTMLElement | null = null;
-  let transitionOverlay: HTMLElement | null = null;  // fixed dissolve overlay for H→V exit
-  let galleryGate: HTMLElement | null = null;        // dark scroll runway → drives gallery anticipation
+  let transitionOverlay: HTMLElement | null = null;
+  let galleryGate: HTMLElement | null = null; 
 
-  // Question panel h2 refs — per-frame content animation targets
   let q1h2: HTMLElement | null = null;
   let q2h2: HTMLElement | null = null;
   let q3h2: HTMLElement | null = null;
   let q4h2: HTMLElement | null = null;
 
-  /* ── Gallery anticipation preview ─────────────────────────────────
-     A few blurred, low-opacity gallery thumbnails that bloom into the
-     background during the final stretch of the scroll (driven by the
-     --gate-p scroll-progress var), so the gallery feels like it is
-     materialising behind the page just before it opens. */
+  /* ── Gallery anticipation preview ───────────────────────────────── */
   const PREVIEW_WIDTH = 420;
 
-  /* Fixed scatter positions + per-image drift (px), resting blur (px) and a
-     gallery-style frame ratio (16/9, 3/2, 4/3, 3/4) — a varied mix of
-     landscape and portrait, like the real gallery tiles. */
-  /* --rot: resting tilt (deg) each image starts at; settles to 0 as gate-p → 1 */
   const previewLayout = [
     { left: '7%',  top: '16%', w: 250, dx: -64, dy: 28, b: 22, ar: '4 / 3',  rot: -1.4 },
     { left: '68%', top: '11%', w: 300, dx:  72, dy: 22, b: 26, ar: '16 / 9', rot:  0.9 },
@@ -76,14 +63,12 @@
           : v.image_path ? [v.image_path] : []
       )
       .slice(0, previewLayout.length)
-      /* contain = keep the photo's native proportions, never crop to a box. */
       .map(p => getOptimizedImageUrl(p, { width: PREVIEW_WIDTH, resize: 'contain' }))
       .filter((u): u is string => !!u);
   }
 
   let previewPhotos = $state<string[]>(buildPreviewPhotos(getCachedVolunteers()));
 
-  /* Preload the preview thumbnails so the anticipation never pops in. */
   $effect(() => {
     if (typeof window === 'undefined') return;
     for (const src of previewPhotos) {
@@ -93,7 +78,6 @@
     }
   });
 
-  /* Gallery transition state — shared between click handler and scroll engine */
   let galleryTransitionPending = false;
   let galleryTimeline: gsap.core.Timeline | null = null;
 
@@ -111,18 +95,12 @@
 
     const landing = document.querySelector<HTMLElement>('.landing');
     galleryTimeline = gsap.timeline();
-    /* Scale + fade the page content out while the overlay fades in.
-       Only transform + opacity are animated (both GPU-composited) — the old
-       full-page filter:blur(28px) forced a giant offscreen blur every frame and
-       was the main cause of stutter on the way into the gallery. The overlay
-       fade carries the cinematic dissolve instead. */
+    
     if (landing) galleryTimeline.to(landing, { scale: 1.04, opacity: 0, duration: 0.44, ease: 'power2.in' }, 0);
     if (transitionOverlay) galleryTimeline.to(transitionOverlay, { opacity: 1, duration: 0.5, ease: 'power2.in' }, 0.04);
     galleryTimeline.call(() => { galleryTimeline = null; goto('/gallery'); });
   }
 
-  /* Kill any in-flight gallery animation before a non-gallery navigation
-     (e.g. logo click while the blur-out is still playing). */
   beforeNavigate(({ to }) => {
     if (to?.url.pathname !== '/gallery' && galleryTimeline) {
       galleryTimeline.kill();
@@ -130,19 +108,11 @@
     }
   });
 
-  /* Arriving (back) on the homepage — fully reset every gallery state so the
-     page regains its default vertical scrolling. The gallery locks scroll via
-     inline overflow:hidden and marks the root with data-gallery-entry; because
-     navigation runs through a view transition (old/new DOM overlap), those can
-     still be in place when the homepage scroll engine initializes, leaving the
-     page unscrollable. Clear them here defensively (idempotent). */
   afterNavigate(() => {
     galleryTimeline?.kill();
     galleryTimeline = null;
     galleryTransitionPending = false;
 
-    /* Drop any leftover gallery scroll-lock + entry marker, and reset the
-       anticipation preview so it starts hidden on a fresh homepage. */
     delete document.documentElement.dataset.galleryEntry;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
@@ -153,37 +123,16 @@
     if (transitionOverlay) gsap.set(transitionOverlay, { opacity: 0 });
   });
 
-  /* ── Timers ──────────────────────────────────────────────────── */
   let loaderRaf = 0;
   let exitTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  /* ── blurReveal configs ──────────────────────────────────────── */
-  const fadeReveal: BlurRevealOptions = {
-    variant: "fade",
-    blur: 24,
-    duration: 1000,
-    threshold: 0.15
-  };
+  const fadeReveal: BlurRevealOptions = { variant: "fade", blur: 24, duration: 1000, threshold: 0.15 };
+  const fadeRevealDelayed: BlurRevealOptions = { variant: "fade", blur: 24, duration: 1000, threshold: 0.15, delay: 120 };
 
-  const fadeRevealDelayed: BlurRevealOptions = {
-    variant: "fade",
-    blur: 24,
-    duration: 1000,
-    threshold: 0.15,
-    delay: 120
-  };
-
-  /* ═══════════════════════════════════════════════════════════════
-   * MOUNT — intro loader
-   * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
-    /* Already shown (in-app return to homepage) — skip the loader. */
     if (introSeen) return;
 
-    /* Smooth rAF-driven progress. easeInOutSine keeps the middle near-linear so
-       each of the three faces gets roughly equal screen time, with soft ends.
-       Slow on purpose (~1.6s per face) so each reveal reads as intentional. */
-    const DURATION = 4800; // ms
+    const DURATION = 4800;
     const ease = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
     let startT: number | null = null;
 
@@ -198,9 +147,7 @@
       }
       loaderProgress = 100;
       introPlayed = true;
-      /* Hold the fully-assembled final face for a beat, then dissolve it into
-         the dark background and only afterwards reveal the homepage. Unmount
-         once the photo fade (≈1.3s) + background reveal (≈2s total) is done. */
+      
       exitTimeout = setTimeout(() => {
         introExiting = true;
         exitTimeout = setTimeout(() => { showIntro = false; }, 2100);
@@ -214,57 +161,30 @@
     };
   });
 
-  /* ═══════════════════════════════════════════════════════════════
-   * MOUNT — sinuous scroll engine
-   *
-   * Architecture:
-   *   • Single horizontal shell with all 4 questions in one track
-   *   • Vertical LERP 0.070 / Horizontal LERP 0.078 — silkier than before
-   *   • Per-frame panel content: opacity/blur/transform driven by
-   *     distance from each panel's center — fully scrub-reversible
-   *   • Color dissolve: --q-bg/--q-fg on stickyEl1 interpolate
-   *     between #bdff5d and #0e0e0e at every panel boundary
-   *   • Blur-veil: BLUR_DECAY 0.93 → ~1.4 s cinematic tail
-   *   • GSAP scale pulse on V→H entry and H→V exit
-   * ═══════════════════════════════════════════════════════════════ */
   onMount(() => {
-
-    /* Belt-and-suspenders: the gallery and category carousel both set
-       overflow:hidden via inline styles. beforeNavigate on those pages
-       already clears them, but view-transition overlap windows can still
-       leave the lock active when this scroll engine initialises. */
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.body.style.paddingTop = '';
 
-    /* ── Global smooth scroll state ─────────────────────────────── */
     let vTarget = window.scrollY;
     let vSmooth = window.scrollY;
     let vPrev   = window.scrollY;
     let rafId   = 0;
 
-    const LERP       = 0.070;  // sinuous vertical — settles in ~700 ms
-    const LERP_H     = 0.078;  // horizontal — slightly faster, still silky
-    const BLUR_DECAY = 0.93;   // blur tail ~1.4 s at 60 fps
+    const LERP       = 0.070;
+    const LERP_H     = 0.078;
+    const BLUR_DECAY = 0.93;
 
-    /* Blur-veil state */
     let fb1 = 0;
     let h1p = 0;
-    /* Mirrors document.documentElement.style.zoom — refreshed in setup().
-       Used to convert physical scroll units → CSS zoom-space values for
-       style.height and translateX (100vw ≈ 1728px at every viewport). */
     let pageZoom = parseFloat(document.documentElement.style.zoom) || 1;
 
-    /* ── Color dissolve palette ─────────────────────────────────────
-       4 panels: lime, dark, lime, dark — bg and text are inverses.
-       Dissolve spans 28%–72% of each panel width (centred at boundary). */
     const LIME = [189, 255, 93]  as const;
     const DARK = [14,  14,  14]  as const;
     type Rgb = readonly [number, number, number];
     const panelBg:   Rgb[] = [LIME, DARK, LIME, DARK];
     const panelText: Rgb[] = [DARK, LIME, DARK, LIME];
 
-    /* ── Cached span arrays for hot RAF path ────────────────────── */
     let pSpans: HTMLElement[][] = [[], [], [], []];
 
     function cacheSpans() {
@@ -273,36 +193,26 @@
       );
     }
 
-    /* ── Dissolve gate — freezes tick during H→V transition ─────── */
     let dissolving = false;
-
-    /* ── Horizontal velocity — direction-aware blur ──────────────── */
     let hPrevH = 0;
-
-    /* ── Lock-change detection for GSAP entry/exit pulse ─────────── */
     let prevLocked: typeof locked = null;
 
     function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
     function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
-    function ss(t: number) { return t * t * (3 - 2 * t); }  // smoothstep
+    function ss(t: number) { return t * t * (3 - 2 * t); } 
     function maxScroll() {
       return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     }
 
-    /* ── Single shell state ──────────────────────────────────────── */
     type S = { top: number; slide: number; hTarget: number; hSmooth: number };
     const s1: S = { top: 0, slide: 0, hTarget: 0, hSmooth: 0 };
 
     let locked: S | null = null;
     let heroDocTop = 0, heroDocBot = 0;
-    let gateTop = 0, gateHeight = 0;  // gallery-anticipation scroll window
+    let gateTop = 0, gateHeight = 0;
     let galleryReady = false;
-    /* Prevents accidental re-trigger when the browser restores scroll to the
-       bottom (e.g. back-navigation).  Lifted once the user scrolls ≥ 120 px
-       away from the bottom, proving they are intentionally navigating down. */
     let galleryGuard = false;
 
-    /* ── Setup ───────────────────────────────────────────────────── */
     const setup = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
@@ -311,14 +221,10 @@
 
       const isMobile = vw < 600;
       if (!isMobile && shell1 && track1) {
-        s1.slide = (track1.children.length - 1) * vw;  // physical px; 4 panels → 3 × vw
-        /* Shell height must be in zoomed CSS space: physical distance ÷ zoom.
-           window.innerWidth/Height are physical px, but style.height is
-           interpreted in the zoomed coord system where 100vw ≈ 1728px. */
+        s1.slide = (track1.children.length - 1) * vw;
         shell1.style.height = `${(vh + s1.slide) / pageZoom}px`;
         s1.top   = shell1.getBoundingClientRect().top + sy;
       } else if (isMobile && shell1) {
-        /* Mobile: questions stack vertically — no horizontal lock. */
         s1.slide   = 0;
         s1.hTarget = 0;
         s1.hSmooth = 0;
@@ -336,10 +242,8 @@
       }
     };
 
-    /* ── Blur spike ─────────────────────────────────────────────── */
     function blurSpike() { fb1 = 22; }
 
-    /* ── Lock detection ─────────────────────────────────────────── */
     function tryLock(sy: number) {
       if (locked !== null) return;
       if (s1.slide > 0 && sy >= s1.top && sy < s1.top + s1.slide) {
@@ -354,20 +258,15 @@
       }
     }
 
-    /* ── RAF tick ────────────────────────────────────────────────── */
     const tick = () => {
-      /* 0 ─ Dissolve gate OR gallery exit — overlay covers the viewport; pause scroll */
       if (dissolving || galleryTransitionPending) { rafId = requestAnimationFrame(tick); return; }
 
-      /* 1 ─ Vertical LERP */
       vSmooth      = lerp(vSmooth, vTarget, LERP);
       const vDelta = vSmooth - vPrev;
       vPrev        = vSmooth;
 
-      /* 2 ─ Entry detection */
       tryLock(vSmooth);
 
-      /* 3 ─ Sync browser scroll (sticky reads window.scrollY) */
       const rounded = Math.round(vSmooth);
       if (Math.abs(rounded - window.scrollY) > 0) {
         window.scrollTo({ top: rounded, behavior: 'instant' });
@@ -377,7 +276,6 @@
       const vh = window.innerHeight;
       const VW = window.innerWidth;
 
-      /* 4 ─ Horizontal track + blur-veil */
       fb1 = Math.max(0, fb1 * BLUR_DECAY);
 
       if (s1.slide > 0 && track1) {
@@ -389,57 +287,45 @@
         h1p = s1.hSmooth;
       }
 
-      /* Horizontal velocity — positive = moving right (forward), negative = backward */
       const hVel      = s1.hSmooth - hPrevH;
       hPrevH          = s1.hSmooth;
-      const goingBack = hVel < -0.6;  // meaningful backward motion threshold
+      const goingBack = hVel < -0.6;
 
-      /* 5 ─ Per-frame panel content (scrub-reversible, no fire-once)
-             Each span's opacity/blur/transform follows its panel's
-             distance from the viewport centre — closer = more visible. */
       if (s1.slide > 0) {
         const hp      = s1.hSmooth;
         const centers = [0, VW, 2 * VW, 3 * VW];
 
         for (let pi = 0; pi < 4; pi++) {
-          const dist = Math.abs(hp - centers[pi]) / VW;   // 0=centred, 1=adjacent
-          /* Tighter visible window → crisper entrance/exit at panel edges */
-          const raw  = clamp(1 - dist * 1.72, 0, 1);
-          const vis  = ss(raw);                            // smoothstep visibility
+          const dist = Math.abs(hp - centers[pi]) / VW; 
+          const raw  = clamp(1.1 - dist * 1.5, 0, 1);
+          const vis  = ss(raw); 
 
           const spans = pSpans[pi];
           for (let si = 0; si < spans.length; si++) {
-            /* 0.07 stagger: more pronounced cascade — earlier spans lead, later follow */
             const sv  = clamp(vis - si * 0.07, 0, 1);
             const sv3 = ss(sv);
             const span = spans[si];
             if (sv3 >= 0.9995 || vis >= 0.9995) {
               span.style.opacity   = '1';
-              span.style.filter    = '';
               span.style.transform = 'none';
             } else {
               const inv = 1 - sv3;
               span.style.opacity = sv3.toFixed(3);
               if (goingBack) {
-                /* Backward: text drifts left, mirroring the reverse scroll direction */
-                span.style.filter    = inv > 0.02 ? `blur(${(inv * 7).toFixed(1)}px)` : '';
-                span.style.transform = `translateX(${(-inv * 14).toFixed(1)}px) translateY(${(inv * 14).toFixed(1)}px) scale(${(1 - inv * 0.018).toFixed(4)})`;
+                /* Solo scivolamento orizzontale all'indietro (nessun salto in altezza o zoom) */
+                span.style.transform = `translateX(${(-inv * 20).toFixed(1)}px)`;
               } else {
-                /* Forward: deep blur + text arrives from the right (matching scroll momentum)
-                   + strong vertical rise + scale-in for maximum cinematic presence */
-                span.style.filter    = `blur(${(inv * 38).toFixed(1)}px)`;
-                span.style.transform = `translateX(${(inv * 20).toFixed(1)}px) translateY(${(inv * 54).toFixed(1)}px) scale(${(1 - inv * 0.075).toFixed(4)})`;
+                /* Solo scivolamento orizzontale in avanti (nessun salto in altezza o zoom) */
+                span.style.transform = `translateX(${(inv * 20).toFixed(1)}px)`;
               }
             }
           }
         }
 
-        /* 6 ─ Color dissolve: bg + text on stickyEl1 */
         if (stickyEl1) {
           const t     = clamp(s1.hSmooth / VW, 0, 2.9999);
           const idx   = Math.floor(t);
           const local = t - idx;
-          /* Dissolve window: 28 %–72 % of each panel (tight cinematic blend) */
           const blend = clamp((local - 0.28) / 0.44, 0, 1);
           const eb    = ss(blend);
           const ni    = Math.min(idx + 1, 3);
@@ -451,11 +337,6 @@
         }
       }
 
-      /* 7 ─ GSAP scale pulse on lock-change
-             Entry pulse: only when entering from the top (hSmooth near 0)
-             so re-entering from below at Q4 doesn't re-pulse Q4.
-             Exit pulse: only when the shell is still near the viewport
-             (backward exit), not after the dissolve overlay exit.     */
       if (locked !== prevLocked) {
         const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (locked === s1 && track1) {
@@ -479,23 +360,18 @@
         prevLocked = locked;
       }
 
-      /* 8 ─ Hero parallax */
       if (heroDocBot > heroDocTop) {
         const heroLen = (heroDocBot - heroDocTop) * 0.70;
         const heroP   = clamp((sy - heroDocTop) / heroLen, 0, 1);
         document.documentElement.style.setProperty('--hero-scroll-p', heroP.toFixed(3));
       }
 
-      /* 8b ─ Gallery anticipation: 0 when the gate enters from the bottom,
-              1 at the very end of the scroll. A 12% dead-zone keeps the
-              closing line clean before the preview starts blooming. */
       if (gateHeight > 0) {
         const raw   = clamp((sy - gateTop + vh) / gateHeight, 0, 1);
         const gateP = ss(clamp((raw - 0.12) / 0.88, 0, 1));
         document.documentElement.style.setProperty('--gate-p', gateP.toFixed(3));
       }
 
-      /* 9 ─ Navbar */
       const inQ       = locked !== null;
       const heroTopVP = heroDocTop - sy;
       const heroBotVP = heroDocBot - sy;
@@ -507,7 +383,6 @@
       else if (vDelta >  5)  { navbarVisible = false; }
       else if (vDelta < -5)  { navbarVisible = true;  }
 
-      /* 9b ─ Navbar invert: follow the lime/dark dissolve in question sections */
       if (inQ && s1.slide > 0) {
         const t2     = clamp(s1.hSmooth / VW, 0, 2.9999);
         const i2     = Math.floor(t2);
@@ -524,18 +399,15 @@
       rafId = requestAnimationFrame(tick);
     };
 
-    /* ── Input helpers ───────────────────────────────────────────── */
     function applyDelta(delta: number) {
       if (galleryTransitionPending) return;
       if (locked !== null) {
-        /* Backward exit at left edge */
         if (s1.hTarget <= 0 && delta < 0) {
           locked  = null;
           blurSpike();
           vTarget = clamp(s1.top + delta, 0, maxScroll());
           return;
         }
-        /* Forward exit past last panel — cinematic dissolve overlay */
         if (s1.hTarget >= s1.slide && delta > 0) {
           locked     = null;
           dissolving = true;
@@ -545,7 +417,6 @@
           const exitTarget = clamp(exitPos + delta, 0, maxScroll());
 
           if (transitionOverlay) {
-            /* Fade overlay in → snap scroll position (hidden) → fade out */
             gsap.timeline()
               .to(transitionOverlay,    { opacity: 1, duration: 0.28, ease: 'power2.in' })
               .call(() => {
@@ -569,7 +440,6 @@
         return;
       }
 
-      /* Vertical — intercept if delta would land inside the shell */
       const projected = vSmooth + delta;
       if (s1.slide > 0 && vSmooth < s1.top && projected >= s1.top && delta > 0) {
         const excess = projected - s1.top;
@@ -585,12 +455,8 @@
 
       vTarget = clamp(vTarget + delta, 0, maxScroll());
 
-      /* Lift guard once the user has scrolled ≥ 120 px away from the bottom. */
       if (galleryGuard && vTarget < maxScroll() - 120) galleryGuard = false;
 
-      /* Gallery scroll trigger — requires two scroll events at the bottom:
-         first lands at maxScroll (sets galleryReady), second fires the exit.
-         galleryGuard blocks this entirely when the page opened already-at-bottom. */
       if (delta > 0) {
         if (!galleryGuard && vTarget >= maxScroll()) {
           if (galleryReady) { navigateToGallery(); }
@@ -601,14 +467,12 @@
       }
     }
 
-    /* ── Wheel ───────────────────────────────────────────────────── */
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (dissolving) return;
       applyDelta(e.deltaY);
     };
 
-    /* ── Touch ───────────────────────────────────────────────────── */
     let touchY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
     const handleTouchMove  = (e: TouchEvent) => {
@@ -619,7 +483,6 @@
       applyDelta(dy);
     };
 
-    /* ── Keyboard ────────────────────────────────────────────────── */
     const handleKeydown = (e: KeyboardEvent) => {
       if (dissolving) return;
       const map: Record<string, number> = {
@@ -636,7 +499,6 @@
       applyDelta(d);
     };
 
-    /* ── External scroll sync ────────────────────────────────────── */
     const handleScroll = () => {
       if (locked !== null) return;
       if (Math.abs(window.scrollY - Math.round(vSmooth)) > 2) {
@@ -645,7 +507,6 @@
       }
     };
 
-    /* ── Pointer move — reveal navbar near top ───────────────────── */
     const handlePointerMove = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return;
       const inHero = (heroDocTop - vSmooth) < window.innerHeight * 0.15 &&
@@ -653,16 +514,11 @@
       if (!inHero && e.movementY < 0 && e.clientY <= 180) navbarVisible = true;
     };
 
-    /* ── Resize ──────────────────────────────────────────────────── */
     const handleResize = () => { locked = null; cacheSpans(); requestAnimationFrame(setup); };
 
-    /* ── Init ────────────────────────────────────────────────────── */
     requestAnimationFrame(() => {
       cacheSpans();
       setup();
-      /* If the page was restored to (or near) the bottom — e.g. browser back —
-         arm the guard so the gallery cannot fire until the user first scrolls
-         meaningfully upward. */
       galleryGuard = window.scrollY >= maxScroll() - 120;
       rafId = requestAnimationFrame(tick);
     });
@@ -675,9 +531,6 @@
     window.addEventListener('pointermove', handlePointerMove, { passive: true  });
     window.addEventListener('resize',      handleResize,      { passive: true  });
 
-    /* Warm the volunteer cache so the gallery opens instantly when the
-       vertical scroll reaches its end — the transition feels continuous —
-       and fill the anticipation preview with real gallery photos. */
     fetchAllVolunteers().then(vols => { previewPhotos = buildPreviewPhotos(vols); });
 
     return () => {
@@ -702,21 +555,16 @@
   {loaderProgress}
 />
 
-
 <div class="site">
-  <!-- Fixed overlay for cinematic H→V dissolve transition -->
   <div class="transition-overlay" bind:this={transitionOverlay}></div>
 
   <main class="landing" id="main-content">
-
-    <!-- ── Hero ────────────────────────────────────────────────── -->
     <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
         <BlurTitle quick={introSeen} />
       </div>
     </section>
 
-    <!-- ── Scrolling story sections (vertical) ─────────────────── -->
     <section class="story story--left story--intro"
       use:blurReveal={{ direction: "left", variant: "slide", blur: 24 }}>
       <p class="lead-paragraph">
@@ -731,7 +579,6 @@
       </p>
     </section>
 
-    <!-- Quotes -->
     <section class="story story--quote story--quote-left"
       use:blurReveal={{ direction: "left", variant: "slide", blur: 20, threshold: 0.15 }}>
       <p class="quote">
@@ -746,12 +593,6 @@
       </p>
     </section>
 
-    <!--
-      ══ SINGLE HORIZONTAL SHELL — Q1 → Q2 → Q3 → Q4 ═════════════
-      All 4 questions in one continuous track.
-      Shell height = 100vh + 3 × 100vw (4 panels, 3 widths of slide).
-      Color dissolve and per-frame content animation driven from JS.
-    -->
     <div class="question-shell" bind:this={shell1}>
       <div class="question-sticky" bind:this={stickyEl1}>
         <div class="question-track" bind:this={track1}>
@@ -792,7 +633,6 @@
       </div>
     </div>
 
-    <!-- ── Post-question (vertical resumes) ─────────────────────── -->
     <section class="story story--left story--summary"
       use:blurReveal={{ direction: "left", threshold: 0.25, blur: 36, duration: 1100, variant: "cinema" }}>
       <p>
@@ -801,10 +641,6 @@
       </p>
     </section>
 
-    <!-- Gallery anticipation — the end of the vertical sequence. A few
-         blurred, low-opacity gallery photos bloom into the dark as the user
-         scrolls the final screen, so the gallery feels like it is surfacing
-         behind the page just before the dissolve carries them into it. -->
     <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
       <div class="gallery-anticipation">
         {#each previewPhotos as src, i}
@@ -825,9 +661,24 @@
 </div>
 
 <style>
-  /* Dark final screen after the closing line. One viewport tall so that, at
-     the very end of the scroll, the summary has cleared and the anticipation
-     preview fills the frame — a continuation rather than an abrupt cut. */
+  /* ── Aggiunte classi per l'allineamento dei testi ── */
+  .story--left {
+    text-align: left;
+    display: flex;
+    justify-content: flex-start;
+  }
+  
+  .story--right {
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* ── Aggiunto cuscinetto di spazio prima della galleria ── */
+  .story--summary {
+    padding-bottom: 35vh; 
+  }
+
   .gallery-gate {
     position: relative;
     height: 100vh;
@@ -840,9 +691,6 @@
     pointer-events: none;
   }
 
-  /* Each thumb: low opacity + heavy blur that both ease as --gate-p → 1,
-     plus a per-image drift + rotation that settles. Only opacity/filter/transform —
-     all GPU-composited. --gate-p is written every frame by the scroll engine. */
   .anticip-img {
     position: absolute;
     display: block;
@@ -878,13 +726,11 @@
     text-shadow: 0 0 24px rgba(189, 255, 93, 0.65);
   }
 
-  /* GSAP transforms require block/inline-block — spans are inline by default */
   :global(.question h2 span) {
     display: inline-block;
     will-change: transform, opacity, filter;
   }
 
-  /* Cinematic H→V exit overlay — fades in/out via GSAP to cover the scroll snap */
   .transition-overlay {
     position: fixed;
     inset: 0;
@@ -893,5 +739,60 @@
     background: var(--color-background-primary, #0e0e0e);
     opacity: 0;
     will-change: opacity;
+  }
+
+  /* ── FIX DEFINITIVO PER LE DOMANDE ORIZZONTALI ── */
+  .question-shell {
+    position: relative;
+    width: 100%;
+  }
+
+  .question-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--q-bg, #bdff5d);
+    color: var(--q-fg, #0e0e0e);
+    display: flex;
+    
+    /* LA MAGIA: Proietta un'ombra solida di 300px verso il basso 
+       che usa il colore dinamico dello sfondo. Coprirà il bordo nero! */
+    box-shadow: 0 300px 0 0 var(--q-bg);
+  }
+
+  .question-track {
+    display: flex;
+    height: 100%;
+    width: 400vw; 
+  }
+
+  .question {
+    width: 100vw;
+    height: 100%;
+    display: flex;
+    align-items: center; /* Centratura verticale matematica all'interno dello spazio rimanente */
+    flex-shrink: 0;
+    box-sizing: border-box; /* Previene che il padding faccia esplodere le misure */
+  }
+
+  /* Nuova struttura per gli H2 per garantire l'impaginazione */
+  .question h2 {
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .question--left h2 {
+    text-align: left;
+    padding-left: 72px;
+    padding-right: 24px;
+  }
+
+  .question--right h2 {
+    text-align: right;
+    padding-right: 72px;
+    padding-left: 24px;
   }
 </style>
