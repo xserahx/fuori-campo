@@ -61,6 +61,12 @@
 	onNavigate((navigation) => {
 		if (!document.startViewTransition) return;
 
+		// Returning to the homepage must reveal the title with ONLY its own
+		// entrance bloom — the same one shown after the loader on the first
+		// visit. Skipping the page-level view transition here prevents a second,
+		// layered blur-in from being re-triggered over the title on back-navigation.
+		if (navigation.to?.url.pathname === '/') return;
+
 		return new Promise((resolve) => {
 			document.startViewTransition(async () => {
 				resolve();

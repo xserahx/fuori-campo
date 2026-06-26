@@ -31,21 +31,16 @@
 }
 
 
-.navbar--transparent .nav-link   { color: var(--color-content-body); opacity: 1; }
-.navbar--transparent .nav-link.is-active { color: var(--color-content-body); opacity: 1; }
-
-
-/* Inverted navbar — for accent-background pages (e.g. About) */
+/* Inverted navbar — accent-background context (e.g. green question panels) */
 .navbar--inverted {
   background: transparent;
 }
 
-.navbar--inverted .navbar-bg       { opacity: 0; }
-.navbar--inverted .nav-link        { color: var(--color-content-primary); opacity: 1; text-shadow: none; }
+.navbar--inverted .logo               { color: var(--color-content-body-black); }
+.navbar--inverted .nav-link           { color: var(--color-content-primary); opacity: 1; text-shadow: none; }
 .navbar--inverted .nav-link:hover,
-.navbar--inverted .nav-link:focus  { color: var(--color-content-body-black); text-shadow: none; }
+.navbar--inverted .nav-link:focus     { color: var(--color-content-body-black); text-shadow: none; }
 .navbar--inverted .nav-link.is-active { color: var(--color-content-body-black); opacity: 1; text-shadow: none; }
-.navbar--inverted .nav-underline   { background: var(--color-content-body-black); box-shadow: none; }
 
 .navbar.hidden {
   transform: translateY(-110%);
@@ -68,14 +63,10 @@
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  margin-left: 0;
-  transition: opacity var(--dur-fast) ease, transform var(--dur-mid) var(--ease-spring);
-  will-change: transform;
+  color: var(--color-content-accent);
 }
-.logo:hover  { opacity: 0.72; transform: scale(1.08) rotate(-2deg); }
-.logo:active { transform: scale(0.96); transition-duration: var(--dur-instant), var(--dur-instant); }
-.logo img { height: 63.784px; width: 67px; display: block; }
 .logo svg { width: 35px; height: 77px; display: block; }
+.logo svg > path { fill: currentColor; }
 
 .nav-links {
   position: relative;
@@ -116,8 +107,6 @@
   opacity: 1;
   text-shadow: var(--glow-accent);
 }
-
-.nav-underline { display: none; }
 
 /* ================================================================
  * LANDING PAGE LAYOUT
