@@ -30,21 +30,10 @@
     background  320ms ease;
 }
 
-.navbar--transparent {
-  background: linear-gradient(
-    to bottom,
-    var(--primitive-black) 0%,
-    var(--primitive-black-alpha-15) 100%
-  );
-}
 
-.navbar--transparent .navbar-bg  { opacity: 0; pointer-events: none; }
 .navbar--transparent .nav-link   { color: var(--color-content-body); opacity: 1; }
 .navbar--transparent .nav-link.is-active { color: var(--color-content-body); opacity: 1; }
-.navbar--transparent .nav-underline {
-  background: var(--color-content-body);
-  box-shadow: 0 0 14px var(--primitive-white-alpha-28);
-}
+
 
 /* Inverted navbar — for accent-background pages (e.g. About) */
 .navbar--inverted {
@@ -64,15 +53,7 @@
   pointer-events: none;
 }
 
-.navbar-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  pointer-events: none;
-  transition: opacity 320ms ease;
-}
+
 
 .navbar-inner {
   position: relative;

@@ -268,9 +268,7 @@
   class:hidden={!visible}
   aria-label="Main navigation"
 >
-  {#if !transparent && !inverted}
-    <img class="navbar-bg" src="/volunteer_images/ui/imgNavbar.png" alt="" aria-hidden="true" />
-  {/if}
+  
 
   <div class="navbar-inner">
     <a class="logo" href="/" aria-label="Fuori campo home">
@@ -336,7 +334,7 @@
     transition: opacity var(--dur-fast, 220ms) ease, transform var(--dur-mid, 360ms) var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1));
   }
 
-  .nav-burger:hover  { opacity: 0.72; }
+  .nav-burger:hover  { opacity: 1; }
   .nav-burger:active { transform: scale(0.96); transition-duration: var(--dur-instant, 140ms), var(--dur-instant, 140ms); }
 
   /* Dark variant for inverted navbar (e.g. About page) */
@@ -432,6 +430,19 @@
     opacity: 0.5;
   }
 
+  /* Forza il logo ad essere sempre statico */
+  .logo {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  
+  .logo:hover {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  } 
+  
   @keyframes link-in {
     from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -441,5 +452,7 @@
   @media (max-width: 599px) {
     .nav-burger { display: flex; }
   }
+
+  
 
 </style>
