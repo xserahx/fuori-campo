@@ -1,14 +1,14 @@
 /* ── HTML & body baseline ─────────────────────────────────────── */
-html, body {
+html {
   height: 100%;
-  font-family: var(--font-display);
 }
 
 body {
+  height: 100%;
   margin: 0;
+  font-family: var(--font-display);
   background: var(--color-background-primary);
   color: var(--color-content-body);
-  font-family: var(--font-display);
 }
 
 /* ── Hide visual scrollbars, preserve scroll functionality ──────── */

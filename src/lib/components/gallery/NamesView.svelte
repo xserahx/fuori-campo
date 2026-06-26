@@ -6,7 +6,16 @@
   import { goto } from '$app/navigation';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
 
-  const ROW_HEIGHT = 120;
+  let isMobile = $state(false);
+
+  $effect(() => {
+    const check = () => { isMobile = window.innerWidth < 600; };
+    check();
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
+  });
+
+  const ROW_HEIGHT = $derived(isMobile ? 56 : 120);
 
   let {
     activeFilter = null,
@@ -34,7 +43,7 @@
       .sort((a, b) => a.cognome.localeCompare(b.cognome, 'it', { sensitivity: 'base' }))
   );
 
-  let selectedIndex = $state<number>(0);
+  let selectedIndex = $state<number>(-1);
   let hoveredIndex = $state<number>(-1);
   let copied = $state(false);
   let bgScroll = $state<number>(initialContext.namesScroll);
@@ -42,14 +51,16 @@
   let bgContainerRef: HTMLDivElement;
   let namesInteractionRef: HTMLDivElement;
 
-  const LETTER_BREAK_HEIGHT = 86;
+  const LETTER_BREAK_HEIGHT = $derived(isMobile ? 72 : 0);
 
   function normalizeFirstLetter(s: string): string {
     return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().charAt(0);
   }
 
-  function formatDisplayName(person: Person) {
-    return person.displayName.toUpperCase();
+  function formatDisplayName(person: Person): string {
+    return person.displayName.toUpperCase().split(' ').map(word =>
+      word.length >= 8 ? word.replace(/(.{7})/g, '$1­') : word
+    ).join(' ');
   }
 
   /* ── Visible list with cumulative offsets accounting for letter breaks ── */
@@ -61,7 +72,7 @@
       : people;
     let cumulative = 0;
     return visible.map((p, i) => {
-      const letterBreakBefore = i > 0 &&
+      const letterBreakBefore = i === 0 ||
         normalizeFirstLetter(p.cognome) !== normalizeFirstLetter(visible[i - 1].cognome);
       if (letterBreakBefore) cumulative += LETTER_BREAK_HEIGHT;
       return { ...p, topOffset: cumulative + i * ROW_HEIGHT, letterBreakBefore };
@@ -193,8 +204,10 @@
       onscroll={syncScroll}
     >
       {#each visibleWithOffsets as person, index}
-        {#if person.letterBreakBefore}
-          <div class="letter-spacer" aria-hidden="true"></div>
+        {#if person.letterBreakBefore && isMobile}
+          <div class="letter-spacer" aria-hidden="true">
+          <span class="letter-label">{normalizeFirstLetter(person.cognome)}</span>
+        </div>
         {/if}
         <button
           class="names-interaction__item"
@@ -285,7 +298,8 @@
     color: var(--color-content-body, #fafafa);
     text-transform: uppercase;
     letter-spacing: 0;
-    white-space: nowrap;
+    overflow: hidden;
+    hyphens: manual;
   }
 
   .names-bg__item.selected,
@@ -326,6 +340,19 @@
     flex-shrink: 0;
     width: 100%;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+
+  .letter-label {
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--color-content-accent, #bdff5d);
+    text-transform: uppercase;
+    letter-spacing: 0;
+    user-select: none;
   }
 
   .names-interaction__item {
@@ -349,7 +376,8 @@
 
     cursor: pointer;
     text-align: left;
-    white-space: nowrap;
+    overflow: hidden;
+    hyphens: manual;
     display: block;
   }
 
@@ -559,8 +587,8 @@
   @media (max-width: 599px) {
     .names-bg,
     .names-interaction {
-      left: 16px;
-      right: 40px;
+      left: 24px;
+      right: 42px;
     }
 
     .names-view {
@@ -568,16 +596,36 @@
       --names-inline-end: 8px;
     }
 
+    /* Match JS ROW_HEIGHT = 56 on mobile */
+    .names-stage {
+      --names-center-padding: calc((100dvh - 56px) / 2);
+    }
+
     .names-bg__item {
-      font-size: 40px;
+      height: 56px;
+      font-size: 36px;
+      line-height: 56px;
     }
 
     .names-interaction__item {
-      font-size: 40px;
+      height: 56px;
+      min-height: 56px;
+      font-size: 36px;
+      line-height: 56px;
+      padding: 0 var(--names-inline-end) 0 0;
+    }
+
+    /* Match JS LETTER_BREAK_HEIGHT = 72 on mobile */
+    .letter-spacer {
+      height: 72px;
+    }
+
+    .letter-label {
+      font-size: 36px;
     }
 
     .alpha-sidebar {
-      right: 4px;
+      right: var(--spacing-2);
       width: 22px;
       gap: clamp(3px, 1vh, 9px);
       top: clamp(16px, 5vh, 80px);
