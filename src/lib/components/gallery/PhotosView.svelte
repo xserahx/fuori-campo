@@ -15,9 +15,8 @@
   let collageRef: HTMLDivElement;
   let innerRef: HTMLDivElement;
 
-  // Keyed by "left|top" (the Svelte key). Stores corrected heights once each
-  // image's natural dimensions are known — fixes portrait images in landscape
-  // frames and vice versa.
+  // Correction heights keyed by image src — stable across tile copies.
+  // Only shrinks frames (never grows), fixing portrait images in landscape slots.
   let corrections = $state<Record<string, number>>({});
 
   function handleImageLoad(e: Event, img: GalleryImage) {
@@ -25,32 +24,24 @@
     if (!el.naturalWidth || !el.naturalHeight) return;
     const frameRatio = snapToStdFrame(el.naturalWidth / el.naturalHeight);
     const correctH   = img.width / frameRatio;
-    // Never grow the frame — only shrink. Growing pushes into the card below.
-    // Landscape images in portrait slots shrink to their correct frame here;
-    // portrait images either match the preset or adjust between 3:4 and 9:16.
-    if (correctH >= img.height - 0.5) return;
-    const key = `${Math.round(img.left)}|${Math.round(img.top)}`;
-    corrections[key] = correctH;
+    if (correctH >= img.height - 0.5) return; // never grow
+    corrections[img.src] = correctH;
   }
 
-  // ── 3D card tilt ──────────────────────────────────────────────────
-  // Runs entirely through GSAP on the DOM element — zero Svelte re-renders.
-  const TILT_MAX  = 14;   // max degrees
-  const TILT_DEAD = 0.28; // central dead-zone (fraction of half-card dimension)
+  // ── 3D card tilt (pure GSAP — zero Svelte re-renders at 60 fps) ───
+  const TILT_MAX  = 14;
+  const TILT_DEAD = 0.28;
 
   function onTiltMove(e: MouseEvent) {
     if (isDragging) return;
     const card = e.currentTarget as HTMLElement;
     const rect  = card.getBoundingClientRect();
-    // Normalised -1..1 from card centre
     const nx = (e.clientX - (rect.left + rect.width  * 0.5)) / (rect.width  * 0.5);
     const ny = (e.clientY - (rect.top  + rect.height * 0.5)) / (rect.height * 0.5);
-    // Clamp and apply dead zone
     const ax = Math.max(0, (Math.abs(nx) - TILT_DEAD) / (1 - TILT_DEAD));
     const ay = Math.max(0, (Math.abs(ny) - TILT_DEAD) / (1 - TILT_DEAD));
     const rotY =  Math.sign(nx) * ax * TILT_MAX;
     const rotX = -Math.sign(ny) * ay * TILT_MAX * 0.75;
-    // Directional shadow follows tilt
     const sdx =  rotY * 1.6;
     const sdy = -rotX * 1.1 + 7;
     const sbl =  28 + (Math.abs(rotX) + Math.abs(rotY)) * 0.9;
@@ -73,10 +64,11 @@
     });
   }
 
-  const designWidth = 3840;
+  // Canvas layout width — scatter algorithm uses this as horizontal extent.
+  const designWidth    = 3840;
   const initialContext = readGalleryContext(page.url.searchParams);
 
-  // Plain vars — GSAP owns the transform; no Svelte re-renders at 60 fps.
+  // Plain vars — GSAP owns the transform; no Svelte reactivity at 60 fps.
   let currentX = initialContext.photoX;
   let currentY = initialContext.photoY;
   let targetX  = initialContext.photoX;
@@ -89,15 +81,33 @@
   let lastTime = 0;
   let rafId: number;
 
-  // Virtual window — updated at ~10 Hz so Svelte only re-diffs the visible list 10× per second.
+  // windowX/Y: updated at ~10 Hz so Svelte only re-diffs the visible list 10× per second.
   let windowX = $state(initialContext.photoX);
   let windowY = $state(initialContext.photoY);
   let lastWindowUpdate = 0;
   let resizeCount = $state(0);
 
-  const FRICTION = 0.92;
-  const LERP     = 0.1;
-  const VIRT_MARGIN = 600;
+  const FRICTION    = 0.92;
+  const LERP        = 0.1;
+  const VIRT_MARGIN = 600; // px of off-screen buffer loaded ahead of viewport
+
+  // ── Coordinate normalisation ───────────────────────────────────────
+  // After the user pans many tile-widths away, snap raw coords back by
+  // an integer number of tile periods. Visual position is identical
+  // (tiles repeat), but floating-point precision is restored.
+  function normalizeCoords() {
+    // Horizontal period is always designWidth (3840).
+    if (Math.abs(targetX) > designWidth * 6) {
+      const snap = Math.round(targetX / designWidth) * designWidth;
+      targetX -= snap; currentX -= snap;
+    }
+    // Vertical period equals the layout height.
+    const th = designHeight;
+    if (th > 0 && Math.abs(targetY) > th * 6) {
+      const snap = Math.round(targetY / th) * th;
+      targetY -= snap; currentY -= snap;
+    }
+  }
 
   function animate() {
     if (!isDragging) {
@@ -105,11 +115,12 @@
       velY *= FRICTION;
       targetX += velX;
       targetY += velY;
-      clampPosition();
+      // No clamping — gallery is infinite in all directions.
     }
 
     currentX += (targetX - currentX) * LERP;
     currentY += (targetY - currentY) * LERP;
+    normalizeCoords();
 
     if (innerRef) gsap.set(innerRef, { x: currentX, y: currentY, force3D: true });
 
@@ -139,7 +150,7 @@
     targetY += (e.clientY - lastY) * 1.2;
     velX = ((e.clientX - lastX) / dt) * 16;
     velY = ((e.clientY - lastY) / dt) * 16;
-    clampPosition();
+    // No clamping — infinite scroll.
     lastX = e.clientX;
     lastY = e.clientY;
     lastTime = performance.now();
@@ -147,30 +158,20 @@
 
   function pointerUp() { isDragging = false; }
 
-  function updateScale() {
-    resizeCount++;
-  }
-
-  function clampPosition() {
-    /* Use the CSS-zoom viewport width/height (≈1728px at 1440px physical with
-       zoom=0.833) so the canvas bounds match the CSS `left: calc(50vw - N px)`
-       positioning. window.innerWidth is physical and would under-clamp, letting
-       the canvas edge show dark background at the gallery boundary. */
-    const cssVw = document.documentElement.clientWidth  || window.innerWidth;
-    const cssVh = document.documentElement.clientHeight || window.innerHeight;
-    const maxX = Math.max(0, designWidth  / 2 - cssVw / 2);
-    const maxY = Math.max(0, designHeight / 2 - cssVh / 2);
-    targetX = Math.min(maxX, Math.max(-maxX, targetX));
-    targetY = Math.min(maxY, Math.max(-maxY, targetY));
-  }
+  function updateScale() { resizeCount++; }
 
   function openVolunteer(image: GalleryImage) {
     const slug = image.slug ?? slugify(image.name, 0);
 
-    // Find the 8 spatially nearest distinct volunteers (by card-center distance)
-    // so the lightbox background shows contextual neighbours, not self-photos.
-    const cx = image.left + image.width  / 2;
-    const cy = image.top  + image.height / 2;
+    // Unwrap tile offset to get base canvas coords for neighbour search.
+    // H and V have separate periods (designWidth vs designHeight).
+    const tw    = designWidth;
+    const th    = designHeight;
+    const baseL = ((image.left % tw) + tw) % tw;
+    const baseT = ((image.top  % th) + th) % th;
+    const cx = baseL + image.width  / 2;
+    const cy = baseT + image.height / 2;
+
     const seen = new Set<string>([slug]);
     const neighborSlugs: string[] = [];
     const byDist = positionedImages
@@ -205,28 +206,51 @@
   const rawImages = $derived(
     dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : []
   );
-  // buildScatterLayoutCached: ref-equal rawImages → returns same layout object, no recompute.
-  const photoLayout     = $derived(buildScatterLayoutCached(rawImages, designWidth));
+  // buildScatterLayoutCached: ref-equal rawImages → same layout object, no recompute.
+  const photoLayout      = $derived(buildScatterLayoutCached(rawImages, designWidth));
   const positionedImages = $derived(photoLayout.images);
-  const designHeight    = $derived(photoLayout.canvasHeight);
+  const designHeight     = $derived(photoLayout.canvasHeight);
 
-  const visibleImages = $derived.by(() => {
+  // ── Infinite tiling virtual-DOM culling ───────────────────────────
+  // Horizontal period: designWidth (3840). Vertical period: designHeight (naturalH).
+  // These differ — using a single square period would misplace the canvas horizontally
+  // when naturalH >> designWidth (e.g. 30 000 px with the full volunteer dataset).
+  const visibleImages = $derived.by((): GalleryImage[] => {
     void windowX; void windowY; void resizeCount; void designHeight;
     if (typeof window === 'undefined') return positionedImages;
-    /* clientWidth/Height are in the CSS zoom coordinate space (≈1728px wide at
-       zoom=0.833), matching the canvas's `left: calc(50vw - N px)` positioning. */
-    const vw = document.documentElement.clientWidth  || window.innerWidth;
-    const vh = document.documentElement.clientHeight || window.innerHeight;
-    const cx = vw / 2 - designWidth / 2;
-    const cy = vh / 2 - designHeight / 2;
-    const minL = -cx - windowX - VIRT_MARGIN;
-    const maxL = -cx - windowX + vw + VIRT_MARGIN;
-    const minT = -cy - windowY - VIRT_MARGIN;
-    const maxT = -cy - windowY + vh + VIRT_MARGIN;
-    return positionedImages.filter(img =>
-      img.left < maxL && img.left + img.width > minL &&
-      img.top  < maxT && img.top  + img.height > minT
-    );
+
+    const vw   = document.documentElement.clientWidth  || window.innerWidth;
+    const vh   = document.documentElement.clientHeight || window.innerHeight;
+    const M    = VIRT_MARGIN;
+    const tileW = designWidth;   // horizontal repeat period
+    const tileH = designHeight;  // vertical repeat period
+
+    // Screen position of the base tile's top-left corner.
+    const ox = vw / 2 - tileW / 2 + windowX;
+    const oy = vh / 2 - tileH / 2 + windowY;
+
+    // Tile index ranges that may contribute visible images (with margin).
+    const txMin = Math.floor((-M - ox) / tileW);
+    const txMax = Math.ceil((vw + M - ox) / tileW);
+    const tyMin = Math.floor((-M - oy) / tileH);
+    const tyMax = Math.ceil((vh + M - oy) / tileH);
+
+    const result: GalleryImage[] = [];
+    for (let tx = txMin; tx <= txMax; tx++) {
+      for (let ty = tyMin; ty <= tyMax; ty++) {
+        const dx = tx * tileW;
+        const dy = ty * tileH;
+        for (const img of positionedImages) {
+          const sx = ox + img.left + dx;
+          const sy = oy + img.top  + dy;
+          if (sx + img.width  > -M && sx < vw + M &&
+              sy + img.height > -M && sy < vh + M) {
+            result.push(dx === 0 && dy === 0 ? img : { ...img, left: img.left + dx, top: img.top + dy });
+          }
+        }
+      }
+    }
+    return result;
   });
 
   onMount(() => {
@@ -251,8 +275,7 @@
     style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth/2}px);top:calc(50vh - {designHeight/2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
   >
     {#each visibleImages as img (`${Math.round(img.left)}|${Math.round(img.top)}`)}
-      {@const key = `${Math.round(img.left)}|${Math.round(img.top)}`}
-      {@const h = corrections[key] ?? img.height}
+      {@const h = corrections[img.src] ?? img.height}
       {@const isUnmatched = !!(activeFilter && !(img.tags?.includes(activeFilter)))}
       <button
         class="collage-item"

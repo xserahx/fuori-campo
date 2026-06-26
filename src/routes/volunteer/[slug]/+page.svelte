@@ -618,4 +618,56 @@
       transform: translate(-50%, -50%) !important;
     }
   }
+
+  /* ── Compact viewport (<1117 px tall): enable vertical scrolling ── */
+  /*    Below the 16-inch reference resolution (1728×1117) the photo
+        frame leaves absolute centering and enters document flow so the
+        page becomes scrollable to access both the photo and its caption. */
+  @keyframes frame-enter-compact {
+    from {
+      opacity: 0;
+      filter: blur(18px) saturate(0.4);
+      transform: translateY(18px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0px) saturate(1);
+      transform: none;
+    }
+  }
+
+  @media (max-height: 1116px) {
+    :global(html), :global(body) {
+      overflow-y: auto;
+    }
+
+    .lb {
+      height: auto;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: visible;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-block: clamp(60px, 7dvh, 100px);
+    }
+
+    .photo-frame {
+      position: relative;
+      left: auto;
+      top: auto;
+      transform: none;
+      animation: frame-enter-compact 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+  }
+
+  /* Combined: reduced-motion wins over the compact transform above */
+  @media (prefers-reduced-motion: reduce) and (max-height: 1116px) {
+    .photo-frame {
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none !important;
+    }
+  }
 </style>

@@ -276,7 +276,9 @@
   }
 
   .names-stage {
-    --names-center-padding: calc((100dvh - 120px) / 2);
+    /* Center the active row in the space below the fixed navbar.
+       --navbar-height is 125px on desktop; the active item is 120px tall. */
+    --names-center-padding: calc((100dvh - var(--navbar-height, 0px) - 120px) / 2 + var(--navbar-height, 0px));
 
     position: absolute;
     inset: 0;
@@ -539,21 +541,34 @@
   }
 
   /* ── Alphabet sidebar ─────────────────────────────────────────────── */
+  /* Figma desktop node 6197-17109 "Elenco":
+       top = navbar bottom (125px), right = 72px, gap = 16px,
+       font = 20px / lh 24px, item = 23×24px.
+     Figma mobile node 6197-16829 "elenco lettere":
+       top = 96px (mobile TOP BAR), right = 25px, gap = 10px,
+       font = 16px / lh 19px, item = 17×19px.
+     Dynamic gap formula (all breakpoints):
+       gap = (available_height − 19×item_height) / 18 gaps
+       where available = 100dvh − top − bottom_reserve.
+     This ensures all letters remain visible at any viewport height
+     while staying ≤ the Figma maximum gap.                           */
   .alpha-sidebar {
     position: absolute;
     right: var(--spacing-11, 72px);
-    /* Anchor near the top of the view (not centered) so it never
-       overlaps the "FILTRA PER CATEGORIA" button at the bottom.
-       Font/gap scale with vh so the full list always fits. */
-    top: clamp(24px, 6vh, 120px);
+    top: var(--navbar-height, 125px);
     z-index: 35;
 
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(5px, 1.4vh, 13.5px);
+    /* (100dvh − 125 top − 80 bottom − 19×24 items) / 18 gaps, max 16px
+       Keeps all letters above the bottom edge-fade + filter button.  */
+    gap: clamp(4px, calc((100dvh - 661px) / 18), 16px);
 
     width: 23px;
+    /* Hard clip: never bleed into the filter-button area */
+    max-height: calc(100dvh - var(--navbar-height, 125px) - 80px);
+    overflow: hidden;
     padding: 0;
     margin: 0;
     pointer-events: auto;
@@ -564,14 +579,16 @@
     background: transparent;
     padding: 0;
     cursor: pointer;
+    flex-shrink: 0;
 
     font-family: var(--font-display);
-    font-size: clamp(13px, 2vh, 21.647px);
-    line-height: 1;
+    font-size: 20px;
+    line-height: 24px;
     text-align: center;
     text-transform: uppercase;
     color: var(--color-content-body, #fafafa);
     width: 23px;
+    height: 24px;
 
     transition: color 180ms ease, opacity 180ms ease;
   }
@@ -587,6 +604,17 @@
   @media (max-width: 1100px) {
     .alpha-sidebar {
       right: var(--spacing-5, 24px);
+      top: var(--navbar-height, 125px);
+      width: 18px;
+      /* (100dvh − 125 top − 60 bottom − 19×20 items) / 18 gaps, max 12px */
+      gap: clamp(3px, calc((100dvh - 565px) / 18), 12px);
+      max-height: calc(100dvh - var(--navbar-height, 125px) - 60px);
+    }
+
+    .alpha-sidebar__btn {
+      font-size: 16px;
+      line-height: 20px;
+      height: 20px;
       width: 18px;
     }
   }
@@ -603,7 +631,7 @@
       --names-inline-end: 8px;
     }
 
-    /* Match JS ROW_HEIGHT = 28 on mobile */
+    /* Match JS ROW_HEIGHT = 28 on mobile; navbar-height collapses to 0 on mobile */
     .names-stage {
       --names-center-padding: calc((100dvh - 28px) / 2);
     }
@@ -635,16 +663,22 @@
       padding-top: 46px;
     }
 
+    /* Figma node 6197-16829: right=25px, top=96px (mobile TOP BAR), width=17px,
+       gap=10px, font=16px/19lh, item=17×19px.
+       Dynamic gap: (100dvh − 96 top − 60 bottom − 19×19px items) / 18 gaps */
     .alpha-sidebar {
-      right: var(--unit-29);
-      width: 22px;
-      gap: clamp(3px, 1vh, 9px);
-      top: clamp(16px, 5vh, 80px);
+      right: 25px;
+      top: 96px;
+      width: 17px;
+      gap: clamp(0px, calc((100dvh - 517px) / 18), 10px);
+      max-height: calc(100dvh - 96px - 60px);
     }
 
     .alpha-sidebar__btn {
       font-size: 16px;
-      width: 22px;
+      line-height: 19px;
+      height: 19px;
+      width: 17px;
     }
   }
 

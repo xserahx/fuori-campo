@@ -235,11 +235,13 @@
   }
 
   /* ── Page shell ─────────────────────────────────────────────────── */
+  /* position:fixed + inset:0 covers the full viewport regardless of the
+     body padding-top set by the navbar, giving true edge-to-edge coverage
+     on every screen size. The navbar floats above via its own fixed layer. */
   .gallery-page {
-    width: 100vw;
-    height: 100dvh;
+    position: fixed;
+    inset: 0;
     overflow: hidden;
-    position: relative;
     background: var(--gallery-background, #0e0e0e);
   }
 

@@ -184,6 +184,10 @@ export function snapToStdFrame(wPerH: number): number {
  * Collision safety: each candidate position is tested with AABB + PAD gap;
  *   on collision the jitter is reduced iteratively until clear, with a hard
  *   downward scan as final fallback.
+ *
+ * Returns a square tile: canvasHeight = tileSize = max(canvasWidth, naturalHeight).
+ * Images are centered vertically within the square tile so the infinite-tiling
+ * seam is symmetrical in both axes.
  */
 export function buildScatterLayout(
   rawImages: GalleryImage[],
@@ -331,7 +335,7 @@ export function buildScatterLayoutCached(
   canvasWidth = 3840
 ): ReturnType<typeof buildScatterLayout> {
   if (_layoutCacheKey === rawImages && _layoutCacheValue !== null) return _layoutCacheValue;
-  _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages, 3), canvasWidth);
+  _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages), canvasWidth);
   _layoutCacheKey = rawImages;
   return _layoutCacheValue;
 }

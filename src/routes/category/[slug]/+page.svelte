@@ -791,4 +791,21 @@
       transition: none;
     }
   }
+
+  /* ── Compact viewport (<1117 px tall): enable vertical scrolling ── */
+  /*    Below the 16-inch reference resolution (1728×1117) the page
+        content may exceed the viewport; allow it to scroll. */
+  @media (max-height: 1116px) {
+    :global(html), :global(body) {
+      overflow-y: auto;
+    }
+
+    .category-page {
+      overflow-y: auto;
+    }
+
+    .category-shell {
+      height: auto;
+    }
+  }
 </style>
