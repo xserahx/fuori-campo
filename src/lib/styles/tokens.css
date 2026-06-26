@@ -722,6 +722,7 @@ body::-webkit-scrollbar,
     padding:    24px 27px;
     min-height: 96px;
   }
+  .nav-links { display: none; }
 
   /* Hero title area */
   .hero-inner {

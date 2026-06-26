@@ -31,6 +31,20 @@
   let visible = $state(true);
   let lastScrollY = 0;
 
+  // MOBILE MENU STATE
+  let menuOpen = $state(false);
+
+  function toggleMenu() {
+    menuOpen = !menuOpen;
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+  }
+
+  function closeMenu() {
+    if (!menuOpen) return;
+    menuOpen = false;
+    document.body.style.overflow = '';
+  }
+
   function navLinkAction(node: HTMLAnchorElement, index: number) {
     navLinkRefs[index] = node;
 
@@ -68,13 +82,6 @@
     if (underlineInitialized) underlineVisible = true;
   }
 
-  function setHover(index: number) {
-    underlineInitialized = true;
-    hoveredNavIndex = index;
-    underlineVisible = true;
-    syncUnderline(index);
-  }
-
   function clearHover() {
     hoveredNavIndex = -1;
     if (underlineInitialized) {
@@ -96,6 +103,12 @@
     if (pinned) visible = true;
   });
 
+  // Close mobile menu on route change
+  $effect(() => {
+    page.url.pathname;
+    closeMenu();
+  });
+
   // Update browser title to match active nav section (client-only)
   $effect(() => {
     activeNavIndex;
@@ -113,9 +126,14 @@
   });
 
   onMount(() => {
+    const onKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMenu();
+    };
+    window.addEventListener('keydown', onKeydown);
+
     if (pinned) {
       visible = true;
-      return;
+      return () => window.removeEventListener('keydown', onKeydown);
     }
 
     const isInHeroViewport = () => {
@@ -125,6 +143,7 @@
 
     const handleResize = () => {
       if (underlineInitialized) syncActiveUnderline();
+      if (window.innerWidth > 599) closeMenu();
     };
 
     const handleScroll = () => {
@@ -199,6 +218,7 @@
     window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
+      window.removeEventListener('keydown', onKeydown);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('pointermove', pointerMove);
@@ -217,6 +237,26 @@
 >
   {#if !transparent && !inverted}
     <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
+  {/if}
+
+  <!-- Mobile overlay — position:fixed escapes overflow:hidden when navbar has no transform.
+       Placed before .navbar-inner so source-order stacking keeps logo+burger on top. -->
+  {#if menuOpen}
+  <div class="nav-mobile-overlay" id="nav-mobile-overlay" role="dialog" aria-modal="true" aria-label="Menu di navigazione">
+    <nav class="nav-mobile-nav">
+      {#each navItems as item, index}
+        <a
+          class="mobile-nav-link"
+          class:is-active={index === activeNavIndex}
+          href={item.href}
+          onclick={closeMenu}
+          style="--i:{index}"
+        >
+          {item.label}
+        </a>
+      {/each}
+    </nav>
+  </div>
   {/if}
 
   <div class="navbar-inner">
@@ -249,5 +289,124 @@
         aria-hidden="true"
       ></span>
     </nav>
+
+    <!-- Hamburger button — visible only on mobile via CSS -->
+    <button
+      class="nav-burger"
+      aria-label={menuOpen ? 'Chiudi menu' : 'Apri menu'}
+      aria-expanded={menuOpen}
+      aria-controls="nav-mobile-overlay"
+      onclick={toggleMenu}
+    >
+      <span class="burger-bar"></span>
+      <span class="burger-bar"></span>
+      <span class="burger-bar"></span>
+    </button>
   </div>
 </header>
+
+<style>
+  /* ── Hamburger button — hidden on desktop ──────────────────────── */
+  .nav-burger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-left: auto;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+
+  .burger-bar {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: rgba(250, 250, 250, 0.9);
+    border-radius: 2px;
+    transform-origin: center;
+    transition:
+      transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity   200ms ease;
+    will-change: transform, opacity;
+  }
+
+  /* Bars animate into an × when menu is open */
+  .nav-burger[aria-expanded="true"] .burger-bar:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+  .nav-burger[aria-expanded="true"] .burger-bar:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  .nav-burger[aria-expanded="true"] .burger-bar:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* ── Mobile full-screen overlay ─────────────────────────────────── *
+   * position:fixed escapes the header's overflow:hidden when the header  *
+   * has no active transform (i.e. when it's visible). Placed before      *
+   * .navbar-inner in source so the navbar bar stacks on top via order.   */
+  .nav-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0e0e0e;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 27px 64px;
+    animation: overlay-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes overlay-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .nav-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .mobile-nav-link {
+    display: block;
+    color: rgba(250, 250, 250, 0.55);
+    font-family: var(--font-display);
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 6px 0;
+    opacity: 0;
+    animation: link-in 420ms cubic-bezier(0.16, 1, 0.3, 1) calc(60ms + var(--i, 0) * 70ms) forwards;
+    transition: color 140ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-link.is-active {
+    color: #BDFF5D;
+  }
+
+  .mobile-nav-link:active {
+    opacity: 0.5;
+  }
+
+  @keyframes link-in {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Show burger on mobile only ─────────────────────────────────── */
+  @media (max-width: 599px) {
+    .nav-burger { display: flex; }
+  }
+</style>

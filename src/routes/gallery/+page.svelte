@@ -6,6 +6,7 @@
   import { cubicOut, cubicIn } from 'svelte/easing';
   import '../../lib/styles/tokens.css';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
+  import MobilePhotosView from '$lib/components/gallery/MobilePhotosView.svelte';
   import NamesView from '$lib/components/gallery/NamesView.svelte';
   import { readGalleryContext } from '$lib/data/gallery-context';
   import { fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
@@ -45,6 +46,14 @@
   let activeToggle = $state<'photos' | 'names'>(initialContext.view);
   let activeFilter  = $state<string | null>(initialContext.filter);
   let filterPanelOpen = $state(false);
+  let isMobile = $state(false);
+
+  $effect(() => {
+    const check = () => { isMobile = window.innerWidth < 600; };
+    check();
+    window.addEventListener('resize', check, { passive: true });
+    return () => window.removeEventListener('resize', check);
+  });
 
   const filters = [
     { id: 'organizzativa', label: 'Area organizzativa\ne servizi generali' },
@@ -99,7 +108,11 @@
   <div class="bg-noise"></div>
 
   {#if activeToggle === 'photos'}
-    <PhotosView {activeFilter} {dbVolunteers} />
+    {#if isMobile}
+      <MobilePhotosView {activeFilter} {dbVolunteers} />
+    {:else}
+      <PhotosView {activeFilter} {dbVolunteers} />
+    {/if}
   {:else}
     <NamesView {activeFilter} volunteers={dbVolunteers} />
   {/if}
@@ -133,15 +146,32 @@
     </div>
   </section>
 
-  <!-- ── FILTRA PER CATEGORIA button — always visible, acts as toggle ── -->
+  <!-- ── FILTRA PER CATEGORIA — text button (desktop) ─────────────── -->
   <button
     class="filter-btn"
     class:filter-btn--active={activeFilter !== null}
     class:filter-btn--open={filterPanelOpen}
     type="button"
     onclick={() => { filterPanelOpen = !filterPanelOpen; }}
+    aria-label="Filtra per categoria"
   >
     <span class="filter-btn-label">FILTRA PER CATEGORIA</span>
+  </button>
+
+  <!-- ── Filter icon — 48×48 circle (mobile only, Figma Filtro-categorie) ── -->
+  <button
+    class="filter-icon-btn"
+    class:filter-icon-btn--active={activeFilter !== null || filterPanelOpen}
+    type="button"
+    aria-label="Filtra per categoria"
+    onclick={() => { filterPanelOpen = !filterPanelOpen; }}
+  >
+    <svg width="18" height="16" viewBox="0 0 18 16" fill="none" aria-hidden="true">
+      <path d="M1 2h16M1 8h16M1 14h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="6" cy="2" r="2" fill="var(--filter-icon-bg,#0e0e0e)" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="12" cy="8" r="2" fill="var(--filter-icon-bg,#0e0e0e)" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="6" cy="14" r="2" fill="var(--filter-icon-bg,#0e0e0e)" stroke="currentColor" stroke-width="1.5"/>
+    </svg>
   </button>
 
   <!-- ── Category overlay (right gradient panel) ───────────────── -->
@@ -446,6 +476,32 @@
     color: var(--color-content-accent);
   }
 
+  /* ── Mobile filter icon button (48×48 circle, Figma Filtro-categorie) ── */
+  .filter-icon-btn {
+    display: none; /* hidden on desktop */
+    position: fixed;
+    right: 24px;
+    bottom: 36px;
+    z-index: 100;
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    border: 2px solid var(--color-content-accent, #bdff5d);
+    background: #0e0e0e;
+    color: #fafafa;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.25s ease, transform 0.22s ease;
+  }
+  .filter-icon-btn--active {
+    background: var(--color-content-accent, #bdff5d);
+    color: #0e0e0e;
+    --filter-icon-bg: var(--color-content-accent, #bdff5d);
+  }
+  .filter-icon-btn:active { transform: scale(0.93); transition-duration: 80ms; }
+
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
     .toggle      { left: 16px; bottom: 20px; }
@@ -477,9 +533,10 @@
 
   /* ── Very small viewports (phones in portrait) ───────────────────── */
   @media (max-width: 640px) {
-    /* Stack toggle and filter vertically so they don't overlap */
-    .toggle     { left: 16px; bottom: 80px; }
-    .filter-btn { right: 16px; bottom: 16px; width: auto; min-width: 180px; }
+    /* Side-by-side at Figma positions: toggle left/bottom 24/36, icon right/bottom 24/36 */
+    .toggle     { left: 24px; bottom: 36px; }
+    .filter-btn { display: none; }
+    .filter-icon-btn { display: flex; }
 
     /* Mobile toggle: 180×56px track, 98px pill (Figma Mobile variant) */
     .toggle-track {
@@ -507,16 +564,41 @@
       width: 43px;
     }
 
-    /* padding-bottom = btn-bottom (16) + btn-height (48) + gap (32) */
+    /* Full-width overlay, categories right-aligned (Figma Status=Opened: counterAxisAlignItems=MAX) */
     .cat-overlay {
       width: 100vw;
-      padding-right: 20px;
-      padding-left: 20px;
-      padding-bottom: 96px;
+      padding-right: 24px;
+      padding-left: 24px;
+      /* bottom = icon-bottom (36) + icon-height (48) + gap (56, Figma itemSpacing) */
+      padding-bottom: 140px;
       align-items: flex-end;
+      background: #0e0e0e;
     }
-    .cat-item  { font-size: 20px; line-height: 20px; letter-spacing: 0.8px; }
-    .cat-items { gap: 16px; }
+    .cat-items { align-items: flex-end; gap: 40px; }
+    .cat-item  { font-size: 24px; line-height: 22.8px; letter-spacing: 0.96px; text-align: right; }
+
+    /* ── Blur BG effect (Figma EFFECT/BLUR BG, 388px ≈ 44% of 874px frame) ── */
+    /* Top and bottom edge fades gain backdrop-filter on mobile so adjacent   */
+    /* photos peek through a soft frosted blur instead of a hard cut.         */
+    .edge-fade--top {
+      height: 44vh;
+      background: linear-gradient(to bottom, rgba(14, 14, 14, 0.85) 0%, transparent 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
+    }
+    .edge-fade--bottom {
+      height: 44vh;
+      background: linear-gradient(to top, rgba(14, 14, 14, 0.85) 0%, transparent 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      mask-image: linear-gradient(to top, black 25%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to top, black 25%, transparent 100%);
+    }
+    /* Side fades not needed on mobile — photos are full width */
+    .edge-fade--left,
+    .edge-fade--right { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {

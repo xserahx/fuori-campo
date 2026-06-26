@@ -2,6 +2,7 @@
   import '../../../../lib/styles/tokens.css';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
   import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
@@ -122,6 +123,14 @@
   function goBack() {
     goto(buildGalleryHref(currentContext));
   }
+
+  // Clear any scroll-lock left over from the gallery / category / homepage.
+  $effect(() => {
+    if (!browser) return;
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.paddingTop = '';
+  });
 </script>
 
 <svelte:head>

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { onNavigate } from '$app/navigation';
+	import { onNavigate, afterNavigate } from '$app/navigation';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import LoadingIntro from '$lib/components/LoadingIntro.svelte';
 	import { imagesRaw } from '$lib/data/gallery';
@@ -67,6 +67,16 @@
 	// Cinematic crossfade between every page navigation.
 	// Graceful degradation: if the browser lacks the API, navigation
 	// happens instantly without any visual glitch.
+	// After every SPA navigation, clear any scroll-lock that a previous page
+	// may have set on body/html (gallery, category, homepage all use overflow:hidden).
+	// beforeNavigate cleanup on those pages can race with the View Transitions API,
+	// so this afterNavigate is the guaranteed safety-net.
+	afterNavigate(() => {
+		document.documentElement.style.overflow = '';
+		document.body.style.overflow = '';
+		document.body.style.paddingTop = '';
+	});
+
 	onNavigate((navigation) => {
 		if (!document.startViewTransition) return;
 
