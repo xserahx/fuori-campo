@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { imgNavbar } from '$lib/design/assets';
 
   let { transparent = false, pinned = false, inverted = false } = $props<{ transparent?: boolean; pinned?: boolean; inverted?: boolean }>();
   const logoColor = $derived(inverted ? '#0e0e0e' : '#BDFF5D');
@@ -236,7 +235,7 @@
   aria-label="Main navigation"
 >
   {#if !transparent && !inverted}
-    <img class="navbar-bg" src={imgNavbar} alt="" aria-hidden="true" />
+    <img class="navbar-bg" src="/volunteer_images/ui/imgNavbar.png" alt="" aria-hidden="true" />
   {/if}
 
   <!-- Mobile overlay — position:fixed escapes overflow:hidden when navbar has no transform.
