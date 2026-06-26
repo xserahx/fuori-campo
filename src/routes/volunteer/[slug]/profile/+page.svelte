@@ -340,7 +340,7 @@
   /* Opening mark — baseline of the mark sits on the text baseline */
   .qmark:first-child {
     line-height: 0;
-    vertical-align: baseline;
+    vertical-align: -0.5em;  /* visually aligns the mark with the quote text */
     margin-right: calc(8px / max(var(--page-zoom, 1), 0.65));
   }
 
@@ -348,7 +348,7 @@
   .qmark:last-child {
     display: block;
     text-align: right;
-    line-height: 1;
+    line-height: 0.8;
     margin-top: calc(4px / max(var(--page-zoom, 1), 0.65));
   }
 
