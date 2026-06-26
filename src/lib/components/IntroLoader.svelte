@@ -17,9 +17,9 @@
   /* `anchor` (0–1) places the face vertically in the crop — small = face high
      in the photo; larger = face sits lower. Tuned per photo. */
   const PHOTOS = [
-    { src: '/volunteer-images/cavalluzzo-antonio/IMG_7705.webp',                       anchor: 0.40 }, // Antonio Cavalluzzo
-    { src: '/volunteer-images/chiesa-roberta/IMG_7385.webp',                           anchor: 0.14 }, // Roberta Chiesa
-    { src: '/volunteer-images/carera-carla/ce752846-cea1-448b-a4ad-48fc33037052.webp', anchor: 0.14 }, // Carla Carera
+    { src: '/volunteer_images/volontari/cavalluzzo-antonio/IMG_7705.webp',                       anchor: 0.40 }, // Antonio Cavalluzzo
+    { src: '/volunteer_images/volontari/chiesa-roberta/IMG_7385.webp',                           anchor: 0.14 }, // Roberta Chiesa
+    { src: '/volunteer_images/volontari/carera-carla/ce752846-cea1-448b-a4ad-48fc33037052.webp', anchor: 0.14 }, // Carla Carera
   ] as const;
 
   const N      = PHOTOS.length;      // 3 photo cycles

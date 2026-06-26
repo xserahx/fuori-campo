@@ -1,0 +1,9 @@
+/* ── Colour utilities ─────────────────────────────────────────── */
+.accent { color: var(--color-content-accent); }
+
+/* ── Text outline / ghost ─────────────────────────────────────── */
+.ghost {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: var(--stroke-1) var(--ghost-stroke, var(--color-content-body-black));
+}

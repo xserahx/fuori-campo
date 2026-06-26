@@ -1,0 +1,19 @@
+:root {
+  /* ── Easing curves ───────────────────────────────────────────── */
+  --ease-spring:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-cinema:   cubic-bezier(0.16, 1, 0.3,  1);
+  --ease-in:       cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-smooth:   cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-nav:      cubic-bezier(0.2,  1, 0.3,  1);
+
+  /* ── Durations ───────────────────────────────────────────────── */
+  --dur-instant:   140ms;
+  --dur-fast:      220ms;
+  --dur-mid:       360ms;
+  --dur-slow:      640ms;
+  --dur-cinematic: 960ms;
+
+  /* ── Glow shadows ────────────────────────────────────────────── */
+  --glow-accent:    0 0 16px var(--primitive-lime-alpha-32);
+  --glow-accent-lg: 0 0 32px var(--primitive-lime-alpha-22);
+}

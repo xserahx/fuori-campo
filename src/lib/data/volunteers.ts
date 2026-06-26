@@ -3,8 +3,8 @@
 
    Replaces the former `$lib/supabase` module. All volunteer rows are bundled
    from ./volunteers.json (exported once from the database) and all photos are
-   served as static assets under /volunteer-images (full) and
-   /volunteer-images-thumb (teasers). The public API is unchanged so the rest of
+   served as static assets under /volunteer_images/volontari (full) and
+   /volunteer_images/galleria (teasers). The public API is unchanged so the rest of
    the app keeps working without modification.
    ─────────────────────────────────────────────────────────────────────────── */
 import type { GalleryImage } from '$lib/data/gallery';
@@ -38,8 +38,8 @@ export type VolunteerRow = {
 };
 
 /* Static asset roots — formerly the Supabase Storage bucket + render endpoint. */
-const IMG_ROOT = '/volunteer-images';
-const THUMB_ROOT = '/volunteer-images-thumb';
+const IMG_ROOT = '/volunteer_images/volontari';
+const THUMB_ROOT = '/volunteer_images/galleria';
 
 /* Storage paths can contain spaces and other characters; encode each segment
    (keeping the slashes) so the static host resolves them to the real files. */

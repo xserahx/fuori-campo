@@ -156,18 +156,15 @@
     text-decoration: none;
     opacity: 0.78;
     display: inline-block;
-    transform: translateY(0);
     transition:
       color       var(--dur-fast, 220ms) var(--ease-nav, cubic-bezier(0.2, 1, 0.3, 1)),
       opacity     var(--dur-fast, 220ms) ease,
-      transform   var(--dur-mid,  360ms) var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1)),
       text-shadow var(--dur-mid,  360ms) ease;
   }
 
   .footer-nav-link:hover {
     color: var(--color-content-accent, #bdff5d);
     opacity: 1;
-    transform: translateY(-3px);
     text-shadow: var(--glow-accent, 0 0 16px rgba(189, 255, 93, 0.32));
   }
 
@@ -175,7 +172,6 @@
     color:      var(--color-link-selected, #bdff5d);
     opacity:    1;
     font-weight: 700;
-    transform:  translateY(-3px);
   }
 
   /* ── Bottom bar ──────────────────────────────────────────────────── */

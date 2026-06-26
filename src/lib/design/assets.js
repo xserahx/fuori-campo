@@ -1,15 +1,15 @@
 // Exported image URLs from the Figma export (short-lived URLs)
 export const imgStatusDefault = "https://www.figma.com/api/mcp/asset/9eb5e57a-1f0e-483e-bb72-6dcf127816af";
-export const imgNavbar = "/images/imgNavbar.png";
-export const imgArrow = "/images/imgArrow.png";
+export const imgNavbar = "/volunteer_images/ui/imgNavbar.png";
+export const imgArrow = "/volunteer_images/ui/imgArrow.png";
 export const imgArrow3 = "https://www.figma.com/api/mcp/asset/90e0d8b9-28a7-4f6f-a123-11e32c6c34a5";
 export const heroSamples = [
-  "/images/hero-1.png",
-  "/images/hero-2.png",
-  "/images/hero-3.png",
-  "/images/hero-4.png",
-  "/images/hero-5.png",
-  "/images/hero-6.png",
+  "/volunteer_images/ui/hero-1.png",
+  "/volunteer_images/ui/hero-2.png",
+  "/volunteer_images/ui/hero-3.png",
+  "/volunteer_images/ui/hero-4.png",
+  "/volunteer_images/ui/hero-5.png",
+  "/volunteer_images/ui/hero-6.png",
 ];
 
 export const galleryImages = [

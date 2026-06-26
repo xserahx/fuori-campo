@@ -1,0 +1,100 @@
+:root {
+  /* ── Unit scale  (Figma: Unit/*) ────────────────────────────── */
+  --unit-0:   0px;
+  --unit-1:   1px;
+  --unit-2:   2px;
+  --unit-4:   4px;
+  --unit-8:   8px;
+  --unit-12:  12px;
+  --unit-16:  16px;
+  --unit-20:  20px;
+  --unit-24:  24px;
+  --unit-32:  32px;
+  --unit-36:  36px;
+  --unit-40:  40px;
+  --unit-48:  48px;
+  --unit-56:  56px;
+  --unit-64:  64px;
+  --unit-68:  68px;
+  --unit-72:  72px;
+  --unit-76:  76px;
+  --unit-80:  80px;
+  --unit-84:  84px;
+  --unit-116: 116px;
+  --unit-160: 160px;
+  --unit-200: 200px;
+  --unit-300: 300px;
+  --unit-395: 395px;
+  --unit-500: 500px;
+  --unit-999: 999px;
+
+  /* ── Spacing scale  (Figma: Spacing/*) ─────────────────────── */
+  --spacing-0:  0px;
+  --spacing-1:  4px;
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-5:  24px;
+  --spacing-6:  32px;
+  --spacing-7:  40px;
+  --spacing-8:  48px;
+  --spacing-9:  72px;
+  --spacing-10: 64px;
+  --spacing-11: 72px;
+  --spacing-12: 80px;
+  --spacing-13: 160px;
+  --spacing-14: 200px;
+  --spacing-15: 300px;
+  --spacing-18: 395px;
+  --spacing-19: 500px;
+
+  /* ── Radius  (Figma: Radius/*) ──────────────────────────────── */
+  --radius-l:            24px;    /* pill container */
+  --radius-m:            16px;    /* pill active    */
+  --radius-rounded-pill: 53.5px;  /* toggle outer   */
+
+  /* ── Stroke  (Figma: Stroke/*) ──────────────────────────────── */
+  --stroke-1: 2px;
+
+  /* ── Layout & component tokens ──────────────────────────────── */
+  --navbar-height:         125px;
+  --max-width:             1100px;
+  --gallery-navbar-offset: 143px;
+  --gallery-edge-width:    70px;
+  --gallery-shell-z:       2;
+
+  /* Artboard-derived layout distances */
+  --story-numbers-gap:   var(--unit-300);
+  --hero-to-lead:        629px;   /* spacing-13 (160) + 469 */
+  --hero-top-gap:        144px;
+  --hero-parallax-shift: 52px;    /* scroll-driven title drift */
+
+  /* Story / quote section widths */
+  --figma-story-width:      857px;
+  --figma-quote-width:      857px;
+  --figma-quote-margin-top: 492px;
+  --figma-story-right-top:  428px;
+  --figma-story-left-top:   0px;
+
+  /* Title geometry  (Figma: Title node 3773:4324 — w:1083 h:500) */
+  --figma-hero-top:         224px;
+  --figma-title-height:     500px;
+  --figma-title-weight:     800;
+  --figma-title-size:       260px;
+  --figma-title-lineheight: 210px;
+
+  /* Artboard reference positions — documentation only */
+  --figma-quote-container-top: 2409px;
+  --figma-story-container-top: 1353px;
+  --question-1-top:            3529px;
+  --question-2-top:            4241px;
+  --question-3-top:            4953px;
+  --question-4-top:            5665px;
+  --question-left-1: 0px;
+  --question-left-2: 335px;
+  --question-left-3: 0px;
+  --question-left-4: 533px;
+  --figma-summary-top: 6164px;
+  --figma-scroll-top:  6821px;
+  --quote-grid-height: 540px;
+}

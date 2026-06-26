@@ -1,0 +1,52 @@
+:root {
+  /* ── Primitives ──────────────────────────────────────────────────
+     Raw Figma palette values. Reference these only inside this file
+     to compose semantic tokens — never use primitives directly in
+     component or layout rules.                                      */
+
+  /* Dark */
+  --primitive-black:             #0e0e0e;
+  --primitive-black-alpha-0:     rgba(14, 14, 14, 0);
+  --primitive-black-alpha-15:    rgba(14, 14, 14, 0.15);
+  --primitive-black-alpha-50:    rgba(14, 14, 14, 0.5);
+
+  /* Light */
+  --primitive-white:             #fafafa;
+  --primitive-white-alpha-28:    rgba(250, 250, 250, 0.28);
+
+  /* Lime / Accent */
+  --primitive-lime-400:          #bdff5d;
+  --primitive-lime-alpha-22:     rgba(189, 255, 93, 0.22);
+  --primitive-lime-alpha-32:     rgba(189, 255, 93, 0.32);
+
+  /* Neutral */
+  --primitive-neutral-100:       #ebeeef;
+  --primitive-neutral-700:       #444444;
+
+  /* ── Semantic — Background ───────────────────────────────────────
+     Color/Background/*                                              */
+  --color-background-primary:     var(--primitive-black);
+  --color-background-transparent: var(--primitive-black-alpha-0);
+  --color-background-secondary:   var(--primitive-neutral-100);   /* browser-chrome mockup grey */
+
+  /* ── Semantic — Content ──────────────────────────────────────────
+     Color/Content/*                                                */
+  --color-content-accent:     var(--primitive-lime-400);          /* neon lime */
+  --color-content-body:       var(--primitive-white);
+  --color-content-body-black: var(--primitive-black);
+  --color-content-primary:    var(--primitive-neutral-700);       /* dark text on light bg (inverted navbar) */
+
+  /* ── Semantic — Links ────────────────────────────────────────────
+     Color/Link/*                                                   */
+  --color-link-selected: var(--primitive-lime-400);
+  --color-link-default:  var(--primitive-white);
+  --color-link-hover:    var(--primitive-white);
+
+  /* ── Backward-compat aliases ─────────────────────────────────────
+     Kept for existing component references — do not use in new code. */
+  --color-content-title: var(--color-content-accent);
+  --gallery-background:  var(--color-background-primary);
+  --gallery-overlay:     var(--primitive-black-alpha-50);
+  --gallery-text:        var(--color-content-body);
+  --gallery-accent:      var(--color-content-accent);
+}

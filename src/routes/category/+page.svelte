@@ -6,9 +6,9 @@
 
   type Category = { id: number; label: string; image: string };
 
-  const IMG_FIGMA_204 = '/figma/cat-1.jpg';
-  const IMG_FIGMA_58  = '/figma/cat-5.jpg';
-  const IMG_FIGMA_232 = '/figma/cat-8.jpg';
+  const IMG_FIGMA_204 = '/volunteer_images/carosello_categorie/cat-1.jpg';
+  const IMG_FIGMA_58  = '/volunteer_images/carosello_categorie/cat-5.jpg';
+  const IMG_FIGMA_232 = '/volunteer_images/carosello_categorie/cat-8.jpg';
   const defaultCategories: Category[] = [
     { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: IMG_FIGMA_204 },
     { id: 2, label: 'CERIMONIE E REVENUE',       image: IMG_FIGMA_58 },

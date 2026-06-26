@@ -1,0 +1,566 @@
+.site {
+  min-height: 100dvh;
+  background: var(--color-background-primary) !important;
+}
+
+/* ================================================================
+ * NAVBAR
+ * ================================================================ */
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  padding: var(--spacing-5) var(--spacing-11);
+  display: flex;
+  align-items: center;
+  background: linear-gradient(
+    to bottom,
+    var(--color-background-primary) 0%,
+    var(--primitive-black-alpha-15) 100%
+  );
+  min-height: var(--navbar-height);
+  box-sizing: border-box;
+  z-index: 40;
+  transition:
+    transform   240ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity     240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background  320ms ease;
+}
+
+.navbar--transparent {
+  background: linear-gradient(
+    to bottom,
+    var(--primitive-black) 0%,
+    var(--primitive-black-alpha-15) 100%
+  );
+}
+
+.navbar--transparent .navbar-bg  { opacity: 0; pointer-events: none; }
+.navbar--transparent .nav-link   { color: var(--color-content-body); opacity: 1; }
+.navbar--transparent .nav-link.is-active { color: var(--color-content-body); opacity: 1; }
+.navbar--transparent .nav-underline {
+  background: var(--color-content-body);
+  box-shadow: 0 0 14px var(--primitive-white-alpha-28);
+}
+
+/* Inverted navbar — for accent-background pages (e.g. About) */
+.navbar--inverted {
+  background: transparent;
+}
+
+.navbar--inverted .navbar-bg       { opacity: 0; }
+.navbar--inverted .nav-link        { color: var(--color-content-primary); opacity: 1; text-shadow: none; }
+.navbar--inverted .nav-link:hover,
+.navbar--inverted .nav-link:focus  { color: var(--color-content-body-black); text-shadow: none; }
+.navbar--inverted .nav-link.is-active { color: var(--color-content-body-black); opacity: 1; text-shadow: none; }
+.navbar--inverted .nav-underline   { background: var(--color-content-body-black); box-shadow: none; }
+
+.navbar.hidden {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.navbar-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+.navbar-inner {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 0;
+  transition: opacity var(--dur-fast) ease, transform var(--dur-mid) var(--ease-spring);
+  will-change: transform;
+}
+.logo:hover  { opacity: 0.72; transform: scale(1.08) rotate(-2deg); }
+.logo:active { transform: scale(0.96); transition-duration: var(--dur-instant), var(--dur-instant); }
+.logo img { height: 63.784px; width: 67px; display: block; }
+.logo svg { width: 35px; height: 77px; display: block; }
+
+.nav-links {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-6);
+  align-items: center;
+  margin-left: auto;
+  justify-content: flex-end;
+  width: 357px;
+}
+
+.nav-link {
+  color: var(--color-link-default);
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-size:        var(--ts-nav-link-size);
+  font-weight:      var(--ts-nav-link-weight);
+  line-height:      var(--ts-nav-link-line-height);
+  letter-spacing:   var(--ts-nav-link-letter-spacing);
+  text-decoration: none;
+  opacity: 0.78;
+  transition:
+    color       var(--dur-fast) var(--ease-nav),
+    opacity     160ms ease,
+    text-shadow var(--dur-mid)  ease;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--color-link-selected);
+  opacity: 1;
+  background: transparent;
+  text-shadow: var(--glow-accent);
+}
+
+.nav-link.is-active {
+  color: var(--color-link-selected);
+  opacity: 1;
+  text-shadow: var(--glow-accent);
+}
+
+.nav-underline { display: none; }
+
+/* ================================================================
+ * LANDING PAGE LAYOUT
+ * ================================================================ */
+
+.landing {
+  width: 100%;
+  overflow: hidden;
+}
+
+.hero-outer {
+  display: flex;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-background-primary);
+}
+
+.hero-inner {
+  width: 100%;
+  max-width: min(1083px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-72px);
+}
+
+/* ================================================================
+ * STORY SECTIONS  (Scrolling text style)
+ * ================================================================ */
+
+.story,
+.quote,
+.scroll-cue {
+  padding-left:  var(--spacing-11);
+  padding-right: var(--spacing-11);
+  box-sizing: border-box;
+}
+
+.lead-paragraph {
+  max-width: 980px;
+  margin: var(--hero-to-lead) auto 0;
+  font-size:   var(--ts-scrolling-size);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+}
+
+.story {
+  max-width:   1080px;
+  margin-top:  40px;
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+}
+
+.story p,
+.quote,
+.question h2 { margin: 0; }
+
+.story--left {
+  max-width:  var(--figma-story-width);
+  margin-top: var(--spacing-12);
+}
+
+.story--right {
+  margin-left: auto;
+  text-align:  right;
+  max-width:   var(--figma-story-width);
+  margin-top:  380px;
+}
+
+.story--intro  { margin-top: 0; }
+
+.story--summary {
+  max-width:  980px;
+  margin-top: 260px;
+}
+
+/* Quote sub-variant */
+.story--quote {
+  max-width:   var(--figma-story-width);
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+  margin-top: var(--spacing-12);
+}
+
+.story--quote-left {
+  margin-left:  0;
+  margin-top:   620px;
+  text-align:   left;
+  padding-left: var(--spacing-11);
+}
+
+.story--quote-right {
+  margin-left:   auto;
+  margin-top:    380px;
+  text-align:    right;
+  padding-right: var(--spacing-11);
+}
+
+.quote {
+  margin: 0;
+  max-width:   var(--figma-story-width);
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+}
+
+/* ================================================================
+ * QUESTION SECTION  (sticky horizontal scroll)
+ * ================================================================ */
+
+.question-shell {
+  position: relative;
+  margin-top: 346px;
+}
+
+.question-sticky {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--q-bg, var(--color-content-accent));
+}
+
+.question-blur-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.question-track {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  will-change: transform;
+}
+
+.question {
+  width: 100vw;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 var(--spacing-11);
+  box-sizing: border-box;
+}
+
+.question--lime { --q-align: flex-start; }
+.question--dark { --q-align: flex-end;   }
+
+.question h2 {
+  font-family:    var(--font-display);
+  /* Zoom compensation: keeps the question text at constant physical size across
+     all viewport widths so it reads with the same impact at 1440px as at 1728px. */
+  font-size:      clamp(80px, calc(var(--ts-scrollitelling-size) / max(var(--page-zoom, 1), 0.65)), 200px);
+  font-weight:    var(--ts-scrollitelling-weight);
+  line-height:    clamp(73px, calc(var(--ts-scrollitelling-line-height) / max(var(--page-zoom, 1), 0.65)), 180px);
+  letter-spacing: var(--ts-scrollitelling-letter-spacing);
+  text-transform: uppercase;
+  color: var(--q-fg, var(--color-content-body-black));
+  margin: 0;
+}
+
+.question .accent { color: var(--q-fg, var(--color-content-body-black)); }
+.question .ghost  { -webkit-text-stroke-color: var(--q-fg, var(--color-content-body-black)); }
+
+.question--right    { align-items: flex-end; }
+.question--right h2 { text-align: right; }
+
+/* ── Scroll-cue label ───────────────────────────────────────── */
+.scroll-cue-label {
+  margin: 0;
+  letter-spacing: var(--ts-h3-letter-spacing);
+  text-align: center;
+}
+
+/* ================================================================
+ * SCROLL CUE  (H3 text style)
+ * ================================================================ */
+
+.scroll-cue {
+  margin-top: var(--spacing-19);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-content-accent);
+  font-family: var(--font-display);
+  font-size:   var(--ts-h3-size);
+  font-weight: var(--ts-h3-weight);
+  line-height: var(--ts-h3-line-height);
+  text-align: center;
+}
+
+.scroll-cue img {
+  width: 56px;
+  height: auto;
+  display: block;
+  transform: rotate(90deg);
+  margin-top: 24px;
+}
+
+/* ================================================================
+ * ARCHIVIO LINK
+ * ================================================================ */
+
+.archivio-link { text-decoration: none; }
+.archivio-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ================================================================
+ * ACCESSIBILITY — focus, motion, skip link
+ * ================================================================ */
+
+:focus         { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--color-content-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* On lime pages (About) invert the focus ring so it reads on light bg */
+.about-page :focus-visible {
+  outline-color: var(--color-content-body-black);
+}
+
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  padding: 12px 24px;
+  background: var(--color-content-accent);
+  color: var(--color-content-body-black);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-100%);
+  transition: transform 200ms ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: none;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────
+   Cuts all CSS animations and transitions to near-zero.
+   JS-driven (GSAP/RAF) loops should read
+   window.matchMedia('(prefers-reduced-motion: reduce)') themselves. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    transition-delay:          0ms    !important;
+    scroll-behavior: auto             !important;
+  }
+}
+
+/* ================================================================
+ * PAGE TRANSITIONS  (View Transitions API)
+ * ================================================================ */
+
+@keyframes vt-out { to   { opacity: 0; } }
+@keyframes vt-in  { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 280ms ease-out both vt-out;
+  }
+  ::view-transition-new(root) {
+    animation: 360ms ease-out both vt-in;
+  }
+}
+
+/* ================================================================
+ * MOBILE  (≤ 599 px — matches layout.svelte zoom=1 breakpoint)
+ * Pixel values from Figma node 6197-9283 "Home-mobile" (402 × 5786 px)
+ * ================================================================ */
+@media (max-width: 599px) {
+
+  :root {
+    --navbar-height: 96px;
+  }
+
+  .navbar {
+    padding:    24px 27px;
+    min-height: 96px;
+  }
+  .nav-links { display: none; }
+
+  .hero-inner {
+    transform: none;
+  }
+
+  .story,
+  .lead-paragraph,
+  .story--quote,
+  .quote {
+    font-size:   24px;
+    line-height: 28.8px;
+    font-weight: 500;
+    padding-left:  24px;
+    padding-right: 24px;
+    max-width: 100%;
+  }
+
+  .lead-paragraph {
+    margin-top: 30px;
+  }
+
+  .story--left {
+    max-width: 100%;
+    margin-top: 40px;
+  }
+
+  .story--right {
+    max-width:   100%;
+    margin-left: auto;
+    text-align:  right;
+    margin-top:  100px;
+  }
+
+  .story--intro {
+    margin-top: 0;
+  }
+
+  .story--summary {
+    max-width:  100%;
+    margin-top: 300px;
+  }
+
+  .story--quote-left {
+    max-width:    100%;
+    margin-left:  0;
+    margin-top:   353px;
+    text-align:   left;
+    padding-left: 24px;
+  }
+
+  .story--quote-right {
+    max-width:     100%;
+    margin-left:   0;
+    margin-top:    100px;
+    text-align:    left;
+    padding-right: 24px;
+  }
+
+  .question-shell {
+    margin-top: 345px;
+  }
+
+  .question-sticky {
+    position:       relative;
+    height:         auto;
+    overflow:       visible;
+    padding-top:    400px;
+    padding-bottom: 400px;
+  }
+
+  .question-blur-veil {
+    display: none;
+  }
+
+  .question-track {
+    flex-direction: column;
+    height:         auto;
+  }
+
+  .question {
+    width:      100%;
+    height:     auto;
+    min-height: 0;
+    padding:    0 24px;
+  }
+
+  .question + .question {
+    margin-top: 400px;
+  }
+
+  .question h2 {
+    font-size:   36px;
+    line-height: 32px;
+  }
+
+  /* All 4 questions left-aligned on mobile */
+  .question--right {
+    align-items: flex-start;
+  }
+
+  .question--right h2 {
+    text-align: left;
+  }
+
+  /* On lime background: ghost outline becomes solid dark text */
+  .question .ghost {
+    color:                     var(--color-content-body-black);
+    -webkit-text-fill-color:   var(--color-content-body-black);
+    -webkit-text-stroke-width: 0;
+  }
+
+  .question .accent {
+    color: var(--color-content-body-black);
+  }
+}

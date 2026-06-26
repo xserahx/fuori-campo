@@ -11,7 +11,6 @@
   import { goto, afterNavigate, beforeNavigate } from "$app/navigation";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
-  import ScrollArrow from "../lib/components/ScrollArrow.svelte";
   import { blurReveal } from "../lib/actions/blurReveal";
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
