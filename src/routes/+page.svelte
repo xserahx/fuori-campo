@@ -1,7 +1,8 @@
 <script module lang="ts">
   /* Module-scoped so it survives in-app (soft) navigations: returning to the
-     homepage via the logo will NOT replay the intro. A full browser refresh
-     reloads this module and resets the flag, so a refresh DOES replay it. */
+     homepage via the logo skips the loading-page intro and shows only the
+     title's appearance animation. A full browser refresh resets this flag, so
+     a refresh replays the full loader + entrance. */
   let introPlayed = false;
 </script>
 
@@ -18,7 +19,9 @@
   import { navbarInverted } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
-  /* ── Intro loader ─────────────────────────────────────────────── */
+  /* ── Intro loader ─────────────────────────────────────────────────
+     First visit shows the loading-page intro; returning via the logo skips it
+     and plays only the title's appearance animation (BlurTitle `quick`). */
   const introSeen = browser && introPlayed;
   let showIntro = $state(!introSeen);
   let introExiting = $state(false);
@@ -147,7 +150,7 @@
       }
       loaderProgress = 100;
       introPlayed = true;
-      
+
       exitTimeout = setTimeout(() => {
         introExiting = true;
         exitTimeout = setTimeout(() => { showIntro = false; }, 2100);

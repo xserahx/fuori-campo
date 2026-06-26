@@ -1,6 +1,8 @@
 <script lang="ts">
-  /* `quick` is set when the intro loader is skipped (return visits) so the
-     title blooms in promptly instead of waiting for the loader's timeline. */
+  /* `quick` marks a logo return (the loader is skipped). The title is then
+     revealed the same way it appears once the loader dissolves on first visit
+     — a clean fade-in of the settled words — instead of the per-letter char-in
+     bloom, which on first visit plays hidden behind the loader. */
   let { quick = false } = $props<{ quick?: boolean }>();
 
   /* Split the two words into individual characters so each letter can enter
@@ -38,15 +40,32 @@
     will-change: transform, opacity;
   }
 
-  /* ── Timing delays: first visit syncs with the loader timeline,
-     return visit (.title-wrap--quick) starts almost immediately.   */
+  /* ── First-visit timing ──────────────────────────────────────────
+     The per-letter char-in is synced to the loader timeline: it completes
+     hidden behind the loader, so the title stands fully settled as the loader
+     dissolves away (the dissolve itself is the entrance the visitor sees). */
   .title-wrap {
     --fuori-delay: 2800ms;
     --campo-delay: 3100ms;
   }
-  .title-wrap--quick {
-    --fuori-delay: 150ms;
-    --campo-delay: 440ms;
+
+  /* ── Logo-return reveal ───────────────────────────────────────────
+     On return the loader is skipped, so the title is shown exactly the way it
+     appears once the loader dissolves on first visit: the settled words softly
+     fade in together — no per-letter bloom, no loader UI. The fade is applied
+     to the words (not .title-wrap) so the scroll-driven parallax/opacity on
+     .title-wrap keeps working afterwards. */
+  .title-wrap--quick .char {
+    animation: none;
+  }
+  .title-wrap--quick .fuori,
+  .title-wrap--quick .campo {
+    animation: title-reveal 800ms var(--ease-cinema, cubic-bezier(0.16, 1, 0.3, 1)) 100ms both;
+  }
+
+  @keyframes title-reveal {
+    from { opacity: 0; filter: blur(8px); }
+    to   { opacity: 1; filter: blur(0); }
   }
 
   /* ── Word wrappers — block display, font-size:0 collapses any
@@ -122,6 +141,12 @@
       opacity: 1;
       filter: none;
       transform: none;
+    }
+    .title-wrap--quick .fuori,
+    .title-wrap--quick .campo {
+      animation: none;
+      opacity: 1;
+      filter: none;
     }
   }
 </style>
