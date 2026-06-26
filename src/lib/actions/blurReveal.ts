@@ -11,9 +11,9 @@ export interface BlurRevealOptions {
 }
 
 /* ── Easing curves ─────────────────────────────────────────────────
-   SPRING  — expo-out with a softer tail; feels organic, never abrupt.
+   SPRING  — true expo-out: a long, silky settle that never abruptly stops.
    EASE_IN — sharp fade-out so elements leave quickly on scroll-back. */
-const SPRING  = "cubic-bezier(0.22, 1, 0.36, 1)";
+const SPRING  = "cubic-bezier(0.16, 1, 0.3, 1)";
 const EASE_IN = "cubic-bezier(0.55, 0, 1, 0.45)";
 
 function buildTransition(
@@ -147,35 +147,61 @@ export function blurReveal(node: HTMLElement, options: BlurRevealOptions = {}) {
     variant    = "slide",
   } = options;
 
-  const hideDuration = Math.round(duration * 0.45);
-  let visible     = false;
-  let enterTimer: ReturnType<typeof setTimeout> | null = null;
+  /* Reduced-motion: reveal with a plain crossfade — no blur, slide or scale —
+     so content still appears (never gated blank) but without motion. */
+  const reduce =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  node.style.transition  = "none";
-  node.style.willChange  = "transform, opacity, filter";
-  applyStyles(node, getHiddenStyles(direction, translateX, blur, variant));
+  let hideDuration = Math.round(duration * 0.45);
+  let visible      = false;
+  let enterTimer:  ReturnType<typeof setTimeout> | null = null;
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const liveWillChange  = reduce ? "opacity" : "transform, opacity, filter";
+  const hiddenStyles    = () =>
+    reduce ? { opacity: "0" } as Partial<CSSStyleDeclaration>
+           : getHiddenStyles(direction, translateX, blur, variant);
+  const visibleStyles   = () =>
+    reduce ? { opacity: "1" } as Partial<CSSStyleDeclaration>
+           : getVisibleStyles(variant);
+  const transitionFor   = (entering: boolean) =>
+    reduce ? `opacity ${entering ? 320 : 200}ms ease`
+           : buildTransition(duration, hideDuration, variant, entering);
+
+  node.style.transition = "none";
+  node.style.willChange = liveWillChange;
+  applyStyles(node, hiddenStyles());
 
   const enter = () => {
     visible = true;
     /* data-br="visible" lets CSS child selectors trigger accent animations
        (e.g. .story[data-br="visible"] .accent { animation: accent-bloom ... }) */
-    node.dataset.br = 'visible';
-    node.style.transition = buildTransition(duration, hideDuration, variant, true);
-    applyStyles(node, getVisibleStyles(variant));
+    node.dataset.br = "visible";
+    node.style.willChange = liveWillChange;
+    node.style.transition = transitionFor(true);
+    applyStyles(node, visibleStyles());
+    /* Drop the compositor layer once the entrance settles, so the page isn't
+       left holding dozens of permanent GPU layers — keeps scrolling buttery. */
+    if (settleTimer) clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { node.style.willChange = "auto"; }, (reduce ? 320 : duration) + 80);
   };
 
   const leave = () => {
     visible = false;
     delete node.dataset.br;
-    if (enterTimer) { clearTimeout(enterTimer); enterTimer = null; }
-    node.style.transition = buildTransition(duration, hideDuration, variant, false);
-    applyStyles(node, getHiddenStyles(direction, translateX, blur, variant));
+    if (enterTimer)  { clearTimeout(enterTimer);  enterTimer  = null; }
+    if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+    node.style.willChange = liveWillChange;
+    node.style.transition = transitionFor(false);
+    applyStyles(node, hiddenStyles());
   };
 
   const observer = new IntersectionObserver(
     ([entry]) => {
       if (entry?.isIntersecting && !visible) {
-        if (delay > 0) {
+        if (delay > 0 && !reduce) {
           enterTimer = setTimeout(enter, delay);
         } else {
           enter();
@@ -198,16 +224,14 @@ export function blurReveal(node: HTMLElement, options: BlurRevealOptions = {}) {
       duration   = next.duration   ?? duration;
       delay      = next.delay      ?? delay;
       variant    = next.variant    ?? variant;
+      hideDuration = Math.round(duration * 0.45);
 
-      if (visible) {
-        applyStyles(node, getVisibleStyles(variant));
-      } else {
-        applyStyles(node, getHiddenStyles(direction, translateX, blur, variant));
-      }
+      applyStyles(node, visible ? visibleStyles() : hiddenStyles());
     },
     destroy() {
       observer.disconnect();
-      if (enterTimer) clearTimeout(enterTimer);
+      if (enterTimer)  clearTimeout(enterTimer);
+      if (settleTimer) clearTimeout(settleTimer);
     },
   };
 }

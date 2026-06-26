@@ -136,4 +136,15 @@
   }
 
   /* hover label handled via transition on .label above */
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-arrow { transition: none; }
+    .scroll-arrow:hover { transform: none; }
+    .shaft, .head {
+      animation: none;
+      stroke-dashoffset: 0;       /* show the arrow fully drawn, no draw-on */
+    }
+    .label { animation: none; opacity: 0.45; }
+    .drop  { display: none; }     /* no falling drips */
+  }
 </style>
