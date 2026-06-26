@@ -27,6 +27,17 @@
 
 	$effect(() => {
 		if (!browser) return;
+		function onResize() {
+			const z = window.innerWidth / 1728;
+			document.documentElement.style.zoom = String(z);
+			document.documentElement.style.setProperty('--page-zoom', String(z));
+		}
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
+	});
+
+	$effect(() => {
+		if (!browser) return;
 		document.body.style.backgroundColor = '';
 		document.documentElement.style.backgroundColor = '';
 	});

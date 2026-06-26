@@ -151,6 +151,7 @@
     class="filter-btn"
     class:filter-btn--active={activeFilter !== null}
     class:filter-btn--open={filterPanelOpen}
+    class:filter-btn--names={activeToggle === 'names'}
     type="button"
     onclick={() => { filterPanelOpen = !filterPanelOpen; }}
     aria-label="Filtra per categoria"
@@ -292,8 +293,8 @@
   /* ── FOTO / NOMI toggle ─────────────────────────────────────────── */
   .toggle {
     position: fixed;
-    left: clamp(24px, 4.5vw, 72px);
-    bottom: clamp(24px, 3.5vh, 48px);
+    left: clamp(var(--spacing-5, 24px), 4.5vw, var(--spacing-11, 72px));
+    bottom: clamp(var(--spacing-5, 24px), 3.5vh, var(--unit-48, 48px));
     z-index: 100;
   }
 
@@ -301,7 +302,7 @@
     position: relative;
     width: 190px;
     height: 45px;
-    border-radius: 999px;
+    border-radius: var(--unit-999, 999px);
     background: var(--gallery-background, #0e0e0e);
   }
 
@@ -312,8 +313,8 @@
     left: 0;
     width: 97px;
     height: 45px;
-    border-radius: 995px;
-    border: 2px solid var(--color-content-accent, #bdff5d);
+    border-radius: var(--unit-999, 999px);
+    border: var(--stroke-1, 2px) solid var(--color-content-accent, #bdff5d);
     background: transparent;
     transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
     pointer-events: none;
@@ -341,23 +342,23 @@
   .toggle-option--photos {
     left: 0;
     justify-content: flex-start;
-    padding-left: 20px;
+    padding-left: var(--unit-20, 20px);
   }
 
   .toggle-option--names {
     right: 0;
     justify-content: flex-end;
-    padding-right: 20px;
+    padding-right: var(--unit-20, 20px);
   }
 
   .toggle-label {
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: var(--unit-24, 24px);
     font-weight: 500;
     line-height: 26px;
     width: 57px;
     text-align: center;
-    color: #fafafa;
+    color: var(--color-content-body, #fafafa);
     transition: color 0.22s ease;
     pointer-events: none;
     user-select: none;
@@ -372,14 +373,14 @@
   /* ── FILTRA PER CATEGORIA button ───────────────────────────────── */
   .filter-btn {
     position: fixed;
-    right: clamp(24px, 4.5vw, 72px);
-    bottom: clamp(24px, 3.5vh, 48px);
+    right: clamp(var(--spacing-5, 24px), 4.5vw, var(--spacing-11, 72px));
+    bottom: clamp(var(--spacing-5, 24px), 3.5vh, var(--unit-48, 48px));
     z-index: 100;
     width: 275px;
-    padding: 12px 20px;
-    border-radius: 999px;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    background: #0e0e0e;
+    padding: var(--unit-12, 12px) var(--unit-20, 20px);
+    border-radius: var(--unit-999, 999px);
+    border: var(--stroke-1, 2px) solid var(--color-content-accent, #bdff5d);
+    background: var(--gallery-background, #0e0e0e);
     cursor: pointer;
     transition:
       background   0.32s cubic-bezier(0.22, 1, 0.36, 1),
@@ -393,15 +394,21 @@
   }
   .filter-btn:active { transform: scale(0.97); transition-duration: 80ms; }
 
+  /* On names view push the button left so it doesn't share the sidebar column.
+     right = sidebar-right(72) + sidebar-width(23) + gap(16) = 111px          */
+  .filter-btn--names {
+    right: calc(var(--spacing-11, 72px) + 23px + var(--unit-16, 16px));
+  }
+
   .filter-btn-label {
     display: block;
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: var(--unit-24, 24px);
     font-weight: 500;
     line-height: 26px;
     text-align: center;
     white-space: nowrap;
-    color: #fafafa;
+    color: var(--color-content-body, #fafafa);
     transition: color 0.28s ease, filter 0.28s ease;
   }
 

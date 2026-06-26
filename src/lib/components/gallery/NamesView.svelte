@@ -541,56 +541,59 @@
   }
 
   /* ── Alphabet sidebar ─────────────────────────────────────────────── */
-  /* Figma desktop node 6197-17109 "Elenco":
-       top = navbar bottom (125px), right = 72px, gap = 16px,
-       font = 20px / lh 24px, item = 23×24px.
-     Figma mobile node 6197-16829 "elenco lettere":
-       top = 96px (mobile TOP BAR), right = 25px, gap = 10px,
-       font = 16px / lh 19px, item = 17×19px.
-     Dynamic gap formula (all breakpoints):
-       gap = (available_height − 19×item_height) / 18 gaps
-       where available = 100dvh − top − bottom_reserve.
-     This ensures all letters remain visible at any viewport height
-     while staying ≤ the Figma maximum gap.                           */
+  /* Refs: Figma desktop 6197-17109 / mobile 6197-16829.
+     --_* are component-private; breakpoints override only what changes.
+     --_avail and --_gap are derived and update automatically.          */
   .alpha-sidebar {
-    position: absolute;
-    right: var(--spacing-11, 72px);
-    top: var(--navbar-height, 125px);
-    z-index: 35;
+    /* ── Configurable per breakpoint ── */
+    --_top:     var(--navbar-height, 125px);   /* top anchor */
+    --_right:   var(--spacing-11, 72px);       /* Figma paddingRight */
+    --_w:       23px;                          /* item + track width */
+    --_item-h:  var(--unit-24, 24px);          /* item height */
+    --_font:    var(--unit-20, 20px);          /* letter font-size */
+    --_lh:      var(--unit-24, 24px);          /* letter line-height */
+    --_gap-max: var(--unit-16, 16px);          /* Figma itemSpacing */
+    --_gap-min: var(--unit-4, 4px);            /* tightest gap before clip */
+    /* clearance above filter-btn: max-bottom(48) + btn-height(~50) + room = 120px
+       = var(--unit-80) + var(--spacing-7)                                         */
+    --_reserve: calc(var(--unit-80, 80px) + var(--spacing-7, 40px));
 
-    display: flex;
+    /* ── Derived — recalculate whenever any component var changes ── */
+    --_avail: calc(100dvh - var(--_top) - var(--_reserve));
+    --_gap:   clamp(var(--_gap-min), calc((var(--_avail) - 19 * var(--_item-h)) / 18), var(--_gap-max));
+
+    position:       absolute;
+    right:          var(--_right);
+    top:            var(--_top);
+    z-index:        35;
+    display:        flex;
     flex-direction: column;
-    align-items: center;
-    /* (100dvh − 125 top − 80 bottom − 19×24 items) / 18 gaps, max 16px
-       Keeps all letters above the bottom edge-fade + filter button.  */
-    gap: clamp(4px, calc((100dvh - 661px) / 18), 16px);
-
-    width: 23px;
-    /* Hard clip: never bleed into the filter-button area */
-    max-height: calc(100dvh - var(--navbar-height, 125px) - 80px);
-    overflow: hidden;
-    padding: 0;
-    margin: 0;
+    align-items:    center;
+    gap:            var(--_gap);
+    width:          var(--_w);
+    max-height:     var(--_avail);
+    overflow:       hidden;
+    padding:        0;
+    margin:         0;
     pointer-events: auto;
   }
 
+  /* Size/font values all inherit from .alpha-sidebar custom vars above */
   .alpha-sidebar__btn {
-    border: 0;
-    background: transparent;
-    padding: 0;
-    cursor: pointer;
-    flex-shrink: 0;
-
-    font-family: var(--font-display);
-    font-size: 20px;
-    line-height: 24px;
-    text-align: center;
+    border:         0;
+    background:     transparent;
+    padding:        0;
+    cursor:         pointer;
+    flex-shrink:    0;
+    font-family:    var(--font-display);
+    font-size:      var(--_font);
+    line-height:    var(--_lh);
+    text-align:     center;
     text-transform: uppercase;
-    color: var(--color-content-body, #fafafa);
-    width: 23px;
-    height: 24px;
-
-    transition: color 180ms ease, opacity 180ms ease;
+    color:          var(--color-content-body, #fafafa);
+    width:          var(--_w);
+    height:         var(--_item-h);
+    transition:     color 180ms ease, opacity 180ms ease;
   }
 
   .alpha-sidebar__btn.active {
@@ -602,20 +605,14 @@
   }
 
   @media (max-width: 1100px) {
+    /* Override only what changes; --_avail and --_gap update automatically */
     .alpha-sidebar {
-      right: var(--spacing-5, 24px);
-      top: var(--navbar-height, 125px);
-      width: 18px;
-      /* (100dvh − 125 top − 60 bottom − 19×20 items) / 18 gaps, max 12px */
-      gap: clamp(3px, calc((100dvh - 565px) / 18), 12px);
-      max-height: calc(100dvh - var(--navbar-height, 125px) - 60px);
-    }
-
-    .alpha-sidebar__btn {
-      font-size: 16px;
-      line-height: 20px;
-      height: 20px;
-      width: 18px;
+      --_right:   var(--spacing-5, 24px);
+      --_w:       18px;
+      --_item-h:  var(--unit-20, 20px);
+      --_font:    var(--unit-16, 16px);
+      --_lh:      var(--unit-20, 20px);
+      --_gap-max: var(--unit-12, 12px);
     }
   }
 
@@ -663,22 +660,22 @@
       padding-top: 46px;
     }
 
-    /* Figma node 6197-16829: right=25px, top=96px (mobile TOP BAR), width=17px,
-       gap=10px, font=16px/19lh, item=17×19px.
-       Dynamic gap: (100dvh − 96 top − 60 bottom − 19×19px items) / 18 gaps */
+    /* Figma 6197-16829: right 25px, top 96px (mobile TOP BAR), 17×19px, gap 10px
+       --_top    = 96px = var(--unit-80) + var(--unit-16)
+       --_reserve = 104px = var(--unit-80) + var(--unit-24)
+                   (icon-btn: bottom 36px + height 48px + room 20px)
+       --_gap-max: 10px (Figma value; between --unit-8 and --unit-12)
+       .alpha-sidebar__btn picks up all values via inherited CSS vars          */
     .alpha-sidebar {
-      right: 25px;
-      top: 96px;
-      width: 17px;
-      gap: clamp(0px, calc((100dvh - 517px) / 18), 10px);
-      max-height: calc(100dvh - 96px - 60px);
-    }
-
-    .alpha-sidebar__btn {
-      font-size: 16px;
-      line-height: 19px;
-      height: 19px;
-      width: 17px;
+      --_top:     calc(var(--unit-80, 80px) + var(--unit-16, 16px));
+      --_right:   var(--spacing-5, 24px);
+      --_w:       17px;
+      --_item-h:  19px;
+      --_font:    var(--unit-16, 16px);
+      --_lh:      19px;
+      --_gap-max: 10px;
+      --_gap-min: var(--unit-0, 0px);
+      --_reserve: calc(var(--unit-80, 80px) + var(--unit-24, 24px));
     }
   }
 
