@@ -327,12 +327,12 @@
           <div class="frecce" aria-label="Navigazione sotto-ruoli">
             <button class="arrow-circle" type="button" aria-label="Sotto-ruolo precedente" onclick={() => { activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount; }}>
               <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-                <path d="M12 2L2 14L12 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 2L2 14L12 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
             <button class="arrow-circle" type="button" aria-label="Sotto-ruolo successivo" onclick={() => { activeRoleIndex = (activeRoleIndex + 1) % roleCount; }}>
               <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-                <path d="M2 2L12 14L2 26" stroke="#BDFF5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 2L12 14L2 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
@@ -371,15 +371,15 @@
 
   .back-button {
     width: 168px;
-    height: 48px;
+    height: var(--unit-48);
     margin-left: var(--spacing-11);
-    margin-top: 24px;
+    margin-top: var(--spacing-5);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--spacing-3);
-    padding: 12px 20px;
-    border: 2px solid var(--color-content-accent);
+    padding: var(--unit-12) var(--unit-20);
+    border: var(--stroke-1) solid var(--color-content-accent);
     border-radius: var(--unit-999);
     background: transparent;
     color: var(--color-content-body);
@@ -424,7 +424,7 @@
   .title-fill,
   .title-outline {
     font-family: var(--font-display);
-    font-size: clamp(56px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px);
+    font-size: clamp(var(--unit-56), calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)), var(--unit-200));
     font-weight: 800;
     text-transform: uppercase;
     /* Figma h1: letterSpacing: 0, leading-[unit/116] = 1:1 with font size */
@@ -441,8 +441,8 @@
 
   .title-outline {
     color: transparent;
-    -webkit-text-stroke: clamp(1px, 0.14vw, 2px) var(--color-content-accent);
-    margin-left: 340px;
+    -webkit-text-stroke: clamp(var(--unit-1), 0.14vw, var(--stroke-1)) var(--color-content-accent);
+    margin-left: var(--spacing-17);
     margin-top: 0;
   }
 
@@ -452,13 +452,13 @@
   }
 
   .hero-copy {
-    margin: 56px var(--spacing-11) 0 auto;
+    margin: var(--unit-56) var(--spacing-11) 0 auto;
     padding: 0;
     width: 1318px;
-    max-width: calc(100% - var(--spacing-11) - 16px);
+    max-width: calc(100% - var(--spacing-11) - var(--spacing-4));
     text-align: right;
     font-family: var(--font-display);
-    font-size: clamp(34px, calc(84px / max(var(--page-zoom, 1), 0.65)), 145px);
+    font-size: clamp(34px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 145px);
     font-weight: 500;
     line-height: 0.952;
     letter-spacing: 0;
@@ -473,7 +473,7 @@
     padding: 0 0 var(--spacing-7) var(--spacing-11);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--spacing-4);
   }
 
   .summary-top-wrap {
@@ -504,9 +504,9 @@
   .summary-eyebrow {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 32px;
+    font-size: var(--unit-32);
     font-weight: 700;
-    line-height: 32px;
+    line-height: var(--unit-32);
     letter-spacing: 0.96px;
     color: var(--color-content-accent, #bdff5d);
   }
@@ -521,7 +521,7 @@
   .dot-nav {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
+    gap: var(--spacing-2);
   }
 
   .dot {
@@ -530,8 +530,8 @@
     padding: 0;
     background: transparent;
     cursor: pointer;
-    width: 16px;
-    height: 16px;
+    width: var(--unit-16);
+    height: var(--unit-16);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -541,8 +541,8 @@
   .dot::before {
     content: '';
     display: block;
-    width: 16px;
-    height: 16px;
+    width: var(--unit-16);
+    height: var(--unit-16);
     border-radius: 50%;
     background: rgba(189, 255, 93, 0.3);
     transition:
@@ -555,21 +555,22 @@
   }
 
   .dot.dot--active::before {
-    background: #bdff5d;
+    background: var(--color-content-accent);
     box-shadow: 0 0 10px rgba(189, 255, 93, 0.55);
   }
 
   .frecce {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: var(--unit-20);
   }
 
   .arrow-circle {
     width: 60px;
     height: 60px;
-    border-radius: 999px;
-    border: 2px solid #bdff5d;
+    border-radius: var(--unit-999);
+    border: var(--stroke-1) solid var(--color-content-accent);
+    color: var(--color-content-accent);
     background: transparent;
     display: flex;
     align-items: center;
@@ -601,7 +602,7 @@
     margin: 0;
     max-width: 780px;
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: var(--unit-24);
     line-height: 26px;
     color: var(--color-content-body);
   }
@@ -616,7 +617,7 @@
 
   .summary-footer {
     margin-top: 0;
-    font-size: 24px;
+    font-size: var(--unit-24);
     line-height: 26px;
     font-style: italic;
     color: rgba(250, 250, 250, 0.96);
@@ -634,7 +635,7 @@
 
   @media (max-width: 1100px) {
     .hero {
-      padding: 0 24px;
+      padding: 0 var(--spacing-5);
       width: auto;
     }
 
@@ -647,12 +648,12 @@
       margin-left: 0;
       margin-top: var(--unit-40);
       margin-right: var(--spacing-5);
-      font-size: clamp(30px, 7vw, 56px);
+      font-size: clamp(30px, 7vw, var(--unit-56));
       line-height: 0.98;
     }
 
     .hero-title {
-      padding: 20px 24px;
+      padding: var(--spacing-4-2) var(--spacing-5);
       max-width: 100%;
     }
 
@@ -672,8 +673,8 @@
     }
 
     .arrow-circle {
-      width: 48px;
-      height: 48px;
+      width: var(--unit-48);
+      height: var(--unit-48);
     }
 
     .summary-card {
@@ -688,14 +689,14 @@
     }
 
     .summary-eyebrow {
-      font-size: clamp(24px, 4.4vw, 32px);
+      font-size: clamp(var(--unit-24), 4.4vw, var(--unit-32));
       line-height: 1;
       letter-spacing: 0.02em;
     }
 
     .summary-copy,
     .summary-footer {
-      font-size: clamp(18px, 2.8vw, 24px);
+      font-size: clamp(18px, 2.8vw, var(--unit-24));
       line-height: 1.15;
     }
   }
@@ -714,7 +715,7 @@
     .title-outline {
       white-space: normal;
       font-size: 43px;
-      line-height: 36px;
+      line-height: var(--unit-36);
     }
 
     .title-fill {
@@ -723,7 +724,7 @@
     }
 
     .title-outline {
-      -webkit-text-stroke: 2px var(--color-content-accent);
+      -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
       margin-left: 0;
       margin-top: 0;
     }
@@ -742,50 +743,50 @@
     }
 
     .summary-eyebrow {
-      font-size: 20px;
+      font-size: var(--unit-20);
     }
 
     .summary-copy,
     .summary-footer {
-      font-size: 16px;
-      line-height: 20px;
+      font-size: var(--unit-16);
+      line-height: var(--unit-20);
     }
 
     .arrow-circle {
-      width: 40px;
-      height: 40px;
+      width: var(--unit-40);
+      height: var(--unit-40);
     }
 
     .arrow-circle svg {
       width: 10px;
-      height: 20px;
+      height: var(--unit-20);
     }
   }
 
   /* ── Touch target compensation ──────────────────────────────────── */
   @media (pointer: coarse) {
     .dot {
-      min-width:  max(16px, calc(44px / var(--page-zoom, 1)));
-      min-height: max(16px, calc(44px / var(--page-zoom, 1)));
+      min-width:  max(var(--unit-16), calc(44px / var(--page-zoom, 1)));
+      min-height: max(var(--unit-16), calc(44px / var(--page-zoom, 1)));
     }
     .arrow-circle {
       min-width:  max(60px, calc(44px / var(--page-zoom, 1)));
       min-height: max(60px, calc(44px / var(--page-zoom, 1)));
     }
     .back-button {
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
+      min-height: max(var(--unit-48), calc(44px / var(--page-zoom, 1)));
     }
   }
 
   /* ── Focus visible ──────────────────────────────────────────────── */
   .back-button:focus-visible,
   .arrow-circle:focus-visible {
-    outline: 2px solid var(--color-content-accent);
+    outline: var(--stroke-1) solid var(--color-content-accent);
     outline-offset: 3px;
   }
 
   .dot:focus-visible {
-    outline: 2px solid var(--color-content-accent);
+    outline: var(--stroke-1) solid var(--color-content-accent);
     outline-offset: 4px;
     border-radius: 50%;
   }
