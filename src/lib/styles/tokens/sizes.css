@@ -52,7 +52,7 @@
   /* ── Radius  (Figma: Radius/*) ──────────────────────────────── */
   --radius-l:            24px;    /* pill container */
   --radius-m:            16px;    /* pill active    */
-  --radius-rounded-pill: 53.5px;  /* toggle outer   */
+  --radius-rounded-pill: 999px;  /* toggle outer   */
 
   /* ── Stroke  (Figma: Stroke/*) ──────────────────────────────── */
   --stroke-1: 2px;

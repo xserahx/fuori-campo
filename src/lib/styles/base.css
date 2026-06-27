@@ -99,13 +99,11 @@
   color: var(--color-link-selected);
   opacity: 1;
   background: transparent;
-  text-shadow: var(--glow-accent);
 }
 
 .nav-link.is-active {
   color: var(--color-link-selected);
   opacity: 1;
-  text-shadow: var(--glow-accent);
 }
 
 /* ================================================================
