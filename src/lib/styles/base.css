@@ -31,6 +31,11 @@
 }
 
 
+/* Flat navbar — no gradient (e.g. gallery page) */
+.navbar.navbar--flat {
+  background: var(--color-background-primary);
+}
+
 /* Inverted navbar — accent-background context (e.g. green question panels) */
 .navbar--inverted {
   background: transparent;

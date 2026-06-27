@@ -5,7 +5,7 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import LoadingIntro from '$lib/components/LoadingIntro.svelte';
 	import { imagesRaw } from '$lib/data/gallery';
-	import { navbarInverted } from '$lib/stores/navbar';
+	import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
 
 	// 1. IMPORTAZIONE STILI GLOBALI E TOKEN
 	import '$lib/styles/reset.css';
@@ -16,6 +16,7 @@
 	let { children } = $props();
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
+	const isGalleryPage   = $derived(page.url.pathname.startsWith('/gallery'));
 
 	$effect(() => {
 		if (!browser) return;
@@ -54,6 +55,7 @@
 		document.documentElement.style.overflow = '';
 		document.body.style.overflow = '';
 		document.body.style.paddingTop = '';
+		navbarHidden.set(false);
 	});
 
 	onNavigate((navigation) => {
@@ -81,7 +83,7 @@
 
 {#if !isVolunteerPage}
 	<!-- Navbar stays fixed on every page it appears on; never hide-on-scroll. -->
-	<Navbar inverted={$navbarInverted} pinned />
+	<Navbar inverted={$navbarInverted} hidden={$navbarHidden} flat={isGalleryPage} pinned />
 {/if}
 
 {#if showIntro && introSrc}

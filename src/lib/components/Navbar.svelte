@@ -1,7 +1,12 @@
 <script lang="ts">
   import { page } from '$app/state';
 
-  let { pinned = false, inverted = false } = $props<{ pinned?: boolean; inverted?: boolean }>();
+  let { pinned = false, inverted = false, hidden = false, flat = false } = $props<{
+    pinned?: boolean;
+    inverted?: boolean;
+    hidden?: boolean;
+    flat?: boolean;
+  }>();
 
   type NavItem = { href: string; label: string };
 
@@ -126,7 +131,7 @@
   </div>
 {/if}
 
-<header class="navbar" class:navbar--inverted={inverted} class:hidden={!visible} aria-label="Main navigation">
+<header class="navbar" class:navbar--inverted={inverted} class:navbar--flat={flat} class:hidden={!visible || hidden} aria-label="Main navigation">
   <div class="navbar-inner">
     <a class="logo" href="/" aria-label="Fuori campo home">
       {@render logoMark('logo-nav')}

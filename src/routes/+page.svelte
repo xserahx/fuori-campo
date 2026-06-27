@@ -16,7 +16,7 @@
   import type { BlurRevealOptions } from "../lib/actions/blurReveal";
   import gsap from 'gsap';
   import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/data/volunteers';
-  import { navbarInverted } from '$lib/stores/navbar';
+  import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────────
@@ -27,9 +27,6 @@
   let introExiting = $state(false);
   let loaderProgress = $state(0);
 
-  /* ── Navbar state ─────────────────────────────────────────────── */
-  let navbarVisible = $state(true);
-  let navbarFixed = $state(true);
 
   /* ── DOM refs ────────────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
@@ -380,11 +377,11 @@
       const heroBotVP = heroDocBot - sy;
       const inHero    = heroTopVP < vh * 0.15 && heroBotVP > vh * 0.45;
 
-      if      (inHero)       { navbarVisible = true;  navbarFixed = true; }
-      else if (inQ)          { navbarVisible = false; }
-      else if (sy <= 20)     { navbarVisible = false; navbarFixed = true; }
-      else if (vDelta >  5)  { navbarVisible = false; }
-      else if (vDelta < -5)  { navbarVisible = true;  }
+      if      (inHero)       { navbarHidden.set(false); }
+      else if (inQ)          { navbarHidden.set(true);  }
+      else if (sy <= 20)     { navbarHidden.set(false); }
+      else if (vDelta >  5)  { navbarHidden.set(true);  }
+      else if (vDelta < -5)  { navbarHidden.set(false); }
 
       if (inQ && s1.slide > 0) {
         const t2     = clamp(s1.hSmooth / VW, 0, 2.9999);
@@ -517,7 +514,7 @@
       if (e.pointerType === 'touch') return;
       const inHero = (heroDocTop - vSmooth) < window.innerHeight * 0.15 &&
                      (heroDocBot - vSmooth) > window.innerHeight * 0.45;
-      if (!inHero && e.movementY < 0 && e.clientY <= 180) navbarVisible = true;
+      if (!inHero && e.movementY < 0 && e.clientY <= 180) navbarHidden.set(false);
     };
 
     const handleResize = () => { locked = null; cacheSpans(); requestAnimationFrame(setup); };
