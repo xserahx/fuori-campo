@@ -250,9 +250,13 @@
   }
 
   /* ── Page shell — scrolls vertically ────────────────────────────── */
+  /* width:100% (not 100vw) so a vertical scrollbar can't push content
+     sideways; min-height:100dvh tracks the dynamic mobile viewport. The
+     document itself scrolls — no overflow lock here, and none is inherited
+     now that the zoom page no longer sets a persistent :global lock. */
   .profile {
     position: relative;
-    width: 100vw;
+    width: 100%;
     min-height: 100dvh;
     padding: calc(var(--navbar-height, 125px) + 24px) 0 72px;
     background: #0e0e0e;
@@ -405,7 +409,7 @@
     position: relative;
     margin: 54px auto 0;
     width: 100%;
-    height: min(70vh, 760px);
+    height: min(70dvh, 760px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -448,7 +452,7 @@
      (no crop, no letterbox), portraits stay tall. */
   .slide-img {
     display: block;
-    max-height: min(70vh, 760px);
+    max-height: min(70dvh, 760px);
     max-width: min(46vw, 640px);
     width: auto;
     height: auto;
@@ -601,8 +605,8 @@
     .quote-body { width: 100%; font-size: 18px; }
     .vol-info { margin: 24px 16px 0; }
     .info-role { font-size: 26px; }
-    .carousel { height: 54vh; margin-top: 32px; }
-    .slide-img { max-width: 82vw; max-height: 54vh; }
+    .carousel { height: 54dvh; margin-top: 32px; }
+    .slide-img { max-width: 82vw; max-height: 54dvh; }
     /* On phones the flanking photos would crowd the centre — show one at a time. */
     .slide:not(.slide--active) { opacity: 0 !important; }
     .car-arrow { width: 44px; height: 44px; }

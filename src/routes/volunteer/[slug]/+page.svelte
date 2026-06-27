@@ -228,11 +228,15 @@
 
 <style>
   /* ── Global ─────────────────────────────────────────────────────── */
+  /* NB: no `overflow: hidden` here. SvelteKit never unloads a page's CSS
+     after first visit, so a :global overflow lock would leak onto every
+     later page (e.g. the profile page could no longer scroll). The fixed
+     `.lb` shell below already covers the viewport, so the lightbox never
+     scrolls without needing a body-level lock. */
   :global(html), :global(body) {
     margin: 0;
     background: #0e0e0e;
     color: #fafafa;
-    overflow: hidden;
   }
 
   :global(*) {
