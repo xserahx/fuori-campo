@@ -87,22 +87,9 @@
     flex-direction: column;
   }
 
-  /* ── Responsive scroll gate ───────────────────────────────────────
-     The About layout is sized to the 16" Figma reference frame (1728 × 1117).
-     At or above that viewport HEIGHT it stays fixed exactly as in Figma — page
-     scrolling is locked. Vertical scrolling is enabled only on shorter
-     viewports (height < 1117px), where the fixed layout would otherwise clip
-     its content. The real scroll container is the document, so the lock is on
-     <html>; `:has(.about-page)` keeps it scoped to this page only (and it
-     stops matching automatically when you navigate away). */
-  @media (min-height: 1117px) {
-    :global(html:has(.about-page)) {
-      overflow: hidden;
-    }
-    .about-page {
-      overflow-y: hidden;
-    }
-  }
+  /* The About page is a scrolling layout: the hero fills the first screen
+     and the SiteFooter sits below it, so the document always scrolls to
+     reveal the footer — on every viewport and device. No scroll lock. */
 
   .hero {
     padding: clamp(var(--unit-56), 8vh, 110px) clamp(var(--spacing-4), 2vw, var(--spacing-5)) 0 clamp(var(--spacing-5), 5.5vw, var(--unit-80));
