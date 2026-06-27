@@ -106,9 +106,9 @@
       : null
   );
 
-  /* ── Navigation: same gallery category as the filter the user came from ─ */
+  /* ── Navigation: same category as the current volunteer ─────────── */
   const peers = $derived.by(() => {
-    const tag = currentContext.filter;
+    const tag = ruoloToTag(dbVol?.ruolo_generale ?? null) ?? currentContext.filter;
     if (tag) return allVols.filter(v => ruoloToTag(v.ruolo_generale) === tag && v.ha_immagini);
     return allVols.filter(v => v.ha_immagini);
   });

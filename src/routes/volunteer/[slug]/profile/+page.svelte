@@ -584,8 +584,8 @@
 
   @media (max-width: 700px) {
     .profile { padding-top: calc(var(--navbar-height, 125px) + 8px); }
-    .back-btn { margin-left: 16px; }
-    .name-surname  { padding-left: 16px; font-size: clamp(44px, 13vw, 80px); }
+    .back-btn { margin-left: var(--spacing-5); }
+    .name-surname  { padding-left: var(--spacing-5); font-size: clamp(44px, 13vw, 80px); }
     .name-firstname { padding-left: 40px; font-size: clamp(44px, 13vw, 80px); }
     .head { min-height: 0; }
     .vol-quote {
@@ -594,10 +594,10 @@
       width: 100%;
       max-width: 100%;
       margin: 24px 0 0;
-      padding: 0.6em 16px;
+      padding: 0.6em var(--spacing-5);
     }
     .quote-body { width: 100%; font-size: 18px; }
-    .vol-info { margin: 24px 16px 0; }
+    .vol-info { margin: 24px var(--spacing-5) 0; }
     .info-role { font-size: 26px; }
     .carousel { height: 54dvh; margin-top: 32px; }
     .slide-img { max-width: 82vw; max-height: 54dvh; }
@@ -606,7 +606,7 @@
     .car-arrow { width: 44px; height: 44px; }
     .car-arrow--prev { left:  var(--spacing-5, 24px); }
     .car-arrow--next { right: var(--spacing-5, 24px); }
-    .qa-wrap { width: calc(100vw - 32px); margin: 44px 16px 0; }
+    .qa-wrap { width: calc(100vw - 2 * var(--spacing-5)); margin: 44px var(--spacing-5) 0; }
     .qa-row { font-size: 18px; letter-spacing: 1px; padding: 12px 0; }
     .qa-icon { width: 28px; height: 28px; }
     .qa-answer { padding: 20px 18px 24px; }

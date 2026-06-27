@@ -36,7 +36,7 @@
     draggable="false"
   />
 
-  <footer class="team" aria-label="Team credits">
+  <footer class="team safe-area" aria-label="Team credits">
     <div class="team-copy">
       <p>Il nostro Team</p>
       <p>Nome  Cognome, Nome  Cognome, Nome  Cognome, Nome  Cognome, Nome  Cognome, Nome  Cognome</p>
@@ -82,7 +82,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     font-family: var(--font-display);
-    padding-bottom: 24px;
+    padding-bottom: var(--spacing-5);
     display: flex;
     flex-direction: column;
   }
@@ -105,13 +105,13 @@
   }
 
   .hero {
-    padding: clamp(56px, 8vh, 110px) clamp(16px, 2vw, 24px) 0 clamp(24px, 5.5vw, 80px);
+    padding: clamp(var(--unit-56), 8vh, 110px) clamp(var(--spacing-4), 2vw, var(--spacing-5)) 0 clamp(var(--spacing-5), 5.5vw, var(--unit-80));
     flex: 1 0 auto;
   }
 
   .hero h1 {
     margin: 0;
-    font-size: clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px);
+    font-size: clamp(var(--unit-48), calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)), var(--unit-200));
     line-height: 1;
     font-weight: 800;
     letter-spacing: 0;
@@ -120,11 +120,11 @@
 
   .hero p {
     /* Indent scales: zero on narrow, up to 260 px on 1440 px+ */
-    margin: clamp(12px, 1.5vw, 18px) 0 0 clamp(0px, 18vw, 260px);
+    margin: clamp(var(--unit-12), 1.5vw, 18px) 0 0 clamp(0px, 18vw, 260px);
     max-width: 1311px;
     color: var(--color-content-body, #fafafa);
     font-family: var(--font-display);
-    font-size: clamp(26px, calc(84px / max(var(--page-zoom, 1), 0.65)), 145px);
+    font-size: clamp(26px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 145px);
     font-weight: 500;
     line-height: 0.95;
     letter-spacing: 0;
@@ -141,12 +141,12 @@
     position: relative;
     left: 0;
     right: 0;
-    padding: 0 clamp(24px, 5vw, 72px) 10px;
+    padding-bottom: 10px;
     color: rgba(250, 250, 250, 0.55);
-    font-size: clamp(14px, 1.5vw, 24px);
+    font-size: clamp(14px, 1.5vw, var(--unit-24));
     line-height: 1.3;
     font-weight: 500;
-    margin-top: clamp(24px, 3vw, 40px);
+    margin-top: clamp(var(--spacing-5), 3vw, var(--unit-40));
     display: flex;
     justify-content: flex-start;
     animation: about-slide 700ms cubic-bezier(0.22, 1, 0.36, 1) 500ms both;
@@ -167,23 +167,23 @@
     .about-page {
       background: var(--color-content-accent);
       color: var(--color-content-body-black);
-      padding-bottom: 48px;
+      padding-bottom: var(--unit-48);
     }
 
     .hero {
-      padding: 32px 27px 0;
+      padding: 32px var(--spacing-5) 0;
       flex: 0 0 auto;
     }
 
     .hero h1 {
-      font-size: 56px;
+      font-size: var(--unit-56);
       line-height: 1;
       color: var(--color-content-body-black);
     }
 
     .hero p {
-      margin: 16px 0 0;
-      font-size: 24px;
+      margin: var(--spacing-4) 0 0;
+      font-size: var(--unit-24);
       font-weight: 500;
       line-height: 1.05;
       color: var(--color-content-body-black);
@@ -196,16 +196,15 @@
 
     .team-photo {
       display: block;
-      width: calc(100% - 54px);
-      margin: 32px 27px 0;
+      width: calc(100% - 2 * var(--spacing-5));
+      margin: 32px var(--spacing-5) 0;
       filter: grayscale(100%);
       aspect-ratio: 4 / 3;
       object-fit: cover;
     }
 
     .team {
-      margin-top: 24px;
-      padding: 0 27px;
+      margin-top: var(--spacing-5);
       color: var(--color-content-body-black);
       font-size: 14px;
       line-height: 1.4;
