@@ -172,14 +172,14 @@
 
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
   <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
-    <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
-      <path d="M22 4L6 25L22 46" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+      <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
   <button class="arrow arrow--next" type="button" aria-label="Volunteer successivo" onclick={() => goTo(1)}>
-    <svg width="28" height="50" viewBox="0 0 28 50" fill="none" aria-hidden="true">
-      <path d="M6 4L22 25L6 46" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+      <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
@@ -350,52 +350,55 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
-    width: 48px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 0;
+    border: 2px solid var(--color-content-accent, #bdff5d);
+    border-radius: 999px;
     background: transparent;
     cursor: pointer;
     padding: 0;
-    color: #fafafa;
+    color: var(--color-content-body, #fafafa);
     transition:
-      opacity   0.28s cubic-bezier(0.22, 1, 0.36, 1),
-      transform 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.28s ease,
-      color     0.24s ease;
+      color     0.24s ease,
+      transform 0.30s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform;
   }
 
   .arrow--prev {
-    left: 70px;
+    left: var(--spacing-5);
     transform: translateY(-50%) translateX(0);
   }
   .arrow--prev:hover {
     color: var(--color-content-accent, #bdff5d);
-    opacity: 1;
-    transform: translateY(-50%) translateX(-6px);
-    filter: drop-shadow(-4px 0 12px rgba(189, 255, 93, 0.28));
   }
   .arrow--prev:active {
-    transform: translateY(-50%) translateX(-10px) scale(0.92);
+    transform: translateY(-50%) scale(0.94);
     transition-duration: 80ms;
   }
 
   .arrow--next {
-    right: 69px;
+    right: var(--spacing-5);
     transform: translateY(-50%) translateX(0);
   }
   .arrow--next:hover {
     color: var(--color-content-accent, #bdff5d);
-    opacity: 1;
-    transform: translateY(-50%) translateX(6px);
-    filter: drop-shadow(4px 0 12px rgba(189, 255, 93, 0.28));
   }
   .arrow--next:active {
-    transform: translateY(-50%) translateX(10px) scale(0.92);
+    transform: translateY(-50%) scale(0.94);
     transition-duration: 80ms;
+  }
+
+  @media (min-width: 768px) {
+    .arrow--prev { left:  var(--spacing-8); }
+    .arrow--next { right: var(--spacing-8); }
+  }
+
+  @media (min-width: 1024px) {
+    .arrow--prev { left:  var(--spacing-11); }
+    .arrow--next { right: var(--spacing-11); }
   }
 
   /* ── Main photo frame ───────────────────────────────────────────── */

@@ -706,31 +706,27 @@
 
   .arrow {
     position: absolute;
-    /* Figma arrows are centered vertically in the carousel */
     top: 50%;
     transform: translateY(-50%);
-    width: 38px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
+    border: 2px solid var(--color-content-accent, #bdff5d);
+    border-radius: 999px;
     background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 0;
     z-index: 12;
     cursor: pointer;
-    border: none;
-    box-shadow: none;
-    color: #fafafa;
-    transition: color 0.24s ease, filter 0.24s ease;
+    color: var(--color-content-body, #fafafa);
+    transition: color 0.24s ease;
   }
 
-  .arrow:hover {
-    color: var(--color-content-accent, #bdff5d);
-    filter: drop-shadow(0 0 8px rgba(189, 255, 93, 0.4));
-  }
+  .arrow:hover { color: var(--color-content-accent, #bdff5d); }
 
   .arrow:focus-visible {
-    outline: 2px solid rgba(186, 255, 68, 0.9);
+    outline: 2px solid var(--color-content-accent, #bdff5d);
     outline-offset: 4px;
   }
 

@@ -173,8 +173,8 @@
     <section class="carousel" aria-label="Galleria foto">
       {#if photoCount > 1}
         <button class="car-arrow car-arrow--prev" type="button" aria-label="Foto precedente" onclick={() => stepPhoto(-1)}>
-          <svg width="14" height="26" viewBox="0 0 14 26" fill="none" aria-hidden="true">
-            <path d="M12 2L2 13L12 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+            <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       {/if}
@@ -196,8 +196,8 @@
 
       {#if photoCount > 1}
         <button class="car-arrow car-arrow--next" type="button" aria-label="Foto successiva" onclick={() => stepPhoto(1)}>
-          <svg width="14" height="26" viewBox="0 0 14 26" fill="none" aria-hidden="true">
-            <path d="M2 2L12 13L2 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
+            <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
       {/if}
@@ -469,30 +469,24 @@
     top: 50%;
     transform: translateY(-50%);
     z-index: 30;
-    width: 52px;
-    height: 52px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 2px solid var(--color-content-accent, #bdff5d);
     border-radius: 999px;
-    background: rgba(14, 14, 14, 0.35);
-    color: var(--color-content-accent, #bdff5d);
+    background: transparent;
+    color: var(--color-content-body, #fafafa);
     cursor: pointer;
     padding: 0;
-    backdrop-filter: blur(2px);
     transition:
-      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-      background 0.3s ease,
-      box-shadow 0.3s ease;
+      color 0.24s ease,
+      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .car-arrow--prev { left:  var(--spacing-11, 72px); }
   .car-arrow--next { right: var(--spacing-11, 72px); }
-  .car-arrow:hover {
-    background: rgba(189, 255, 93, 0.12);
-    box-shadow: 0 0 20px rgba(189, 255, 93, 0.25);
-    transform: translateY(-50%) scale(1.08);
-  }
+  .car-arrow:hover  { color: var(--color-content-accent, #bdff5d); }
   .car-arrow:active { transform: translateY(-50%) scale(0.94); transition-duration: 80ms; }
 
   /* ── Q&A accordion (Figma 6251-4989) ────────────────────────────── */
