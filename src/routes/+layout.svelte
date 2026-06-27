@@ -119,7 +119,7 @@
 	}
 
 	@keyframes gallery-bloom {
-		0%   { opacity: 0; filter: blur(40px); transform: scale(0.96); }
+		0%   { opacity: 0; filter: blur(var(--unit-40)); transform: scale(0.96); }
 		100% { opacity: 1; filter: blur(0px);  transform: scale(1); }
 	}
 

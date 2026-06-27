@@ -726,7 +726,7 @@
   .archivio-link:hover {
     text-decoration: underline;
     text-underline-offset: 4px;
-    text-shadow: 0 0 24px rgba(189, 255, 93, 0.65);
+    text-shadow: 0 0 var(--unit-24) rgba(189, 255, 93, 0.65);
   }
 
   :global(.question h2 span) {
@@ -762,7 +762,7 @@
     
     /* LA MAGIA: Proietta un'ombra solida di 300px verso il basso 
        che usa il colore dinamico dello sfondo. Coprirà il bordo nero! */
-    box-shadow: 0 300px 0 0 var(--q-bg);
+    box-shadow: 0 var(--unit-300) 0 0 var(--q-bg);
   }
 
   .question-track {
