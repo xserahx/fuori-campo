@@ -241,10 +241,17 @@
   }
 
   /* ── Lightbox shell ─────────────────────────────────────────────── */
+  /* Fixed + inset:0 covers the whole viewport regardless of the body
+     padding-top (navbar) or the global width-based zoom on <html>, and
+     centres the frame on BOTH axes via flexbox — the same edge-to-edge
+     approach the gallery uses. This is immune to the absolute-centering
+     math drifting under zoom on smaller screens.                      */
   .lb {
-    position: relative;
-    width: 100vw;
-    height: 100dvh;
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     background: #0e0e0e;
   }
@@ -392,35 +399,46 @@
     from {
       opacity: 0;
       filter: blur(18px) saturate(0.4);
-      transform: translate(-50%, calc(-50% + 18px)) scale(0.97);
+      transform: translateY(18px) scale(0.97);
     }
     to {
       opacity: 1;
       filter: blur(0px) saturate(1);
-      transform: translate(-50%, -50%) scale(1);
+      transform: none;
     }
   }
 
-  /* ── Base frame (positioning only, no size) ────────────────────── */
+  /* ── Base frame (positioning only, no size) ─────────────────────
+     Centred by the flex parent (.lb) — no absolute/translate needed,
+     which keeps it reliably centred on both axes at any zoom level.  */
   .photo-frame {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    position: relative;
+    flex: 0 0 auto;
     z-index: 5;
     overflow: hidden;
     background: #111;
     animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+    /* Vertical budget: how tall the frame may grow relative to the
+       *dynamic* viewport height. dvh tracks mobile chrome show/hide,
+       so the frame always fits without the page ever scrolling.    */
+    --avail-h: 86dvh;
+
+    /* Hard safety: never taller than the budget even if a width cap
+       wins, so flexbox never has to clip it.                        */
+    max-height: var(--avail-h);
   }
 
   /* ── Frame size per snapped ratio ───────────────────────────────
-     Width = min(Figma-max, vw-cap, height-cap derived from 80vh).
-     This ensures the frame never exceeds 80 vh in height at any
-     viewport size while keeping proportions exact.               */
-  .photo-frame--16-9 { width: min(1091px, 63vw, calc(80vh * 16 / 9)); aspect-ratio: 16 / 9; }
-  .photo-frame--4-3  { width: min(1091px, 63vw, calc(78vh * 4  / 3)); aspect-ratio: 4  / 3; }
-  .photo-frame--3-4  { width: min(588px,  34vw, calc(80vh * 3  / 4)); aspect-ratio: 3  / 4; }
-  .photo-frame--9-16 { width: min(588px,  34vw, calc(80vh * 9  / 16)); aspect-ratio: 9 / 16; }
+     The frame is sized by WIDTH so its aspect-ratio fixes the height.
+     Width = min(Figma-max, vw-cap, height-cap), where the height-cap
+     (--avail-h × ratio) guarantees the resulting HEIGHT never exceeds
+     the vertical budget. The frame therefore always fits both axes
+     and stays absolutely centred at every viewport size.          */
+  .photo-frame--16-9 { width: min(1091px, 63vw, calc(var(--avail-h) * 16 / 9)); aspect-ratio: 16 / 9; }
+  .photo-frame--4-3  { width: min(1091px, 63vw, calc(var(--avail-h) * 4  / 3)); aspect-ratio: 4  / 3; }
+  .photo-frame--3-4  { width: min(588px,  34vw, calc(var(--avail-h) * 3  / 4)); aspect-ratio: 3  / 4; }
+  .photo-frame--9-16 { width: min(588px,  34vw, calc(var(--avail-h) * 9  / 16)); aspect-ratio: 9 / 16; }
 
   /* Portrait button moves to top-right (avoids caption overlap) */
   .photo-frame--portrait .expand-btn { bottom: auto; top: 18px; }
@@ -550,28 +568,32 @@
     color: var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Responsive ─────────────────────────────────────────────────── */
+  /* ── Responsive ─────────────────────────────────────────────────────
+     Only the per-breakpoint knobs change: the width cap (Figma-max),
+     the viewport-width fraction (how much room to leave for the side
+     blur + arrows), and the vertical budget --avail-h. The height-cap
+     math itself lives once in the base rules above.                 */
   @media (max-width: 1300px) {
-    .photo-frame        { top: 50%; }
-    .photo-frame--16-9  { width: min(900px, 80vw, calc(80vh * 16 / 9)); }
-    .photo-frame--4-3   { width: min(900px, 80vw, calc(78vh * 4  / 3)); }
-    .photo-frame--3-4   { width: min(500px, 44vw, calc(80vh * 3  / 4)); }
-    .photo-frame--9-16  { width: min(500px, 44vw, calc(80vh * 9  / 16)); }
+    .photo-frame--16-9  { width: min(900px, 80vw, calc(var(--avail-h) * 16 / 9)); }
+    .photo-frame--4-3   { width: min(900px, 80vw, calc(var(--avail-h) * 4  / 3)); }
+    .photo-frame--3-4   { width: min(500px, 44vw, calc(var(--avail-h) * 3  / 4)); }
+    .photo-frame--9-16  { width: min(500px, 44vw, calc(var(--avail-h) * 9  / 16)); }
   }
 
   @media (max-width: 1100px) {
-    .photo-frame--16-9  { width: min(900px, 90vw, calc(80vh * 16 / 9)); }
-    .photo-frame--4-3   { width: min(900px, 90vw, calc(78vh * 4  / 3)); }
-    .photo-frame--3-4   { width: min(460px, 50vw, calc(80vh * 3  / 4)); }
-    .photo-frame--9-16  { width: min(460px, 50vw, calc(80vh * 9  / 16)); }
+    .photo-frame--16-9  { width: min(900px, 90vw, calc(var(--avail-h) * 16 / 9)); }
+    .photo-frame--4-3   { width: min(900px, 90vw, calc(var(--avail-h) * 4  / 3)); }
+    .photo-frame--3-4   { width: min(460px, 50vw, calc(var(--avail-h) * 3  / 4)); }
+    .photo-frame--9-16  { width: min(460px, 50vw, calc(var(--avail-h) * 9  / 16)); }
   }
 
   @media (max-width: 700px) {
-    .photo-frame        { top: 50%; }
-    .photo-frame--16-9  { width: min(96vw,  calc(80vh * 16 / 9)); }
-    .photo-frame--4-3   { width: min(96vw,  calc(78vh * 4  / 3)); }
-    .photo-frame--3-4   { width: min(82vw,  calc(80vh * 3  / 4)); }
-    .photo-frame--9-16  { width: min(82vw,  calc(80vh * 9  / 16)); }
+    /* Phones: give the frame more height budget and nearly full width. */
+    .photo-frame        { --avail-h: 80dvh; }
+    .photo-frame--16-9  { width: min(96vw,  calc(var(--avail-h) * 16 / 9)); }
+    .photo-frame--4-3   { width: min(96vw,  calc(var(--avail-h) * 4  / 3)); }
+    .photo-frame--3-4   { width: min(88vw,  calc(var(--avail-h) * 3  / 4)); }
+    .photo-frame--9-16  { width: min(88vw,  calc(var(--avail-h) * 9  / 16)); }
     .cap-location { font-size: 10px; }
     .cap-role     { font-size: 14px; }
     .cap-name     { font-size: 20px; }
@@ -615,59 +637,7 @@
       animation: none;
       opacity: 1;
       filter: none;
-      transform: translate(-50%, -50%) !important;
-    }
-  }
-
-  /* ── Compact viewport (<1117 px tall): enable vertical scrolling ── */
-  /*    Below the 16-inch reference resolution (1728×1117) the photo
-        frame leaves absolute centering and enters document flow so the
-        page becomes scrollable to access both the photo and its caption. */
-  @keyframes frame-enter-compact {
-    from {
-      opacity: 0;
-      filter: blur(18px) saturate(0.4);
-      transform: translateY(18px) scale(0.97);
-    }
-    to {
-      opacity: 1;
-      filter: blur(0px) saturate(1);
       transform: none;
-    }
-  }
-
-  @media (max-height: 1116px) {
-    :global(html), :global(body) {
-      overflow-y: auto;
-    }
-
-    .lb {
-      height: auto;
-      min-height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: visible;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-      padding-block: clamp(60px, 7dvh, 100px);
-    }
-
-    .photo-frame {
-      position: relative;
-      left: auto;
-      top: auto;
-      transform: none;
-      animation: frame-enter-compact 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-  }
-
-  /* Combined: reduced-motion wins over the compact transform above */
-  @media (prefers-reduced-motion: reduce) and (max-height: 1116px) {
-    .photo-frame {
-      animation: none;
-      opacity: 1;
-      filter: none;
-      transform: none !important;
     }
   }
 </style>

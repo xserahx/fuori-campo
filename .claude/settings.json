@@ -1,0 +1,16 @@
+{
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true,
+    "gsap-skills@gsap-skills": true,
+    "web3d-integration-patterns@claude-design-skillstack": true,
+    "spline-interactive@claude-design-skillstack": true,
+    "scroll-reveal-libraries@claude-design-skillstack": true,
+    "modern-web-design@claude-design-skillstack": true,
+    "gsap-scrolltrigger@claude-design-skillstack": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "lottie-animations@claude-design-skillstack": true
+  }
+}
