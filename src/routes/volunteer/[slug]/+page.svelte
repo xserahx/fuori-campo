@@ -4,7 +4,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
+  import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, ruoloToTag, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
   /* ── Fixed positions for the blurred background photos ──────── */
@@ -106,12 +106,12 @@
       : null
   );
 
-  /* ── Navigation: same role, volunteers with images ───────────── */
-  const peers = $derived(
-    dbVol?.ruolo_generale
-      ? allVols.filter(v => v.ruolo_generale === dbVol!.ruolo_generale && v.ha_immagini)
-      : allVols.filter(v => v.ha_immagini)
-  );
+  /* ── Navigation: same gallery category as the filter the user came from ─ */
+  const peers = $derived.by(() => {
+    const tag = currentContext.filter;
+    if (tag) return allVols.filter(v => ruoloToTag(v.ruolo_generale) === tag && v.ha_immagini);
+    return allVols.filter(v => v.ha_immagini);
+  });
 
   const vIdx = $derived(peers.findIndex(v => v.slug === currentSlug));
 
