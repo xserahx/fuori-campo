@@ -1,3 +1,5 @@
+<!-- Regola i comportamento del testo dentro ai bottoni -->
+ 
 <script lang="ts">
     import type { Snippet } from 'svelte';
     

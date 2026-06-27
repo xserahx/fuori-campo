@@ -1,3 +1,6 @@
+<!-- Bottone da usare nella pagina delle categorie (solo mobile)
+ e nella galleria foto (versione solo desktop) quando si clicca su una foto -->
+ 
 <script lang="ts">
     import ButtonLabel from './ButtonLabel.svelte';
 
