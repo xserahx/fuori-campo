@@ -16,6 +16,7 @@
         align-items: center;
         
         /* ── TIPOGRAFIA DESKTOP ── */
+        font-family: var(--font-display);
         font-size: var(--ts-nav-link-size, 24px);
         font-weight: var(--ts-nav-link-weight, 500);
         line-height: var(--ts-nav-link-line-height, 26px);
