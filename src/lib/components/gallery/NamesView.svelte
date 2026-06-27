@@ -244,7 +244,7 @@
     <div class="names-veil__zone names-veil__zone--bottom"></div>
   </div>
 
-  <nav class="alpha-sidebar" aria-label="Navigazione alfabetica">
+  <nav class="alpha-sidebar" aria-label="Navigazione alfabetica" style={`--_count: ${Math.max(availableLetters.length, 1)}`}>
     {#each availableLetters as letter}
       <button
         class="alpha-sidebar__btn"
@@ -553,14 +553,27 @@
     --_font:    var(--unit-20, 20px);          /* letter font-size */
     --_lh:      var(--unit-24, 24px);          /* letter line-height */
     --_gap-max: var(--unit-16, 16px);          /* Figma itemSpacing */
-    --_gap-min: var(--unit-4, 4px);            /* tightest gap before clip */
+    --_gap-min: var(--unit-0, 0px);            /* tightest gap before clip */
+    --_count:   19;                            /* fallback; set inline from availableLetters.length */
     /* clearance above filter-btn: max-bottom(48) + btn-height(~50) + room = 120px
        = var(--unit-80) + var(--spacing-7)                                         */
     --_reserve: calc(var(--unit-80, 80px) + var(--spacing-7, 40px));
 
-    /* ── Derived — recalculate whenever any component var changes ── */
+    /* ── Derived — recalculate whenever any component var changes ──
+       The gap distributes the ACTUAL number of letters across --_avail:
+       N items + (N-1) gaps. Using the real --_count (not a hardcoded 19)
+       keeps every letter on screen — the gap shrinks toward --_gap-min as
+       letters are added so the column never overflows its max-height.     */
     --_avail: calc(100dvh - var(--_top) - var(--_reserve));
-    --_gap:   clamp(var(--_gap-min), calc((var(--_avail) - 19 * var(--_item-h)) / 18), var(--_gap-max));
+    /* Per-item height: the Figma size normally, but shrunk so N items always
+       fit within --_avail when letters are many / the viewport is short.
+       Guarantees count * item-fit <= avail, so nothing is ever clipped.   */
+    --_item-fit: min(var(--_item-h), calc(var(--_avail) / var(--_count)));
+    --_gap:   clamp(
+                var(--_gap-min),
+                calc((var(--_avail) - var(--_count) * var(--_item-fit)) / max(var(--_count) - 1, 1)),
+                var(--_gap-max)
+              );
 
     position:       absolute;
     right:          var(--_right);
@@ -592,7 +605,7 @@
     text-transform: uppercase;
     color:          var(--color-content-body, #fafafa);
     width:          var(--_w);
-    height:         var(--_item-h);
+    height:         var(--_item-fit);
     transition:     color 180ms ease, opacity 180ms ease;
   }
 

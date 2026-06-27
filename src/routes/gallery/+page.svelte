@@ -151,7 +151,6 @@
     class="filter-btn"
     class:filter-btn--active={activeFilter !== null}
     class:filter-btn--open={filterPanelOpen}
-    class:filter-btn--names={activeToggle === 'names'}
     type="button"
     onclick={() => { filterPanelOpen = !filterPanelOpen; }}
     aria-label="Filtra per categoria"
@@ -394,11 +393,9 @@
   }
   .filter-btn:active { transform: scale(0.97); transition-duration: 80ms; }
 
-  /* On names view push the button left so it doesn't share the sidebar column.
-     right = sidebar-right(72) + sidebar-width(23) + gap(16) = 111px          */
-  .filter-btn--names {
-    right: calc(var(--spacing-11, 72px) + 23px + var(--unit-16, 16px));
-  }
+  /* Same position in both views. The alphabet sidebar reserves vertical
+     clearance above the button (--_reserve), so no horizontal shift is
+     needed in names view — keeping the button consistent between FOTO/NOMI. */
 
   .filter-btn-label {
     display: block;
@@ -442,6 +439,9 @@
     flex-direction: column;
     align-items: flex-end;
     justify-content: flex-end;
+    /* Top clearance so the first category never tucks under the fixed navbar
+       on shorter screens (tracks the responsive --navbar-height). */
+    padding-top: calc(var(--navbar-height, 125px) + var(--spacing-4, 16px));
     /* padding-bottom = filter-btn bottom (48) + filter-btn height (48) + gap (80) */
     padding-bottom: 176px;
     padding-right: 72px;
@@ -453,7 +453,10 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 36px;
+    /* Gap scales with viewport height: roomy spacing on taller screens (as in
+       the target layout), tightening gracefully on shorter ones so the list
+       still clears the navbar without ever feeling cramped. */
+    gap: clamp(20px, 5vh, 56px);
   }
 
   /* ── Filtri categoria stati — Desktop Unselected ────────────────── */
@@ -462,9 +465,9 @@
     background: transparent;
     color: var(--color-content-body);
     font-family: var(--font-display);
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 500;
-    line-height: 32px;
+    line-height: 28px;
     letter-spacing: 1.28px;
     text-transform: uppercase;
     text-align: right;
@@ -517,9 +520,9 @@
     .filter-btn  { right: 16px; bottom: 20px; }
     /* padding-bottom = btn-bottom (20) + btn-height (48) + gap (48) */
     .cat-overlay { width: 100vw; padding-right: 24px; padding-bottom: 116px; }
-    /* Mobile Unselected / Selected — 24px / lh24 / ls0.96 */
-    .cat-item  { font-size: 24px; line-height: 24px; letter-spacing: 0.96px; }
-    .cat-items { gap: 40px; }
+    /* Mobile Unselected / Selected — slightly smaller label */
+    .cat-item  { font-size: 21px; line-height: 21px; letter-spacing: 0.96px; }
+    /* gap governed by the height-adaptive base rule */
   }
 
   /* ── Touch target compensation using --page-zoom ────────────────── */
@@ -583,8 +586,8 @@
       align-items: flex-end;
       background: #0e0e0e;
     }
-    .cat-items { align-items: flex-end; gap: 40px; }
-    .cat-item  { font-size: 24px; line-height: 22.8px; letter-spacing: 0.96px; text-align: right; }
+    .cat-items { align-items: flex-end; }
+    .cat-item  { font-size: 21px; line-height: 20px; letter-spacing: 0.96px; text-align: right; }
 
     /* ── Blur BG effect (Figma EFFECT/BLUR BG, 388px ≈ 44% of 874px frame) ── */
     /* Top and bottom edge fades gain backdrop-filter on mobile so adjacent   */
@@ -608,6 +611,20 @@
     /* Side fades not needed on mobile — photos are full width */
     .edge-fade--left,
     .edge-fade--right { display: none; }
+  }
+
+  /* ── Genuinely short viewports — safety only ──────────────────────
+     Spacing is handled by the height-adaptive gap above. Here we only
+     trim the type size and bottom clearance on very short screens so the
+     six categories still fit between the navbar and the FILTRA button
+     without the gap having to collapse. Placed after the width queries
+     so it wins where both apply. */
+  @media (max-height: 620px) {
+    .cat-item {
+      font-size: clamp(16px, 3.2vh, 21px);
+      line-height: 1.1;
+    }
+    .cat-overlay { padding-bottom: clamp(96px, 14vh, 140px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
