@@ -268,7 +268,7 @@
   .edge-fade--top {
     top: 0; left: 0; right: 0;
     height: 276px;
-    background: linear-gradient(to bottom, #1a1a1a, rgba(26, 26, 26, 0));
+    background: linear-gradient(to bottom, var(--gallery-background, #0e0e0e), transparent);
   }
 
   .edge-fade--bottom {
