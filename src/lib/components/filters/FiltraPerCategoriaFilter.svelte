@@ -140,6 +140,16 @@
             width: 100% !important;
         }
 
+        .filter-panel__wrapper {
+            padding-right: var(--spacing-5);
+            padding-bottom: var(--spacing-6-2);
+        }
+
+        .filter-panel__links {
+            /* gap rimane var(--spacing-7) ereditato da sopra, cambiamo solo lo stacco dal bottone */
+            margin-bottom: var(--spacing-9);
+        }
+
         .filter-panel__button-trigger {
             height: 50px; 
         }
