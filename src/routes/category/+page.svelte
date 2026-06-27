@@ -840,8 +840,8 @@
   .bottom-bar {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    /* py-[20px] from Figma — no horizontal padding, rows handle their own indent */
-    padding: 20px 0;
+    /* py-[spacing/4-2, 20px] from Figma — no horizontal padding, rows handle their own indent */
+    padding: var(--spacing-4-2) 0;
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
@@ -885,7 +885,7 @@
     display: block;
     white-space: nowrap;
     /* Figma: Outline row px-[spacing/17, 340px] — 340px at 1728px viewport */
-    margin-left: clamp(var(--spacing-11), calc(340px / max(var(--page-zoom, 1), 0.65)), 580px);
+    margin-left: clamp(var(--spacing-11), calc(var(--spacing-17) / max(var(--page-zoom, 1), 0.65)), 580px);
   }
 
   /* SPORT: shorter first word, keep distinct stagger */
@@ -1001,7 +1001,7 @@
     left: 0;
     right: 0;
     bottom: 87px;
-    padding: 32px 24px;
+    padding: var(--spacing-6) var(--spacing-5);
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -1050,14 +1050,14 @@
   /* ── Scopri di più — Figma: bottom 36, left 24, width 238 ─────── */
   .scopri-btn {
     position: absolute;
-    left: 24px;
-    bottom: 36px;
+    left: var(--spacing-5);
+    bottom: var(--unit-36);
     width: 238px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 0;
+    padding: var(--spacing-4) 0;
     border: 2px solid var(--color-content-accent);
     border-radius: var(--radius-rounded-pill, 999px);
     background: var(--color-background-primary);
@@ -1083,11 +1083,11 @@
   /* ── Vertical arrows — Figma: bottom 36, right 24, gap 24 ──────── */
   .mobile-nav-circles {
     position: absolute;
-    right: 24px;
-    bottom: 36px;
+    right: var(--spacing-5);
+    bottom: var(--unit-36);
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--spacing-5);
     z-index: 4;
   }
 

@@ -515,7 +515,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    width: min(665px, 100%);
+    width: min(780px, 100%);
   }
 
   .dot-nav {

@@ -36,7 +36,7 @@
     draggable="false"
   />
 
-  <footer class="team" aria-label="Team credits">
+  <footer class="team safe-area" aria-label="Team credits">
     <div class="team-copy">
       <p>Il nostro Team</p>
       <p>Nome  Cognome, Nome  Cognome, Nome  Cognome, Nome  Cognome, Nome  Cognome, Nome  Cognome</p>
@@ -141,7 +141,7 @@
     position: relative;
     left: 0;
     right: 0;
-    padding: 0 clamp(24px, 5vw, 72px) 10px;
+    padding-bottom: 10px;
     color: rgba(250, 250, 250, 0.55);
     font-size: clamp(14px, 1.5vw, 24px);
     line-height: 1.3;
@@ -171,7 +171,7 @@
     }
 
     .hero {
-      padding: 32px 27px 0;
+      padding: 32px var(--spacing-5) 0;
       flex: 0 0 auto;
     }
 
@@ -196,8 +196,8 @@
 
     .team-photo {
       display: block;
-      width: calc(100% - 54px);
-      margin: 32px 27px 0;
+      width: calc(100% - 2 * var(--spacing-5));
+      margin: 32px var(--spacing-5) 0;
       filter: grayscale(100%);
       aspect-ratio: 4 / 3;
       object-fit: cover;
@@ -205,7 +205,6 @@
 
     .team {
       margin-top: 24px;
-      padding: 0 27px;
       color: var(--color-content-body-black);
       font-size: 14px;
       line-height: 1.4;

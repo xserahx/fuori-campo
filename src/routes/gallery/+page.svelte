@@ -177,7 +177,7 @@
   <!-- ── Category overlay (right gradient panel) ───────────────── -->
   {#if filterPanelOpen}
     <div
-      class="cat-overlay"
+      class="cat-overlay safe-area"
       role="presentation"
       in:slideBlur={{ duration: 380, x: 48 }}
       out:slideBlurOut={{ duration: 200, x: 28 }}
@@ -444,7 +444,6 @@
     padding-top: calc(var(--navbar-height, 125px) + var(--spacing-4, 16px));
     /* padding-bottom = filter-btn bottom (48) + filter-btn height (48) + gap (80) */
     padding-bottom: 176px;
-    padding-right: 72px;
     background: linear-gradient(to left, #0e0e0e 0%, rgba(26, 26, 26, 0) 100%);
     cursor: default;
   }
@@ -492,7 +491,7 @@
   .filter-icon-btn {
     display: none; /* hidden on desktop */
     position: fixed;
-    right: 24px;
+    right: var(--spacing-5);
     bottom: 36px;
     z-index: 100;
     width: 48px;
@@ -516,10 +515,10 @@
 
   /* ── Responsive tweaks ──────────────────────────────────────────── */
   @media (max-width: 900px) {
-    .toggle      { left: 16px; bottom: 20px; }
-    .filter-btn  { right: 16px; bottom: 20px; }
+    .toggle      { left: var(--spacing-5); bottom: 20px; }
+    .filter-btn  { right: var(--spacing-5); bottom: 20px; }
     /* padding-bottom = btn-bottom (20) + btn-height (48) + gap (48) */
-    .cat-overlay { width: 100vw; padding-right: 24px; padding-bottom: 116px; }
+    .cat-overlay { width: 100vw; padding-bottom: 116px; }
     /* Mobile Unselected / Selected — slightly smaller label */
     .cat-item  { font-size: 21px; line-height: 21px; letter-spacing: 0.96px; }
     /* gap governed by the height-adaptive base rule */
@@ -546,7 +545,7 @@
   /* ── Very small viewports (phones in portrait) ───────────────────── */
   @media (max-width: 640px) {
     /* Side-by-side at Figma positions: toggle left/bottom 24/36, icon right/bottom 24/36 */
-    .toggle     { left: 24px; bottom: 36px; }
+    .toggle     { left: var(--spacing-5); bottom: 36px; }
     .filter-btn { display: none; }
     .filter-icon-btn { display: flex; }
 
@@ -579,8 +578,6 @@
     /* Full-width overlay, categories right-aligned (Figma Status=Opened: counterAxisAlignItems=MAX) */
     .cat-overlay {
       width: 100vw;
-      padding-right: 24px;
-      padding-left: 24px;
       /* bottom = icon-bottom (36) + icon-height (48) + gap (56, Figma itemSpacing) */
       padding-bottom: 140px;
       align-items: flex-end;
