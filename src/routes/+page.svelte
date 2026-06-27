@@ -571,28 +571,28 @@
       </div>
     </section>
 
-    <section class="story story--left story--intro"
+    <section class="story story--left story--intro safe-area"
       use:blurReveal={{ direction: "left", variant: "slide", blur: 24 }}>
       <p class="lead-paragraph">
         <span class="accent">Milano Cortina 2026</span> ha coinvolto migliaia di volontari:
       </p>
     </section>
 
-    <section class="story story--right story--numbers"
+    <section class="story story--right story--numbers safe-area"
       use:blurReveal={{ direction: "right", variant: "skew", blur: 28 }}>
       <p>
         <span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi.
       </p>
     </section>
 
-    <section class="story story--quote story--quote-left"
+    <section class="story story--quote story--quote-left safe-area"
       use:blurReveal={{ direction: "left", variant: "slide", blur: 20, threshold: 0.15 }}>
       <p class="quote">
         Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
       </p>
     </section>
 
-    <section class="story story--quote story--quote-right"
+    <section class="story story--quote story--quote-right safe-area"
       use:blurReveal={{ direction: "right", variant: "slide", blur: 20, threshold: 0.15, delay: 150 }}>
       <p class="quote">
         Nella narrazione ufficiale erano spesso dati per scontati.
@@ -603,7 +603,7 @@
       <div class="question-sticky" bind:this={stickyEl1}>
         <div class="question-track" bind:this={track1}>
 
-          <section class="question question--left question--lime">
+          <section class="question question--left question--lime safe-area">
             <h2 bind:this={q1h2}>
               <span class="accent">MA </span>
               <span class="ghost">CHI SONO </span>
@@ -612,7 +612,7 @@
             </h2>
           </section>
 
-          <section class="question question--right question--dark">
+          <section class="question question--right question--dark safe-area">
             <h2 bind:this={q2h2}>
               <span class="ghost">PERCHÉ </span>
               <span class="accent">HANNO DECISO</span><br />
@@ -620,14 +620,14 @@
             </h2>
           </section>
 
-          <section class="question question--left question--lime">
+          <section class="question question--left question--lime safe-area">
             <h2 bind:this={q3h2}>
               <span class="ghost">COSA FACEVANO</span><br />
               <span class="accent">CONCRETAMENTE?</span>
             </h2>
           </section>
 
-          <section class="question question--right question--dark">
+          <section class="question question--right question--dark safe-area">
             <h2 bind:this={q4h2}>
               <span class="accent">NE È VALSA LA PENA?</span><br />
               <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
@@ -639,7 +639,7 @@
       </div>
     </div>
 
-    <section class="story story--left story--summary"
+    <section class="story story--left story--summary safe-area"
       use:blurReveal={{ direction: "left", threshold: 0.25, blur: 36, duration: 1100, variant: "cinema" }}>
       <p>
         Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
@@ -792,13 +792,9 @@
 
   .question--left h2 {
     text-align: left;
-    padding-left: 72px;
-    padding-right: 24px;
   }
 
   .question--right h2 {
     text-align: right;
-    padding-right: 72px;
-    padding-left: 24px;
   }
 </style>

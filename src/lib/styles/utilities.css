@@ -1,3 +1,27 @@
+/* ── Safe-area layout wrapper ─────────────────────────────────── */
+/*
+ * Applies Figma-derived horizontal margins at each breakpoint.
+ * Mobile  < 768px  → --spacing-5  = 24px
+ * Tablet  ≥ 768px  → --spacing-8  = 48px
+ * Desktop ≥ 1024px → --spacing-11 = 72px
+ */
+.safe-area {
+  padding-inline: var(--spacing-5); /* 24px */
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .safe-area {
+    padding-inline: var(--spacing-8); /* 48px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .safe-area {
+    padding-inline: var(--spacing-11); /* 72px */
+  }
+}
+
 /* ── Colour utilities ─────────────────────────────────────────── */
 .accent { color: var(--color-content-accent); }
 
