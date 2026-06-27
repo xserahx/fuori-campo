@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
   import '$lib/styles/tokens.css';
 
@@ -266,6 +267,42 @@
 
   const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
   const roleCount = $derived(activeSummary.roles.length);
+
+  /* ── Vertical scrolling policy ──────────────────────────────────────
+     Scrolling is enabled ONLY on desktop devices whose SCREEN is smaller
+     than the 16-inch reference (1728×1117). The screen — not the viewport
+     — is the reference: a 16-inch laptop reports screen.height === 1117,
+     but its browser viewport is always shorter (tabs/chrome/dock), so a
+     viewport media query would wrongly flag it as compact. Touch devices
+     (phones/tablets) report `pointer: coarse` and never scroll here. */
+  const REFERENCE_HEIGHT = 1117; // 16-inch reference (1728×1117)
+  let scrollEnabled = $state(false);
+
+  $effect(() => {
+    if (!browser) return;
+
+    const evaluate = () => {
+      const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      const belowReference = window.screen.height < REFERENCE_HEIGHT;
+      scrollEnabled = isDesktop && belowReference;
+    };
+
+    evaluate();
+    window.addEventListener('resize', evaluate);
+    return () => window.removeEventListener('resize', evaluate);
+  });
+
+  $effect(() => {
+    if (!browser) return;
+
+    const root = document.documentElement;
+    root.classList.toggle('category-scrollable', scrollEnabled);
+    root.classList.toggle('category-noscroll', !scrollEnabled);
+
+    return () => {
+      root.classList.remove('category-scrollable', 'category-noscroll');
+    };
+  });
 </script>
 
 <svelte:head>
@@ -801,20 +838,27 @@
     }
   }
 
-  /* ── Compact viewport (<1117 px tall): enable vertical scrolling ── */
-  /*    Below the 16-inch reference resolution (1728×1117) the page
-        content may exceed the viewport; allow it to scroll. */
-  @media (max-height: 1116px) {
-    :global(html), :global(body) {
-      overflow-y: auto;
-    }
+  /* ── Vertical scrolling policy (class set from JS — see <script>) ────
+     `.category-scrollable` → desktop with a screen smaller than the
+     16-inch reference (1728×1117): allow the page to scroll.
+     `.category-noscroll`   → every other case (16-inch+ desktops and all
+     touch devices): scrolling stays disabled. The class lives on <html>
+     and is removed when leaving the page, so other routes are untouched. */
+  :global(html.category-scrollable),
+  :global(html.category-scrollable body) {
+    overflow-y: auto;
+  }
 
-    .category-page {
-      overflow-y: auto;
-    }
+  :global(html.category-scrollable) .category-page {
+    overflow-y: auto;
+  }
 
-    .category-shell {
-      height: auto;
-    }
+  :global(html.category-scrollable) .category-shell {
+    height: auto;
+  }
+
+  :global(html.category-noscroll),
+  :global(html.category-noscroll body) {
+    overflow-y: hidden;
   }
 </style>
