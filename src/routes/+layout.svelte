@@ -79,8 +79,6 @@
 	<link rel="stylesheet" href="https://use.typekit.net/rja4qrb.css" />
 </svelte:head>
 
-<a href="#main-content" class="skip-link">Vai al contenuto</a>
-
 {#if !isVolunteerPage}
 	<!-- Navbar stays fixed on every page it appears on; never hide-on-scroll. -->
 	<Navbar inverted={$navbarInverted} pinned />
