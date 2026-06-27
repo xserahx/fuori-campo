@@ -37,10 +37,10 @@
         
         /* ── TIPOGRAFIA DESKTOP (H3) ── */
         font-family: var(--font-display);
-        font-size: var(--ts-h3-size, 36px);
-        font-weight: var(--ts-h3-weight, 500);
-        line-height: var(--ts-h3-line-height, 43.2px);
-        letter-spacing: var(--ts-h3-letter-spacing, 0.72px);
+        font-size: var(--ts-cat-size, 32px);
+        font-weight: var(--ts-cat-weight, 500);
+        line-height: var(--ts-cat-line-height, 100%);
+        letter-spacing: var(--ts-cat-letter-spacing, 4%);
         
         /* ── STATO DEFAULT ── */
         color: var(--color-content-body);
