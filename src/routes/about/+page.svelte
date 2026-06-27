@@ -1,6 +1,19 @@
-<script>
+<script lang="ts">
   import '../../lib/styles/tokens.css';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
+  import { navbarInverted } from '$lib/stores/navbar';
+  import { onMount } from 'svelte';
+
+  onMount(() => {
+    const mq = window.matchMedia('(max-width: 599px)');
+    const update = (e: MediaQueryList | MediaQueryListEvent) => navbarInverted.set(e.matches);
+    update(mq);
+    mq.addEventListener('change', update);
+    return () => {
+      mq.removeEventListener('change', update);
+      navbarInverted.set(false);
+    };
+  });
 </script>
 
 <svelte:head>
@@ -15,6 +28,13 @@
       Vogliamo raccontare le Olimpiadi <br />attraverso gli occhi di chi le ha <br />costruite restando nell&apos;ombra.<br /> Questo progetto celebra i volontari:<br /> il motore invisibile che, con dedizione <br>silenziosa, ha permesso a Milano<br>Cortina 2026 di brillare.
     </p>
   </section>
+
+  <img
+    class="team-photo"
+    src="/volunteer_images/carosello_categorie/cat-1.jpg"
+    alt="Il team"
+    draggable="false"
+  />
 
   <footer class="team" aria-label="Team credits">
     <div class="team-copy">
@@ -60,7 +80,6 @@
     color: var(--color-content-body, #fafafa);
     position: relative;
     overflow-x: hidden;
-    /* Vertical scrolling is gated by viewport height below (responsive only). */
     overflow-y: auto;
     font-family: var(--font-display);
     padding-bottom: 24px;
@@ -113,6 +132,11 @@
     animation: about-rise 1000ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
   }
 
+  /* Team photo — hidden on desktop, shown on mobile */
+  .team-photo {
+    display: none;
+  }
+
   .team {
     position: relative;
     left: 0;
@@ -136,6 +160,60 @@
 
   .team-copy p {
     margin: 0;
+  }
+
+  /* ── Mobile (≤ 599px) — Figma node 6197-9017 "About-mobile" ──── */
+  @media (max-width: 599px) {
+    .about-page {
+      background: var(--color-content-accent);
+      color: var(--color-content-body-black);
+      padding-bottom: 48px;
+    }
+
+    .hero {
+      padding: 32px 27px 0;
+      flex: 0 0 auto;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      line-height: 1;
+      color: var(--color-content-body-black);
+    }
+
+    .hero p {
+      margin: 16px 0 0;
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1.05;
+      color: var(--color-content-body-black);
+    }
+
+    /* Let the text wrap naturally on mobile */
+    .hero p br {
+      display: none;
+    }
+
+    .team-photo {
+      display: block;
+      width: calc(100% - 54px);
+      margin: 32px 27px 0;
+      filter: grayscale(100%);
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+
+    .team {
+      margin-top: 24px;
+      padding: 0 27px;
+      color: var(--color-content-body-black);
+      font-size: 14px;
+      line-height: 1.4;
+      animation: none;
+      opacity: 1;
+      filter: none;
+      transform: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

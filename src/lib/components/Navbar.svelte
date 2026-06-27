@@ -104,8 +104,9 @@
         {@render logoMark('logo-menu')}
       </a>
       <button class="overlay-close" onclick={closeMenu} aria-label="Chiudi menu">
-        <span class="close-bar"></span>
-        <span class="close-bar"></span>
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M4.5 4.5L25.5 25.5M25.5 4.5L4.5 25.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
     </div>
 
@@ -205,21 +206,12 @@
     background: none;
     border: none;
     cursor: pointer;
+    color: var(--color-content-body-black);
     -webkit-tap-highlight-color: transparent;
     transition: opacity var(--dur-fast) ease, transform var(--dur-mid) var(--ease-spring);
   }
   .overlay-close:hover  { opacity: 0.72; }
   .overlay-close:active { transform: scale(0.96); transition-duration: var(--dur-instant), var(--dur-instant); }
-
-  .close-bar {
-    position: absolute;
-    width: 24px;
-    height: var(--stroke-1);
-    border-radius: var(--stroke-1);
-    background: var(--color-content-body-black);
-  }
-  .close-bar:nth-child(1) { transform: rotate(45deg); }
-  .close-bar:nth-child(2) { transform: rotate(-45deg); }
 
   /* ── Mobile nav links ───────────────────────────────────────────── */
   .nav-mobile-nav {
@@ -227,18 +219,21 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 56px;
+    gap: 32px;
   }
 
   .mobile-nav-link {
     display: block;
-    padding: 6px 0;
-    color: color-mix(in srgb, var(--color-content-body-black) 45%, transparent);
+    color: var(--color-content-primary);
     font-family: var(--font-display);
-    font-size: 52px;
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    letter-spacing: 0;
+    text-align: center;
     text-transform: uppercase;
     text-decoration: none;
     opacity: 0;
@@ -246,7 +241,7 @@
     transition: color var(--dur-instant) ease, opacity var(--dur-instant) ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .mobile-nav-link.is-active { color: var(--color-content-body-black); }
+  .mobile-nav-link.is-active { color: var(--color-background-primary); font-weight: 500; }
   .mobile-nav-link:active    { opacity: 0.5; }
 
   @keyframes link-in {

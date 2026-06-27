@@ -417,6 +417,11 @@
   .navbar {
     padding:    24px 27px;
     min-height: 96px;
+    background: linear-gradient(
+      to bottom,
+      var(--color-background-primary) 0%,
+      var(--color-background-transparent) 100%
+    );
   }
   .nav-links { display: none; }
 

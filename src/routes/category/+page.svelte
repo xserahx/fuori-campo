@@ -5,25 +5,30 @@
   import * as THREE from 'three';
   import '$lib/styles/tokens.css';
 
-  type Category = { id: number; label: string; image: string };
+  type Category = {
+    id: number;
+    label: string;
+    image: string;
+    mobileFillLh?: number;
+    mobileOutlineLh?: number;
+  };
 
   const IMG_FIGMA_204 = '/volunteer_images/carosello_categorie/cat-1.jpg';
   const IMG_FIGMA_58  = '/volunteer_images/carosello_categorie/cat-5.jpg';
   const IMG_FIGMA_232 = '/volunteer_images/carosello_categorie/cat-8.jpg';
   const defaultCategories: Category[] = [
-    { id: 1, label: 'RELAZIONI E COMUNICAZIONE', image: IMG_FIGMA_204 },
-    { id: 2, label: 'CERIMONIE E REVENUE',       image: IMG_FIGMA_58 },
-    { id: 3, label: 'SPORT E DISCIPLINE',        image: IMG_FIGMA_232 },
-    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: IMG_FIGMA_204 },
-    { id: 5, label: 'LOGISTICA E TERRITORIO',    image: IMG_FIGMA_58 },
-    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: IMG_FIGMA_232 },
+    { id: 1, label: 'RELAZIONI E COMUNICAZIONE',             image: IMG_FIGMA_204 },
+    { id: 2, label: 'CERIMONIE E REVENUE',                   image: IMG_FIGMA_58 },
+    { id: 3, label: 'SPORT E DISCIPLINE',                    image: IMG_FIGMA_232 },
+    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: IMG_FIGMA_204, mobileFillLh: 40 },
+    { id: 5, label: 'LOGISTICA E TERRITORIO',                image: IMG_FIGMA_58,  mobileFillLh: 40, mobileOutlineLh: 40 },
+    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: IMG_FIGMA_232 },
   ];
 
   let { categories = defaultCategories }: { categories?: Category[] } = $props();
 
   let canvasEl: HTMLCanvasElement | null = $state(null);
   let containerEl: HTMLElement | null   = $state(null);
-  let titleEl: HTMLElement | null = $state(null);
   let renderer: any = null;
   let scene: any    = null;
   let camera: any   = null;
@@ -502,30 +507,49 @@
     ].filter(Boolean);
   })());
 
-  /* Mobile title — Figma keeps the connector "E" on the filled (green)
-     line, e.g. "RELAZIONI E" / "COMUNICA-ZIONE". Long words break with a
-     visible hyphen: we inject a soft hyphen (U+00AD) at the Figma break
-     point and rely on `hyphens: manual` + the fixed 352px text width so
-     the break only renders when the word overflows. */
+  // Hard breaks: always split at this exact point (Figma uses a literal "-\n").
+  // Outline span uses white-space:pre-line so the \n is honoured.
+  const HARD_BREAK: Record<string, string> = {
+    COMUNICAZIONE: 'COMUNICA-\nZIONE',
+  };
+
+  // Soft hyphens: U+00AD — only visible when the word overflows its container.
   const SHY = '­';
   const SOFT_HYPHENATE: Record<string, string> = {
-    COMUNICAZIONE: 'COMUNICA' + SHY + 'ZIONE',
-    ORGANIZZATIVA: 'ORGANIZ'  + SHY + 'ZATIVA',
-    EXPERIENCE:    'EXPE'     + SHY + 'RIENCE',
-    DISCIPLINE:    'DISCI'    + SHY + 'PLINE',
-    TERRITORIO:    'TERRI'    + SHY + 'TORIO',
-    GENERALI:      'GENE'     + SHY + 'RALI',
+    DISCIPLINE: 'DISCI' + SHY + 'PLINE',
+    TERRITORIO: 'TERRI' + SHY + 'TORIO',
   };
-  function softHyphenate(text: string) {
+
+  function processFill(text: string) {
     return text.replace(/[\p{L}]+/gu, (w) => SOFT_HYPHENATE[w.toUpperCase()] ?? w);
   }
+  function processOutline(text: string) {
+    return text.replace(/[\p{L}]+/gu, (w) => {
+      const u = w.toUpperCase();
+      return HARD_BREAK[u] ?? SOFT_HYPHENATE[u] ?? w;
+    });
+  }
+
   let mobileTitleLines = $derived.by(() => {
     const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
-    const lines = match
-      ? [`${match[1].trim()} E`, match[2].trim()]
-      : titleLines;
-    return lines.map(softHyphenate).filter(Boolean);
+    if (!match) return titleLines.map(processFill).filter(Boolean);
+
+    const beforeE = match[1].trim();
+    const afterE  = match[2].trim();
+
+    // Figma rule: if afterE is a single word > 12 chars it overflows 352px alone,
+    // so "E" stays on the fill line and the long word occupies the outline (RELAZIONI E / COMUNICAZIONE).
+    // All other cases: "E" prefixes the outline (CERIMONIE / E REVENUE, etc.).
+    const isSingleLongWord = !afterE.includes(' ') && afterE.length > 12;
+
+    return isSingleLongWord
+      ? [processFill(`${beforeE} E`), processOutline(afterE)]
+      : [processFill(beforeE), processOutline(`E ${afterE}`)];
   });
+
+  let currentCat     = $derived(categories[mod(Math.round(position), N())]);
+  let mobileFillLh   = $derived(currentCat?.mobileFillLh    ?? 36);
+  let mobileOutlineLh = $derived(currentCat?.mobileOutlineLh ?? 36);
 
 </script>
 
@@ -551,9 +575,9 @@
   <div class="mobile-title" aria-live="polite" lang="it">
     {#each mobileTitleLines as line, i}
       {#if i === 0}
-        <span class="title-fill">{line}</span>
+        <span class="title-fill" style="line-height: {mobileFillLh}px">{line}</span>
       {:else}
-        <span class="title-outline">{line}</span>
+        <span class="title-outline" style="line-height: {mobileOutlineLh}px">{line}</span>
       {/if}
     {/each}
   </div>
@@ -636,7 +660,7 @@
   </div>
 
   <div class="bottom-bar">
-    <div class="title" aria-live="polite" bind:this={titleEl} role="button" tabindex="0"
+    <div class="title" aria-live="polite" role="button" tabindex="0"
       class:category-sport={categorySlug(currentLabel) === 'sport'}
       onclick={handleTitleClick}
       onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
@@ -1011,7 +1035,7 @@
     -webkit-text-stroke: 2px var(--color-content-accent);
     width: 352px;
     max-width: 100%;
-    white-space: normal;
+    white-space: pre-line;
     hyphens: manual;
     -webkit-hyphens: manual;
     margin: 0;

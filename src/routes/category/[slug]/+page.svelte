@@ -713,11 +713,19 @@
     .title-fill,
     .title-outline {
       white-space: normal;
+      font-size: 43px;
+      line-height: 36px;
+    }
+
+    .title-fill {
+      margin-left: 0;
+      margin-bottom: 0;
     }
 
     .title-outline {
+      -webkit-text-stroke: 2px var(--color-content-accent);
       margin-left: 0;
-      margin-top: -2px;
+      margin-top: 0;
     }
 
     .hero-copy {

@@ -24,7 +24,7 @@
   });
 
   function open(img: GalleryImage) {
-    goto(`/volunteer/${img.slug ?? slugify(img.name, 0)}`);
+    goto(`/volunteer/${img.slug ?? slugify(img.name, 0)}/profile`);
   }
 </script>
 

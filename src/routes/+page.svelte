@@ -395,6 +395,9 @@
         const ni2    = Math.min(i2 + 1, 3);
         const green  = Math.round(panelBg[i2][1] + (panelBg[ni2][1] - panelBg[i2][1]) * eb2);
         navbarInverted.set(green > 128);
+      } else if (window.innerWidth < 600 && shell1) {
+        const r = shell1.getBoundingClientRect();
+        navbarInverted.set(r.top <= 0 && r.bottom > 0);
       } else {
         navbarInverted.set(false);
       }
