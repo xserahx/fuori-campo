@@ -1,6 +1,6 @@
 <script lang="ts">
-    import ButtonLabel from './ButtonLabel.svelte';
-    import Icon from './Icon.svelte';
+    import ButtonLabel from '../buttons/ButtonLabel.svelte';
+    import Icon from '../buttons/Icon.svelte';
 
     type ButtonVariant = 'default' | 'filter-selected' | 'close-x';
 
