@@ -731,11 +731,11 @@
   }
 
   .arrow-left {
-    left: var(--spacing-11);
+    left: var(--spacing-5);
   }
 
   .arrow-right {
-    right: var(--spacing-11);
+    right: var(--spacing-5);
   }
 
   canvas {
@@ -914,6 +914,16 @@
     .mobile-title .title-outline {
       margin-left: 0;
     }
+  }
+
+  /* ── Arrow safe-area positioning ───────────────────────────────── */
+  @media (min-width: 768px) {
+    .arrow-left  { left:  var(--spacing-8); }
+    .arrow-right { right: var(--spacing-8); }
+  }
+  @media (min-width: 1024px) {
+    .arrow-left  { left:  var(--spacing-11); }
+    .arrow-right { right: var(--spacing-11); }
   }
 
   /* ── Touch target compensation for carousel arrows ───────────────── */

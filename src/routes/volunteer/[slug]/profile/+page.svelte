@@ -484,8 +484,8 @@
       color 0.24s ease,
       transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .car-arrow--prev { left:  var(--spacing-11, 72px); }
-  .car-arrow--next { right: var(--spacing-11, 72px); }
+  .car-arrow--prev { left:  var(--spacing-5, 24px); }
+  .car-arrow--next { right: var(--spacing-5, 24px); }
   .car-arrow:hover  { color: var(--color-content-accent, #bdff5d); }
   .car-arrow:active { transform: translateY(-50%) scale(0.94); transition-duration: 80ms; }
 
@@ -604,8 +604,8 @@
     /* On phones the flanking photos would crowd the centre — show one at a time. */
     .slide:not(.slide--active) { opacity: 0 !important; }
     .car-arrow { width: 44px; height: 44px; }
-    .car-arrow--prev { left: 16px; }
-    .car-arrow--next { right: 16px; }
+    .car-arrow--prev { left:  var(--spacing-5, 24px); }
+    .car-arrow--next { right: var(--spacing-5, 24px); }
     .qa-wrap { width: calc(100vw - 32px); margin: 44px 16px 0; }
     .qa-row { font-size: 18px; letter-spacing: 1px; padding: 12px 0; }
     .qa-icon { width: 28px; height: 28px; }
@@ -620,6 +620,16 @@
       min-width:  max(48px, calc(44px / var(--page-zoom, 1)));
       min-height: max(48px, calc(44px / var(--page-zoom, 1)));
     }
+  }
+
+  /* ── Arrow safe-area positioning ───────────────────────────────── */
+  @media (min-width: 768px) {
+    .car-arrow--prev { left:  var(--spacing-8, 48px); }
+    .car-arrow--next { right: var(--spacing-8, 48px); }
+  }
+  @media (min-width: 1024px) {
+    .car-arrow--prev { left:  var(--spacing-11, 72px); }
+    .car-arrow--next { right: var(--spacing-11, 72px); }
   }
 
   /* ── Reduced motion ─────────────────────────────────────────────── */
