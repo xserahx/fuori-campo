@@ -47,6 +47,7 @@
         align-items: center;
         justify-content: center;
         gap: var(--spacing-3);
+        height: var(--spacing-9);
         padding: var(--spacing-3);
         padding-right: var(--spacing-4-2);
         border: var(--stroke-1) solid var(--color-content-accent);

@@ -56,6 +56,7 @@
         align-items: center;
         justify-content: center;
         
+        height: var(--spacing-9);
         /* Padding simmetrici richiesti per desktop */
         padding: var(--spacing-3) var(--spacing-4-2);
         
