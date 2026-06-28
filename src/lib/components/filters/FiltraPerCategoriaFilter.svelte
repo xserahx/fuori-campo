@@ -1,43 +1,60 @@
 <script lang="ts">
     import FilterLabel from './FilterLabel.svelte';
-    // Verifica che questo percorso rispecchi la tua cartella
     import FiltraPerCategoriaButton from '../buttons/FiltraPerCategoriaButton.svelte';
 
+    let {
+        activeFilter = $bindable(null)
+    } = $props<{
+        activeFilter?: string | null;
+    }>();
+
     const categorie = [
-        { id: 'servizi', label: 'AREA ORGANIZZATIVA <br /> E SERVIZI GENERALI' },
-        { id: 'revenue', label: 'CERIMONIE <br /> E REVENUE' },
-        { id: 'experience', label: 'GESTIONE OPERATIVA <br /> E FAN EXPERIENCE' },
-        { id: 'territorio', label: 'LOGISTICA <br /> E TERRITORIO' },
-        { id: 'comunicazione', label: 'RELAZIONI <br /> E COMUNICAZIONE' },
-        { id: 'sport', label: 'SPORT <br /> E DISCIPLINE' }
+        { id: 'organizzativa', label: 'AREA ORGANIZZATIVA<br>E SERVIZI GENERALI' },
+        { id: 'cerimonie',     label: 'CERIMONIE<br>E REVENUE'                   },
+        { id: 'gestione',      label: 'GESTIONE OPERATIVA<br>E FAN EXPERIENCE'   },
+        { id: 'logistica',     label: 'LOGISTICA<br>E TERRITORIO'                },
+        { id: 'relazioni',     label: 'RELAZIONI<br>E COMUNICAZIONE'             },
+        { id: 'sport',         label: 'SPORT<br>E DISCIPLINE'                    }
     ];
 
-    let isOpen = $state(false); 
-    let filtroAttivo = $state<string | null>(null); 
+    let isOpen = $state(false);
 
     const bottoneVariant = $derived.by(() => {
         if (isOpen) return 'close-x';
-        if (filtroAttivo !== null) return 'filter-selected';
+        if (activeFilter !== null) return 'filter-selected';
         return 'default';
     });
 
-    function gestisciClickBottone() {
+    function togglePanel() {
         isOpen = !isOpen;
     }
 
     function selezionaCategoria(id: string) {
-        filtroAttivo = filtroAttivo === id ? null : id;
+        activeFilter = activeFilter === id ? null : id;
+        isOpen = false;
+    }
+
+    function handleKeydown(e: KeyboardEvent) {
+        if (e.key === 'Escape' && isOpen) {
+            isOpen = false;
+        }
     }
 </script>
 
-<div class="filter-panel" class:is-open={isOpen}>
-    <div class="filter-panel__wrapper">
-        
-        <!-- Lista dei 6 link -->
-        <div class="filter-panel__links">
+<svelte:window onkeydown={handleKeydown} />
+
+<div
+    class="filter-panel"
+    class:is-open={isOpen}
+    onclick={() => { if (isOpen) isOpen = false; }}
+    role="presentation"
+>
+    <div class="filter-panel__content" onclick={(e) => e.stopPropagation()}>
+
+        <div class="filter-panel__links" aria-hidden={!isOpen || undefined}>
             {#each categorie as cat}
-                <FilterLabel 
-                    active={filtroAttivo === cat.id} 
+                <FilterLabel
+                    active={activeFilter === cat.id}
                     onclick={() => selezionaCategoria(cat.id)}
                 >
                     {@html cat.label}
@@ -45,11 +62,10 @@
             {/each}
         </div>
 
-        <!-- Zona di attivazione del bottone -->
-        <div class="filter-panel__button-trigger">
-            <FiltraPerCategoriaButton 
-                variant={bottoneVariant} 
-                onclick={gestisciClickBottone}
+        <div class="filter-panel__trigger">
+            <FiltraPerCategoriaButton
+                variant={bottoneVariant}
+                onclick={togglePanel}
             />
         </div>
 
@@ -57,101 +73,116 @@
 </div>
 
 <style>
+    /* ── Shell: full viewport, above EVERYTHING including the navbar ─── */
+    /* Must be a sibling of gallery-page (not a child) so it lives in the
+       root stacking context. z-index:200 > navbar (z-index:40 in base.css). */
     .filter-panel {
         position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 1000px;
-        height: 100vh;
-        
-        /* ── INNALZAMENTO MASSIMO DELLO Z-INDEX ── */
-        z-index: 99999; 
-        
+        inset: 0;           /* 100vw × 100vh full viewport coverage        */
+        z-index: 200;       /* above navbar (40) and gallery content        */
         box-sizing: border-box;
-        background-color: transparent;
-        pointer-events: none; 
-        transition: background-color 350ms cubic-bezier(0.25, 1, 0.5, 1);
+        background: transparent;
+        pointer-events: none;
+        transition: background 380ms cubic-bezier(0.25, 1, 0.5, 1);
     }
 
+    /* When open: Figma gradient — #0e0e0e on the right fading to fully
+       transparent on the left, stretching across the entire viewport. */
     .filter-panel.is-open {
-        background-color: var(--color-background-primary);
+        background: linear-gradient(to left, #0e0e0e 0%, rgba(26, 26, 26, 0) 100%);
         pointer-events: auto;
     }
 
-    .filter-panel__wrapper {
+    /* ── Content column — right-aligned, bottom-anchored ────────────── */
+    .filter-panel__content {
         height: 100%;
         display: flex;
         flex-direction: column;
-        justify-content: flex-end; 
-        align-items: flex-end;     
-        padding-bottom: var(--spacing-8);
-        padding-right: var(--spacing-11);
+        justify-content: flex-end;
+        align-items: flex-end;
+        /* Top clearance so categories never hide under the fixed navbar */
+        padding-top: calc(var(--navbar-height, 125px) + 24px);
+        padding-right: var(--spacing-11, 72px);
+        padding-bottom: var(--spacing-8, 48px);
         box-sizing: border-box;
     }
 
+    /* ── Category links ─────────────────────────────────────────────── */
     .filter-panel__links {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        gap: var(--spacing-7);
+        /* Height-adaptive gap: roomy on tall screens, compact on short ones */
+        gap: clamp(14px, 4vh, 48px);
         width: 100%;
-        margin-bottom: var(--spacing-12); 
-        
-        /* Gestione comparsa e azzeramento ingombro */
+        /* Space between last category and the trigger button */
+        margin-bottom: clamp(40px, 6vh, 72px);
+
+        /* Hidden state */
+        max-height: 0;
+        overflow: hidden;
         opacity: 0;
-        visibility: hidden;
-        height: 0;          
-        overflow: hidden;   
-        transform: translateY(20px);
+        transform: translateX(36px);
         pointer-events: none;
-        
-        transition: 
-            opacity 300ms cubic-bezier(0.25, 1, 0.5, 1),
-            height 320ms cubic-bezier(0.25, 1, 0.5, 1),
-            visibility 300ms ease,
-            transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
+
+        transition:
+            max-height 420ms cubic-bezier(0.25, 1, 0.5, 1),
+            opacity    300ms cubic-bezier(0.25, 1, 0.5, 1),
+            transform  340ms cubic-bezier(0.25, 1, 0.5, 1);
     }
 
     .filter-panel.is-open .filter-panel__links {
-        opacity: 1;
-        visibility: visible;
-        height: auto; 
+        /* large enough to fit all six categories at any font size */
+        max-height: 1200px;
         overflow: visible;
-        transform: translateY(0);
+        opacity: 1;
+        transform: translateX(0);
         pointer-events: auto;
     }
 
-    .filter-panel__button-trigger {
+    /* ── Trigger button ─────────────────────────────────────────────── */
+    .filter-panel__trigger {
         display: flex;
         justify-content: flex-end;
         align-items: center;
         width: 100%;
-        height: 60px; 
-        
-        /* ── TRUCCO PER PULIZIA CODICE ── */
-        /* Dice al browser che l'area del bottone deve intercettare i click 
-           anche se l'intero pannello ha pointer-events: none */
-        pointer-events: auto; 
+        /* Always intercept clicks so the button works even when panel is closed */
+        pointer-events: auto;
     }
 
-    /* ── RESPONSIVE MOBILE (< 600PX) ── */
+    /* ── Tablet ─────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+        .filter-panel__content {
+            padding-right: var(--spacing-8, 48px);
+        }
+    }
+
+    /* ── Mobile (< 600px) ───────────────────────────────────────────── */
     @media (max-width: 599px) {
-        .filter-panel {
-            width: 100% !important;
+        .filter-panel.is-open {
+            /* Same Figma gradient; left stop is semi-opaque on narrow screens
+               so category text stays readable across the full width */
+            background: linear-gradient(to left, #0e0e0e 0%, rgba(14, 14, 14, 0.85) 100%);
         }
 
-        .filter-panel__wrapper {
-            padding-right: var(--spacing-5);
-            padding-bottom: var(--spacing-6-2);
+        .filter-panel__content {
+            padding-right: var(--spacing-5, 24px);
+            padding-bottom: var(--spacing-6-2, 36px);
+            /* Mobile navbar is shorter */
+            padding-top: calc(var(--navbar-height, 96px) + 16px);
         }
 
         .filter-panel__links {
-            /* gap rimane var(--spacing-7) ereditato da sopra, cambiamo solo lo stacco dal bottone */
-            margin-bottom: var(--spacing-9);
+            gap: clamp(10px, 3.5vh, 28px);
+            margin-bottom: clamp(32px, 5vh, 52px);
         }
+    }
 
-        .filter-panel__button-trigger {
-            height: 50px; 
+    /* ── Very short viewports ───────────────────────────────────────── */
+    @media (max-height: 620px) {
+        .filter-panel__links {
+            gap: clamp(8px, 2vh, 16px);
+            margin-bottom: clamp(24px, 4vh, 40px);
         }
     }
 </style>
