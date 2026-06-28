@@ -246,6 +246,13 @@ export function buildScatterLayout(
     return false;
   }
 
+  // ── Per-src column history (same-photo separation) ─────────────────
+  // Tracks which columns each photo src has already been placed in.
+  // A column within MIN_COL_SEP of a previous placement of the same src
+  // gets a prohibitive penalty so the masonry always keeps copies far apart.
+  const MIN_COL_SEP = 4;
+  const srcCols = new Map<string, number[]>();
+
   // ── Placement loop ─────────────────────────────────────────────────
   for (let i = 0; i < rawImages.length; i++) {
     const raw  = rawImages[i];
@@ -254,11 +261,20 @@ export function buildScatterLayout(
     // Span: mostly 1-col, occasionally 2-col for visual variety
     const span = h(seed) < 0.74 ? 1 : 2;
 
-    // Shortest-column selection with a tiny random tie-break
+    // Shortest-column selection with tie-break + same-photo repulsion.
+    // Any column within MIN_COL_SEP of a previous placement of this src
+    // receives a 1e6 penalty — effectively forcing the algorithm to choose
+    // a distant column first.
+    const prevCols = srcCols.get(raw.src) ?? [];
     let bestCol = 0, bestScore = Infinity;
     for (let c = 0; c <= COLS - span; c++) {
       const laneH = Math.max(...colBots.slice(c, c + span));
-      const score = laneH + h(seed + c * 23) * 44;
+      let penalty = 0;
+      for (const pc of prevCols) {
+        const dist = Math.min(Math.abs(c - pc), COLS - Math.abs(c - pc));
+        if (dist > 0 && dist < MIN_COL_SEP) penalty += 1e6;
+      }
+      const score = laneH + h(seed + c * 23) * 44 + penalty;
       if (score < bestScore) { bestScore = score; bestCol = c; }
     }
 
@@ -298,6 +314,11 @@ export function buildScatterLayout(
     placed.push(img);
     register(placed.length - 1);
 
+    // Record column so future copies of the same src are pushed away.
+    const cols = srcCols.get(raw.src) ?? [];
+    cols.push(bestCol);
+    srcCols.set(raw.src, cols);
+
     const newBot = finalT + imgH + PAD;
     for (let c = bestCol; c < bestCol + span; c++)
       if (newBot > colBots[c]) colBots[c] = newBot;
@@ -309,16 +330,25 @@ export function buildScatterLayout(
 
 export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
   const expanded: GalleryImage[] = [];
+  const N = rawImages.length;
+  if (N === 0) return expanded;
 
   for (let wave = 0; wave < waves; wave += 1) {
-    for (let i = 0; i < rawImages.length; i += 1) {
-      const image = rawImages[(i + wave * 3) % rawImages.length];
+    const perm = Array.from({ length: N }, (_, k) => k);
+    for (let j = N - 1; j > 0; j--) {
+      let v = (wave * 997 + j) | 0;
+      v = Math.imul(v ^ (v >>> 16), 0x45d9f3b);
+      v = Math.imul(v ^ (v >>> 16), 0x45d9f3b);
+      const k = ((v ^ (v >>> 16)) >>> 0) % (j + 1);
+      [perm[j], perm[k]] = [perm[k], perm[j]];
+    }
+    for (let i = 0; i < N; i += 1) {
+      const image = rawImages[perm[i]];
       const scaleVariant = 0.86 + (((wave + i) % 5) * 0.06);
-
       expanded.push({
         ...image,
-        width: image.width * scaleVariant,
-        height: image.height * scaleVariant
+        width:  image.width  * scaleVariant,
+        height: image.height * scaleVariant,
       });
     }
   }
@@ -335,7 +365,7 @@ export function buildScatterLayoutCached(
   canvasWidth = 3840
 ): ReturnType<typeof buildScatterLayout> {
   if (_layoutCacheKey === rawImages && _layoutCacheValue !== null) return _layoutCacheValue;
-  _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages), canvasWidth);
+  _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages, 12), canvasWidth);
   _layoutCacheKey = rawImages;
   return _layoutCacheValue;
 }

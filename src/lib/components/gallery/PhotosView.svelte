@@ -68,6 +68,11 @@
   const designWidth    = 3840;
   const initialContext = readGalleryContext(page.url.searchParams);
 
+  // Fresh entry (no saved position in URL) → randomise spawn so every visit
+  // starts somewhere different. Returns from volunteer pages preserve the URL
+  // coords, so the user lands back exactly where they left.
+  const hasSavedPosition = page.url.searchParams.has('photoX');
+
   // Plain vars — GSAP owns the transform; no Svelte reactivity at 60 fps.
   let currentX = initialContext.photoX;
   let currentY = initialContext.photoY;
@@ -254,6 +259,18 @@
   });
 
   onMount(() => {
+    if (!hasSavedPosition) {
+      // Spawn in the CENTER HALF of the tile (±25 % of width) so the user
+      // always lands on dense middle columns.  The tile boundary sits at
+      // ±designWidth/2 (≈ ±1920 px); staying within ±960 avoids the seam
+      // where only edge columns from each tile repeat are visible, creating
+      // a large empty strip in the middle of the viewport.
+      const rx = Math.round((Math.random() - 0.5) * designWidth * 0.5);
+      const ry = Math.round((Math.random() - 0.5) * 1000);
+      currentX = rx; currentY = ry;
+      targetX  = rx; targetY  = ry;
+      windowX  = rx; windowY  = ry;
+    }
     if (innerRef) gsap.set(innerRef, { x: currentX, y: currentY, force3D: true });
     animate();
     window.addEventListener('resize', updateScale);
