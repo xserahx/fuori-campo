@@ -404,6 +404,9 @@
       var(--color-background-transparent) 100%
     );
   }
+  /* Figma mobile spec: logo is 31×48px — keeps navbar at 96px (24+48+24) */
+  .logo svg { width: 35px; height: 48px; }
+
   .nav-links { display: none; }
 
   .hero-inner {
