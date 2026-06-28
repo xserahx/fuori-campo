@@ -196,12 +196,12 @@ export function buildScatterLayout(
   if (rawImages.length === 0) return { images: [], canvasHeight: 1080 };
 
   const COLS      = 12;
-  const PAD       = 48;   // minimum pixel gap between any two cards
-  const EDGE      = 80;   // canvas left/right margin
+  const PAD       = 64;   // minimum pixel gap between any two cards
+  const EDGE      = 40;   // canvas left/right margin
   const TOP_PAD   = 96;
   const BOT_PAD   = 144;
-  const MIN_SCALE = 0.60; // fraction of slot width
-  const MAX_SCALE = 0.94;
+  const MIN_SCALE = 0.85; // fraction of slot width
+  const MAX_SCALE = 0.9;
 
   // Deterministic hash: index → 0..1
   function h(n: number): number {
