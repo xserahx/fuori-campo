@@ -53,7 +53,7 @@
         background-color: var(--color-background-primary);
         border-radius: var(--radius-rounded-pill);
         
-        height: 60px; /* Forza l'altezza coerente richiesta */
+        height: 60px;
         padding-top: var(--spacing-3);
         padding-bottom: var(--spacing-3);
         
@@ -126,4 +126,13 @@
             color: var(--color-content-accent) !important;
         }
     }
-</style>
+
+    @media (max-width: 599px) {
+        .toggle-container {
+            height: 50px;
+            padding-left: var(--spacing-4-2);
+            padding-right: var(--spacing-4-2);
+         
+        }
+    }
+</style> 

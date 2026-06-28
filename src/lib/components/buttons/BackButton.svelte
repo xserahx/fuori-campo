@@ -84,6 +84,7 @@
         .back-button {
             padding: var(--spacing-4);
             padding-right: var(--spacing-4-2);
+            height: 50px;
         }
     }
 </style>

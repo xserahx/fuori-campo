@@ -95,6 +95,7 @@
             width: 100%; 
             margin: 0; /* Rimosso il margine interno dal componente! */
             
+            height: 50px;
             padding: var(--spacing-4) 0; 
             background-color: var(--color-background-primary);
         }
