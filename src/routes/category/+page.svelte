@@ -566,7 +566,8 @@
     <div
       class="mobile-bg"
       style="background-image: url('{categories[currentIndex]?.image}')"
-      in:fade={{ duration: 400 }}
+      in:fade={{ duration: 500, delay: 80 }}
+      out:fade={{ duration: 400 }}
     ></div>
   {/key}
 
