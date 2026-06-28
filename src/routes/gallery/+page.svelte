@@ -10,6 +10,7 @@
   import NamesView from '$lib/components/gallery/NamesView.svelte';
   import { readGalleryContext } from '$lib/data/gallery-context';
   import { fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
+  import FiltraPerCategoriaFilter from '$lib/components/filters/FiltraPerCategoriaFilter.svelte';
 
   // Pre-seed from cache so returning users see photos instantly (no loading flash).
   let dbVolunteers = $state<VolunteerSummary[]>(getCachedVolunteers());
@@ -105,6 +106,7 @@
 </svelte:head>
 
 <main class="gallery-page" id="main-content">
+ <FiltraPerCategoriaFilter />
   <div class="bg-noise"></div>
 
   {#if activeToggle === 'photos'}

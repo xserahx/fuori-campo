@@ -1,3 +1,6 @@
+<!-- Bottone da usare nella galleria foto, nella pagine delle categorie (da una foto all'altra), 
+ nella pagina delle categorie  (carosello) e nella pagina di dettaglio in relazione alla dot navigation -->
+ 
 <script lang="ts">
     import Icon from "./Icon.svelte";
 

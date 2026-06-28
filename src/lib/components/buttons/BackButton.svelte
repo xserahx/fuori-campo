@@ -1,3 +1,6 @@
+<!-- Bottone da usare nella pagina di dettaglio delle categorie (in alto a sinistra) 
+ e nella pagina del singolo volontario-->
+
 <script lang="ts">
     import Icon from './Icon.svelte';
     import ButtonLabel from './ButtonLabel.svelte'; 

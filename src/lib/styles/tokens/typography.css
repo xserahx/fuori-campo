@@ -18,6 +18,12 @@
   --ts-h3-line-height:    43.2px;
   --ts-h3-letter-spacing: 0.72px;
 
+  /* Category labels  (Medium 500 · 32 px · lh 100% · ls 4%) */
+  --ts-cat-size:           32px;
+  --ts-cat-weight:         500;
+  --ts-cat-line-height:    100%;
+  --ts-cat-letter-spacing: 4%;
+
   /* Scrollitelling — question headings  (ExtraBold 800 · 116 px · lh 106 px) */
   --ts-scrollitelling-size:           116px;
   --ts-scrollitelling-weight:         800;
