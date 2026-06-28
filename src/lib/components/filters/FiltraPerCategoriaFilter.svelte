@@ -83,13 +83,17 @@
         box-sizing: border-box;
         background: transparent;
         pointer-events: none;
-        transition: background 380ms cubic-bezier(0.25, 1, 0.5, 1);
+        transition: background var(--dur-mid) var(--ease-cinema);
     }
 
-    /* When open: Figma gradient — #0e0e0e on the right fading to fully
-       transparent on the left, stretching across the entire viewport. */
+    /* When open: Figma gradient — solid background-primary on the right,
+       fading to fully transparent on the left, full viewport width. */
     .filter-panel.is-open {
-        background: linear-gradient(to left, #0e0e0e 0%, rgba(26, 26, 26, 0) 100%);
+        background: linear-gradient(
+            to left,
+            var(--color-background-primary)    0%,
+            var(--color-background-transparent) 100%
+        );
         pointer-events: auto;
     }
 
@@ -101,9 +105,9 @@
         justify-content: flex-end;
         align-items: flex-end;
         /* Top clearance so categories never hide under the fixed navbar */
-        padding-top: calc(var(--navbar-height, 125px) + 24px);
-        padding-right: var(--spacing-11, 72px);
-        padding-bottom: var(--spacing-8, 48px);
+        padding-top: calc(var(--navbar-height) + var(--spacing-5));
+        padding-right: var(--spacing-11);
+        padding-bottom: var(--spacing-8);
         box-sizing: border-box;
     }
 
@@ -113,22 +117,22 @@
         flex-direction: column;
         align-items: flex-end;
         /* Height-adaptive gap: roomy on tall screens, compact on short ones */
-        gap: clamp(14px, 4vh, 48px);
+        gap: clamp(var(--spacing-3), 4vh, var(--spacing-8));
         width: 100%;
         /* Space between last category and the trigger button */
-        margin-bottom: clamp(40px, 6vh, 72px);
+        margin-bottom: clamp(var(--spacing-7), 6vh, var(--spacing-11));
 
         /* Hidden state */
         max-height: 0;
         overflow: hidden;
         opacity: 0;
-        transform: translateX(36px);
+        transform: translateX(var(--spacing-6-2));
         pointer-events: none;
 
         transition:
-            max-height 420ms cubic-bezier(0.25, 1, 0.5, 1),
-            opacity    300ms cubic-bezier(0.25, 1, 0.5, 1),
-            transform  340ms cubic-bezier(0.25, 1, 0.5, 1);
+            max-height var(--dur-mid)  var(--ease-cinema),
+            opacity    var(--dur-fast) var(--ease-cinema),
+            transform  var(--dur-mid)  var(--ease-cinema);
     }
 
     .filter-panel.is-open .filter-panel__links {
@@ -153,7 +157,7 @@
     /* ── Tablet ─────────────────────────────────────────────────────── */
     @media (max-width: 1024px) {
         .filter-panel__content {
-            padding-right: var(--spacing-8, 48px);
+            padding-right: var(--spacing-8);
         }
     }
 
@@ -162,27 +166,31 @@
         .filter-panel.is-open {
             /* Same Figma gradient; left stop is semi-opaque on narrow screens
                so category text stays readable across the full width */
-            background: linear-gradient(to left, #0e0e0e 0%, rgba(14, 14, 14, 0.85) 100%);
+            background: linear-gradient(
+                to left,
+                var(--color-background-primary) 0%,
+                var(--primitive-black-alpha-15)  100%
+            );
         }
 
         .filter-panel__content {
-            padding-right: var(--spacing-5, 24px);
-            padding-bottom: var(--spacing-6-2, 36px);
+            padding-right: var(--spacing-5);
+            padding-bottom: var(--spacing-6-2);
             /* Mobile navbar is shorter */
-            padding-top: calc(var(--navbar-height, 96px) + 16px);
+            padding-top: calc(var(--navbar-height) + var(--spacing-4));
         }
 
         .filter-panel__links {
-            gap: clamp(10px, 3.5vh, 28px);
-            margin-bottom: clamp(32px, 5vh, 52px);
+            gap: clamp(var(--spacing-2), 3.5vh, var(--spacing-6));
+            margin-bottom: clamp(var(--spacing-6), 5vh, var(--spacing-9));
         }
     }
 
     /* ── Very short viewports ───────────────────────────────────────── */
     @media (max-height: 620px) {
         .filter-panel__links {
-            gap: clamp(8px, 2vh, 16px);
-            margin-bottom: clamp(24px, 4vh, 40px);
+            gap: clamp(var(--spacing-2), 2vh, var(--spacing-4));
+            margin-bottom: clamp(var(--spacing-5), 4vh, var(--spacing-7));
         }
     }
 </style>
