@@ -361,7 +361,7 @@
     font-size: 16px;
     font-weight: 500;
     font-style: normal;
-    text-align: right;
+    text-align: center;
     text-transform: uppercase;
     color: var(--color-content-body, #fafafa);
     transition: color 150ms ease-in-out;
