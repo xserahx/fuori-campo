@@ -118,9 +118,11 @@
         );
 
         if (!initialized) {
-            /* First DOM mount: park everything in the hidden starting state. */
             gsap.set(backdropEl, { opacity: 0 });
             gsap.set(labels, { yPercent: 140 });
+            /* Labels are now below the overflow:hidden clip — safe to reveal the
+               container. CSS visibility:hidden stays until this inline override. */
+            linksEl.style.visibility = 'visible';
             initialized = true;
             return;
         }
@@ -245,6 +247,9 @@
         width: 100%;
         margin-bottom: clamp(var(--spacing-7), 6vh, var(--spacing-11));
         pointer-events: none;
+        /* Hidden from first paint until GSAP parks labels below the clip.
+           JS sets visibility:visible inline after gsap.set() runs. */
+        visibility: hidden;
     }
 
     .filter-panel.is-open .filter-panel__links {
