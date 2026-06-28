@@ -177,7 +177,7 @@
   .nav-mobile-overlay {
     position: fixed;
     inset: 0;
-    z-index: 50;
+    z-index: 9999;
     display: flex;
     flex-direction: column;
     padding: 0 27px 64px;

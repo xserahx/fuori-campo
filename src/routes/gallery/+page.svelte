@@ -149,7 +149,7 @@
     left: var(--spacing-11, 72px);
     bottom: var(--unit-48, 48px);
     
-    z-index: 49; 
+    z-index: 999; 
     pointer-events: auto; 
   }
 
