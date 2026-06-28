@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
+  import BackButton from '$lib/components/buttons/BackButton.svelte';
   import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, ruoloToTag, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
@@ -163,6 +164,11 @@
     onclick={goBackToGallery}
   ></button>
 
+  <!-- ── Back button (top-left) ──────────────────────────────────── -->
+  <div class="back-btn-wrapper">
+    <BackButton href={buildGalleryHref(currentContext)} />
+  </div>
+
   <!-- ── Close × button (top-right, per Figma) ───────────────────── -->
   <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -308,6 +314,14 @@
     border: 0;
     cursor: pointer;
     padding: 0;
+  }
+
+  /* ── Back button — top-left, mirrors close-x height ───────────── */
+  .back-btn-wrapper {
+    position: fixed;
+    top: 61px;
+    left: var(--spacing-11, 72px);
+    z-index: 25;
   }
 
   /* ── Close × button — Figma: left:1614px top:173px in 1728px canvas ── */

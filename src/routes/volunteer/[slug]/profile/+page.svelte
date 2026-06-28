@@ -1,12 +1,12 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
+  import BackButton from '$lib/components/buttons/BackButton.svelte';
   import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
@@ -120,10 +120,6 @@
     return volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.';
   }
 
-  function goBack() {
-    goto(buildGalleryHref(currentContext));
-  }
-
   // Clear any scroll-lock left over from the gallery / category / homepage.
   $effect(() => {
     if (!browser) return;
@@ -142,12 +138,9 @@
 <main class="profile" id="main-content">
 
   <!-- ── INDIETRO button ──────────────────────────────────────────── -->
-  <button class="back-btn" type="button" onclick={goBack}>
-    <svg width="18" height="10" viewBox="0 0 18 10" fill="none" aria-hidden="true" style="flex-shrink:0">
-      <path d="M17 5H1M1 5L6 1M1 5L6 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <span class="back-btn-label">INDIETRO</span>
-  </button>
+  <div class="back-btn-wrapper">
+    <BackButton href={buildGalleryHref(currentContext)} />
+  </div>
 
   <!-- ── Header: hero name (left) + quote (right) ─────────────────── -->
   <header class="head">
@@ -265,31 +258,12 @@
   }
 
   /* ── INDIETRO button ─────────────────────────────────────────────── */
-  .back-btn {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 0 0 var(--spacing-11, 72px);
-    padding: 12px 20px;
-    width: 168px;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
-    background: #0e0e0e;
-    color: #fafafa;
-    cursor: pointer;
-    white-space: nowrap;
+  .back-btn-wrapper {
+    margin-left: var(--spacing-11, 72px);
   }
-  .back-btn-label {
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 26px;
-    width: 98px;
-    text-align: center;
-    pointer-events: none;
-    user-select: none;
-    transition: filter 0.22s ease;
+  @media (max-width: 700px) {
+    .back-btn-wrapper { margin-left: var(--spacing-5, 24px); }
   }
-  .back-btn:hover .back-btn-label { filter: blur(4px); }
 
   /* ── Header: name hero (left) + quote (top-right) ───────────────── */
   .head {
@@ -562,8 +536,7 @@
 
   /* ── Focus states ───────────────────────────────────────────────── */
   .qa-row:focus-visible,
-  .car-arrow:focus-visible,
-  .back-btn:focus-visible {
+  .car-arrow:focus-visible {
     outline: 2px solid var(--color-content-accent);
     outline-offset: 3px;
     border-radius: 4px;
@@ -584,7 +557,6 @@
 
   @media (max-width: 700px) {
     .profile { padding-top: calc(var(--navbar-height, 125px) + 8px); }
-    .back-btn { margin-left: var(--spacing-5); }
     .name-surname  { padding-left: var(--spacing-5); font-size: clamp(44px, 13vw, 80px); }
     .name-firstname { padding-left: 40px; font-size: clamp(44px, 13vw, 80px); }
     .head { min-height: 0; }
