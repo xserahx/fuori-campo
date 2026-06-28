@@ -3,6 +3,7 @@
   import { goto, beforeNavigate } from '$app/navigation';
   import { fade } from 'svelte/transition';
   import * as THREE from 'three';
+  import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
   import '$lib/styles/tokens.css';
 
   type Category = {
@@ -363,9 +364,9 @@
     position   = mod(targetPos, N());
   }
 
-  function onArrowPointerDown(dir: number, e: PointerEvent) {
-    e.stopPropagation();
-    navigate(dir);
+  function onArrowClick(dir: number, e: MouseEvent) {
+  e.stopPropagation();
+  navigate(dir);
   }
 
   // ─── pointer / drag ──────────────────────────────────────────────
@@ -591,16 +592,8 @@
 
   <!-- Vertical arrows (bottom-right) -->
   <div class="mobile-nav-circles">
-    <button class="nav-circle" type="button" aria-label="Categoria precedente" onclick={() => navigate(-1)}>
-      <svg width="16" height="9" viewBox="0 0 16 9" fill="none" aria-hidden="true">
-        <path d="M1 8L8 1L15 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
-    <button class="nav-circle" type="button" aria-label="Categoria successiva" onclick={() => navigate(1)}>
-      <svg width="16" height="9" viewBox="0 0 16 9" fill="none" aria-hidden="true">
-        <path d="M1 1L8 8L15 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+    <ArrowButton direction="up" onclick={() => navigate(-1)} />
+    <ArrowButton direction="down" onclick={() => navigate(1)} />
   </div>
 </section>
 {:else}
@@ -635,24 +628,12 @@
     ></div>
   </div>
 
-  <button class="arrow arrow-left" type="button" aria-label="Previous category"
-    onpointerdown={(e) => onArrowPointerDown(-1, e)}
-  >
-    <svg viewBox="0 0 14 28" fill="none" aria-hidden="true" width="14" height="28">
-      <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
-
-  <button
-    class="arrow arrow-right"
-    type="button"
-    aria-label="Next category"
-    onpointerdown={(e) => onArrowPointerDown(1, e)}
-  >
-    <svg viewBox="0 0 14 28" fill="none" aria-hidden="true" width="14" height="28">
-      <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <div class="arrow-left" onpointerdown={(e) => e.stopPropagation()}>
+    <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
+  </div>
+  <div class="arrow-right" onpointerdown={(e) => e.stopPropagation()}>
+    <ArrowButton direction="right" onclick={(e) => onArrowClick(1, e)} />
+  </div>
 
   <div class="curve-frame" aria-hidden="true">
     <svg class="curve curve-top" viewBox="0 0 1000 260" preserveAspectRatio="none">
@@ -708,38 +689,19 @@
     z-index: 1;
   }
 
-  .arrow {
+   .arrow-left {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 60px;
-    height: 60px;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    z-index: 12;
-    cursor: pointer;
-    color: var(--color-content-body, #fafafa);
-    transition: color 0.24s ease;
-  }
-
-  .arrow:hover { color: var(--color-content-accent, #bdff5d); }
-
-  .arrow:focus-visible {
-    outline: 2px solid var(--color-content-accent, #bdff5d);
-    outline-offset: 4px;
-  }
-
-  .arrow-left {
     left: var(--spacing-5);
+    z-index: 12;
   }
-
   .arrow-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     right: var(--spacing-5);
+    z-index: 12;
   }
 
   canvas {
@@ -930,13 +892,6 @@
     .arrow-right { right: var(--spacing-11); }
   }
 
-  /* ── Touch target compensation for carousel arrows ───────────────── */
-  @media (pointer: coarse) {
-    .arrow {
-      min-width:  max(44px, calc(44px / var(--page-zoom, 1)));
-      min-height: max(52px, calc(44px / var(--page-zoom, 1)));
-    }
-  }
 
   /* ── Reduced motion ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
@@ -1093,36 +1048,6 @@
     flex-direction: column;
     gap: var(--spacing-5);
     z-index: 4;
-  }
-
-  .nav-circle {
-    width: 45px;
-    height: 45px;
-    box-sizing: border-box;
-    border-radius: 999px;
-    border: 2px solid var(--color-content-accent);
-    background: transparent;
-    color: var(--color-content-accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition: background 220ms ease, transform 160ms ease;
-  }
-
-  .nav-circle:hover {
-    background: rgba(189, 255, 93, 0.08);
-  }
-
-  .nav-circle:active {
-    transform: scale(0.92);
-    transition-duration: 80ms;
-  }
-
-  .nav-circle:focus-visible {
-    outline: 2px solid var(--color-content-accent);
-    outline-offset: 3px;
   }
 
 

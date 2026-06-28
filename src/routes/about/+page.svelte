@@ -31,7 +31,7 @@
 
   <img
     class="team-photo"
-    src="/volunteer_images/carosello_categorie/cat-1.jpg"
+    src="/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png"
     alt="Il team"
     draggable="false"
   />
