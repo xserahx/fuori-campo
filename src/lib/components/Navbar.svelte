@@ -34,6 +34,7 @@
   function toggleMenu() {
     menuOpen = !menuOpen;
     document.body.style.overflow = menuOpen ? 'hidden' : '';
+    if (menuOpen) visible = true;
   }
 
   /* Browser-tab title tracks the active section. */
@@ -108,11 +109,6 @@
       <a class="logo" href="/" onclick={closeMenu} aria-label="Fuori campo home">
         {@render logoMark('logo-menu')}
       </a>
-      <button class="overlay-close" onclick={closeMenu} aria-label="Chiudi menu">
-        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M4.5 4.5L25.5 25.5M25.5 4.5L4.5 25.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
     </div>
 
     <nav class="nav-mobile-nav">
@@ -131,7 +127,7 @@
   </div>
 {/if}
 
-<header class="navbar" class:navbar--inverted={inverted} class:navbar--flat={flat} class:hidden={!visible || hidden} aria-label="Main navigation">
+<header class="navbar" class:navbar--inverted={inverted} class:navbar--flat={flat} class:hidden={!visible || hidden} class:menu-open={menuOpen} aria-label="Main navigation">
   <div class="navbar-inner">
     <a class="logo" href="/" aria-label="Fuori campo home">
       {@render logoMark('logo-nav')}
@@ -144,9 +140,18 @@
     </nav>
 
     <!-- Hamburger — visible only on mobile via CSS -->
-    <button class="nav-burger" aria-label="Apri menu" aria-controls="nav-mobile-overlay" onclick={toggleMenu}>
+    <button
+      class="nav-burger"
+      class:is-open={menuOpen}
+      aria-label={menuOpen ? 'Chiudi menu' : 'Apri menu'}
+      aria-controls="nav-mobile-overlay"
+      aria-expanded={menuOpen}
+      onclick={toggleMenu}
+    >
       <svg width="37" height="21" viewBox="0 0 37 21" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M34.625 1.54134L2.375 1.54134M34.625 10.4997L2.375 10.4997M34.625 19.458L2.375 19.458" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <line class="bar bar-top" x1="2.375" y1="1.54134" x2="34.625" y2="1.54134" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <line class="bar bar-mid" x1="2.375" y1="10.4997" x2="34.625" y2="10.4997" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <line class="bar bar-bot" x1="2.375" y1="19.458"  x2="34.625" y2="19.458"  stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
       </svg>
     </button>
   </div>
@@ -172,6 +177,20 @@
   }
   .nav-burger:active { transform: scale(0.96); transition-duration: var(--dur-instant); }
   .navbar--inverted .nav-burger { color: var(--color-content-body-black); }
+
+  /* ── Hamburger → ✕ morphing bars ───────────────────────────────── */
+  .nav-burger .bar {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 380ms var(--ease-spring), opacity 220ms ease;
+  }
+  .nav-burger.is-open .bar-top { transform: translateY(8.96px)  rotate(45deg); }
+  .nav-burger.is-open .bar-mid { opacity: 0; transform: scaleX(0.3); }
+  .nav-burger.is-open .bar-bot { transform: translateY(-8.96px) rotate(-45deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-burger .bar { transition: none; }
+  }
 
   /* ── Mobile full-screen overlay ─────────────────────────────────── */
   .nav-mobile-overlay {
@@ -199,24 +218,6 @@
     flex-shrink: 0;
   }
   .nav-mobile-overlay .logo { color: var(--color-content-body-black); }
-
-  .overlay-close {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-content-body-black);
-    -webkit-tap-highlight-color: transparent;
-    transition: opacity var(--dur-fast) ease, transform var(--dur-mid) var(--ease-spring);
-  }
-  .overlay-close:hover  { opacity: 0.72; }
-  .overlay-close:active { transform: scale(0.96); transition-duration: var(--dur-instant), var(--dur-instant); }
 
   /* ── Mobile nav links ───────────────────────────────────────────── */
   .nav-mobile-nav {
@@ -257,5 +258,20 @@
   /* ── Show hamburger on mobile only ──────────────────────────────── */
   @media (max-width: 599px) {
     .nav-burger { display: flex; }
+
+    /* Float navbar above the overlay so the morphed X closes the menu */
+    .menu-open {
+      z-index: 10000;
+      background: transparent;
+    }
+    /* Hide the navbar logo while the overlay (which has its own logo) is visible.
+       display:none (not visibility:hidden) so it doesn't inflate the navbar height. */
+    .menu-open .logo {
+      display: none;
+    }
+    /* X button is black so it reads against the accent-color overlay */
+    .nav-burger.is-open {
+      color: var(--color-content-body-black);
+    }
   }
 </style>
