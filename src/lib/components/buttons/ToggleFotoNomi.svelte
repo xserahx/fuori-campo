@@ -17,7 +17,7 @@
 </script>
 
 <div class="toggle-container">
-    <!-- 1. LA PILLOLA MOBILE (Il finto bottone con il solo bordo giallo) -->
+    <!-- 1. LA PILLOLA MOBILE ANIMATA -->
     <div class="toggle-pill" class:is-right={view === 'names'}></div>
 
     <!-- 2. I TESTI CLICCABILI -->
@@ -27,7 +27,9 @@
         class:is-active={view === 'photos'}
         onclick={() => setToggle('photos')}
     >
-        <ButtonLabel>FOTO</ButtonLabel>
+        <span class="toggle-text-wrapper">
+            <ButtonLabel>FOTO</ButtonLabel>
+        </span>
     </button>
 
     <button
@@ -36,7 +38,9 @@
         class:is-active={view === 'names'}
         onclick={() => setToggle('names')}
     >
-        <ButtonLabel>NOMI</ButtonLabel>
+        <span class="toggle-text-wrapper">
+            <ButtonLabel>NOMI</ButtonLabel>
+        </span>
     </button>
 </div>
 
@@ -49,7 +53,7 @@
         background-color: var(--color-background-primary);
         border-radius: var(--radius-rounded-pill);
         
-        height: var(--spacing-9);
+        height: 60px; /* Forza l'altezza coerente richiesta */
         padding-top: var(--spacing-3);
         padding-bottom: var(--spacing-3);
         
@@ -74,6 +78,7 @@
         background-color: transparent;
         box-sizing: border-box;
         pointer-events: none;
+        z-index: 1;
         
         transition: transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
     }
@@ -93,22 +98,32 @@
         align-items: center;
         justify-content: center;
         flex: 1; 
-        
+        height: 100%;
+    }
+
+    .toggle-text-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none; /* Lascia che il click attraversi e venga preso dal bottone */
         color: var(--color-content-body);
         transition: color 150ms ease;
     }
 
-    /* Modifichiamo il cursore per far capire visivamente che l'elemento attivo non è cliccabile */
+    /* Gestione dello stato attivo */
     .toggle-option.is-active {
-        color: var(--color-content-body);
         cursor: default; 
     }
 
-    /* ── HOVER SELETTIVO ── */
-    /* L'effetto hover (testo giallo) si attiva SOLO se il bottone NON ha la classe .is-active */
+    .toggle-option.is-active .toggle-text-wrapper {
+        color: var(--color-content-body); /* Mantiene il colore base */
+    }
+
+    /* HOVER SELETTIVO CORRETTO */
+    /* Penetriamo nel wrapper del testo solo se il bottone padre non è attivo */
     @media (hover: hover) {
-        .toggle-option:not(.is-active):hover {
-            color: var(--color-content-accent);
+        .toggle-option:not(.is-active):hover .toggle-text-wrapper {
+            color: var(--color-content-accent) !important;
         }
     }
 </style>
