@@ -51,6 +51,7 @@
         align-items: center;
         
         background-color: var(--color-background-primary);
+        border: var(--stroke-1) solid var(--color-content-accent);
         border-radius: var(--radius-rounded-pill);
         
         height: 60px;
@@ -75,7 +76,7 @@
         
         border: var(--stroke-1) solid var(--color-content-accent);
         border-radius: var(--radius-rounded-pill);
-        background-color: transparent;
+        background-color: var(--color-content-accent);
         box-sizing: border-box;
         pointer-events: none;
         z-index: 1;
@@ -116,7 +117,7 @@
     }
 
     .toggle-option.is-active .toggle-text-wrapper {
-        color: var(--color-content-body); /* Mantiene il colore base */
+        color: var(--color-content-body-black); 
     }
 
     /* HOVER SELETTIVO CORRETTO */

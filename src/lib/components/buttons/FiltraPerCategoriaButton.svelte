@@ -57,7 +57,7 @@
         border-radius: var(--radius-rounded-pill);
         box-sizing: border-box;
         cursor: pointer;
-        background-color: transparent;
+        background-color: var(--color-background-primary);
         border: var(--stroke-1) solid var(--color-content-accent);
         
         /* Animazione fluida nativa */
