@@ -16,11 +16,11 @@
   padding: var(--spacing-5) var(--spacing-11);
   display: flex;
   align-items: center;
-  background: linear-gradient(
+  /* background: linear-gradient(
     to bottom,
     var(--color-background-primary) 0%,
     var(--primitive-black-alpha-15) 100%
-  );
+  ); */
   min-height: var(--navbar-height);
   box-sizing: border-box;
   z-index: 40;
@@ -32,9 +32,12 @@
 
 
 /* Flat navbar — no gradient (e.g. gallery page) */
-.navbar.navbar--flat {
+/* .navbar.navbar--flat {
   background: var(--color-background-primary);
-}
+} */
+.navbar.navbar--flat {
+  background: transparent;
+} 
 
 /* Inverted navbar — accent-background context (e.g. green question panels) */
 .navbar--inverted {
