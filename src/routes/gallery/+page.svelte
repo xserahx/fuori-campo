@@ -46,7 +46,6 @@
     return () => window.removeEventListener('resize', check);
   });
   
-  /* NOTA: Ho cancellato la vecchia funzione setToggle perché ora usiamo bind:view */
 </script>
 
 <svelte:head>
@@ -77,8 +76,6 @@
   <div class="edge-fade edge-fade--bottom"></div>
   <div class="edge-fade edge-fade--left"></div>
   <div class="edge-fade edge-fade--right"></div>
-
-  
 
 </main>
 
@@ -149,24 +146,18 @@
   .toggle {
     position: fixed;
     
-    /* Le tue misure esatte richieste per il posizionamento */
     left: var(--spacing-11, 72px);
     bottom: var(--unit-48, 48px);
     
-    /* IL SALVAVITA: uno z-index altissimo per scavalcare sfumature e foto */
-    z-index: 999; 
-    
-    /* Forza il browser a intercettare il mouse qui sopra, ignorando i livelli sopra */
+    z-index: 49; 
     pointer-events: auto; 
   }
 
-  /* ── Responsive tweaks ──────────────────────────────────────────── */
-  @media (max-width: 900px) {
-    .toggle { left: var(--spacing-5); bottom: 20px; }
-  }
-
-  @media (max-width: 640px) {
-    .toggle { left: var(--spacing-5); bottom: 36px; }
+  @media (max-width: 599px) {
+    .toggle { 
+      left: var(--spacing-5, 24px); 
+      bottom: var(--spacing-6-2, 36px); 
+    }
 
     .edge-fade--top {
       height: 44vh;
