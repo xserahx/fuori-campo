@@ -13,16 +13,19 @@
     mobileOutlineLh?: number;
   };
 
-  const IMG_FIGMA_204 = '/volunteer_images/carosello_categorie/cat-1.jpg';
-  const IMG_FIGMA_58  = '/volunteer_images/carosello_categorie/cat-5.jpg';
-  const IMG_FIGMA_232 = '/volunteer_images/carosello_categorie/cat-8.jpg';
+  const IMG_RELAZIONI = '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png';
+  const IMG_CERIMONIE = '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png';
+  const IMG_SPORT = '/volunteer_images/carosello_categorie/Sport.png';
+  const IMG_AREAORGANIZZATIVA = '/volunteer_images/carosello_categorie/Area_organizzativa.png';
+  const IMG_LOGISTICA = '/volunteer_images/carosello_categorie/Logistica_e_territorio.png';
+  const IMG_GESTIONE = '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png';
   const defaultCategories: Category[] = [
-    { id: 1, label: 'RELAZIONI E COMUNICAZIONE',             image: IMG_FIGMA_204 },
-    { id: 2, label: 'CERIMONIE E REVENUE',                   image: IMG_FIGMA_58 },
-    { id: 3, label: 'SPORT E DISCIPLINE',                    image: IMG_FIGMA_232 },
-    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: IMG_FIGMA_204, mobileFillLh: 40 },
-    { id: 5, label: 'LOGISTICA E TERRITORIO',                image: IMG_FIGMA_58,  mobileFillLh: 40, mobileOutlineLh: 40 },
-    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: IMG_FIGMA_232 },
+    { id: 1, label: 'RELAZIONI E COMUNICAZIONE',             image: IMG_RELAZIONI },
+    { id: 2, label: 'CERIMONIE E REVENUE',                   image: IMG_CERIMONIE },
+    { id: 3, label: 'SPORT E DISCIPLINE',                    image: IMG_SPORT },
+    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: IMG_AREAORGANIZZATIVA, mobileFillLh: 40 },
+    { id: 5, label: 'LOGISTICA E TERRITORIO',                image: IMG_LOGISTICA,  mobileFillLh: 40, mobileOutlineLh: 40 },
+    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: IMG_GESTIONE },
   ];
 
   let { categories = defaultCategories }: { categories?: Category[] } = $props();
