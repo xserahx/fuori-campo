@@ -1,19 +1,6 @@
 <script lang="ts">
   import '../../lib/styles/tokens.css';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
-  import { navbarInverted } from '$lib/stores/navbar';
-  import { onMount } from 'svelte';
-
-  onMount(() => {
-    const mq = window.matchMedia('(max-width: 599px)');
-    const update = (e: MediaQueryList | MediaQueryListEvent) => navbarInverted.set(e.matches);
-    update(mq);
-    mq.addEventListener('change', update);
-    return () => {
-      mq.removeEventListener('change', update);
-      navbarInverted.set(false);
-    };
-  });
 </script>
 
 <svelte:head>
@@ -152,8 +139,8 @@
   /* ── Mobile (≤ 599px) — Figma node 6197-9017 "About-mobile" ──── */
   @media (max-width: 599px) {
     .about-page {
-      background: var(--color-content-accent);
-      color: var(--color-content-body-black);
+      background: var(--color-background-primary);
+      color: var(--color-content-body);
       padding-bottom: var(--unit-48);
     }
 
@@ -165,7 +152,6 @@
     .hero h1 {
       font-size: var(--unit-56);
       line-height: 1;
-      color: var(--color-content-body-black);
     }
 
     .hero p {
@@ -173,7 +159,6 @@
       font-size: var(--unit-24);
       font-weight: 500;
       line-height: 1.05;
-      color: var(--color-content-body-black);
     }
 
     /* Let the text wrap naturally on mobile */
@@ -192,7 +177,6 @@
 
     .team {
       margin-top: var(--spacing-5);
-      color: var(--color-content-body-black);
       font-size: 14px;
       line-height: 1.4;
       animation: none;
