@@ -111,7 +111,7 @@
     }
   }
   
-  const LERP_K = 0.072; 
+  const LERP_K = 0.025; 
 
   const C_VERT = /* glsl */`
     varying vec2 vUv;
