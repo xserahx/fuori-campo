@@ -29,6 +29,7 @@
         padding: 0;
         cursor: pointer;
         display: block;
+        will-change: transform;
         
         /* Allineamento orizzontale a destra richiesto */
         width: 100%;

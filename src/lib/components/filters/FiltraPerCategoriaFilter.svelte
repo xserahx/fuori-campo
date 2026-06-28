@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { gsap } from 'gsap';
     import FilterLabel from './FilterLabel.svelte';
     import FiltraPerCategoriaButton from '../buttons/FiltraPerCategoriaButton.svelte';
 
@@ -17,16 +18,27 @@
         { id: 'sport',         label: 'SPORT<br>E DISCIPLINE'                    }
     ];
 
-    let isOpen = $state(false);
+    let isOpen     = $state(false);
+    let linksEl    = $state<HTMLElement | null>(null);
+    let backdropEl = $state<HTMLElement | null>(null);
+
+    /* Track whether GSAP has been initialised on this instance. */
+    let initialized = false;
+
+    /* Keep references so we can kill timelines on rapid open/close. */
+    let openTl:  gsap.core.Timeline | null = null;
+    let closeTl: gsap.core.Timeline | null = null;
 
     const bottoneVariant = $derived.by(() => {
-        if (isOpen) return 'close-x';
+        if (isOpen)            return 'close-x';
         if (activeFilter !== null) return 'filter-selected';
         return 'default';
     });
 
-    function togglePanel() {
-        isOpen = !isOpen;
+    function togglePanel() { isOpen = !isOpen; }
+
+    function handleKeydown(e: KeyboardEvent) {
+        if (e.key === 'Escape' && isOpen) isOpen = false;
     }
 
     function selezionaCategoria(id: string) {
@@ -34,31 +46,125 @@
         isOpen = false;
     }
 
-    function handleKeydown(e: KeyboardEvent) {
-        if (e.key === 'Escape' && isOpen) {
-            isOpen = false;
-        }
+    /* ─────────────────────────────────────────────────────────────────────
+     * OPEN
+     * force3D:false keeps labels in CPU-rendered 2D transforms so there is
+     * no GPU compositing layer to demote when the animation ends.
+     * onComplete clears the inline translateY(0%) entirely, returning labels
+     * to their natural CSS position with no GSAP residue.
+     * ───────────────────────────────────────────────────────────────────── */
+    function playOpen() {
+        if (!linksEl || !backdropEl) return;
+        closeTl?.kill();
+        openTl?.kill();
+
+        const labels = Array.from(
+            linksEl.querySelectorAll<HTMLElement>('.filter-label')
+        );
+
+        openTl = gsap.timeline()
+            .to(backdropEl, {
+                opacity:  1,
+                duration: 0.45,
+                ease:     'power2.out'
+            }, 0)
+            .to(labels, {
+                yPercent: 0,
+                duration: 0.9,
+                ease:     'power4.out',
+                force3D:  false,
+                stagger:  { each: 0.08, from: 'start' }
+            }, 0.1);
     }
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * CLOSE
+     * ───────────────────────────────────────────────────────────────────── */
+    function playClose() {
+        if (!linksEl || !backdropEl) return;
+        openTl?.kill();
+        closeTl?.kill();
+
+        const labels = Array.from(
+            linksEl.querySelectorAll<HTMLElement>('.filter-label')
+        );
+
+        closeTl = gsap.timeline()
+            .to(labels, {
+                yPercent: 140,
+                duration: 0.32,
+                ease:     'power4.in',
+                force3D:  false,
+                stagger:  { each: 0.035, from: 'end' }
+            }, 0)
+            .to(backdropEl, {
+                opacity:  0,
+                duration: 0.35,
+                ease:     'power2.in'
+            }, 0.08);
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * REACTIVE EFFECT
+     * isOpen is read first so Svelte tracks it as a dependency even on the
+     * first run (where we only set the hidden initial positions and return).
+     * ───────────────────────────────────────────────────────────────────── */
+    $effect(() => {
+        if (!linksEl || !backdropEl) return;
+        const open = isOpen;
+
+        const labels = Array.from(
+            linksEl.querySelectorAll<HTMLElement>('.filter-label')
+        );
+
+        if (!initialized) {
+            /* First DOM mount: park everything in the hidden starting state. */
+            gsap.set(backdropEl, { opacity: 0 });
+            gsap.set(labels, { yPercent: 140 });
+            initialized = true;
+            return;
+        }
+
+        if (open) playOpen();
+        else      playClose();
+
+        return () => { openTl?.kill(); closeTl?.kill(); };
+    });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
     class="filter-panel"
     class:is-open={isOpen}
     onclick={() => { if (isOpen) isOpen = false; }}
     role="presentation"
 >
+    <div class="filter-panel__backdrop" bind:this={backdropEl}></div>
+
+    <!-- stopPropagation prevents the backdrop onclick from firing when clicking within the content column -->
     <div class="filter-panel__content" onclick={(e) => e.stopPropagation()}>
 
-        <div class="filter-panel__links" aria-hidden={!isOpen || undefined}>
+        <div
+            class="filter-panel__links"
+            bind:this={linksEl}
+            aria-hidden={!isOpen || undefined}
+        >
             {#each categorie as cat}
-                <FilterLabel
-                    active={activeFilter === cat.id}
-                    onclick={() => selezionaCategoria(cat.id)}
-                >
-                    {@html cat.label}
-                </FilterLabel>
+                <!--
+                  overflow:hidden is the mask that makes labels appear to emerge
+                  from beneath each row instead of fading in mid-air.
+                  Mirrors .sm-panel-itemWrap from the ReactBits StaggeredMenu.
+                -->
+                <div class="filter-item-wrap">
+                    <FilterLabel
+                        active={activeFilter === cat.id}
+                        onclick={() => selezionaCategoria(cat.id)}
+                    >
+                        {@html cat.label}
+                    </FilterLabel>
+                </div>
             {/each}
         </div>
 
@@ -73,84 +179,94 @@
 </div>
 
 <style>
-    /* ── Shell: full viewport, above EVERYTHING including the navbar ─── */
-    /* Must be a sibling of gallery-page (not a child) so it lives in the
-       root stacking context. z-index:200 > navbar (z-index:40 in base.css). */
+    /* ── Shell ─────────────────────────────────────────────────────────
+       Sibling of gallery-page → root stacking context.
+       z-index:200 puts it above the navbar (z-index:40 in base.css).   */
     .filter-panel {
         position: fixed;
-        inset: 0;           /* 100vw × 100vh full viewport coverage        */
-        z-index: 200;       /* above navbar (40) and gallery content        */
+        inset: 0;
+        z-index: 200;
         box-sizing: border-box;
-        background: transparent;
         pointer-events: none;
-        transition: background var(--dur-mid) var(--ease-cinema);
+
+        /*
+         * Scale category text so the filter occupies the same visual footprint
+         * as on the 16-inch reference (1728 × 1117 px).
+         * 32px ÷ 1728px = 1.852vw → at 1728px this resolves to exactly 32px.
+         * On smaller desktops it shrinks proportionally; 20px is the floor.
+         * Mobile (< 600px) uses --ts-nav-link-size in FilterLabel.svelte,
+         * so this override only affects desktop.
+         */
+        --ts-cat-size: clamp(20px, 1.852vw, 32px);
     }
 
-    /* When open: Figma gradient — solid background-primary on the right,
-       fading to fully transparent on the left, full viewport width. */
     .filter-panel.is-open {
-        background: linear-gradient(
-            to left,
-            var(--color-background-primary)    0%,
-            var(--color-background-transparent) 100%
-        );
+        /* Clicking anywhere outside the content column closes the panel. */
         pointer-events: auto;
     }
 
-    /* ── Content column — right-aligned, bottom-anchored ────────────── */
+    /* ── Backdrop ──────────────────────────────────────────────────────
+       Figma gradient: solid at right edge, fully transparent at left.
+       GSAP drives clip-path to create the panel wipe animation.         */
+    .filter-panel__backdrop {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            to left,
+            var(--color-background-primary)     0%,
+            var(--color-background-transparent) 100%
+        );
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* ── Content column ────────────────────────────────────────────────
+       position:relative so it stacks above the backdrop.                */
     .filter-panel__content {
+        position: relative;
         height: 100%;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
         align-items: flex-end;
-        /* Top clearance so categories never hide under the fixed navbar */
-        padding-top: calc(var(--navbar-height) + var(--spacing-5));
-        padding-right: var(--spacing-11);
+        padding-top:    calc(var(--navbar-height) + var(--spacing-5));
+        padding-right:  var(--spacing-11);
         padding-bottom: var(--spacing-8);
         box-sizing: border-box;
     }
 
-    /* ── Category links ─────────────────────────────────────────────── */
+    /* ── Category links ────────────────────────────────────────────────
+       No CSS transitions — GSAP owns every entrance/exit frame.         */
     .filter-panel__links {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
-        /* Height-adaptive gap: roomy on tall screens, compact on short ones */
         gap: clamp(var(--spacing-3), 4vh, var(--spacing-8));
         width: 100%;
-        /* Space between last category and the trigger button */
         margin-bottom: clamp(var(--spacing-7), 6vh, var(--spacing-11));
-
-        /* Hidden state */
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        transform: translateX(var(--spacing-6-2));
         pointer-events: none;
-
-        transition:
-            max-height var(--dur-mid)  var(--ease-cinema),
-            opacity    var(--dur-fast) var(--ease-cinema),
-            transform  var(--dur-mid)  var(--ease-cinema);
     }
 
     .filter-panel.is-open .filter-panel__links {
-        /* large enough to fit all six categories at any font size */
-        max-height: 1200px;
-        overflow: visible;
-        opacity: 1;
-        transform: translateX(0);
         pointer-events: auto;
     }
 
-    /* ── Trigger button ─────────────────────────────────────────────── */
+    /* ── Per-item clip mask ────────────────────────────────────────────
+       overflow:hidden clips each label so the yPercent slide-up makes
+       it appear to emerge from beneath the row (ReactBits pattern).     */
+    .filter-item-wrap {
+        overflow: hidden;
+        line-height: 1;
+    }
+
+    /* ── Trigger button ────────────────────────────────────────────────
+       pointer-events:auto always — button must work even when the
+       panel is closed (parent has pointer-events:none).                 */
     .filter-panel__trigger {
         display: flex;
         justify-content: flex-end;
         align-items: center;
         width: 100%;
-        /* Always intercept clicks so the button works even when panel is closed */
         pointer-events: auto;
     }
 
@@ -163,9 +279,9 @@
 
     /* ── Mobile (< 600px) ───────────────────────────────────────────── */
     @media (max-width: 599px) {
-        .filter-panel.is-open {
-            /* Same Figma gradient; left stop is semi-opaque on narrow screens
-               so category text stays readable across the full width */
+        .filter-panel__backdrop {
+            /* Nearly opaque on the left on narrow screens so text
+               stays readable across the full width of the viewport */
             background: linear-gradient(
                 to left,
                 var(--color-background-primary) 0%,
@@ -174,22 +290,21 @@
         }
 
         .filter-panel__content {
-            padding-right: var(--spacing-5);
+            padding-right:  var(--spacing-5);
             padding-bottom: var(--spacing-6-2);
-            /* Mobile navbar is shorter */
-            padding-top: calc(var(--navbar-height) + var(--spacing-4));
+            padding-top:    calc(var(--navbar-height) + var(--spacing-4));
         }
 
         .filter-panel__links {
-            gap: clamp(var(--spacing-2), 3.5vh, var(--spacing-6));
-            margin-bottom: clamp(var(--spacing-6), 5vh, var(--spacing-9));
+            gap:           clamp(var(--spacing-2), 3.5vh, var(--spacing-6));
+            margin-bottom: clamp(var(--spacing-6), 5vh,   var(--spacing-9));
         }
     }
 
     /* ── Very short viewports ───────────────────────────────────────── */
     @media (max-height: 620px) {
         .filter-panel__links {
-            gap: clamp(var(--spacing-2), 2vh, var(--spacing-4));
+            gap:           clamp(var(--spacing-2), 2vh, var(--spacing-4));
             margin-bottom: clamp(var(--spacing-5), 4vh, var(--spacing-7));
         }
     }
