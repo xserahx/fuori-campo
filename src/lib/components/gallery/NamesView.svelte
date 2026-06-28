@@ -56,7 +56,7 @@
   // Svelte's bind:offsetHeight sets these synchronously after each render,
   // so bg absolute-positions always reflect actual DOM heights.
   let itemHeights = $state<number[]>([]);
-
+    
   const LETTER_BREAK_HEIGHT = $derived(isMobile ? 66 : 0); // 46px gap + 20px label line-height
 
   function normalizeFirstLetter(s: string): string {
@@ -186,22 +186,6 @@
           {@const distance = i - selectedIndex}
           {@const isActive = distance === 0}
           {@const absDistance = Math.abs(distance)}
-
-          <div
-            class="names-bg__item"
-            class:selected={isActive}
-            class:hovered={i === hoveredIndex}
-            style={`
-              top: calc(var(--names-center-padding) + ${person.topOffset}px);
-              opacity: ${isActive ? 0 : Math.max(0.18, 1 - Math.min(0.72, absDistance * 0.18))};
-              filter: blur(${Math.min(7, Math.pow(absDistance, 1.15) * 1.2)}px);
-              transform: scale(${1 - Math.min(0.05, absDistance * 0.012)});
-            `}
-          >
-            <div class="name-wrap">
-              <span class="name-text">{formatDisplayName(person)}</span>
-            </div>
-          </div>
         {/each}
       </div>
     </div>
@@ -258,22 +242,11 @@
     {/each}
   </nav>
 
-  <div class="copy-toast" aria-hidden={!copied} class:visible={copied}>Link copied</div>
+  
 </div>
 
 <style>
-  .names-view {
-    position: absolute;
-    inset: 0;
-    z-index: 6;
-    overflow: hidden;
-    background: var(--gallery-background);
-    color: var(--color-content-body);
-    font-family: var(--font-display);
 
-    --names-active-shift: var(--spacing-7);
-    --names-inline-end: var(--spacing-11);
-  }
 
   .names-stage {
     /* Center the active row in the space below the fixed navbar.
@@ -283,45 +256,6 @@
     position: absolute;
     inset: 0;
     z-index: 2;
-  }
-
-  .names-bg {
-    position: absolute;
-    left: clamp(16px, 22.8vw, 394px);
-    right: var(--spacing-11);
-    top: 0;
-    bottom: 0;
-    overflow: hidden;
-    z-index: 3;
-    pointer-events: none;
-  }
-
-  .names-bg-inner {
-    position: relative;
-    width: 100%;
-  }
-
-  .names-bg__item {
-    position: absolute;
-    left: 0;
-    right: 0;
-    min-height: 120px;
-    font-size: 90px;
-    font-weight: 500;
-    font-style: normal;
-    line-height: 120px;
-    color: var(--color-content-body, #fafafa);
-    text-transform: uppercase;
-    letter-spacing: 0;
-    overflow: hidden;
-    hyphens: manual;
-  }
-
-  .names-bg__item.selected,
-  .names-bg__item.hovered {
-    opacity: 0 !important;
-    filter: none;
-    transform: none;
   }
 
   .names-interaction {
@@ -340,7 +274,7 @@
     overflow-y: auto;
     scrollbar-width: none;
 
-    padding-top: var(--names-center-padding);
+    padding-top: var(--spacing-14, 200px);
     padding-bottom: var(--names-center-padding);
   }
 
@@ -354,33 +288,21 @@
     display: none; /* hidden on desktop: LETTER_BREAK_HEIGHT = 0 there */
   }
 
-  .letter-label {
-    font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 20px;
-    color: var(--color-content-accent, #bdff5d);
-    text-transform: uppercase;
-    letter-spacing: 0;
-    user-select: none;
-  }
 
   .names-interaction__item {
     position: relative;
     border: 0;
     background: transparent;
-    color: transparent;
+    color: var(--color-content-body, #fafafa);
 
     min-height: 120px;
-    width: 100%;
 
     font-family: var(--font-display);
-    font-size: 90px;
-    font-weight: 500;
-    font-style: normal;
-    line-height: 120px;
+    font-size: var(--ts-h2-size, 84px);
+    font-weight: var(--ts-h2-weight, 500);
+    line-height: var(--ts-h2-line-height, 80px);
+    letter-spacing: var(--ts-h2-letter-spacing, 0em);
 
-    padding: 0 var(--names-inline-end) 0 0;
     margin: 0;
 
     cursor: pointer;
@@ -390,7 +312,7 @@
     display: block;
   }
 
-  .names-interaction__item {
+  /* .names-interaction__item {
     transition:
       color     200ms cubic-bezier(0.22, 1, 0.36, 1),
       transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -399,7 +321,7 @@
   .names-interaction__item.selected {
     color: var(--gallery-accent, var(--color-content-accent));
     transform: translateX(var(--names-active-shift));
-  }
+  } */
 
   .names-interaction__label {
     display: inline-block;
@@ -408,20 +330,12 @@
     vertical-align: top;
   }
 
-  .name-wrap {
-    display: inline-block;
-    position: relative;
-  }
-
-  .name-text {
-    display: inline-block;
-  }
 
   .names-interaction__item:hover {
     color: var(--gallery-accent, var(--color-content-accent));
   }
 
-  .names-veil {
+  /* .names-veil {
     position: absolute;
     inset: 0;
     z-index: 30;
@@ -447,7 +361,7 @@
 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    /* Force GPU compositing to avoid sub-pixel seams at non-integer zoom */
+
     transform: translateZ(0);
 
     mask-image: linear-gradient(
@@ -462,9 +376,9 @@
       rgba(0, 0, 0, 0.72) 38%,
       transparent 100%
     );
-  }
+  } */
 
-  .names-veil__zone--middle-a,
+  /* .names-veil__zone--middle-a,
   .names-veil__zone--middle-b {
     background: transparent;
     backdrop-filter: none;
@@ -496,22 +410,10 @@
       rgba(0, 0, 0, 0.72) 38%,
       transparent 100%
     );
-  }
+  } */
 
-  @media (max-width: 1100px) {
-    .names-bg,
-    .names-interaction {
-      left: clamp(16px, 10%, 120px);
-      right: var(--spacing-5);
-    }
 
-    .names-view {
-      --names-active-shift: var(--spacing-5);
-      --names-inline-end: var(--spacing-5);
-    }
-  }
-
-  .copy-toast {
+  /* .copy-toast {
     position: fixed;
     left: 50%;
     bottom: var(--spacing-4);
@@ -538,7 +440,7 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
     box-shadow: 0 0 16px rgba(189, 255, 93, 0.18);
-  }
+  } */
 
   /* ── Alphabet sidebar ─────────────────────────────────────────────── */
   /* Refs: Figma desktop 6197-17109 / mobile 6197-16829.
@@ -552,8 +454,8 @@
     --_item-h:  var(--unit-24, 24px);          /* item height */
     --_font:    var(--unit-20, 20px);          /* letter font-size */
     --_lh:      var(--unit-24, 24px);          /* letter line-height */
-    --_gap-max: var(--unit-16, 16px);          /* Figma itemSpacing */
-    --_gap-min: var(--unit-0, 0px);            /* tightest gap before clip */
+    --_gap: var(--unit-16, 16px);          /* Figma itemSpacing */
+
     --_count:   19;                            /* fallback; set inline from availableLetters.length */
     /* clearance above filter-btn: max-bottom(48) + btn-height(~50) + room = 120px
        = var(--unit-80) + var(--spacing-7)                                         */
@@ -599,34 +501,17 @@
     cursor:         pointer;
     flex-shrink:    0;
     font-family:    var(--font-display);
-    font-size:      var(--_font);
-    line-height:    var(--_lh);
+    font-size:      20px;
+    font-weight:    500;
+    font-style:     normal;
     text-align:     center;
     text-transform: uppercase;
     color:          var(--color-content-body, #fafafa);
-    width:          var(--_w);
-    height:         var(--_item-fit);
-    transition:     color 180ms ease, opacity 180ms ease;
+    transition:     color 300ms ease-in-out, opacity 180ms ease;
   }
 
-  .alpha-sidebar__btn.active {
+  .alpha-sidebar__btn.active, .alpha-sidebar__btn:hover {
     color: var(--color-content-accent, #bdff5d);
-  }
-
-  .alpha-sidebar__btn:hover:not(.active) {
-    opacity: 0.55;
-  }
-
-  @media (max-width: 1100px) {
-    /* Override only what changes; --_avail and --_gap update automatically */
-    .alpha-sidebar {
-      --_right:   var(--spacing-5, 24px);
-      --_w:       18px;
-      --_item-h:  var(--unit-20, 20px);
-      --_font:    var(--unit-16, 16px);
-      --_lh:      var(--unit-20, 20px);
-      --_gap-max: var(--unit-12, 12px);
-    }
   }
 
   @media (max-width: 599px) {
@@ -644,14 +529,6 @@
     /* Match JS ROW_HEIGHT = 28 on mobile; navbar-height collapses to 0 on mobile */
     .names-stage {
       --names-center-padding: calc((100dvh - 28px) / 2);
-    }
-
-    .names-bg__item {
-      min-height: 28px;
-      font-size: 24px;
-      line-height: 28px;
-      /* Match interaction text width so wrapping is identical */
-      padding-right: var(--names-inline-end);
     }
 
     .names-interaction__item {
@@ -720,8 +597,6 @@
     .names-interaction__item {
       transition: color 0.01ms;
     }
-    .copy-toast {
-      transition: opacity 0.01ms;
-    }
+    
   }
 </style>
