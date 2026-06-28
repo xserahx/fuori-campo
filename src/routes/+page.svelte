@@ -719,14 +719,8 @@
     .anticip-img { transition: none; transform: none; }
   }
 
-  .archivio-link {
-    text-decoration: none;
-    transition: text-shadow 280ms ease, text-decoration-color 280ms ease;
-  }
   .archivio-link:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    text-shadow: 0 0 var(--unit-24) rgba(189, 255, 93, 0.65);
+    text-decoration: none;
   }
 
   :global(.question h2 span) {
