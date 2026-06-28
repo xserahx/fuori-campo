@@ -82,7 +82,12 @@
         normalizeFirstLetter(p.cognome) !== normalizeFirstLetter(visible[i - 1].cognome);
       if (letterBreakBefore) cumulative += LETTER_BREAK_HEIGHT;
       const topOffset = cumulative;
-      cumulative += itemHeights[i] ?? ROW_HEIGHT;
+      // Desktop rows are a fixed height, so skip measured heights there — reading
+      // itemHeights subscribes this derived to the bind:offsetHeight writes and
+      // forces an extra measure/recompute/re-render pass on every toggle, which
+      // is the residual lag when switching to the names view. Mobile names wrap
+      // to variable heights, so measurement is still used there.
+      cumulative += (isMobile ? itemHeights[i] : undefined) ?? ROW_HEIGHT;
       return { ...p, topOffset, letterBreakBefore };
     });
   });
