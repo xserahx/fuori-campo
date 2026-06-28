@@ -15,12 +15,12 @@
   };
 
   const CATEGORIES: CategoryInfo[] = [
-    { label: 'RELAZIONI E COMUNICAZIONE',             image: '/volunteer_images/carosello_categorie/cat-1.jpg', tag: 'relazioni',    slug: 'relazioni'    },
-    { label: 'CERIMONIE E REVENUE',                   image: '/volunteer_images/carosello_categorie/cat-5.jpg', tag: 'cerimonie',    slug: 'cerimonie'    },
-    { label: 'SPORT E DISCIPLINE',                    image: '/volunteer_images/carosello_categorie/cat-8.jpg', tag: 'sport',         slug: 'sport'         },
-    { label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: '/volunteer_images/carosello_categorie/cat-1.jpg', tag: 'organizzativa', slug: 'organizzativa' },
-    { label: 'LOGISTICA E TERRITORIO',                image: '/volunteer_images/carosello_categorie/cat-5.jpg', tag: 'logistica',     slug: 'logistica'     },
-    { label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: '/volunteer_images/carosello_categorie/cat-8.jpg', tag: 'gestione',      slug: 'gestione'      },
+    { label: 'RELAZIONI E COMUNICAZIONE',             image: '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png',              tag: 'relazioni',    slug: 'relazioni'    },
+    { label: 'CERIMONIE E REVENUE',                   image: '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png',                    tag: 'cerimonie',    slug: 'cerimonie'    },
+    { label: 'SPORT E DISCIPLINE',                    image: '/volunteer_images/carosello_categorie/Sport.png',                                  tag: 'sport',        slug: 'sport'        },
+    { label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: '/volunteer_images/carosello_categorie/Area_organizzativa.png',                     tag: 'organizzativa', slug: 'organizzativa' },
+    { label: 'LOGISTICA E TERRITORIO',                image: '/volunteer_images/carosello_categorie/Logistica_e_territorio.png',                 tag: 'logistica',    slug: 'logistica'    },
+    { label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png',    tag: 'gestione',     slug: 'gestione'     },
   ];
 
   function legacySlugify(label: string) {
