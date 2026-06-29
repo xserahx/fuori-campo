@@ -447,7 +447,7 @@
     filter: blur(0px) brightness(1);
     opacity: 1;
   }
-  .slide--far { opacity: 0 !important; pointer-events: none; }
+  .slide--far { opacity: 0 !important; pointer-events: none; transition: none !important; }
 
   /* Frame matches the image's own ratio → landscape photos show fully
      (no crop, no letterbox), portraits stay tall. */
