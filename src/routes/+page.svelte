@@ -9,7 +9,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
-  import { goto, afterNavigate, beforeNavigate } from "$app/navigation";
+  import { goto, afterNavigate } from "$app/navigation";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import { blurText } from "../lib/actions/blurText";
@@ -34,8 +34,7 @@
   let stickyEl1:        HTMLElement | null = null;
   let track1:           HTMLElement | null = null;
   let veil1:            HTMLElement | null = null;
-  let transitionOverlay: HTMLElement | null = null;
-  let galleryGate: HTMLElement | null = null; 
+  let galleryGate: HTMLElement | null = null;
 
   let q1h2: HTMLElement | null = null;
   let q2h2: HTMLElement | null = null;
@@ -79,48 +78,24 @@
   });
 
   let galleryTransitionPending = false;
-  let galleryTimeline: gsap.core.Timeline | null = null;
 
   function navigateToGallery() {
     if (galleryTransitionPending) return;
     galleryTransitionPending = true;
-    document.documentElement.dataset.galleryEntry = '1';
-
-    const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (noMotion) {
-      galleryTimeline = null;
-      goto('/gallery');
-      return;
-    }
-
-    const landing = document.querySelector<HTMLElement>('.landing');
-    galleryTimeline = gsap.timeline();
-    
-    if (landing) galleryTimeline.to(landing, { scale: 1.04, opacity: 0, duration: 0.44, ease: 'power2.in' }, 0);
-    if (transitionOverlay) galleryTimeline.to(transitionOverlay, { opacity: 1, duration: 0.5, ease: 'power2.in' }, 0.04);
-    galleryTimeline.call(() => { galleryTimeline = null; goto('/gallery'); });
+    // No bespoke transition here — let the layout's standard SVG wave handle
+    // the home → gallery navigation, same as the archivio link.
+    goto('/gallery');
   }
 
-  beforeNavigate(({ to }) => {
-    if (to?.url.pathname !== '/gallery' && galleryTimeline) {
-      galleryTimeline.kill();
-      galleryTimeline = null;
-    }
-  });
-
   afterNavigate(() => {
-    galleryTimeline?.kill();
-    galleryTimeline = null;
     galleryTransitionPending = false;
 
-    delete document.documentElement.dataset.galleryEntry;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.documentElement.style.setProperty('--gate-p', '0');
 
     const landing = document.querySelector<HTMLElement>('.landing');
     if (landing) gsap.set(landing, { clearProps: 'filter,transform,opacity' });
-    if (transitionOverlay) gsap.set(transitionOverlay, { opacity: 0 });
   });
 
   let loaderRaf = 0;
@@ -377,8 +352,6 @@
 />
 
 <div class="site">
-  <div class="transition-overlay" bind:this={transitionOverlay}></div>
-
   <main class="landing" id="main-content">
     <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
@@ -539,16 +512,6 @@
   :global(.question h2 span) {
     display: inline-block;
     will-change: transform, opacity, filter;
-  }
-
-  .transition-overlay {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-    background: var(--color-background-primary, #0e0e0e);
-    opacity: 0;
-    will-change: opacity;
   }
 
   /* ── FIX DEFINITIVO PER LE DOMANDE ORIZZONTALI ── */
