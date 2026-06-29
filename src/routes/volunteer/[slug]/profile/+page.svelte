@@ -371,7 +371,7 @@
     font-family: var(--font-display);
     font-size: calc(32px / max(var(--page-zoom, 1), 0.65));
     font-style: normal;
-    font-weight: 700;
+    font-weight: 500;
     line-height: calc(32px / max(var(--page-zoom, 1), 0.65));
     letter-spacing: 0.96px;
     color: #fafafa;
