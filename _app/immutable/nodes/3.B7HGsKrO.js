@@ -1,0 +1,74 @@
+import{A as e,C as t,E as n,G as r,J as i,K as a,N as o,O as s,S as c,T as l,W as u,Y as d,Z as f,a as p,at as m,b as h,c as g,d as _,f as v,h as y,i as b,j as ee,k as x,nt as S,ot as C,rt as w,s as T,u as E,w as D,x as O,y as te,z as k}from"../chunks/Bgd8qZa1.js";import{n as ne}from"../chunks/BjlyuwUo.js";import"../chunks/v_jBEYI6.js";import"../chunks/CZmDCu5x.js";/* empty css                */import{t as A}from"../chunks/DnUBmEZM.js";import{a as j,c as re,d as M,f as ie,i as N,l as ae,n as oe,o as se,t as P,u as ce}from"../chunks/DfKwZeAd.js";import{t as F}from"../chunks/D9ZMkib1.js";import{t as le}from"../chunks/Ov5FclnB.js";var I=e=>{F(e,{children:(e,t)=>{m(),D(e,s(`SCOPRI DI PIÙ`))},$$slots:{default:!0}})},L=n(`<a><!></a>`),R=n(`<button><!></button>`);function ue(t,n){let i=T(n,`type`,3,`button`),a=T(n,`dark`,3,!1),s=f(()=>n.ariaLabel??`Scopri di più`);var d=l(),p=r(d),m=t=>{var r=L();let i;I(u(r)),C(r),k(()=>{i=v(r,1,`scopri-button svelte-17jri5`,null,i,{"scopri-button--dark":a()}),E(r,`href`,n.href),E(r,`aria-label`,o(s)),E(r,`target`,n.target),E(r,`rel`,n.rel)}),e(`click`,r,function(...e){n.onclick?.apply(this,e)}),D(t,r)},h=t=>{var r=R();let c;I(u(r)),C(r),k(()=>{c=v(r,1,`scopri-button svelte-17jri5`,null,c,{"scopri-button--dark":a()}),E(r,`type`,i()),E(r,`aria-label`,o(s))}),e(`click`,r,function(...e){n.onclick?.apply(this,e)}),D(t,r)};c(p,e=>{n.href?e(m):e(h,-1)}),D(t,d)}x([`click`]);var de=n(`<div class="mobile-bg svelte-cwls5q"></div>`),fe=n(`<span class="vol-name-word svelte-cwls5q"> </span>`),pe=n(`<section class="mobile-carousel svelte-cwls5q" id="main-content" aria-label="Volunteer carousel"><!> <div class="mobile-blur mobile-blur--top svelte-cwls5q" aria-hidden="true"></div> <div class="mobile-blur mobile-blur--bottom svelte-cwls5q" aria-hidden="true"></div> <div class="mobile-info svelte-cwls5q"><span class="vol-subtitle svelte-cwls5q"> </span> <span class="vol-role svelte-cwls5q"> </span> <div class="vol-name-lines svelte-cwls5q"></div></div> <div class="scopri-mobile-wrap svelte-cwls5q"><!></div> <div class="mobile-nav-circles svelte-cwls5q"><!> <!></div></section>`),me=n(`<div class="overlay-top svelte-cwls5q" role="none"><!></div>`),he=n(`<span class="vol-name-word svelte-cwls5q"> </span>`),ge=n(`<section class="carousel svelte-cwls5q" id="main-content" aria-label="Volunteer carousel"><canvas class="svelte-cwls5q"></canvas> <div class="edge-panel edge-panel--left svelte-cwls5q" aria-hidden="true"><div class="edge-panel__layer svelte-cwls5q"></div> <div class="edge-panel__layer svelte-cwls5q"></div></div> <div class="edge-panel edge-panel--right svelte-cwls5q" aria-hidden="true"><div class="edge-panel__layer svelte-cwls5q"></div> <div class="edge-panel__layer svelte-cwls5q"></div></div> <div class="arrow-left svelte-cwls5q" role="none"><!></div> <div class="arrow-right svelte-cwls5q" role="none"><!></div> <div class="curve-frame svelte-cwls5q" aria-hidden="true"><svg class="curve curve-top svelte-cwls5q" viewBox="0 0 1000 260" preserveAspectRatio="none"><path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z"></path></svg> <svg class="curve curve-bottom svelte-cwls5q" viewBox="0 0 1000 260" preserveAspectRatio="none"><path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z"></path></svg></div> <svg class="card-bottom-fade svelte-cwls5q" aria-hidden="true" viewBox="0 0 1000 260" preserveAspectRatio="none"><defs><linearGradient id="fadeGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity="0"></stop><stop offset="38%" stop-color="#000" stop-opacity="0.4"></stop><stop offset="72%" stop-color="#000" stop-opacity="0.78"></stop><stop offset="100%" stop-color="#000" stop-opacity="0.92"></stop></linearGradient></defs><path d="M0,0 H1000 V145 C780,85 220,85 0,145 Z" fill="url(#fadeGrad)"></path></svg> <div class="card-overlay svelte-cwls5q" aria-live="polite"><!> <div class="overlay-inner svelte-cwls5q"><div class="overlay-bottom svelte-cwls5q"><div class="vol-info-block svelte-cwls5q" role="button" tabindex="0"><span class="vol-subtitle svelte-cwls5q"> </span> <span class="vol-role svelte-cwls5q"> </span> <div class="vol-name-lines svelte-cwls5q"></div></div></div></div></div></section>`),_e=n(`<main class="about-page svelte-cwls5q"><section class="hero svelte-cwls5q"><h1 class="safe-area svelte-cwls5q"><span class="h1-outline svelte-cwls5q">CHI C'È DIETRO</span> <span class="h1-fill svelte-cwls5q">FUORI CAMPO?</span></h1> <p class="hero-body svelte-cwls5q">Vogliamo raccontare le Olimpiadi attraverso gli occhi di chi le ha
+      costruite restando nell'ombra. Questo progetto celebra i volontari:
+      il motore invisibile che, con dedizione silenziosa, ha permesso a Milano
+      Cortina 2026 di brillare.</p></section> <!></main> <!>`,1);function z(n,s){w(s,!0);let l=T(s,`volunteers`,3,[{id:1,name:`SOLIDORO CLAUDIA IRENE`,role:`UX – UI DESIGNER E CODE REVIEWER`,subtitle:`STUDENTESSA IN DESIGN DELLA COMUNICAZIONE`,image:`/volunteer_images/foto_team/claudia.png`,slug:`solidoro-claudia-irene`},{id:2,name:`SERENA SERAFINI`,role:`FRONTEND DEVELOPER`,subtitle:`STUDENTESSA IN DESIGN DELLA COMUNICAZIONE`,image:`/volunteer_images/foto_team/serena.png`},{id:3,name:`GRETA FRANCO`,role:`UX – UI DESIGNER E CONCEPT DESIGNER`,subtitle:`STUDENTESSA IN DESIGN DELLA COMUNICAZIONE`,image:`/volunteer_images/foto_team/greta.png`},{id:4,name:`MATILDE CURINO`,role:`UX – UI DESIGNER E CODE REVIEWER`,subtitle:`STUDENTESSA IN DESIGN DELLA COMUNICAZIONE`,image:`/volunteer_images/foto_team/matilde.png`},{id:5,name:`VIOLA NALDI`,role:`UX – UI DESIGNER E FIELD RESEARCHER`,subtitle:`STUDENTESSA IN DESIGN DELLA COMUNICAZIONE`,image:`/volunteer_images/foto_team/viola.png`,slug:`naldi-viola`},{id:6,name:`LAURA MAGONI`,role:`UX – UI DESIGNER E CONCEPT DESIGNER`,subtitle:`STUDENTESSA IN DESIGN DELLA COMUNICAZIONE`,image:`/volunteer_images/foto_team/laura.png`}]),m=d(null),v=d(null),x=null,E=null,F=null,I=null,L=0,R=[],z=[],B=0,V=0,H=d(0),U=d(0),W=d(!1),ve=0,G=!1,ye=0,K=0,q=4.1,be=3.2,xe=3.2,J=()=>l().length;function Y(e,t){return(e%t+t)%t}function Se(e,t,n){return e+(t-e)*n}function Ce(e){return e=Math.max(0,Math.min(1,e)),e*e*(3-2*e)}function we(){if(!o(m)||!o(v))return;E=new re,I=new M;let e=o(v).clientWidth,t=o(v).clientHeight;F=new j(52,e/t,.1,100),F.position.set(0,0,q*.98),x=new oe({canvas:o(m),antialias:!0,alpha:!0}),x.setPixelRatio(Math.min(window.devicePixelRatio,2)),x.setSize(e,t),x.setClearColor(0,0);let n=new ce;z=l().map(e=>{let t=n.load(e.image,void 0,void 0,void 0);return t.colorSpace=``,t});for(let e=0;e<11;e++){let t=Y(e-5,J()),n=new ae({uniforms:{uTex:{value:z[t]},uTime:{value:0},uFade:{value:0},uBlend:{value:0}},vertexShader:`
+    varying vec2 vUv;
+    void main(){
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`,fragmentShader:`
+    uniform sampler2D uTex;
+    uniform float     uTime;
+    uniform float     uFade;
+    uniform float     uBlend;
+    varying vec2 vUv;
+    void main(){
+      vec4 c = texture2D(uTex, vUv);
+      float edge = smoothstep(0.0, 0.16, vUv.x) * smoothstep(0.0, 0.16, 1.0 - vUv.x)
+                 * smoothstep(0.0, 0.16, vUv.y) * smoothstep(0.0, 0.16, 1.0 - vUv.y);
+      gl_FragColor = vec4(c.rgb, uFade * edge);
+    }`,transparent:!0,depthWrite:!1}),r=new ae({uniforms:{uTex:{value:z[t]},uTime:{value:0},uSide:{value:1},uFade:{value:0},uDist:{value:0}},vertexShader:`
+    varying vec2 vUv;
+    void main(){
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`,fragmentShader:`
+    uniform sampler2D uTex;
+    uniform float     uTime;
+    uniform float     uSide;
+    uniform float     uFade;
+    uniform float     uDist;
+    varying vec2 vUv;
+    vec4 zoomBlur(sampler2D t, vec2 uv, float side, float str){
+      vec2 focus = vec2(side > 0.0 ? 0.0 : 1.0, 0.5);
+      vec4 acc = vec4(0.0);
+      const int S = 30;
+      for(int i=0;i<S;i++){
+        float f   = float(i)/float(S-1);
+        float w   = f * f;
+        vec2  off = (uv - focus) * f * str * 0.36;
+        acc += texture2D(t, clamp(uv - off, 0.001, 0.999)) * w;
+      }
+      return acc / (float(S) * 0.33);
+    }
+    vec2 barrel(vec2 uv, float k, float side){
+      vec2 c = uv - 0.5;
+      float outer = side > 0.0 ? vUv.x : 1.0 - vUv.x;
+      float kk    = k * (0.5 + outer * 1.2);
+      float r2    = c.x*c.x*1.2 + c.y*c.y;
+      c *= 1.0 + kk * r2 * 2.8;
+      c.x += c.x * k * (-0.18 * side);
+      return c + 0.5;
+    }
+    float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float grain(vec2 uv, float t){
+      return (hash(uv + fract(t*0.013)) - 0.5) * 0.18;
+    }
+    void main(){
+      float k   = 0.34 + uDist * 0.56;
+      float blr = 1.55 + uDist * 2.05;
+      vec2  wuv = barrel(vUv, k, uSide);
+      wuv = clamp(wuv, 0.001, 0.999);
+      vec4 col  = zoomBlur(uTex, wuv, uSide, blr);
+      col.rgb  += grain(vUv, uTime);
+      col.rgb *= vec3(0.74, 0.88, 1.12);
+      float lum = dot(col.rgb, vec3(0.299, 0.587, 0.114));
+      col.rgb = mix(vec3(lum), col.rgb, 0.78);
+      float innerX = uSide > 0.0 ? (1.0 - vUv.x) : vUv.x;
+      float topB   = smoothstep(0.0, 0.22, vUv.y) * smoothstep(0.0, 0.22, 1.0 - vUv.y);
+      float sideV  = smoothstep(0.0, 0.58, innerX) * (1.0 - smoothstep(0.55, 1.0, innerX)*0.3);
+      float vig    = topB * sideV;
+      col.rgb     *= vig * 0.72 + 0.015;
+      col.rgb *= 0.64 - uDist * 0.12;
+      gl_FragColor = vec4(col.rgb, uFade);
+    }`,transparent:!0,depthWrite:!1}),i=new N(new se(be,xe,1,1),n),a=new N(new se(3.7,3.7,1,1),r);E.add(i),E.add(a),R.push({cMesh:i,sMesh:a,cMat:n,sMat:r,texIdx:t})}Te(),Ae()}function Te(){if(!x||!E||!F||!I)return;L=requestAnimationFrame(Te),I.update();let e=I.getElapsed();V=Se(V,B,.025);let t=V+K;i(H,t),R.forEach((n,r)=>{let i=r-5,a=Y(Math.round(t)+i,J());n.texIdx!==a&&(n.texIdx=a,n.cMat.uniforms.uTex.value=z[a],n.sMat.uniforms.uTex.value=z[a]);let o=i-(t-Math.round(t)),s=Math.abs(o),c=o>=0?1:-1,l=o*.25,u=q*Math.sin(l),d=q*Math.cos(l)-q,f=-l*1.2,p=Math.exp(-s*s*2.9),m=Ce(Math.max(0,s-.02)*2.1)*(1-Ce(Math.max(0,s-2.15)*1.5)),h=Math.min(1,Math.max(0,(s-.18)/1.2));n.cMesh.position.set(u,0,d+.03),n.cMesh.rotation.set(0,f,0),n.cMesh.visible=p>.003,n.cMat.uniforms.uFade.value=p,n.cMat.uniforms.uTime.value=e,n.sMesh.position.set(u,0,d-.03),n.sMesh.rotation.set(0,f,0),n.sMesh.visible=!0,n.sMat.uniforms.uFade.value=Math.max(m,.12),n.sMat.uniforms.uTime.value=e,n.sMat.uniforms.uSide.value=c,n.sMat.uniforms.uDist.value=h}),x.render(E,F)}function X(e){B+=e,i(U,Y(B,J()),!0)}function Ee(e,t){t.stopPropagation(),X(e)}function De(e){G=!0,ye=e.clientX,K=0,e.currentTarget?.setPointerCapture(e.pointerId)}function Oe(e){!G||!o(v)||(K=(ye-e.clientX)/(o(v).clientWidth*.38))}function ke(){if(G){if(G=!1,Math.abs(K)<.08&&o(v)&&Math.abs(ye-o(v).clientWidth/2)/o(v).clientWidth<.22){K=0,Z();return}K>.35?B++:K<-.35&&B--,i(U,Y(B,J()),!0),K=0}}function Ae(){if(!F||!o(v))return;let e=new ie(be/2,xe/2,.03);e.project(F);let t=o(v).clientWidth,n=o(v).clientHeight,r=(e.x+1)/2*t,i=(-e.y+1)/2*n;o(v).style.setProperty(`--card-right-px`,`${t-r}px`),o(v).style.setProperty(`--card-top-px`,`${i}px`)}function je(){if(!x||!o(v)||!F)return;let e=o(v).clientWidth,t=o(v).clientHeight;F.aspect=e/t,F.updateProjectionMatrix(),x.setSize(e,t),Ae()}function Me(e){ve=e.touches[0].clientY}function Ne(e){let t=ve-e.changedTouches[0].clientY;Math.abs(t)>40&&X(t>0?1:-1)}async function Z(){let e=Y(Math.round(V||0),J()),t=l()[e];console.log(`Clicked on:`,t?.name)}ne(()=>{document.body.style.overflow=``,document.body.style.paddingTop=``}),p(()=>{let e=()=>{i(W,window.innerWidth<600)};e(),window.addEventListener(`resize`,e);let t={pt:document.body.style.paddingTop,ov:document.body.style.overflow};return document.body.style.paddingTop=`0`,o(W)?document.body.style.overflow=`hidden`:(we(),window.addEventListener(`resize`,je)),()=>{document.body.style.paddingTop=t.pt,document.body.style.overflow=t.ov,window.removeEventListener(`resize`,e)}}),b(()=>{typeof cancelAnimationFrame<`u`&&cancelAnimationFrame(L);try{x?.dispose()}catch{}typeof window<`u`&&window.removeEventListener(`resize`,je)});let Pe=f(()=>Y(Math.round(o(U)),J())),Fe=f(()=>Y(Math.round(o(H)),J())),Q=f(()=>l()[Y(Math.round(o(U)),J())]),Ie=f(()=>{if(G)return K>.001?1:K<-.001?-1:0;let e=B-o(H);return e>.001?1:e<-.001?-1:0}),$=f(()=>o(Ie)===0?0:Ce(G?Math.min(1,Math.abs(K)/.35):Math.min(1,Math.abs(B-o(H))))),Le=f(()=>l()[Y(o(Fe)-1,J())]?.image??``),Re=f(()=>l()[Y(o(U)-1,J())]?.image??o(Le)),ze=f(()=>l()[Y(o(Fe)+1,J())]?.image??``),Be=f(()=>l()[Y(o(U)+1,J())]?.image??o(ze)),Ve=f(()=>o(Q)?.name?.split(` `)??[]);var He=_e(),Ue=r(He),We=a(u(Ue),2),Ge=n=>{var r=pe(),i=u(r);O(i,()=>o(Pe),e=>{var t=de();k(()=>_(t,`background-image: url('${l()[o(Pe)]?.image??``}')`)),y(1,t,()=>A,()=>({duration:500,delay:80})),y(2,t,()=>A,()=>({duration:400})),D(e,t)});var s=a(i,6),c=u(s),d=u(c,!0);C(c);var f=a(c,2),p=u(f,!0);C(f);var m=a(f,2);te(m,21,()=>o(Ve),h,(e,n)=>{var r=fe(),i=u(r,!0);C(r),k(()=>t(i,o(n))),D(e,r)}),C(m),C(s);var g=a(s,2);ue(u(g),{dark:!0,onclick:Z}),C(g);var v=a(g,2),b=u(v);P(b,{direction:`up`,onclick:()=>X(-1)}),P(a(b,2),{direction:`down`,onclick:()=>X(1)}),C(v),C(r),k(()=>{t(d,o(Q)?.subtitle),t(p,o(Q)?.role)}),e(`touchstart`,r,Me,void 0,!0),e(`touchend`,r,Ne),D(n,r)},Ke=n=>{var r=ge(),s=u(r);g(s,e=>i(m,e),()=>o(m));var l=a(s,2),d=u(l),f=a(d,2);C(l);var p=a(l,2),y=u(p),b=a(y,2);C(p);var x=a(p,2);P(u(x),{direction:`left`,onclick:e=>Ee(-1,e)}),C(x);var S=a(x,2);P(u(S),{direction:`right`,onclick:e=>Ee(1,e)}),C(S);var w=a(S,6),T=u(w),E=t=>{var n=me();ue(u(n),{dark:!0,get href(){return`/volunteer/${o(Q).slug??``}/profile`}}),C(n),e(`pointerdown`,n,e=>e.stopPropagation()),D(t,n)};c(T,e=>{o(Q)?.slug&&e(E)});var O=a(T,2),ne=u(O),A=u(ne),j=u(A),re=u(j,!0);C(j);var M=a(j,2),ie=u(M,!0);C(M);var N=a(M,2);te(N,21,()=>o(Ve),h,(e,n)=>{var r=he(),i=u(r,!0);C(r),k(()=>t(i,o(n))),D(e,r)}),C(N),C(A),C(ne),C(O),C(w),C(r),g(r,e=>i(v,e),()=>o(v)),k(()=>{_(d,`background-image: url('${o(Le)}'); opacity:${1-o($)};`),_(f,`background-image: url('${o(Re)}'); opacity:${o($)};`),_(y,`background-image: url('${o(ze)}'); opacity:${1-o($)};`),_(b,`background-image: url('${o(Be)}'); opacity:${o($)};`),t(re,o(Q)?.subtitle),t(ie,o(Q)?.role)}),e(`pointerdown`,r,De),e(`pointermove`,r,Oe),e(`pointerup`,r,ke),ee(`pointerleave`,r,ke),e(`pointerdown`,x,e=>e.stopPropagation()),e(`pointerdown`,S,e=>e.stopPropagation()),e(`click`,A,Z),e(`keydown`,A,e=>{e.key===`Enter`&&Z()}),D(n,r)};c(We,e=>{o(W)?e(Ge):e(Ke,-1)}),C(Ue),le(a(Ue,2),{}),D(n,He),S()}x([`touchstart`,`touchend`,`pointerdown`,`pointermove`,`pointerup`,`click`,`keydown`]);export{z as component};

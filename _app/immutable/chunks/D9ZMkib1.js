@@ -1,0 +1,1 @@
+import{E as e,W as t,_ as n,ot as r,w as i}from"./Bgd8qZa1.js";import"./v_jBEYI6.js";var a=e(`<span class="button-label svelte-21razk"><!></span>`);function o(e,o){var s=a();n(t(s),()=>o.children),r(s),i(e,s)}export{o as t};
