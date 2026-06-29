@@ -75,6 +75,23 @@
     activePhoto = (activePhoto + dir + photoCount) % photoCount;
   }
 
+  /* ── Drag / swipe navigation ─────────────────────────────────── */
+  let dragStartX = $state<number | null>(null);
+  const DRAG_THRESHOLD = 50;
+
+  function onDragStart(e: PointerEvent) {
+    if (photoCount <= 1) return;
+    dragStartX = e.clientX;
+    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+  }
+
+  function onDragEnd(e: PointerEvent) {
+    if (dragStartX === null) return;
+    const delta = e.clientX - dragStartX;
+    dragStartX = null;
+    if (Math.abs(delta) >= DRAG_THRESHOLD) stepPhoto(delta < 0 ? 1 : -1);
+  }
+
   /* Minimal *signed* circular distance of slide i from the active one, so the
      previous photo wraps onto the left and the next onto the right. */
   function slideOffset(i: number): number {
@@ -172,7 +189,15 @@
         </button>
       {/if}
 
-      <div class="car-stage">
+      <div
+        class="car-stage"
+        class:car-stage--draggable={photoCount > 1}
+        class:car-stage--dragging={dragStartX !== null}
+        role="presentation"
+        onpointerdown={onDragStart}
+        onpointerup={onDragEnd}
+        onpointercancel={onDragEnd}
+      >
         {#each volunteerPhotos as photoUrl, i (photoUrl + i)}
           {@const off = slideOffset(i)}
           <div
@@ -395,10 +420,12 @@
     width: 100%;
     height: 100%;
   }
+  .car-stage--draggable { cursor: grab; }
+  .car-stage--dragging  { cursor: grabbing; user-select: none; }
 
   /* Each slide is positioned by its circular offset from the active photo:
      0 = centre (sharp), ±1 = flanking (blurred, scaled down), |off|>1 hidden.
-     GPU transforms + eased transitions give the cinematic coverflow glide. */
+     --drag-x shifts all slides together during a drag gesture. */
   .slide {
     position: absolute;
     left: 50%;
@@ -410,9 +437,9 @@
     filter: blur(7px) brightness(0.62);
     opacity: 0.5;
     transition:
-      transform 0.62s cubic-bezier(0.16, 1, 0.3, 1),
-      filter    0.62s ease,
-      opacity   0.62s ease;
+      transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+      filter    0.55s ease,
+      opacity   0.55s ease;
     will-change: transform, filter, opacity;
   }
   .slide--active {
