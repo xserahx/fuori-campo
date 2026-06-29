@@ -553,6 +553,8 @@
 
 </main>
 
+<SiteFooter />
+
 <style>
   :global(body) {
     margin: 0;
@@ -577,12 +579,12 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     padding:
-      clamp(56px, 8vh, 110px)
-      clamp(24px, 5.5vw, 80px)
+      clamp(80px, 14vh, 151px)
+      clamp(16px, 3.9vw, 67px)
       clamp(32px, 4vh, 56px)
-      clamp(24px, 5.5vw, 80px);
+      clamp(24px, 10.5vw, 182px);
   }
 
   h1 {
@@ -601,15 +603,15 @@
     letter-spacing: 0;
     text-transform: uppercase;
     color: transparent;
-    -webkit-text-stroke: clamp(1px, 0.14vw, 2px) var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: clamp(2px, 0.23vw, 4px) var(--color-content-accent, #bdff5d);
     display: block;
     white-space: nowrap;
   }
 
-  /* "FUORI CAMPO?" — fill, right-aligned */
+  /* "PERCHÈ FUORI CAMPO?" — fill, right-aligned */
   .h1-fill {
     font-family: var(--font-display, 'Forma DJR Display', sans-serif);
-    font-size: clamp(48px, calc(140px / max(var(--page-zoom,1), 0.65)), 220px);
+    font-size: clamp(40px, calc(116px / max(var(--page-zoom,1), 0.65)), 180px);
     font-weight: 800;
     letter-spacing: 0;
     text-transform: uppercase;
@@ -619,14 +621,14 @@
     margin-top: -0.05em;
   }
 
-  /* Body copy — dimensione h2 */
+  /* Body copy */
   .hero-body {
-    margin: clamp(24px, 4vh, 48px) 0 0;
-    max-width: clamp(500px, 60vw, 820px);
+    margin: clamp(48px, 10vh, 156px) 0 0;
+    max-width: clamp(420px, 75.9vw, 1311px);
     font-family: var(--font-display, 'Forma DJR Display', sans-serif);
-    font-size: var(--font-size-h2, clamp(28px, 3.5vw, 56px));
+    font-size: clamp(22px, 4.86vw, 84px);
     font-weight: 500;
-    line-height: 1.08;
+    line-height: 0.95;
     letter-spacing: 0;
     color: var(--color-content-body, #fafafa);
   }
