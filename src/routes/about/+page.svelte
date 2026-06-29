@@ -221,7 +221,7 @@
     renderer.setClearColor(0x000000, 0);
     const loader = new THREE.TextureLoader();
     textures = volunteers.map(vol => {
-      const t = loader.load(vol.image, () => { _lastVisual = -9999; });
+      const t = loader.load(vol.image, () => { _lastVisual = -9999; }, undefined as any, undefined as any);
       t.colorSpace = THREE.NoColorSpace;
       return t;
     });

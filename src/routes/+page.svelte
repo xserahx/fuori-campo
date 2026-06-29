@@ -12,9 +12,9 @@
   import { goto, afterNavigate, beforeNavigate } from "$app/navigation";
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
-  import { blurReveal } from "../lib/actions/blurReveal";
-  import type { BlurRevealOptions } from "../lib/actions/blurReveal";
+  import { blurText } from "../lib/actions/blurText";
   import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/data/volunteers';
   import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
@@ -126,9 +126,6 @@
   let loaderRaf = 0;
   let exitTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  const fadeReveal: BlurRevealOptions = { variant: "fade", blur: 24, duration: 1000, threshold: 0.15 };
-  const fadeRevealDelayed: BlurRevealOptions = { variant: "fade", blur: 24, duration: 1000, threshold: 0.15, delay: 120 };
-
   onMount(() => {
     if (introSeen) return;
 
@@ -166,388 +163,209 @@
     document.body.style.overflow = '';
     document.body.style.paddingTop = '';
 
-    let vTarget = window.scrollY;
-    let vSmooth = window.scrollY;
-    let vPrev   = window.scrollY;
-    let rafId   = 0;
+    gsap.registerPlugin(ScrollTrigger);
 
-    const LERP       = 0.070;
-    const LERP_H     = 0.078;
-    const BLUR_DECAY = 0.93;
+    // ── Helpers ────────────────────────────────────────────────────────────
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+    const ss    = (t: number) => t * t * (3 - 2 * t);
+    // Global CSS `zoom` lives on <html> (see app.html). Element transforms are
+    // applied in *layout* px (then scaled ×zoom visually), while scroll distance
+    // and innerWidth are *visual* px — so the track transform is divided by zoom.
+    const zoom  = () => parseFloat(document.documentElement.style.zoom) || 1;
 
-    let fb1 = 0;
-    let h1p = 0;
-    let pageZoom = parseFloat(document.documentElement.style.zoom) || 1;
-
-    const LIME = [189, 255, 93]  as const;
-    const DARK = [14,  14,  14]  as const;
-    type Rgb = readonly [number, number, number];
-    const panelBg:   Rgb[] = [LIME, DARK, LIME, DARK];
-    const panelText: Rgb[] = [DARK, LIME, DARK, LIME];
+    const LIME: [number, number, number] = [189, 255, 93];
+    const DARK: [number, number, number] = [14,  14,  14];
+    const panelBg   = [LIME, DARK, LIME, DARK];
+    const panelText = [DARK, LIME, DARK, LIME];
 
     let pSpans: HTMLElement[][] = [[], [], [], []];
-
-    function cacheSpans() {
+    const cacheSpans = () => {
       pSpans = [q1h2, q2h2, q3h2, q4h2].map(h =>
         h ? (Array.from(h.querySelectorAll('span')) as HTMLElement[]) : []
       );
-    }
-
-    let dissolving = false;
-    let hPrevH = 0;
-    let prevLocked: typeof locked = null;
-
-    function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-    function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
-    function ss(t: number) { return t * t * (3 - 2 * t); } 
-    function maxScroll() {
-      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    }
-
-    type S = { top: number; slide: number; hTarget: number; hSmooth: number };
-    const s1: S = { top: 0, slide: 0, hTarget: 0, hSmooth: 0 };
-
-    let locked: S | null = null;
-    let heroDocTop = 0, heroDocBot = 0;
-    let gateTop = 0, gateHeight = 0;
-    let galleryReady = false;
-    let galleryGuard = false;
-
-    const setup = () => {
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const sy = window.scrollY;
-      pageZoom = parseFloat(document.documentElement.style.zoom) || 1;
-
-      const isMobile = vw < 600;
-      if (!isMobile && shell1 && track1) {
-        s1.slide = (track1.children.length - 1) * vw;
-        shell1.style.height = `${(vh + s1.slide) / pageZoom}px`;
-        s1.top   = shell1.getBoundingClientRect().top + sy;
-      } else if (isMobile && shell1) {
-        s1.slide   = 0;
-        s1.hTarget = 0;
-        s1.hSmooth = 0;
-        shell1.style.height = '';
-      }
-      if (heroSection) {
-        const r    = heroSection.getBoundingClientRect();
-        heroDocTop = r.top    + sy;
-        heroDocBot = r.bottom + sy;
-      }
-      if (galleryGate) {
-        const r    = galleryGate.getBoundingClientRect();
-        gateTop    = r.top + sy;
-        gateHeight = r.height;
-      }
     };
+    cacheSpans();
 
-    function blurSpike() { fb1 = 22; }
-
-    function tryLock(sy: number) {
-      if (locked !== null) return;
-      if (s1.slide > 0 && sy >= s1.top && sy < s1.top + s1.slide) {
-        const overshoot = Math.max(0, sy - s1.top);
-        s1.hTarget      = clamp(overshoot, 0, s1.slide);
-        s1.hSmooth      = s1.hTarget;
-        locked          = s1;
-        vTarget         = s1.top;
-        vSmooth         = s1.top;
-        window.scrollTo({ top: s1.top, behavior: 'instant' });
-        blurSpike();
-      }
-    }
-
-    const tick = () => {
-      if (dissolving || galleryTransitionPending) { rafId = requestAnimationFrame(tick); return; }
-
-      vSmooth      = lerp(vSmooth, vTarget, LERP);
-      const vDelta = vSmooth - vPrev;
-      vPrev        = vSmooth;
-
-      tryLock(vSmooth);
-
-      const rounded = Math.round(vSmooth);
-      if (Math.abs(rounded - window.scrollY) > 0) {
-        window.scrollTo({ top: rounded, behavior: 'instant' });
-      }
-
-      const sy = vSmooth;
-      const vh = window.innerHeight;
+    // Drive question colours + per-word reveal from horizontal progress (0..1).
+    function updateQuestions(p: number, dir: number) {
       const VW = window.innerWidth;
+      const hp = p * 3 * VW;                     // visual px travelled (0 → 3·VW)
+      const centers = [0, VW, 2 * VW, 3 * VW];
+      const goingBack = dir < 0;
 
-      fb1 = Math.max(0, fb1 * BLUR_DECAY);
-
-      if (s1.slide > 0 && track1) {
-        s1.hSmooth = lerp(s1.hSmooth, s1.hTarget, LERP_H);
-        track1.style.transform = `translateX(${(-s1.hSmooth / pageZoom).toFixed(2)}px)`;
-        const velBlur = Math.abs(s1.hSmooth - h1p) * 0.045;
-        const b1      = Math.min(fb1 + velBlur, 22);
-        if (veil1) veil1.style.backdropFilter = b1 > 0.08 ? `blur(${b1.toFixed(1)}px)` : '';
-        h1p = s1.hSmooth;
-      }
-
-      const hVel      = s1.hSmooth - hPrevH;
-      hPrevH          = s1.hSmooth;
-      const goingBack = hVel < -0.6;
-
-      if (s1.slide > 0) {
-        const hp      = s1.hSmooth;
-        const centers = [0, VW, 2 * VW, 3 * VW];
-
-        for (let pi = 0; pi < 4; pi++) {
-          const dist = Math.abs(hp - centers[pi]) / VW; 
-          const raw  = clamp(1.1 - dist * 1.5, 0, 1);
-          const vis  = ss(raw); 
-
-          const spans = pSpans[pi];
-          for (let si = 0; si < spans.length; si++) {
-            const sv  = clamp(vis - si * 0.07, 0, 1);
-            const sv3 = ss(sv);
-            const span = spans[si];
-            if (sv3 >= 0.9995 || vis >= 0.9995) {
-              span.style.opacity   = '1';
-              span.style.transform = 'none';
-            } else {
-              const inv = 1 - sv3;
-              span.style.opacity = sv3.toFixed(3);
-              if (goingBack) {
-                /* Solo scivolamento orizzontale all'indietro (nessun salto in altezza o zoom) */
-                span.style.transform = `translateX(${(-inv * 20).toFixed(1)}px)`;
-              } else {
-                /* Solo scivolamento orizzontale in avanti (nessun salto in altezza o zoom) */
-                span.style.transform = `translateX(${(inv * 20).toFixed(1)}px)`;
-              }
-            }
-          }
-        }
-
-        if (stickyEl1) {
-          const t     = clamp(s1.hSmooth / VW, 0, 2.9999);
-          const idx   = Math.floor(t);
-          const local = t - idx;
-          const blend = clamp((local - 0.28) / 0.44, 0, 1);
-          const eb    = ss(blend);
-          const ni    = Math.min(idx + 1, 3);
-
-          const bg  = panelBg[idx].map( (v, i) => Math.round(v + (panelBg[ni][i]  - v) * eb));
-          const txt = panelText[idx].map((v, i) => Math.round(v + (panelText[ni][i] - v) * eb));
-          stickyEl1.style.setProperty('--q-bg',  `rgb(${bg.join(',')})`);
-          stickyEl1.style.setProperty('--q-fg',  `rgb(${txt.join(',')})`);
-        }
-      }
-
-      if (locked !== prevLocked) {
-        const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (locked === s1 && track1) {
-          const enteringFromTop = s1.hSmooth < s1.slide * 0.08;
-          if (enteringFromTop && !noMotion) {
-            gsap.fromTo(track1,
-              { scale: 1.026 },
-              { scale: 1, duration: 0.80, ease: 'power3.out', overwrite: true }
-            );
-          }
-        }
-        if (prevLocked === s1 && locked === null && track1) {
-          const shellNearViewport = Math.abs(vSmooth - s1.top) < vh * 1.5;
-          if (shellNearViewport && !noMotion) {
-            gsap.fromTo(track1,
-              { scale: 0.982 },
-              { scale: 1, duration: 0.65, ease: 'power2.out', overwrite: true }
-            );
-          }
-        }
-        prevLocked = locked;
-      }
-
-      if (heroDocBot > heroDocTop) {
-        const heroLen = (heroDocBot - heroDocTop) * 0.70;
-        const heroP   = clamp((sy - heroDocTop) / heroLen, 0, 1);
-        document.documentElement.style.setProperty('--hero-scroll-p', heroP.toFixed(3));
-      }
-
-      if (gateHeight > 0) {
-        const raw   = clamp((sy - gateTop + vh) / gateHeight, 0, 1);
-        const gateP = ss(clamp((raw - 0.12) / 0.88, 0, 1));
-        document.documentElement.style.setProperty('--gate-p', gateP.toFixed(3));
-      }
-
-      const inQ       = locked !== null;
-      const heroTopVP = heroDocTop - sy;
-      const heroBotVP = heroDocBot - sy;
-      const inHero    = heroTopVP < vh * 0.15 && heroBotVP > vh * 0.45;
-
-      if      (inHero)       { navbarHidden.set(false); }
-      else if (inQ)          { navbarHidden.set(true);  }
-      else if (sy <= 20)     { navbarHidden.set(false); }
-      else if (vDelta >  5)  { navbarHidden.set(true);  }
-      else if (vDelta < -5)  { navbarHidden.set(false); }
-
-      if (inQ && s1.slide > 0) {
-        const t2     = clamp(s1.hSmooth / VW, 0, 2.9999);
-        const i2     = Math.floor(t2);
-        const l2     = t2 - i2;
-        const blend2 = clamp((l2 - 0.28) / 0.44, 0, 1);
-        const eb2    = ss(blend2);
-        const ni2    = Math.min(i2 + 1, 3);
-        const green  = Math.round(panelBg[i2][1] + (panelBg[ni2][1] - panelBg[i2][1]) * eb2);
-        navbarInverted.set(green > 128);
-      } else if (window.innerWidth < 600 && shell1) {
-        const r = shell1.getBoundingClientRect();
-        navbarInverted.set(r.top <= 0 && r.bottom > 0);
-      } else {
-        navbarInverted.set(false);
-      }
-
-      rafId = requestAnimationFrame(tick);
-    };
-
-    function applyDelta(delta: number) {
-      if (galleryTransitionPending) return;
-      if (locked !== null) {
-        if (s1.hTarget <= 0 && delta < 0) {
-          locked  = null;
-          blurSpike();
-          vTarget = clamp(s1.top + delta, 0, maxScroll());
-          return;
-        }
-        if (s1.hTarget >= s1.slide && delta > 0) {
-          locked     = null;
-          dissolving = true;
-          blurSpike();
-
-          const exitPos    = s1.top + s1.slide + 1;
-          const exitTarget = clamp(exitPos + delta, 0, maxScroll());
-
-          if (transitionOverlay) {
-            gsap.timeline()
-              .to(transitionOverlay,    { opacity: 1, duration: 0.28, ease: 'power2.in' })
-              .call(() => {
-                vSmooth = exitPos;
-                vPrev   = exitPos;
-                vTarget = exitTarget;
-                window.scrollTo({ top: exitPos, behavior: 'instant' });
-              })
-              .to(transitionOverlay,    { opacity: 0, duration: 0.72, ease: 'power2.out', delay: 0.06 })
-              .call(() => { dissolving = false; });
+      for (let pi = 0; pi < 4; pi++) {
+        const dist = Math.abs(hp - centers[pi]) / VW;
+        const vis  = ss(clamp(1.1 - dist * 1.5, 0, 1));
+        const spans = pSpans[pi];
+        for (let si = 0; si < spans.length; si++) {
+          const sv3  = ss(clamp(vis - si * 0.07, 0, 1));
+          const span = spans[si];
+          if (sv3 >= 0.9995 || vis >= 0.9995) {
+            span.style.opacity   = '1';
+            span.style.transform = 'none';
           } else {
-            vSmooth    = exitPos;
-            vPrev      = exitPos;
-            vTarget    = exitTarget;
-            window.scrollTo({ top: exitPos, behavior: 'instant' });
-            dissolving = false;
+            const inv = 1 - sv3;
+            span.style.opacity   = sv3.toFixed(3);
+            span.style.transform = `translateX(${((goingBack ? -inv : inv) * 20).toFixed(1)}px)`;
           }
-          return;
         }
-        s1.hTarget = clamp(s1.hTarget + delta, 0, s1.slide);
-        return;
       }
 
-      const projected = vSmooth + delta;
-      if (s1.slide > 0 && vSmooth < s1.top && projected >= s1.top && delta > 0) {
-        const excess = projected - s1.top;
-        s1.hTarget   = clamp(excess, 0, s1.slide);
-        s1.hSmooth   = 0;
-        locked       = s1;
-        vTarget      = s1.top;
-        vSmooth      = s1.top;
-        window.scrollTo({ top: s1.top, behavior: 'instant' });
-        blurSpike();
-        return;
-      }
-
-      vTarget = clamp(vTarget + delta, 0, maxScroll());
-
-      if (galleryGuard && vTarget < maxScroll() - 120) galleryGuard = false;
-
-      if (delta > 0) {
-        if (!galleryGuard && vTarget >= maxScroll()) {
-          if (galleryReady) { navigateToGallery(); }
-          else              { galleryReady = true;  }
-        }
-      } else if (delta < 0) {
-        galleryReady = false;
+      if (stickyEl1) {
+        const t     = clamp(hp / VW, 0, 2.9999);
+        const idx   = Math.floor(t);
+        const local = t - idx;
+        const eb    = ss(clamp((local - 0.28) / 0.44, 0, 1));
+        const ni    = Math.min(idx + 1, 3);
+        const bg  = panelBg[idx].map((v, i)  => Math.round(v + (panelBg[ni][i]   - v) * eb));
+        const txt = panelText[idx].map((v, i) => Math.round(v + (panelText[ni][i] - v) * eb));
+        stickyEl1.style.setProperty('--q-bg', `rgb(${bg.join(',')})`);
+        stickyEl1.style.setProperty('--q-fg', `rgb(${txt.join(',')})`);
+        // Only invert the navbar while scrolled inside the question panels.
+        // Otherwise the mount-time / onRefresh call (progress 0 → lime panel)
+        // inverts the bar over the dark hero, turning the lime F logo black
+        // (invisible) and the white links dark grey.
+        navbarInverted.set(inQ && bg[1] > 128);
       }
     }
 
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (dissolving) return;
-      applyDelta(e.deltaY);
-    };
+    let inQ    = false;
+    let inHero = true;
 
-    let touchY = 0;
-    const handleTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
-    const handleTouchMove  = (e: TouchEvent) => {
-      e.preventDefault();
-      if (dissolving) return;
-      const dy = touchY - e.touches[0].clientY;
-      touchY   = e.touches[0].clientY;
-      applyDelta(dy);
-    };
+    const mm = gsap.matchMedia();
 
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (dissolving) return;
-      const map: Record<string, number> = {
-        ArrowDown:  80, ArrowUp:  -80,
-        PageDown:   window.innerHeight * 0.85,
-        PageUp:    -window.innerHeight * 0.85,
-        ' ':        window.innerHeight * 0.85,
+    // ── Desktop: pinned horizontal questions + scroll-driven sub-animations ──
+    mm.add('(min-width: 600px)', () => {
+      // Hero parallax (writes --hero-scroll-p 0→1 over the first ~70% of hero).
+      ScrollTrigger.create({
+        trigger: heroSection,
+        start: 'top top',
+        end: () => '+=' + window.innerHeight * 0.7,
+        onUpdate: (self) =>
+          document.documentElement.style.setProperty('--hero-scroll-p', self.progress.toFixed(3)),
+      });
+
+      // Navbar visibility while the hero fills the viewport.
+      ScrollTrigger.create({
+        trigger: heroSection,
+        start: 'top top',
+        end: 'bottom 45%',
+        onToggle: (self) => { inHero = self.isActive; if (self.isActive) navbarHidden.set(false); },
+      });
+
+      // Horizontal scroll: pin the section, scrub the track across its panels.
+      // `x` lands at exactly -(travel) so the last question is fully settled at
+      // the end of the pin — no fast-scroll cut-off is possible with scrub.
+      const panels = track1 ? track1.children.length : 4;
+      const travel = () => (panels - 1) * window.innerWidth;     // visual px
+      gsap.to(track1, {
+        x: () => -(travel() / zoom()),                           // layout px
+        ease: 'none',
+        scrollTrigger: {
+          trigger: shell1,
+          start: 'top top',
+          end: () => '+=' + travel(),
+          pin: shell1,
+          scrub: 0.6,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onEnter:     () => { inQ = true;  navbarHidden.set(true); },
+          onEnterBack: () => { inQ = true;  navbarHidden.set(true); },
+          onLeave:     () => { inQ = false; },
+          onLeaveBack: () => { inQ = false; navbarInverted.set(false); navbarHidden.set(false); },
+          onUpdate: (self) => {
+            updateQuestions(self.progress, self.direction);
+            if (veil1) {
+              const v = Math.min(Math.abs(self.getVelocity()) / 3000, 1);
+              veil1.style.backdropFilter = v > 0.02 ? `blur(${(v * 16).toFixed(1)}px)` : '';
+            }
+          },
+          onRefresh: () => updateQuestions(0, 1),
+        },
+      });
+      updateQuestions(0, 1);
+
+      // Gallery-gate anticipation preview (writes --gate-p 0→1).
+      ScrollTrigger.create({
+        trigger: galleryGate,
+        start: 'top bottom',
+        end: 'top top',
+        onUpdate: (self) => {
+          const gp = ss(clamp((self.progress - 0.12) / 0.88, 0, 1));
+          document.documentElement.style.setProperty('--gate-p', gp.toFixed(3));
+        },
+      });
+
+      // Hide navbar on scroll-down outside hero/questions; show on scroll-up.
+      ScrollTrigger.create({
+        start: 0,
+        end: 'max',
+        onUpdate: (self) => {
+          if (inQ || inHero) return;
+          if (self.scroll() <= 20) { navbarHidden.set(false); return; }
+          navbarHidden.set(self.direction === 1);
+        },
+      });
+
+      return () => {
+        document.documentElement.style.setProperty('--hero-scroll-p', '0');
+        document.documentElement.style.setProperty('--gate-p', '0');
+        if (track1) gsap.set(track1, { clearProps: 'transform' });
       };
-      if (e.key === 'Home') { e.preventDefault(); locked = null; vTarget = 0;           return; }
-      if (e.key === 'End')  { e.preventDefault(); locked = null; vTarget = maxScroll(); return; }
-      const d = map[e.key];
-      if (d === undefined) return;
-      e.preventDefault();
-      applyDelta(d);
-    };
-
-    const handleScroll = () => {
-      if (locked !== null) return;
-      if (Math.abs(window.scrollY - Math.round(vSmooth)) > 2) {
-        vTarget = window.scrollY;
-        vSmooth = window.scrollY;
-      }
-    };
-
-    const handlePointerMove = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
-      const inHero = (heroDocTop - vSmooth) < window.innerHeight * 0.15 &&
-                     (heroDocBot - vSmooth) > window.innerHeight * 0.45;
-      if (!inHero && e.movementY < 0 && e.clientY <= 180) navbarHidden.set(false);
-    };
-
-    const handleResize = () => { locked = null; cacheSpans(); requestAnimationFrame(setup); };
-
-    requestAnimationFrame(() => {
-      cacheSpans();
-      setup();
-      galleryGuard = window.scrollY >= maxScroll() - 120;
-      rafId = requestAnimationFrame(tick);
     });
 
-    window.addEventListener('wheel',       handleWheel,       { passive: false });
-    window.addEventListener('touchstart',  handleTouchStart,  { passive: true  });
-    window.addEventListener('touchmove',   handleTouchMove,   { passive: false });
-    window.addEventListener('keydown',     handleKeydown);
-    window.addEventListener('scroll',      handleScroll,      { passive: true  });
-    window.addEventListener('pointermove', handlePointerMove, { passive: true  });
-    window.addEventListener('resize',      handleResize,      { passive: true  });
+    // ── Mobile: questions stack vertically (CSS); only sync navbar inversion ──
+    mm.add('(max-width: 599px)', () => {
+      ScrollTrigger.create({
+        trigger: shell1,
+        start: 'top top',
+        end: 'bottom bottom',
+        onToggle: (self) => navbarInverted.set(self.isActive),
+      });
+    });
+
+    // Re-cache word spans + re-measure triggers on resize.
+    const onResize = () => { cacheSpans(); ScrollTrigger.refresh(); };
+    window.addEventListener('resize', onResize, { passive: true });
+
+    // ── Gallery entry at the very bottom (passive — no scroll hijacking) ──
+    let galleryReady = false;
+    const maxScroll  = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    let galleryGuard = window.scrollY >= maxScroll() - 120;
+    const atBottom   = () => window.scrollY >= maxScroll() - 4;
+
+    const tryEnterGallery = (down: boolean) => {
+      if (galleryTransitionPending) return;
+      if (down && atBottom()) {
+        if (galleryGuard) return;
+        if (galleryReady) navigateToGallery();
+        else              galleryReady = true;
+      } else if (!down) {
+        galleryReady = false;
+        galleryGuard = false;
+      }
+    };
+    const onWheel = (e: WheelEvent) => tryEnterGallery(e.deltaY > 0);
+    let touchY = 0;
+    const onTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
+    const onTouchMove  = (e: TouchEvent) => {
+      const dy = touchY - e.touches[0].clientY;
+      touchY = e.touches[0].clientY;
+      if (Math.abs(dy) > 1) tryEnterGallery(dy > 0);
+    };
+    window.addEventListener('wheel',      onWheel,      { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove',  onTouchMove,  { passive: true });
 
     fetchAllVolunteers().then(vols => { previewPhotos = buildPreviewPhotos(vols); });
 
     return () => {
-      dissolving = false;
       navbarInverted.set(false);
-      if (transitionOverlay) gsap.killTweensOf(transitionOverlay);
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('wheel',       handleWheel);
-      window.removeEventListener('touchstart',  handleTouchStart);
-      window.removeEventListener('touchmove',   handleTouchMove);
-      window.removeEventListener('keydown',     handleKeydown);
-      window.removeEventListener('scroll',      handleScroll);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('resize',      handleResize);
+      mm.revert();
+      window.removeEventListener('resize',     onResize);
+      window.removeEventListener('wheel',      onWheel);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove',  onTouchMove);
     };
   });
 </script>
@@ -568,30 +386,26 @@
       </div>
     </section>
 
-    <section class="story story--left story--intro safe-area"
-      use:blurReveal={{ direction: "left", variant: "slide", blur: 24 }}>
-      <p class="lead-paragraph">
+    <section class="story story--left story--intro safe-area">
+      <p class="lead-paragraph" use:blurText={{ delay: 60, duration: 800 }}>
         <span class="accent">Milano Cortina 2026</span> ha coinvolto migliaia di volontari:
       </p>
     </section>
 
-    <section class="story story--right story--numbers safe-area"
-      use:blurReveal={{ direction: "right", variant: "skew", blur: 28 }}>
-      <p>
+    <section class="story story--right story--numbers safe-area">
+      <p use:blurText={{ delay: 65, duration: 800 }}>
         <span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi.
       </p>
     </section>
 
-    <section class="story story--quote story--quote-left safe-area"
-      use:blurReveal={{ direction: "left", variant: "slide", blur: 20, threshold: 0.15 }}>
-      <p class="quote">
+    <section class="story story--quote story--quote-left safe-area">
+      <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
         Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
       </p>
     </section>
 
-    <section class="story story--quote story--quote-right safe-area"
-      use:blurReveal={{ direction: "right", variant: "slide", blur: 20, threshold: 0.15, delay: 150 }}>
-      <p class="quote">
+    <section class="story story--quote story--quote-right safe-area">
+      <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
         Nella narrazione ufficiale erano spesso dati per scontati.
       </p>
     </section>
@@ -636,9 +450,8 @@
       </div>
     </div>
 
-    <section class="story story--left story--summary safe-area"
-      use:blurReveal={{ direction: "left", threshold: 0.25, blur: 36, duration: 1100, variant: "cinema" }}>
-      <p>
+    <section class="story story--left story--summary safe-area">
+      <p use:blurText={{ delay: 65, duration: 750, threshold: 0.2 }}>
         Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
         <a href="/gallery" class="accent archivio-link">archivio</a>.
       </p>
@@ -745,7 +558,8 @@
   }
 
   .question-sticky {
-    position: sticky;
+    /* Pinned by GSAP ScrollTrigger on desktop (was position: sticky). */
+    position: relative;
     top: 0;
     height: 100vh;
     width: 100%;

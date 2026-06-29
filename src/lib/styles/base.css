@@ -370,6 +370,20 @@
 }
 
 /* ================================================================
+ * BLUR TEXT  (word-by-word blur reveal — ReactBits style)
+ * ================================================================ */
+
+.blur-text-word {
+  display: inline-block;
+  opacity: 0;
+}
+
+@keyframes blur-text-word-in {
+  from { opacity: 0; filter: blur(8px); transform: translateY(5px); }
+  to   { opacity: 1; filter: blur(0);   transform: translateY(0);   }
+}
+
+/* ================================================================
  * PAGE TRANSITIONS  (View Transitions API)
  * ================================================================ */
 

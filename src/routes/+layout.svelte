@@ -2,12 +2,17 @@
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import { onNavigate, afterNavigate } from '$app/navigation';
+	import { gsap } from 'gsap';
+	import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	import Lenis from 'lenis';
+	gsap.registerPlugin(DrawSVGPlugin, ScrollTrigger);
 	import Navbar from '$lib/components/Navbar.svelte';
 	import LoadingIntro from '$lib/components/LoadingIntro.svelte';
+	import PageTransition from '$lib/components/PageTransition.svelte';
 	import { imagesRaw } from '$lib/data/gallery';
 	import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
 
-	// 1. IMPORTAZIONE STILI GLOBALI E TOKEN
 	import '$lib/styles/reset.css';
 	import '$lib/styles/tokens.css';
 	import '$lib/styles/base.css';
@@ -17,6 +22,7 @@
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
 	const isGalleryPage   = $derived(page.url.pathname.startsWith('/gallery'));
+	const isHome          = $derived(page.url.pathname === '/');
 
 	$effect(() => {
 		if (!browser) return;
@@ -32,46 +38,136 @@
 		document.documentElement.style.backgroundColor = '';
 	});
 
-	// 2. LOADING INTRO
+	// ── Loading intro ───────────────────────────────────────────────────────
 	let showIntro = $state(false);
-	let introSrc = $state<string | null>(null);
+	let introSrc  = $state<string | null>(null);
 
 	$effect(() => {
 		if (!browser || introSrc || showIntro) return;
-
 		const forceIntroPreview = page.url.searchParams.get('intro') === '1';
 		const seen = sessionStorage.getItem('introSeen');
 		if (!seen || forceIntroPreview) {
-			const preview = imagesRaw.find((image) => image.name === 'Rudy Bre') ?? imagesRaw.find((image) => !!image.name);
-			if (preview?.src) {
-				introSrc = preview.src;
-				showIntro = true;
-			}
+			const preview =
+				imagesRaw.find((img) => img.name === 'Rudy Bre') ??
+				imagesRaw.find((img) => !!img.name);
+			if (preview?.src) { introSrc = preview.src; showIntro = true; }
 		}
 	});
 
-	// 3. TRANSIZIONI E PULIZIA NAVIGAZIONE
+	// ── Smooth scrolling (Lenis) — homepage only ────────────────────────────
+	// Lenis hijacks wheel events document-wide, which breaks nested scroll
+	// containers on other routes (e.g. the names list in the gallery). Scope it
+	// to the homepage and tear it down on every other page.
+	let lenis: Lenis | null = null;
+
+	$effect(() => {
+		if (!browser || !isHome) return;
+
+		const l = new Lenis({ duration: 1.1, smoothWheel: true });
+		lenis = l;
+		l.on('scroll', ScrollTrigger.update);
+
+		const tickerFn = (time: number) => l.raf(time * 1000);
+		gsap.ticker.add(tickerFn);
+		gsap.ticker.lagSmoothing(0);
+
+		return () => {
+			gsap.ticker.remove(tickerFn);
+			gsap.ticker.lagSmoothing(500, 33); // restore GSAP default for other routes
+			l.destroy();
+			lenis = null;
+		};
+	});
+
+	// ── Navigation cleanup ──────────────────────────────────────────────────
 	afterNavigate(() => {
 		document.documentElement.style.overflow = '';
 		document.body.style.overflow = '';
 		document.body.style.paddingTop = '';
 		navbarHidden.set(false);
+		// Reset scroll position for the freshly mounted page (Lenis on the
+		// homepage, native scroll elsewhere), then let ScrollTrigger re-measure.
+		if (lenis) lenis.scrollTo(0, { immediate: true });
+		else window.scrollTo(0, 0);
+		ScrollTrigger.refresh();
 	});
 
+	// ── Page transition ─────────────────────────────────────────────────────
+	function ptEls(): { overlay: HTMLElement; path: SVGPathElement } | null {
+		const overlay = document.querySelector<HTMLElement>('#pt-overlay');
+		const path = document.querySelector<SVGPathElement>('#pt-path');
+		return overlay && path ? { overlay, path } : null;
+	}
+
+	// Initialize DrawSVG state once the component is in the DOM.
+	// strokeWidth is fixed at 300 — only drawSVG (dashoffset) animates each frame.
+	$effect(() => {
+		const els = ptEls();
+		if (els) gsap.set(els.path, { drawSVG: '0%', strokeWidth: 300 });
+	});
+
+	// Flush pending transition Promise on rapid navigation so SvelteKit never hangs.
+	let flushTransition: (() => void) | null = null;
+
+	// Sections that participate in the page transition (navbar destinations only).
+	const TRANSITION_SECTIONS = new Set(['', 'gallery', 'category', 'about']);
+
+	function navSection(pathname: string): string {
+		return pathname.split('/')[1] ?? '';
+	}
+
 	onNavigate((navigation) => {
-		if (!document.startViewTransition) return;
+		const fromSection = navSection(navigation.from?.url.pathname ?? '');
+		const toSection   = navSection(navigation.to?.url.pathname  ?? '');
+		// Skip: same section, or either endpoint is outside the navbar sections.
+		if (fromSection === toSection) return;
+		if (!TRANSITION_SECTIONS.has(fromSection) || !TRANSITION_SECTIONS.has(toSection)) return;
 
-		// Returning to the homepage must reveal the title with ONLY its own
-		// entrance bloom — the same one shown after the loader on the first
-		// visit. Skipping the page-level view transition here prevents a second,
-		// layered blur-in from being re-triggered over the title on back-navigation.
-		if (navigation.to?.url.pathname === '/') return;
+		flushTransition?.();
+		flushTransition = null;
 
-		return new Promise((resolve) => {
-			document.startViewTransition(async () => {
-				resolve();
-				await navigation.complete;
-			});
+		const els = ptEls();
+		if (!els) return;
+
+		const { overlay, path } = els;
+
+		gsap.killTweensOf([overlay, path]);
+		gsap.set(overlay, { opacity: 0 });
+		gsap.set(path, { drawSVG: '0%', strokeWidth: 300 });
+
+		return new Promise<void>((resolve) => {
+			flushTransition = resolve;
+
+			// COVER: wave draws left→right (only dashoffset changes per frame)
+			gsap.timeline({
+				onComplete() {
+					flushTransition = null;
+					resolve();
+
+					navigation.complete
+						.then(() => {
+							const e = ptEls();
+							if (!e) return;
+							// REVEAL: wave undraws while overlay fades out
+							gsap.timeline({
+								onComplete() {
+									gsap.set(e.overlay, { opacity: 0 });
+									gsap.set(e.path, { drawSVG: '0%', strokeWidth: 300 });
+								},
+							})
+								.to(e.path, { drawSVG: '100% 100%', duration: 1.8, ease: 'power2.inOut' })
+								.to(e.overlay, { opacity: 0, duration: 0.6, ease: 'power2.inOut' }, 1.4);
+						})
+						.catch(() => {
+							const e = ptEls();
+							if (!e) return;
+							gsap.set(e.overlay, { opacity: 0 });
+							gsap.set(e.path, { drawSVG: '0%', strokeWidth: 300 });
+						});
+				},
+			})
+				.to(overlay, { opacity: 1, duration: 0.4, ease: 'power2.inOut' })
+				.to(path, { drawSVG: '100%', duration: 1.8, ease: 'power2.inOut' }, 0);
 		});
 	});
 </script>
@@ -82,60 +178,22 @@
 </svelte:head>
 
 {#if !isVolunteerPage}
-	<!-- Navbar stays fixed on every page it appears on; never hide-on-scroll. -->
 	<Navbar inverted={$navbarInverted} hidden={$navbarHidden} flat={isGalleryPage} pinned />
 {/if}
 
 {#if showIntro && introSrc}
-	<LoadingIntro src={introSrc} on:complete={() => { 
-		if (page.url.searchParams.get('intro') !== '1') sessionStorage.setItem('introSeen','1'); 
+	<LoadingIntro src={introSrc} on:complete={() => {
+		if (page.url.searchParams.get('intro') !== '1') sessionStorage.setItem('introSeen', '1');
 		showIntro = false;
 	}} />
 {/if}
 
 {@render children()}
+<PageTransition />
 
 <style>
 	:global(body) {
 		cursor: auto;
 		padding-top: var(--page-top-padding, var(--navbar-height));
-	}
-
-	/* View Transitions API (Mantenute le tue animazioni cinematiche) */
-	@keyframes vt-out {
-		to {
-			opacity: 0;
-			filter: blur(10px);
-			transform: scale(1.025) translateY(-10px);
-		}
-	}
-
-	@keyframes vt-in {
-		from {
-			opacity: 0;
-			filter: blur(22px);
-			transform: scale(0.975) translateY(14px);
-		}
-	}
-
-	@keyframes gallery-bloom {
-		0%   { opacity: 0; filter: blur(var(--unit-40)); transform: scale(0.96); }
-		100% { opacity: 1; filter: blur(0px);  transform: scale(1); }
-	}
-
-	@media (prefers-reduced-motion: no-preference) {
-		:global(::view-transition-old(root)) {
-			animation: 200ms cubic-bezier(0.55, 0, 1, 0.45) both vt-out;
-		}
-		:global(::view-transition-new(root)) {
-			animation: 500ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both vt-in;
-		}
-
-		:global(html[data-gallery-entry="1"]::view-transition-old(root)) {
-			animation: 180ms cubic-bezier(0.55, 0, 1, 0.45) both vt-out;
-		}
-		:global(html[data-gallery-entry="1"]::view-transition-new(root)) {
-			animation: 960ms cubic-bezier(0, 0, 0.2, 1) 80ms both gallery-bloom;
-		}
 	}
 </style>

@@ -118,7 +118,7 @@
   .hero-outline {
     display: block;
     font-family:    var(--font-display);
-    font-size:      clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 190px);
+    font-size:      clamp(40px, calc(72px / max(var(--page-zoom, 1), 0.65)), 104px);
     font-weight:    800;
     line-height:    0.9;
     letter-spacing: -0.02em;
@@ -134,7 +134,7 @@
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke: clamp(1px, 0.12vw, 2px) var(--color-content-accent, #bdff5d);
-    padding-left: clamp(24px, calc(140px / max(var(--page-zoom, 1), 0.65)), 220px);
+    padding-left: clamp(16px, calc(88px / max(var(--page-zoom, 1), 0.65)), 136px);
   }
 
   /* ── Vertical nav — right side, aligned to hero block ──────────── */
