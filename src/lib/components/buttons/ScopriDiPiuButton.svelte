@@ -10,7 +10,8 @@
         ariaLabel,
         target,
         rel,
-        type = 'button'
+        type = 'button',
+        dark = false
     } = $props<{
         href?: string;
         onclick?: (event: MouseEvent) => void;
@@ -18,6 +19,7 @@
         target?: '_blank' | '_self' | '_parent' | '_top' | (string & {});
         rel?: string;
         type?: 'button' | 'submit' | 'reset';
+        dark?: boolean;
     }>();
 
     const computedAriaLabel = $derived(ariaLabel ?? 'Scopri di più');
@@ -30,6 +32,7 @@
 {#if href}
     <a
         class="scopri-button"
+        class:scopri-button--dark={dark}
         href={href}
         aria-label={computedAriaLabel}
         onclick={onclick}
@@ -41,6 +44,7 @@
 {:else}
     <button
         class="scopri-button"
+        class:scopri-button--dark={dark}
         type={type}
         aria-label={computedAriaLabel}
         onclick={onclick}
@@ -86,23 +90,42 @@
         }
     }
 
+    /* Dark variant — dark fill + green border pill (used on-card in about/carousel) */
+    .scopri-button--dark {
+        background: var(--color-background-primary, #0e0e0e);
+        height: auto;
+        padding: var(--spacing-3, 12px) var(--spacing-5, 20px);
+    }
+
+    @media (hover: hover) {
+        .scopri-button--dark:hover {
+            background: var(--color-content-accent);
+            color: var(--color-content-body-black, #0e0e0e);
+        }
+    }
+
     /* ── CONFIGURAZIONE RESPONSIVE MOBILE (< 600PX) ── */
     @media (max-width: 599px) {
         .scopri-button {
-            display: flex; 
-            
+            display: flex;
+
             /* Si allarga al 100% dello spazio disponibile nel genitore */
-            width: 100%; 
+            width: 100%;
             margin: 0; /* Rimosso il margine interno dal componente! */
-            
+
             height: 50px;
-            padding: var(--spacing-4) 0; 
+            padding: var(--spacing-4) 0;
             background-color: var(--color-background-primary);
         }
 
         .scopri-button:active {
             background-color: var(--color-content-accent) !important;
             color: var(--color-content-body-black) !important;
+        }
+
+        /* Dark variant on mobile: full-width (fills wrapper), Figma-exact padding */
+        .scopri-button--dark {
+            height: auto;
         }
     }
 </style>

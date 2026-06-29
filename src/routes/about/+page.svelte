@@ -4,6 +4,7 @@
   import { fade } from 'svelte/transition';
   import * as THREE from 'three';
   import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
+  import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
   import '$lib/styles/tokens.css';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
 
@@ -13,6 +14,7 @@
     role: string;
     subtitle: string;
     image: string;
+    slug?: string;
   };
 
   const VOLUNTEER_1 = '/volunteer_images/foto_team/claudia.png';
@@ -28,7 +30,8 @@
       name: 'SOLIDORO CLAUDIA IRENE',
       role: 'UX – UI DESIGNER E CODE REVIEWER',
       subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_1
+      image: VOLUNTEER_1,
+      slug: 'solidoro-claudia-irene'
     },
     {
       id: 2,
@@ -56,7 +59,8 @@
       name: 'VIOLA NALDI',
       role: 'UX – UI DESIGNER E FIELD RESEARCHER',
       subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_5
+      image: VOLUNTEER_5,
+      slug: 'naldi-viola'
     },
     {
       id: 6,
@@ -74,7 +78,7 @@
   let renderer: any = null;
   let scene: any    = null;
   let camera: any   = null;
-  let clock: any    = null;
+  let timer: any    = null;
   let animFrameId   = 0;
 
   const N_SLOTS = 11;
@@ -196,7 +200,7 @@
   function buildScene() {
     if (!canvasEl || !containerEl) return;
     scene = new THREE.Scene();
-    clock = new THREE.Clock();
+    timer = new THREE.Timer();
     const w = containerEl.clientWidth;
     const h = containerEl.clientHeight;
     camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 100);
@@ -241,12 +245,14 @@
       slots.push({ cMesh, sMesh, cMat, sMat, texIdx: initIdx });
     }
     animate();
+    updateCardBounds();
   }
 
   function animate() {
-    if (!renderer || !scene || !camera || !clock) return;
+    if (!renderer || !scene || !camera || !timer) return;
     animFrameId = requestAnimationFrame(animate);
-    const t = clock.getElapsedTime();
+    timer.update();
+    const t = timer.getElapsed();
     animPos = lerp(animPos, targetPos, LERP_K);
     const visual = animPos + dragLive;
     visualPos = visual;
@@ -323,12 +329,25 @@
     dragLive = 0;
   }
 
+  function updateCardBounds() {
+    if (!camera || !containerEl) return;
+    const topRight = new THREE.Vector3(CARD_W / 2, CARD_H / 2, 0.03);
+    topRight.project(camera);
+    const w = containerEl.clientWidth;
+    const h = containerEl.clientHeight;
+    const screenX = (topRight.x + 1) / 2 * w;
+    const screenY = (-topRight.y + 1) / 2 * h;
+    containerEl.style.setProperty('--card-right-px', `${w - screenX}px`);
+    containerEl.style.setProperty('--card-top-px', `${screenY}px`);
+  }
+
   function onResize() {
     if (!renderer || !containerEl || !camera) return;
     const w = containerEl.clientWidth, h = containerEl.clientHeight;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
+    updateCardBounds();
   }
 
   function onTouchStart(e: TouchEvent) {
@@ -402,9 +421,9 @@
   });
 
   let leftOutgoingImage  = $derived(volunteers[mod(visualCenterIndex - 1, N())]?.image ?? '');
-  let leftIncomingImage  = $derived(volunteers[mod(visualCenterIndex + transitionDirection - 1, N())]?.image ?? leftOutgoingImage);
+  let leftIncomingImage  = $derived(volunteers[mod(position - 1, N())]?.image ?? leftOutgoingImage);
   let rightOutgoingImage = $derived(volunteers[mod(visualCenterIndex + 1, N())]?.image ?? '');
-  let rightIncomingImage = $derived(volunteers[mod(visualCenterIndex + transitionDirection + 1, N())]?.image ?? rightOutgoingImage);
+  let rightIncomingImage = $derived(volunteers[mod(position + 1, N())]?.image ?? rightOutgoingImage);
 
   // Split name into one word per line
   let nameWords = $derived(currentVolunteer?.name?.split(' ') ?? []);
@@ -416,7 +435,7 @@
        HERO — titolo + corpo testo
   ══════════════════════════════════════════════════════════════ -->
   <section class="hero">
-    <h1>
+    <h1 class="safe-area">
       <span class="h1-outline">CHI C'È DIETRO</span>
       <span class="h1-fill">FUORI CAMPO?</span>
     </h1>
@@ -460,7 +479,9 @@
     </div>
   </div>
 
-  <a class="scopri-btn" href="#">SCOPRI DI PIÙ</a>
+  <div class="scopri-mobile-wrap">
+    <ScopriDiPiuButton dark onclick={handleTitleClick} />
+  </div>
 
   <div class="mobile-nav-circles">
     <ArrowButton direction="up"   onclick={() => navigate(-1)} />
@@ -492,10 +513,10 @@
   </div>
 
   <!-- Arrows -->
-  <div class="arrow-left"  onpointerdown={(e) => e.stopPropagation()}>
+  <div class="arrow-left"  role="none" onpointerdown={(e) => e.stopPropagation()}>
     <ArrowButton direction="left"  onclick={(e) => onArrowClick(-1, e)} />
   </div>
-  <div class="arrow-right" onpointerdown={(e) => e.stopPropagation()}>
+  <div class="arrow-right" role="none" onpointerdown={(e) => e.stopPropagation()}>
     <ArrowButton direction="right" onclick={(e) => onArrowClick(1,  e)} />
   </div>
 
@@ -522,29 +543,31 @@
     <path d="M0,0 H1000 V145 C780,85 220,85 0,145 Z" fill="url(#fadeGrad)" />
   </svg>
 
-  <!--
-    Overlay testi: centrato sull'immagine, testi in basso a sinistra,
-    bottone in basso a destra — identico allo screenshot.
-  -->
   <div class="card-overlay" aria-live="polite">
+    <!-- Bottone in alto a destra — posizionato tramite CSS vars calcolate dal 3D -->
+    {#if currentVolunteer?.slug}
+      <div class="overlay-top" role="none" onpointerdown={(e) => e.stopPropagation()}>
+        <ScopriDiPiuButton dark href="/volunteer/{currentVolunteer.slug}/profile" />
+      </div>
+    {/if}
+
+    <!-- Info in basso a sinistra -->
     <div class="overlay-inner">
-      <!-- Info a sinistra: subtitle + role + nome -->
-      <div class="vol-info-block"
-        role="button" tabindex="0"
-        onclick={handleTitleClick}
-        onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
-      >
-        <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
-        <span class="vol-role">{currentVolunteer?.role}</span>
-        <div class="vol-name-lines">
-          {#each nameWords as word}
-            <span class="vol-name-word">{word}</span>
-          {/each}
+      <div class="overlay-bottom">
+        <div class="vol-info-block"
+          role="button" tabindex="0"
+          onclick={handleTitleClick}
+          onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
+        >
+          <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
+          <span class="vol-role">{currentVolunteer?.role}</span>
+          <div class="vol-name-lines">
+            {#each nameWords as word}
+              <span class="vol-name-word">{word}</span>
+            {/each}
+          </div>
         </div>
       </div>
-
-      <!-- Bottone in basso a destra -->
-      <a class="scopri-desktop-btn" href="#">SCOPRI DI PIÙ</a>
     </div>
   </div>
 
@@ -580,27 +603,26 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding:
-      clamp(80px, 14vh, 151px)
-      clamp(16px, 3.9vw, 67px)
-      clamp(32px, 4vh, 56px)
-      clamp(24px, 10.5vw, 182px);
+    padding-top: clamp(80px, 14vh, 151px);
+    padding-bottom: clamp(32px, 4vh, 56px);
+    overflow-x: hidden;
   }
 
   h1 {
     margin: 0;
+    padding-left: 0; /* safe-area handles right; cancel its left side */
     display: flex;
     flex-direction: column;
-    line-height: 1;
     align-items: flex-end;
   }
 
   /* "CHI C'È DIETRO" — outline, right-aligned */
   .h1-outline {
-    font-family: var(--font-display, 'Forma DJR Display', sans-serif);
-    font-size: clamp(40px, calc(116px / max(var(--page-zoom,1), 0.65)), 180px);
-    font-weight: 800;
-    letter-spacing: 0;
+    font-family: var(--font-display);
+    font-size: var(--ts-scrollitelling-size);
+    font-weight: var(--ts-scrollitelling-weight);
+    line-height: var(--ts-scrollitelling-line-height);
+    letter-spacing: var(--ts-scrollitelling-letter-spacing);
     text-transform: uppercase;
     color: transparent;
     -webkit-text-stroke: clamp(2px, 0.23vw, 4px) var(--color-content-accent, #bdff5d);
@@ -608,12 +630,13 @@
     white-space: nowrap;
   }
 
-  /* "PERCHÈ FUORI CAMPO?" — fill, right-aligned */
+  /* "FUORI CAMPO?" — fill, right-aligned */
   .h1-fill {
-    font-family: var(--font-display, 'Forma DJR Display', sans-serif);
-    font-size: clamp(40px, calc(116px / max(var(--page-zoom,1), 0.65)), 180px);
-    font-weight: 800;
-    letter-spacing: 0;
+    font-family: var(--font-display);
+    font-size: var(--ts-scrollitelling-size);
+    font-weight: var(--ts-scrollitelling-weight);
+    line-height: var(--ts-scrollitelling-line-height);
+    letter-spacing: var(--ts-scrollitelling-letter-spacing);
     text-transform: uppercase;
     color: var(--color-content-accent, #bdff5d);
     display: block;
@@ -621,24 +644,22 @@
     margin-top: -0.05em;
   }
 
-  /* Body copy */
+  /* Body copy — Figma Frame 86: pad-left 182, pad-right Spacing/17, pad-top/bottom Spacing/10 */
   .hero-body {
-    margin: clamp(48px, 10vh, 156px) 0 0;
-    max-width: clamp(420px, 75.9vw, 1311px);
-    font-family: var(--font-display, 'Forma DJR Display', sans-serif);
-    font-size: clamp(22px, 4.86vw, 84px);
-    font-weight: 500;
-    line-height: 0.95;
-    letter-spacing: 0;
+    margin-top: clamp(48px, 10vh, 156px);
+    padding-top: var(--spacing-10);
+    padding-bottom: var(--spacing-10);
+    padding-left: 182px;
+    padding-right: var(--spacing-17);
+    font-family: var(--font-display);
+    font-size: var(--ts-h2-size);
+    font-weight: var(--ts-h2-weight);
+    line-height: var(--ts-h2-line-height);
+    letter-spacing: var(--ts-h2-letter-spacing);
     color: var(--color-content-body, #fafafa);
   }
 
   /* ── Carousel wrapper (desktop) ──────────────────────────────── */
-  /*
-   * position: sticky + height: 100vh = il carousel occupa tutto lo
-   * schermo esattamente come prima (fixed), ma nel flusso normale
-   * della pagina — la hero sta sopra e si scrolla fino al carousel.
-   */
   .carousel {
     position: sticky;
     top: 0;
@@ -771,7 +792,7 @@
     left: 0;
     bottom: 0;
     width: 100%;
-    height: clamp(10px, 28vh, 40px);
+    height: clamp(160px, 38vh, 340px);
     pointer-events: none;
     z-index: 4;
   }
@@ -790,27 +811,35 @@
     pointer-events: none;
 
     display: flex;
-    align-items: flex-end;
+    align-items: stretch;
     justify-content: center;
+  }
+
+  /* Button: projected to exact card top-right via JS CSS vars */
+  .overlay-top {
+    position: absolute;
+    top: calc(var(--card-top-px, clamp(8px, 2vh, 24px)) + 80px);
+    right: calc(var(--card-right-px, 10%) + 60px);
+    pointer-events: auto;
+    z-index: 11;
   }
 
   .overlay-inner {
     width: clamp(280px, 34vw, 560px);
-    /*
-     * Testo/bottone spostati più in basso rispetto alla curva:
-     * sottraiamo invece di aggiungere margine rispetto all'altezza
-     * della curva bottom, per farli scendere più vicino al bordo.
-     */
     padding-bottom: calc(clamp(110px, 28vh, 240px) - 40px);
     padding-left:  24px;
     padding-right: 24px;
 
     display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: clamp(12px, 1.5vw, 24px);
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
 
+    pointer-events: none;
+  }
+
+  .overlay-bottom {
+    display: flex;
     pointer-events: auto;
   }
 
@@ -827,7 +856,7 @@
   /* "STUDENTESSA IN DESIGN DELLA COMUNICAZIONE" */
   .vol-subtitle {
     display: block;
-    font-family: var(--font-display, 'Forma DJR Display', sans-serif);
+    font-family: var(--font-display, sans-serif);
     font-size: clamp(7px, 0.65vw, 10px);
     font-weight: 400;
     letter-spacing: 0.07em;
@@ -840,7 +869,7 @@
   /* "UX – UI DESIGNER E CODE REVIEWER" */
   .vol-role {
     display: block;
-    font-family: var(--font-display, 'Forma DJR Display', sans-serif);
+    font-family: var(--font-display, sans-serif);
     font-size: clamp(12px, 1.25vw, 18px);
     font-weight: 700;
     letter-spacing: 0;
@@ -867,35 +896,6 @@
     text-transform: uppercase;
     color: var(--color-content-accent, #bdff5d);
     white-space: nowrap;
-  }
-
-  /* Bottone SCOPRI DI PIÙ — bottom-right della card */
-  .scopri-desktop-btn {
-    flex: 0 0 auto;
-    align-self: flex-end;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(9px, 1vh, 14px) clamp(16px, 1.6vw, 26px);
-    border: 1.5px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
-    background: var(--color-background-primary, #0e0e0e);
-    color: var(--color-content-accent, #bdff5d);
-    font-family: var(--font-display, sans-serif);
-    font-size: clamp(10px, 0.85vw, 13px);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    text-decoration: none;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background 200ms ease, box-shadow 200ms ease;
-    pointer-events: auto;
-  }
-  .scopri-desktop-btn:hover,
-  .scopri-desktop-btn:focus-visible {
-    background: rgba(189,255,93,0.08);
-    box-shadow: 0 0 16px rgba(189,255,93,0.22);
   }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -977,36 +977,13 @@
     font-size: 43px;
   }
 
-  /* Bottone mobile */
-  .scopri-btn {
+  /* Bottone mobile — bottom-left, stesso pattern della category page */
+  .scopri-mobile-wrap {
     position: absolute;
-    left: var(--spacing-5, 20px);
+    left: var(--spacing-5, 24px);
     bottom: 36px;
     width: 238px;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-3, 12px) 0;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
-    background: var(--color-background-primary, #0e0e0e);
-    color: var(--color-content-accent, #bdff5d);
-    font-family: var(--font-display, sans-serif);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    text-decoration: none;
-    white-space: nowrap;
-    cursor: pointer;
     z-index: 4;
-    transition: background 220ms ease, box-shadow 220ms ease;
-  }
-  .scopri-btn:hover,
-  .scopri-btn:focus-visible {
-    background: rgba(189,255,93,0.08);
-    box-shadow: 0 0 16px rgba(189,255,93,0.22);
   }
 
   .mobile-nav-circles {
