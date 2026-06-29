@@ -50,7 +50,7 @@
   const categorySummaries: Record<string, { eyebrow: string; subtitle: string; roles: SubRole[] }> = {
     relazioni: {
       eyebrow: 'COM = Communication',
-      subtitle: 'Sanno già cosa risponderti prima ancora che tu finisca la domanda.',
+      subtitle: 'Punto di contatto con i giornalisti, Comitati Olimpici e delegazioni, pronti a guidare la comunicazione e permettere a la corretta diffusione delle notizie con la stampa.',
       roles: [
         {
           title: 'PRS = Press',
@@ -76,7 +76,7 @@
     },
     cerimonie: {
       eyebrow: 'CER = Cerimonie',
-      subtitle: 'Erano lì alle 6 di mattina per provare una cosa che durava 40 secondi. L\'hanno rifatta 12 volte. Non si sa mai. ',
+      subtitle: 'Hanno condiviso le medaglie e il palco con gli atleti, permettendo loro di splendere nel giorno più bello delle loro vite, non dimenticandosi mai di dare spazio agli ospiti speciali e gli sponsor ufficiali.',
       roles: [
         {
           title: 'CER = Cerimonie',
@@ -102,7 +102,7 @@
     },
     sport: {
       eyebrow: 'SPT = Sport',
-      subtitle: 'Conoscono il regolamento di sport che non sapevano esistessero\nfino a sei mesi fa.',
+      subtitle: 'Addetti ad ognuno dei 51 sport specifici, dal Palazzo del Ghiaccio a Santa Giulia fino alle vette Valtellinesi, a stretto contatto con atleti e pubblico, per far si che ogni competizione non avesse intoppi.',
       roles: [
         {
           title: 'XALP = Alpine Skiing',
@@ -168,7 +168,7 @@
     },
     organizzativa: {
       eyebrow: 'ORG = Organizzazione',
-      subtitle: 'Nessuno sa esattamente cosa fanno, ma quando mancano si sente.',
+      subtitle: 'Hanno permesso la corretta organizzazione e gestione dei volontari e dell’infrastruttura tecnologica dei giochi, dal distribuire gli accrediti, ai buoni pasto fino al corretto funzionamento del WIFI.',
       roles: [
         {
           title: 'PEM = People Management',
@@ -189,7 +189,7 @@
     },
     logistica: {
       eyebrow: 'LOG = Logistica',
-      subtitle: 'Hanno spostato quella cosa lì, poi di là, poi di nuovo lì. Alla fine era nel posto giusto dall\'inizio.',
+      subtitle: 'A servizio della flotta dei veicoli, per permettere agli atleti e alla famiglia olimpica di orientarsi tra le vie di Milano e le stradine delle Valli e gli Aeroporti.',
       roles: [
         {
           title: 'AND = Arrivals & Departures',
@@ -215,7 +215,7 @@
     },
     gestione: {
       eyebrow: 'FEX = Fan Experience',
-      subtitle: 'Hanno risposto alla stessa domanda 400 volte in un giorno con il sorriso.\nAlmeno le prime 380.',
+      subtitle: 'Coloro con cui sicuramente hai parlato o hai sentito negli stadi, hanno fatto sì che non ti annoiassi mai e ti hanno indicato l’entrata, ma non solo hanno permesso pure che tutto fosse sempre coordinato.',
       roles: [
         {
           title: 'EVM = Event Management',
@@ -495,7 +495,7 @@
     max-width: calc(100% - var(--spacing-11) - var(--spacing-4));
     text-align: right;
     font-family: var(--font-display);
-    font-size: clamp(34px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 145px);
+    font-size: clamp(34px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 45px);
     font-weight: 500;
     line-height: 0.952;
     letter-spacing: 0;
@@ -678,7 +678,7 @@
 
     .hero-copy {
       justify-self: start;
-      text-align: left;
+      text-align: right;
       padding: 0;
       max-width: 100%;
       width: auto;
