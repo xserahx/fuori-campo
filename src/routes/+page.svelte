@@ -19,6 +19,34 @@
   import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
+  /* ── Custom cursor ─────────────────────────────────────────────── */
+  let cursorX        = $state(-200);
+  let cursorY        = $state(-200);
+  let cursorOnPage   = $state(false);
+  let cursorInverted = $state(false);
+
+  onMount(() => {
+    const onMove  = (e: MouseEvent) => { cursorX = e.clientX; cursorY = e.clientY; cursorOnPage = true; };
+    const onLeave = () => { cursorOnPage = false; };
+    const onOver  = (e: MouseEvent) => {
+      const t = e.target as Element;
+      cursorInverted = !!t?.closest('.question--lime');
+    };
+
+    document.addEventListener('mousemove', onMove,  { passive: true });
+    document.addEventListener('mouseleave', onLeave);
+    document.addEventListener('mouseover',  onOver,  { passive: true });
+
+    const prev = document.body.style.cursor;
+    document.body.style.cursor = 'none';
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseleave', onLeave);
+      document.removeEventListener('mouseover',  onOver);
+      document.body.style.cursor = prev;
+    };
+  });
+
   /* ── Intro loader ─────────────────────────────────────────────────
      First visit shows the loading-page intro; returning via the logo skips it
      and plays only the title's appearance animation (BlurTitle `quick`). */
@@ -558,6 +586,14 @@
   {loaderProgress}
 />
 
+<div
+  class="cursor-dot"
+  class:cursor-dot--on={cursorOnPage && !showIntro}
+  class:cursor-dot--inverted={cursorInverted}
+  style="transform: translate({cursorX}px, {cursorY}px)"
+  aria-hidden="true"
+></div>
+
 <div class="site">
   <div class="transition-overlay" bind:this={transitionOverlay}></div>
 
@@ -664,6 +700,41 @@
 </div>
 
 <style>
+  /* ── Custom cursor ─────────────────────────────────────────────── */
+  .cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    color: var(--color-content-accent, #bdff5d);
+    background: transparent;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    translate: -50% -50%;
+    transition: opacity 280ms ease, color 300ms ease;
+    will-change: transform;
+  }
+
+  .cursor-dot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: currentColor;
+    filter: blur(5px);
+    transform: scale(0.44);
+  }
+
+  .cursor-dot--on       { opacity: 1; }
+  .cursor-dot--inverted { color: #0e0e0e; }
+
+  @media (pointer: coarse)                { .cursor-dot { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .cursor-dot { display: none; } }
+
   /* ── Aggiunte classi per l'allineamento dei testi ── */
   .story--left {
     text-align: left;
