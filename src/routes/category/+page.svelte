@@ -417,6 +417,36 @@
     if (Math.abs(dy) > 40) navigate(dy > 0 ? 1 : -1);
   }
 
+  // ─── wheel navigation (desktop) ──────────────────────────────────
+  // The page itself is fixed; a scroll gesture advances the carousel one
+  // category. Delta is accumulated to a threshold (so trackpad micro-events
+  // don't trigger), then locked briefly so one gesture = one step.
+  let wheelAccum = 0;
+  let wheelLocked = false;
+  let wheelStepTimer: ReturnType<typeof setTimeout> | undefined;
+  let wheelIdleTimer: ReturnType<typeof setTimeout> | undefined;
+  const WHEEL_STEP    = 30;   // delta needed to commit a step
+  const WHEEL_LOCK_MS = 480;  // min time between steps
+
+  function onWheel(e: WheelEvent) {
+    e.preventDefault();           // keep the page pinned, no rubber-banding
+    if (wheelLocked) return;
+
+    wheelAccum += e.deltaY;
+
+    // Drop the accumulator if the user pauses between gestures.
+    clearTimeout(wheelIdleTimer);
+    wheelIdleTimer = setTimeout(() => { wheelAccum = 0; }, 140);
+
+    if (Math.abs(wheelAccum) >= WHEEL_STEP) {
+      navigate(wheelAccum > 0 ? 1 : -1);
+      wheelAccum  = 0;
+      wheelLocked = true;
+      clearTimeout(wheelStepTimer);
+      wheelStepTimer = setTimeout(() => { wheelLocked = false; }, WHEEL_LOCK_MS);
+    }
+  }
+
   async function handleTitleClick() {
     const idx = mod(Math.round(animPos || 0), N());
     const label = categories?.[idx]?.label ?? '';
@@ -444,12 +474,16 @@
     if (!isMobile) {
       buildScene();
       window.addEventListener('resize', onResize);
+      window.addEventListener('wheel', onWheel, { passive: false });
     }
 
     return () => {
       document.body.style.paddingTop = prev.pt;
       document.body.style.overflow   = prev.ov;
       window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('wheel', onWheel);
+      clearTimeout(wheelStepTimer);
+      clearTimeout(wheelIdleTimer);
     };
   });
   onDestroy(() => {
