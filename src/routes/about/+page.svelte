@@ -3,6 +3,8 @@
   import { goto, beforeNavigate } from '$app/navigation';
   import { fade } from 'svelte/transition';
   import * as THREE from 'three';
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
   import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
   import '$lib/styles/tokens.css';
@@ -97,6 +99,14 @@
   let visualPos = $state(0);
   let position  = $state(0);
   let isMobile  = $state(false);
+
+  // Hero element refs for blur-reveal animation
+  let heroEl:         HTMLElement | null = $state(null);
+  let h1El:           HTMLElement | null = $state(null);
+  let heroBodyEl:     HTMLElement | null = $state(null);
+  let volInfoBlockEl: HTMLElement | null = $state(null);
+  let mobileInfoEl:   HTMLElement | null = $state(null);
+  let gsapCtx: gsap.Context | null = null;
 
   let touchStartY = 0;
   let isDragging  = false;
@@ -248,14 +258,22 @@
     updateCardBounds();
   }
 
+  let _lastVisual = -9999;
   function animate() {
     if (!renderer || !scene || !camera || !timer) return;
     animFrameId = requestAnimationFrame(animate);
     timer.update();
     const t = timer.getElapsed();
+    const prevAnimPos = animPos;
     animPos = lerp(animPos, targetPos, LERP_K);
     const visual = animPos + dragLive;
     visualPos = visual;
+    // Skip GPU render when nothing changed
+    const settled = !isDragging
+      && Math.abs(animPos - prevAnimPos) < 0.00005
+      && Math.abs(visual - _lastVisual) < 0.00005;
+    if (settled) return;
+    _lastVisual = visual;
     slots.forEach((slot, s) => {
       const slotOffset = s - HALF;
       const catIdx = mod(Math.round(visual) + slotOffset, N());
@@ -361,7 +379,7 @@
   async function handleTitleClick() {
     const idx = mod(Math.round(animPos || 0), N());
     const volunteer = volunteers[idx];
-    console.log('Clicked on:', volunteer?.name);
+    if (volunteer?.slug) goto(`/volunteer/${volunteer.slug}/profile`);
   }
 
   beforeNavigate(() => {
@@ -382,6 +400,47 @@
     } else {
       document.body.style.overflow = 'hidden';
     }
+
+    // ── GSAP blur-reveal for hero ──────────────────────────────────────
+    gsap.registerPlugin(ScrollTrigger);
+    gsapCtx = gsap.context(() => {
+      const spans = h1El ? Array.from(h1El.querySelectorAll('span')) : [];
+      if (spans.length) {
+        // End at blur(0px) and DON'T clear the filter: removing the blur at the
+        // end of the tween switches the text off the filter render path, which
+        // snaps it ~1px upward. Keeping a no-op blur(0px) (and the identity
+        // transform) leaves the rasterization path unchanged, so the text
+        // settles without the micro-shift.
+        gsap.fromTo(spans,
+          { opacity: 0, filter: 'blur(28px)', y: 22 },
+          {
+            opacity: 1,
+            filter: 'blur(0px)',
+            y: 0,
+            duration: 1.4,
+            stagger: 0.13,
+            ease: 'expo.out',
+            delay: 0.08,
+            clearProps: 'willChange',
+          }
+        );
+      }
+      if (heroBodyEl) {
+        gsap.fromTo(heroBodyEl,
+          { opacity: 0, filter: 'blur(20px)', y: 16 },
+          {
+            opacity: 1,
+            filter: 'blur(0px)',
+            y: 0,
+            duration: 1.5,
+            ease: 'expo.out',
+            delay: 0.32,
+            clearProps: 'willChange',
+          }
+        );
+      }
+    });
+
     return () => {
       document.body.style.paddingTop = prev.pt;
       document.body.style.overflow   = prev.ov;
@@ -390,6 +449,8 @@
   });
 
   onDestroy(() => {
+    gsapCtx?.revert();
+    ScrollTrigger.getAll().forEach(t => t.kill());
     if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(animFrameId);
     try { renderer?.dispose(); } catch (e) {}
     if (typeof window !== 'undefined') window.removeEventListener('resize', onResize);
@@ -427,6 +488,32 @@
 
   // Split name into one word per line
   let nameWords = $derived(currentVolunteer?.name?.split(' ') ?? []);
+
+  // Blur-reveal on volunteer change (desktop + mobile info block)
+  $effect(() => {
+    const _trigger = currentIndex; // track volunteer changes
+    const root = volInfoBlockEl ?? mobileInfoEl;
+    if (!root) return;
+    const subtitle = root.querySelector('.vol-subtitle');
+    const role     = root.querySelector('.vol-role');
+    const words    = Array.from(root.querySelectorAll('.vol-name-word'));
+    const smEls    = [subtitle, role].filter(Boolean);
+    gsap.killTweensOf([...smEls, ...words]);
+    if (smEls.length) {
+      gsap.from(smEls, {
+        opacity: 0, filter: 'blur(20px)', y: 10,
+        duration: 0.65, ease: 'expo.out', stagger: 0.05,
+        clearProps: 'filter,willChange',
+      });
+    }
+    if (words.length) {
+      gsap.from(words, {
+        opacity: 0, filter: 'blur(28px)', y: 18,
+        duration: 1.0, ease: 'expo.out', stagger: 0.08, delay: 0.06,
+        clearProps: 'filter,willChange',
+      });
+    }
+  });
 </script>
 
 <main class="about-page">
@@ -434,13 +521,13 @@
   <!-- ══════════════════════════════════════════════════════════════
        HERO — titolo + corpo testo
   ══════════════════════════════════════════════════════════════ -->
-  <section class="hero">
-    <h1 class="safe-area">
+  <section class="hero" bind:this={heroEl}>
+    <h1 class="safe-area" bind:this={h1El}>
       <span class="h1-outline">CHI C'È DIETRO</span>
       <span class="h1-fill">FUORI CAMPO?</span>
     </h1>
 
-    <p class="hero-body">
+    <p class="hero-body" bind:this={heroBodyEl}>
       Vogliamo raccontare le Olimpiadi attraverso gli occhi di chi le ha
       costruite restando nell'ombra. Questo progetto celebra i volontari:
       il motore invisibile che, con dedizione silenziosa, ha permesso a Milano
@@ -469,7 +556,7 @@
   <div class="mobile-blur mobile-blur--top"    aria-hidden="true"></div>
   <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
 
-  <div class="mobile-info">
+  <div class="mobile-info" bind:this={mobileInfoEl}>
     <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
     <span class="vol-role">{currentVolunteer?.role}</span>
     <div class="vol-name-lines">
@@ -555,6 +642,7 @@
     <div class="overlay-inner">
       <div class="overlay-bottom">
         <div class="vol-info-block"
+          bind:this={volInfoBlockEl}
           role="button" tabindex="0"
           onclick={handleTitleClick}
           onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
