@@ -13,9 +13,6 @@ const config = {
 		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
 	},
 	kit: {
-		files: {
-			template: 'index.html'
-		},
 		paths: {
 			base: process.argv.includes('dev') ? '' : '/fuori-campo'
 		},
