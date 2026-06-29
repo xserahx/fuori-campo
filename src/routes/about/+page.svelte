@@ -221,7 +221,7 @@
     renderer.setClearColor(0x000000, 0);
     const loader = new THREE.TextureLoader();
     textures = volunteers.map(vol => {
-      const t = loader.load(vol.image, undefined as any, undefined as any, undefined as any);
+      const t = loader.load(vol.image, () => { _lastVisual = -9999; });
       t.colorSpace = THREE.NoColorSpace;
       return t;
     });
@@ -515,6 +515,12 @@
     }
   });
 </script>
+
+<svelte:head>
+  <link rel="preload" as="image" href={VOLUNTEER_1} />
+  <link rel="preload" as="image" href={VOLUNTEER_2} />
+  <link rel="preload" as="image" href={VOLUNTEER_6} />
+</svelte:head>
 
 <main class="about-page">
 
