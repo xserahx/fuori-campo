@@ -5,6 +5,7 @@
   import * as THREE from 'three';
   import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
   import '$lib/styles/tokens.css';
+  import SiteFooter from '$lib/components/SiteFooter.svelte';
 
   type Volunteer = {
     id: number;
@@ -46,8 +47,8 @@
     {
       id: 4,
       name: 'MATILDE CURINO',
-      role: 'SUPPORTO CERIMONIE',
-      subtitle: 'UX – UI DESIGNER E CODE REVIEWER',
+      role: 'UX – UI DESIGNER E CODE REVIEWER',
+      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
       image: VOLUNTEER_4
     },
     {
