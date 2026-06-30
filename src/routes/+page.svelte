@@ -1,12 +1,6 @@
-<script module lang="ts">
-  /* Module-scoped so it survives in-app (soft) navigations: returning to the
-     homepage via the logo skips the loading-page intro and shows only the
-     title's appearance animation. A full browser refresh resets this flag, so
-     a refresh replays the full loader + entrance. */
-  let introPlayed = false;
-</script>
-
 <script lang="ts">
+  let introPlayed = false;
+
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import { goto, afterNavigate } from "$app/navigation";
@@ -19,27 +13,15 @@
   import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
-  /* ── Intro loader ─────────────────────────────────────────────────
-     First visit shows the loading-page intro; returning via the logo skips it
-     and plays only the title's appearance animation (BlurTitle `quick`). */
+  /* ── Intro loader ───────────────────────────────────────────────── */
   const introSeen = browser && introPlayed;
   let showIntro = $state(!introSeen);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
 
-
-  /* ── DOM refs ────────────────────────────────────────────────── */
+  /* ── DOM refs essenziali ────────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
-  let shell1:           HTMLElement | null = null;
-  let stickyEl1:        HTMLElement | null = null;
-  let track1:           HTMLElement | null = null;
-  let veil1:            HTMLElement | null = null;
   let galleryGate: HTMLElement | null = null;
-
-  let q1h2: HTMLElement | null = null;
-  let q2h2: HTMLElement | null = null;
-  let q3h2: HTMLElement | null = null;
-  let q4h2: HTMLElement | null = null;
 
   /* ── Gallery anticipation preview ───────────────────────────────── */
   const PREVIEW_WIDTH = 420;
@@ -82,14 +64,11 @@
   function navigateToGallery() {
     if (galleryTransitionPending) return;
     galleryTransitionPending = true;
-    // No bespoke transition here — let the layout's standard SVG wave handle
-    // the home → gallery navigation, same as the archivio link.
     goto('/gallery');
   }
 
   afterNavigate(() => {
     galleryTransitionPending = false;
-
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.documentElement.style.setProperty('--gate-p', '0');
@@ -140,170 +119,97 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // ── Helpers ────────────────────────────────────────────────────────────
-    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-    const ss    = (t: number) => t * t * (3 - 2 * t);
-    // Global CSS `zoom` lives on <html> (see app.html). Element transforms are
-    // applied in *layout* px (then scaled ×zoom visually), while scroll distance
-    // and innerWidth are *visual* px — so the track transform is divided by zoom.
-    const zoom  = () => parseFloat(document.documentElement.style.zoom) || 1;
+    // ── GESTIONE NAVBAR E PARALLAX HERO ──
+    let inHero = true;
+    
+    ScrollTrigger.create({
+      trigger: heroSection,
+      start: 'top top',
+      end: () => '+=' + window.innerHeight * 0.7,
+      onUpdate: (self) => document.documentElement.style.setProperty('--hero-scroll-p', self.progress.toFixed(3)),
+    });
 
-    const LIME: [number, number, number] = [189, 255, 93];
-    const DARK: [number, number, number] = [14,  14,  14];
-    const panelBg   = [LIME, DARK, LIME, DARK];
-    const panelText = [DARK, LIME, DARK, LIME];
+    ScrollTrigger.create({
+      trigger: heroSection,
+      start: 'top top',
+      end: 'bottom 45%',
+      onToggle: (self) => { 
+        inHero = self.isActive; 
+        if (self.isActive) navbarHidden.set(false); 
+      }
+    });
 
-    let pSpans: HTMLElement[][] = [[], [], [], []];
-    const cacheSpans = () => {
-      pSpans = [q1h2, q2h2, q3h2, q4h2].map(h =>
-        h ? (Array.from(h.querySelectorAll('span')) as HTMLElement[]) : []
-      );
+    ScrollTrigger.create({
+      start: 0,
+      end: 'max',
+      onUpdate: (self) => {
+        if (inHero) return;
+        if (self.scroll() <= 20) { navbarHidden.set(false); return; }
+        navbarHidden.set(self.direction === 1); 
+      },
+    });
+
+  // ── LAYERED PINNING: IL MOTORE ──
+    const panels = gsap.utils.toArray('.layered-panel');
+    
+    // TRUCCO INFALLIBILE: Fissiamo l'altezza in pixel esatti calcolati dal JS 
+    // per sconfiggere il bug dello zoom e annullare il bordo nero in basso.
+    const setPanelHeights = () => {
+      gsap.set(panels, { height: window.innerHeight });
     };
-    cacheSpans();
+    setPanelHeights(); // Lo eseguiamo subito
+    
+    // Aggiorniamo l'altezza se l'utente ridimensiona la finestra
+    window.addEventListener('resize', setPanelHeights);
 
-    // Drive question colours + per-word reveal from horizontal progress (0..1).
-    function updateQuestions(p: number, dir: number) {
-      const VW = window.innerWidth;
-      const hp = p * 3 * VW;                     // visual px travelled (0 → 3·VW)
-      const centers = [0, VW, 2 * VW, 3 * VW];
-      const goingBack = dir < 0;
-
-      for (let pi = 0; pi < 4; pi++) {
-        const dist = Math.abs(hp - centers[pi]) / VW;
-        const vis  = ss(clamp(1.1 - dist * 1.5, 0, 1));
-        const spans = pSpans[pi];
-        for (let si = 0; si < spans.length; si++) {
-          const sv3  = ss(clamp(vis - si * 0.07, 0, 1));
-          const span = spans[si];
-          if (sv3 >= 0.9995 || vis >= 0.9995) {
-            span.style.opacity   = '1';
-            span.style.transform = 'none';
-          } else {
-            const inv = 1 - sv3;
-            span.style.opacity   = sv3.toFixed(3);
-            span.style.transform = `translateX(${((goingBack ? -inv : inv) * 20).toFixed(1)}px)`;
+    panels.forEach((panel: any, index) => {
+      // 1. Cambio colore Navbar
+      ScrollTrigger.create({
+        trigger: panel,
+        start: "top center",
+        end: "bottom center",
+        onToggle: (self) => {
+          if (self.isActive) {
+            navbarInverted.set(panel.classList.contains('panel--lime'));
           }
         }
-      }
-
-      if (stickyEl1) {
-        const t     = clamp(hp / VW, 0, 2.9999);
-        const idx   = Math.floor(t);
-        const local = t - idx;
-        const eb    = ss(clamp((local - 0.28) / 0.44, 0, 1));
-        const ni    = Math.min(idx + 1, 3);
-        const bg  = panelBg[idx].map((v, i)  => Math.round(v + (panelBg[ni][i]   - v) * eb));
-        const txt = panelText[idx].map((v, i) => Math.round(v + (panelText[ni][i] - v) * eb));
-        stickyEl1.style.setProperty('--q-bg', `rgb(${bg.join(',')})`);
-        stickyEl1.style.setProperty('--q-fg', `rgb(${txt.join(',')})`);
-        // Only invert the navbar while scrolled inside the question panels.
-        // Otherwise the mount-time / onRefresh call (progress 0 → lime panel)
-        // inverts the bar over the dark hero, turning the lime F logo black
-        // (invisible) and the white links dark grey.
-        navbarInverted.set(inQ && bg[1] > 128);
-      }
-    }
-
-    let inQ    = false;
-    let inHero = true;
-
-    const mm = gsap.matchMedia();
-
-    // ── Desktop: pinned horizontal questions + scroll-driven sub-animations ──
-    mm.add('(min-width: 600px)', () => {
-      // Hero parallax (writes --hero-scroll-p 0→1 over the first ~70% of hero).
-      ScrollTrigger.create({
-        trigger: heroSection,
-        start: 'top top',
-        end: () => '+=' + window.innerHeight * 0.7,
-        onUpdate: (self) =>
-          document.documentElement.style.setProperty('--hero-scroll-p', self.progress.toFixed(3)),
       });
 
-      // Navbar visibility while the hero fills the viewport.
+      // 2. Se è l'ultimo pannello, non lo blocchiamo per farlo scorrere via in alto
+      if (index === panels.length - 1) return;
+
+      // 3. Pinning pulito senza anticipatePin (che a volte causava lo scatto nel tuo setup)
       ScrollTrigger.create({
-        trigger: heroSection,
-        start: 'top top',
-        end: 'bottom 45%',
-        onToggle: (self) => { inHero = self.isActive; if (self.isActive) navbarHidden.set(false); },
-      });
-
-      // Horizontal scroll: pin the section, scrub the track across its panels.
-      // `x` lands at exactly -(travel) so the last question is fully settled at
-      // the end of the pin — no fast-scroll cut-off is possible with scrub.
-      const panels = track1 ? track1.children.length : 4;
-      const travel = () => (panels - 1) * window.innerWidth;     // visual px
-      gsap.to(track1, {
-        x: () => -(travel() / zoom()),                           // layout px
-        ease: 'none',
-        scrollTrigger: {
-          trigger: shell1,
-          start: 'top top',
-          end: () => '+=' + travel(),
-          pin: shell1,
-          scrub: 0.6,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onEnter:     () => { inQ = true;  navbarHidden.set(true); },
-          onEnterBack: () => { inQ = true;  navbarHidden.set(true); },
-          onLeave:     () => { inQ = false; },
-          onLeaveBack: () => { inQ = false; navbarInverted.set(false); navbarHidden.set(false); },
-          onUpdate: (self) => {
-            updateQuestions(self.progress, self.direction);
-            if (veil1) {
-              const v = Math.min(Math.abs(self.getVelocity()) / 3000, 1);
-              veil1.style.backdropFilter = v > 0.02 ? `blur(${(v * 16).toFixed(1)}px)` : '';
-            }
-          },
-          onRefresh: () => updateQuestions(0, 1),
-        },
-      });
-      updateQuestions(0, 1);
-
-      // Gallery-gate anticipation preview (writes --gate-p 0→1).
-      ScrollTrigger.create({
-        trigger: galleryGate,
-        start: 'top bottom',
-        end: 'top top',
-        onUpdate: (self) => {
-          const gp = ss(clamp((self.progress - 0.12) / 0.88, 0, 1));
-          document.documentElement.style.setProperty('--gate-p', gp.toFixed(3));
-        },
-      });
-
-      // Hide navbar on scroll-down outside hero/questions; show on scroll-up.
-      ScrollTrigger.create({
-        start: 0,
-        end: 'max',
-        onUpdate: (self) => {
-          if (inQ || inHero) return;
-          if (self.scroll() <= 20) { navbarHidden.set(false); return; }
-          navbarHidden.set(self.direction === 1);
-        },
-      });
-
-      return () => {
-        document.documentElement.style.setProperty('--hero-scroll-p', '0');
-        document.documentElement.style.setProperty('--gate-p', '0');
-        if (track1) gsap.set(track1, { clearProps: 'transform' });
-      };
-    });
-
-    // ── Mobile: questions stack vertically (CSS); only sync navbar inversion ──
-    mm.add('(max-width: 599px)', () => {
-      ScrollTrigger.create({
-        trigger: shell1,
-        start: 'top top',
-        end: 'bottom bottom',
-        onToggle: (self) => navbarInverted.set(self.isActive),
+        trigger: panel,
+        start: "top top",
+        pin: true,
+        pinSpacing: false
       });
     });
 
-    // Re-cache word spans + re-measure triggers on resize.
-    const onResize = () => { cacheSpans(); ScrollTrigger.refresh(); };
-    window.addEventListener('resize', onResize, { passive: true });
+    // Ripristina la navbar quando si esce dalle domande
+    ScrollTrigger.create({
+      trigger: '.questions-container',
+      start: 'top top',
+      end: 'bottom top',
+      onLeave: () => navbarInverted.set(false),
+      onLeaveBack: () => navbarInverted.set(false)
+    });
 
-    // ── Gallery entry at the very bottom (passive — no scroll hijacking) ──
+    // ── GALLERY GATE PREVIEW (Anticipazione) ──
+    ScrollTrigger.create({
+      trigger: galleryGate,
+      start: 'top bottom',
+      end: 'top top',
+      onUpdate: (self) => {
+        const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+        const ss = (t: number) => t * t * (3 - 2 * t);
+        const gp = ss(clamp((self.progress - 0.12) / 0.88, 0, 1));
+        document.documentElement.style.setProperty('--gate-p', gp.toFixed(3));
+      },
+    });
+
+    // ── INGRESSO GALLERIA (A fondo pagina) ──
     let galleryReady = false;
     const maxScroll  = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     let galleryGuard = window.scrollY >= maxScroll() - 120;
@@ -320,6 +226,7 @@
         galleryGuard = false;
       }
     };
+    
     const onWheel = (e: WheelEvent) => tryEnterGallery(e.deltaY > 0);
     let touchY = 0;
     const onTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
@@ -328,6 +235,7 @@
       touchY = e.touches[0].clientY;
       if (Math.abs(dy) > 1) tryEnterGallery(dy > 0);
     };
+    
     window.addEventListener('wheel',      onWheel,      { passive: true });
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove',  onTouchMove,  { passive: true });
@@ -336,11 +244,11 @@
 
     return () => {
       navbarInverted.set(false);
-      mm.revert();
-      window.removeEventListener('resize',     onResize);
       window.removeEventListener('wheel',      onWheel);
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove',  onTouchMove);
+      // Rimuove tutti gli ScrollTrigger quando si cambia pagina
+      ScrollTrigger.getAll().forEach(t => t.kill());
     };
   });
 </script>
@@ -365,7 +273,7 @@
       </p>
     </section>
 
-    <section class="story story--right story--numbers safe-area">
+    <section class="story story--right story--numbers safe-area ">
       <p use:blurText={{ delay: 65, duration: 800 }}>
         <span class="accent">18.000</span> alle Olimpiadi <br>e <span class="accent">4.600</span> alle Paralimpiadi
       </p>
@@ -373,64 +281,60 @@
 
     <section class="story story--quote story--quote-left safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti <span class="accent">invisibili</span>.
+        Mentre le telecamere erano puntate sulle gare, i volontari <br>sono rimasti <span class="accent">invisibili</span>
       </p>
     </section>
 
     <section class="story story--quote story--quote-right safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Nella narrazione ufficiale erano spesso <span class="accent">dati per scontati</span>
+        Nella narrazione ufficiale erano spesso <span class="accent">ignorati</span>
       </p>
     </section>
 
-    <div class="question-shell" bind:this={shell1}>
-      <div class="question-sticky" bind:this={stickyEl1}>
-        <div class="question-track" bind:this={track1}>
+    <!-- ── NUOVA SEZIONE DOMANDE (Layered Pinning) ── -->
+    <div class="questions-container">
+      
+      <section class="layered-panel panel--lime question">
+        <h2>
+          <span class="accent">MA </span>
+          <span class="ghost-black">CHI SONO </span><br />
+          <span class="accent">DAVVERO</span>
+          <span class="accent">I VOLONTARI?</span>
+        </h2>
+      </section>
 
-          <section class="question question--left question--lime safe-area">
-            <h2 bind:this={q1h2}>
-              <span class="accent">MA </span>
-              <span class="ghost">CHI SONO </span>
-              <span class="accent">DAVVERO</span><br />
-              <span class="accent">I VOLONTARI?</span>
-            </h2>
-          </section>
+      <section class="layered-panel panel--dark question">
+        <h2>
+          <span class="ghost-lime">PERCHÉ </span>
+          <span class="accent">HANNO DECISO</span><br />
+          <span class="accent">DI CANDIDARSI?</span>
+        </h2>
+      </section>
 
-          <section class="question question--right question--dark safe-area">
-            <h2 bind:this={q2h2}>
-              <span class="ghost">PERCHÉ </span>
-              <span class="accent">HANNO DECISO</span><br />
-              <span class="accent">DI CANDIDARSI?</span>
-            </h2>
-          </section>
+      <section class="layered-panel panel--lime question">
+        <h2>
+          <span class="ghost-black">COSA FACEVANO</span><br />
+          <span class="accent">CONCRETAMENTE?</span>
+        </h2>
+      </section>
 
-          <section class="question question--left question--lime safe-area">
-            <h2 bind:this={q3h2}>
-              <span class="ghost">COSA FACEVANO</span><br />
-              <span class="accent">CONCRETAMENTE?</span>
-            </h2>
-          </section>
+      <section class="layered-panel panel--dark question">
+        <h2>
+          <span class="accent">NE È VALSA LA PENA?</span><br />
+          <span class="ghost-lime">LO RIFAREBBERO?</span>
+        </h2>
+      </section>
 
-          <section class="question question--right question--dark safe-area">
-            <h2 bind:this={q4h2}>
-              <span class="accent">NE È VALSA LA PENA?</span><br />
-              <span class="ghost">LO RIFAREBBERO?</span>
-            </h2>
-          </section>
-
-        </div>
-        <div class="question-blur-veil" bind:this={veil1}></div>
-      </div>
     </div>
 
     <section class="story story--left story--summary safe-area">
       <p use:blurText={{ delay: 65, duration: 750, threshold: 0.2 }}>
-        Abbiamo chiesto ai volontari di raccontarsi. Le loro testimonianze sono raccolte in questo
-        <a href="/gallery" class="accent archivio-link">archivio</a>.
+        Abbiamo chiesto ai volontari <br>di raccontarsi. <br>Le loro testimonianze sono raccolte in questo
+        <a href="/gallery" class="accent archivio-link">archivio</a>
       </p>
     </section>
 
-    <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
+    <!-- <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
       <div class="gallery-anticipation">
         {#each previewPhotos as src, i}
           <img
@@ -444,7 +348,7 @@
           />
         {/each}
       </div>
-    </div>
+    </div> -->
 
   </main>
 </div>
@@ -462,10 +366,13 @@
     display: flex;
     justify-content: flex-end;
   }
-
+  .story--quote-right {
+    padding-bottom: 50dvh !important; 
+  }
   /* ── Aggiunto cuscinetto di spazio prima della galleria ── */
   .story--summary {
-    padding-bottom: 35vh; 
+    padding-bottom: 40vh;
+    
   }
 
   .gallery-gate {
@@ -480,7 +387,7 @@
     pointer-events: none;
   }
 
-  .anticip-img {
+  /* .anticip-img {
     position: absolute;
     display: block;
     border-radius: 6px;
@@ -499,7 +406,7 @@
       rotate(calc(var(--rot, 0deg) * (1 - var(--gate-p, 0))));
     will-change: transform, opacity, filter;
     backface-visibility: hidden;
-  }
+  } */
 
   @media (prefers-reduced-motion: reduce) {
     .anticip-img { transition: none; transform: none; }
@@ -514,33 +421,6 @@
     will-change: transform, opacity, filter;
   }
 
-  /* ── FIX DEFINITIVO PER LE DOMANDE ORIZZONTALI ── */
-  .question-shell {
-    position: relative;
-    width: 100%;
-  }
-
-  .question-sticky {
-    /* Pinned by GSAP ScrollTrigger on desktop (was position: sticky). */
-    position: relative;
-    top: 0;
-    height: 100vh;
-    width: 100%;
-    overflow: hidden;
-    background-color: var(--q-bg, #bdff5d);
-    color: var(--q-fg, #0e0e0e);
-    display: flex;
-    
-    /* LA MAGIA: Proietta un'ombra solida di 300px verso il basso 
-       che usa il colore dinamico dello sfondo. Coprirà il bordo nero! */
-    box-shadow: 0 var(--unit-300) 0 0 var(--q-bg);
-  }
-
-  .question-track {
-    display: flex;
-    height: 100%;
-    width: 400vw; 
-  }
 
   .question {
     width: 100vw;
@@ -549,6 +429,7 @@
     align-items: center; /* Centratura verticale matematica all'interno dello spazio rimanente */
     flex-shrink: 0;
     box-sizing: border-box; /* Previene che il padding faccia esplodere le misure */
+    font-size:   36px;
   }
 
   /* Nuova struttura per gli H2 per garantire l'impaginazione */
@@ -558,11 +439,90 @@
     box-sizing: border-box;
   }
 
-  .question--left h2 {
-    text-align: left;
+ /* ── LAYERED PINNING: CONTENITORE E PANNELLI ── */
+  .questions-container {
+    position: relative;
+    width: 100%;
   }
 
-  .question--right h2 {
-    text-align: right;
+  .layered-panel {
+    /* L'altezza non è più qui, la calcola GSAP al millimetro! */
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh !important;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    box-sizing: border-box;
+    padding: var(--spacing-5, 24px);
+    position: relative;
+    z-index: 10;
+    margin: 0 !important; 
+    
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    will-change: transform;
   }
-</style>
+
+  .layered-panel:nth-child(1) { z-index: 1; }
+  .layered-panel:nth-child(2) { z-index: 2; }
+  .layered-panel:nth-child(3) { z-index: 3; }
+  .layered-panel:nth-child(4) { z-index: 4; }
+
+  /* Ripristiniamo il testo gigante */
+  .layered-panel h2 {
+    font-family: var(--font-display);
+    font-size: 116px;
+    font-weight: 800;
+    line-height: 100px;
+    letter-spacing: var(--ts-h2-letter-spacing, 0em);
+    margin: 0;
+    width: 100%;
+  }
+  .ghost-lime { 
+    -webkit-text-stroke-color: var(--q-fg, var(--color-content-accent));
+    -webkit-text-stroke-width: 2px;
+    color: transparent;
+  }
+
+  .ghost-black  { 
+    -webkit-text-stroke-color: var(--q-fg, var(--color-content-body-black));
+    -webkit-text-stroke-width: 2.5px;
+    color: transparent;
+  }
+
+  /* Per sicurezza su schermi piccoli */
+  @media (max-width: 600px) {
+    .layered-panel h2 {
+      font-size: 42px; 
+    }
+  }
+
+  /* ── COLORI (Sfondo e Testo) ── */
+  .panel--lime {
+    background-color: var(--color-content-accent, #bdff5d);
+    color: #0e0e0e;
+    text-align: left;
+    padding: 0;
+    padding-left: var(--spacing-11, 72px);
+  }
+  
+  .panel--lime .accent {
+    color: #0e0e0e;
+  }
+
+  .panel--dark {
+    background-color: var(--color-content-background, #0e0e0e);
+    color: var(--color-content-body, #fafafa);
+    text-align: right;
+    padding: 0;
+    padding-right: var(--spacing-11, 72px);
+  }
+  
+  .panel--dark .accent {
+    color: var(--color-content-accent, #bdff5d);
+  }
+  </style>
