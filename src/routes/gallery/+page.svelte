@@ -191,9 +191,9 @@
      + on top, − below; grouped for functional coherence. */
   .zoom {
     position: fixed;
+    align-items: center;
     left: var(--spacing-11, 72px);
-    top: calc(var(--navbar-height, 125px) + var(--spacing-5, 24px));
-
+    bottom: 132px;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-3, 12px);
