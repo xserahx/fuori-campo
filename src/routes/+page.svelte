@@ -361,25 +361,25 @@
 
     <section class="story story--left story--intro safe-area">
       <p class="lead-paragraph" use:blurText={{ delay: 60, duration: 800 }}>
-        <span class="accent">Milano Cortina 2026</span> ha coinvolto migliaia di volontari:
+        <span class="accent">Milano Cortina 2026</span> ha coinvolto migliaia di volontari
       </p>
     </section>
 
     <section class="story story--right story--numbers safe-area">
       <p use:blurText={{ delay: 65, duration: 800 }}>
-        <span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi.
+        <span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi
       </p>
     </section>
 
     <section class="story story--quote story--quote-left safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti ai margini.
+        Mentre le telecamere erano puntate sulle gare, i volontari sono rimasti <span class="accent">invisibili</span>.
       </p>
     </section>
 
     <section class="story story--quote story--quote-right safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Nella narrazione ufficiale erano spesso dati per scontati.
+        Nella narrazione ufficiale erano spesso <span class="accent">dati per scontati</span>
       </p>
     </section>
 
@@ -414,7 +414,7 @@
           <section class="question question--right question--dark safe-area">
             <h2 bind:this={q4h2}>
               <span class="accent">NE È VALSA LA PENA?</span><br />
-              <span class="ghost">LO RIFAREBBERO</span><span class="accent">?</span>
+              <span class="ghost">LO RIFAREBBERO?</span>
             </h2>
           </section>
 
