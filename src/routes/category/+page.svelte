@@ -463,7 +463,7 @@
   });
 
   onMount(() => {
-    onst saved = sessionStorage.getItem('category-pos'); // ← aggiungi da qui
+    const saved = sessionStorage.getItem('category-pos'); // ← aggiungi da qui
     if (saved !== null) {
      targetPos = Number(saved);
      animPos   = Number(saved);
