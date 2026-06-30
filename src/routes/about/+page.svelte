@@ -94,10 +94,26 @@
   let slots: Slot[]             = [];
   let textures: THREE.Texture[] = [];
 
-  let targetPos = 0;
-  let animPos   = 0;
-  let visualPos = $state(0);
-  let position  = $state(0);
+  const N = () => volunteers.length;
+  function mod(n: number, m: number) { return ((n % m) + m) % m; }
+  function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+  function smoothstep(x: number) {
+    x = Math.max(0, Math.min(1, x));
+    return x * x * (3 - 2 * x);
+  }
+
+  // ── Posizione iniziale randomica: ogni volta che il componente viene
+  //    montato, il carosello parte da un volontario diverso a caso ────
+  function randomStartIndex() {
+    return Math.floor(Math.random() * N());
+  }
+
+  const startIndex = randomStartIndex();
+
+  let targetPos = startIndex;
+  let animPos   = startIndex;
+  let visualPos = $state(startIndex);
+  let position  = $state(startIndex);
   let isMobile  = $state(false);
 
   // Hero element refs for blur-reveal animation
@@ -120,14 +136,6 @@
   const SIDE_W    = 3.7;
   const SIDE_H    = 3.7;
   const LERP_K    = 0.025;
-
-  const N = () => volunteers.length;
-  function mod(n: number, m: number) { return ((n % m) + m) % m; }
-  function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-  function smoothstep(x: number) {
-    x = Math.max(0, Math.min(1, x));
-    return x * x * (3 - 2 * x);
-  }
 
   const C_VERT = /* glsl */`
     varying vec2 vUv;
@@ -226,7 +234,7 @@
       return t;
     });
     for (let s = 0; s < N_SLOTS; s++) {
-      const initIdx = mod(s - HALF, N());
+      const initIdx = mod(startIndex + s - HALF, N());
       const cMat = new THREE.ShaderMaterial({
         uniforms: {
           uTex:   { value: textures[initIdx] },
@@ -534,10 +542,9 @@
     </h1>
 
     <p class="hero-body" bind:this={heroBodyEl}>
-      Vogliamo raccontare le Olimpiadi attraverso gli occhi di chi le ha
-      costruite restando nell'ombra. Questo progetto celebra i volontari:
-      il motore invisibile che, con dedizione silenziosa, ha permesso a Milano
-      Cortina 2026 di brillare.
+      Siamo un gruppo di studenti del Politecnico di Milano e vogliamo raccontare Milano Cortina 2026 
+      attraverso gli occhi dei suoi volontari. Questo sito raccoglie le loro foto e le loro voci, 
+      per dare finalmente un volto a chi finora ne aveva solo dato uno agli altri.
     </p>
   </section>
 
@@ -886,10 +893,10 @@
     left: 0;
     bottom: 0;
     width: 100%;
-    height: clamp(160px, 38vh, 340px);
+    height: clamp(110px, 28vh, 240px); /* identico a .curve-bottom */
     pointer-events: none;
     z-index: 4;
-  }
+}
 
   /* ── Card overlay: allineato alla card centrale ───────────────── */
   /*
