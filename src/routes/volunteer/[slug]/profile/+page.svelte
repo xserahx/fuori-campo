@@ -335,13 +335,13 @@
 
   /* ── Riga inferiore: ruolo/location (5 col) + Q&A (7 col) ───────── */
   .hero-grid {
-    display: grid;
-    grid-template-columns: 5fr 7fr;
-    column-gap: var(--spacing-6, 32px);
-    align-items: start;
-    margin-top: 32px;
-    padding: 0 var(--spacing-11, 72px);
-  }
+  display: grid;
+  grid-template-columns: 6fr 6fr;   /* era: 5fr 7fr */
+  column-gap: var(--spacing-6, 32px);
+  align-items: start;
+  margin-top: 32px;
+  padding: 0 var(--spacing-11, 72px);
+}
 
   /* ── Volunteer info (role + location) ───────────────────────────── */
   .vol-info {
