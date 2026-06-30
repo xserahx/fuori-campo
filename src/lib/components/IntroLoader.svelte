@@ -303,7 +303,6 @@
     transform: scaleX(calc(var(--p, 0) / 100));
     transform-origin: left center;
     background: linear-gradient(90deg, rgba(189, 255, 93, 0.55), #bdff5d);
-    box-shadow: 0 0 10px rgba(189, 255, 93, 0.45);
     /* keeps the fill smooth even if progress arrives in small steps */
     transition: transform 120ms linear;
   }

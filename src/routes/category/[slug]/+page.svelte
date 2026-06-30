@@ -593,7 +593,6 @@
 
   .dot.dot--active::before {
     background: var(--color-content-accent);
-    box-shadow: 0 0 10px rgba(189, 255, 93, 0.55);
   }
 
   .frecce {
@@ -623,7 +622,6 @@
 
   .arrow-circle:hover {
     background: rgba(189, 255, 93, 0.08);
-    box-shadow: 0 0 20px rgba(189, 255, 93, 0.22);
     transform: scale(1.07);
   }
 

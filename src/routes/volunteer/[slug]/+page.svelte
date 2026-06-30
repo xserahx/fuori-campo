@@ -344,7 +344,6 @@
   .close-x:hover {
     color: var(--color-content-accent, #bdff5d);
     transform: scale(1.2) rotate(8deg);
-    filter: drop-shadow(0 0 10px rgba(189, 255, 93, 0.5));
   }
 
   .close-x:active {
@@ -557,7 +556,6 @@
   .expand-btn:hover {
     transform: scale(1.05);
     background: #0e0e0e;
-    box-shadow: 0 0 24px rgba(189, 255, 93, 0.25), inset 0 0 12px rgba(189, 255, 93, 0.06);
   }
   .expand-btn:active {
     transform: scale(0.97);

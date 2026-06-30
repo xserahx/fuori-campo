@@ -165,7 +165,6 @@
   .footer-nav-link:hover {
     color: var(--color-content-accent, #bdff5d);
     opacity: 1;
-    text-shadow: var(--glow-accent, 0 0 16px rgba(189, 255, 93, 0.32));
   }
 
   .footer-nav-link--active {

@@ -1070,7 +1070,6 @@
   .scopri-btn:hover,
   .scopri-btn:focus-visible {
     background: rgba(189, 255, 93, 0.08);
-    box-shadow: 0 0 16px rgba(189, 255, 93, 0.22);
   }
 
   /* ── Vertical arrows — Figma: bottom 36, right 24, gap 24 ──────── */
