@@ -65,8 +65,10 @@
     });
   }
 
-  // Canvas layout width — scatter algorithm uses this as horizontal extent.
-  const designWidth    = 3840;
+  // Canvas layout width — scatter algorithm uses this as horizontal extent,
+  // and it doubles as the horizontal tiling period. Kept wide so the tile
+  // (and any repeated photo) only recurs after a long horizontal pan.
+  const designWidth    = 9600;
   const initialContext = readGalleryContext(page.url.searchParams);
 
   // Fresh entry (no saved position in URL) → randomise spawn so every visit

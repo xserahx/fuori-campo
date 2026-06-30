@@ -191,11 +191,16 @@ export function snapToStdFrame(wPerH: number): number {
  */
 export function buildScatterLayout(
   rawImages: GalleryImage[],
-  canvasWidth = 3840
+  canvasWidth = 9600
 ): { images: GalleryImage[]; canvasHeight: number } {
   if (rawImages.length === 0) return { images: [], canvasHeight: 1080 };
 
-  const COLS      = 12;
+  // Wide tile: the same image set is reshaped into a much wider (and
+  // correspondingly shorter) canvas than the viewport. Because the
+  // horizontal tiling period equals canvasWidth, a wide tile means the
+  // whole arrangement — and any repeated photo — only recurs after a long
+  // pan. COLS scales with the width so individual card sizes stay constant.
+  const COLS      = 30;
   const PAD       = 64;   // minimum pixel gap between any two cards
   const EDGE      = 40;   // canvas left/right margin
   const TOP_PAD   = 96;
@@ -250,7 +255,7 @@ export function buildScatterLayout(
   // Tracks which columns each photo src has already been placed in.
   // A column within MIN_COL_SEP of a previous placement of the same src
   // gets a prohibitive penalty so the masonry always keeps copies far apart.
-  const MIN_COL_SEP = 4;
+  const MIN_COL_SEP = 6;
   const srcCols = new Map<string, number[]>();
 
   // ── Placement loop ─────────────────────────────────────────────────
@@ -362,7 +367,7 @@ let _layoutCacheValue: ReturnType<typeof buildScatterLayout> | null = null;
 
 export function buildScatterLayoutCached(
   rawImages: GalleryImage[],
-  canvasWidth = 3840
+  canvasWidth = 9600
 ): ReturnType<typeof buildScatterLayout> {
   if (_layoutCacheKey === rawImages && _layoutCacheValue !== null) return _layoutCacheValue;
   _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages, 12), canvasWidth);

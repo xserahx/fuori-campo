@@ -4,20 +4,18 @@
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import BackButton from '$lib/components/buttons/BackButton.svelte';
   import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, ruoloToTag, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
-  /* ── Fixed positions for the blurred background photos ──────── */
+  /* ── Fixed positions for the blurred background photos ──────────
+     A spaced, non-overlapping perimeter layout: three down each side
+     plus a top- and bottom-centre accent. Every tile is the same fixed
+     box (width + aspect-ratio set in CSS), so the regions never touch.   */
   const BG_POS = [
-    'left:3%;top:5%;width:24%;',
-    'right:2%;top:3%;width:20%;',
-    'left:58%;top:35%;width:22%;',
-    'left:2%;bottom:4%;width:28%;',
-    'right:2%;bottom:6%;width:22%;',
-    'left:30%;top:8%;width:18%;',
-    'left:42%;bottom:10%;width:20%;',
-    'left:18%;top:45%;width:16%;',
+    'left:2%;top:5%;',    'left:84%;top:3%;',
+    'left:1%;top:40%;',   'left:85%;top:39%;',
+    'left:3%;top:75%;',   'left:83%;top:73%;',
+    'left:43%;top:2%;',   'left:44%;top:79%;',
   ];
 
   /* ── Page data ────────────────────────────────────────────────── */
@@ -164,11 +162,6 @@
     onclick={goBackToGallery}
   ></button>
 
-  <!-- ── Back button (top-left) ──────────────────────────────────── -->
-  <div class="back-btn-wrapper">
-    <BackButton href={buildGalleryHref(currentContext)} />
-  </div>
-
   <!-- ── Close × button (top-right, per Figma) ───────────────────── -->
   <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
@@ -276,8 +269,17 @@
 
   .bg-photo {
     position: absolute;
-    opacity: 0.5;
+    /* Fixed, identical box for every tile → the spaced positions in BG_POS
+       can never touch or overlap. */
+    width: 14%;
+    aspect-ratio: 4 / 3;
+    height: auto;
+    border-radius: 10px;
     object-fit: cover;
+    /* Subtle: low opacity + a touch of blur so each photo reads as a soft,
+       separated layer rather than a busy collage competing with the subject. */
+    opacity: 0.28;
+    filter: blur(1.5px);
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
@@ -314,14 +316,6 @@
     border: 0;
     cursor: pointer;
     padding: 0;
-  }
-
-  /* ── Back button — top-left, mirrors close-x height ───────────── */
-  .back-btn-wrapper {
-    position: fixed;
-    top: 61px;
-    left: var(--spacing-11, 72px);
-    z-index: 25;
   }
 
   /* ── Close × button — Figma: left:1614px top:173px in 1728px canvas ── */
