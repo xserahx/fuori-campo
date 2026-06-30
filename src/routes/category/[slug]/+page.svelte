@@ -382,7 +382,7 @@
   }
 
   .category-page {
-    min-height: 100dvh;
+    height: 100dvh;
     background: var(--color-background-primary);
     color: var(--color-content-body);
     overflow-x: hidden;
@@ -390,7 +390,7 @@
 
   .category-shell {
     position: relative;
-    min-height: calc(100dvh - var(--navbar-height));
+    height: calc(100dvh - var(--navbar-height));
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -449,7 +449,7 @@
   }
 
   .hero-copy {
-    margin: var(--unit-56) var(--spacing-11) 0 auto;
+    margin: var(--unit-36) var(--spacing-11) 0 auto;
     padding: 0;
     width: 1318px;
     max-width: calc(100% - var(--spacing-11) - var(--spacing-4));
@@ -474,10 +474,15 @@
   }
 
   .summary-top-wrap {
+    min-height: 160px;
     position: relative;
     width: min(780px, 100%);
     /* holds height during cross-fade so dot-frecce doesn't jump */
     display: grid;
+  }
+
+  .category-sport .summary-top-wrap {
+  min-height: 180px;
   }
 
   .summary-top-wrap > :global(*) {
@@ -611,7 +616,7 @@
       padding: 0;
       max-width: 100%;
       width: auto;
-      margin-left: 0;
+      margin-left: var(--spacing-10);
       margin-top: var(--unit-40);
       margin-right: var(--spacing-5);
       font-size: clamp(30px, 7vw, var(--unit-56));
@@ -677,6 +682,16 @@
       padding: 0;
     }
 
+    .dot-frecce {
+    justify-content: flex-start;
+    gap: var(--spacing-12); / distanza tra gruppo dots e gruppo frecce /
+    }
+
+    .dot-nav {
+    flex-wrap: wrap;
+    max-width: calc(100% - 130px); /* lascia spazio fisso per le due frecce */
+    }
+
     .title-fill,
     .title-outline {
       white-space: normal;
@@ -705,7 +720,7 @@
     }
 
     .summary-card {
-      padding: 0 0 var(--spacing-4) var(--spacing-4);
+      padding: 0 var(--spacing-4) var(--spacing-4) var(--spacing-4);
     }
 
     .summary-eyebrow {
@@ -722,8 +737,8 @@
   /* ── Touch target compensation ──────────────────────────────────── */
   @media (pointer: coarse) {
     .dot {
-      min-width:  max(var(--unit-16), calc(44px / var(--page-zoom, 1)));
-      min-height: max(var(--unit-16), calc(44px / var(--page-zoom, 1)));
+      padding: var(--spacing-0);
+      box-sizing: content-box;
     }
   }
 
