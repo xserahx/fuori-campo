@@ -203,10 +203,10 @@ export function buildScatterLayout(
   const COLS      = 30;
   const PAD       = 64;   // minimum pixel gap between any two cards
   const EDGE      = 40;   // canvas left/right margin
-  const TOP_PAD   = 96;
-  const BOT_PAD   = 144;
-  const MIN_SCALE = 0.85; // fraction of slot width
-  const MAX_SCALE = 0.9;
+  const TOP_PAD   = 10;   // kept small so the vertical tiling seam is invisible
+  const BOT_PAD   = 10;
+  const MIN_SCALE = 0.90; // fraction of slot width — kept high & tight so
+  const MAX_SCALE = 0.97; // tile widths stay close together (no tiny cards)
 
   // Deterministic hash: index → 0..1
   function h(n: number): number {
@@ -263,8 +263,9 @@ export function buildScatterLayout(
     const raw  = rawImages[i];
     const seed = i * 137 + 5381;
 
-    // Span: mostly 1-col, occasionally 2-col for visual variety
-    const span = h(seed) < 0.74 ? 1 : 2;
+    // Span: mostly 1-col, occasionally 2-col for visual variety.
+    // Kept rare so the size gap between single and double tiles stays subtle.
+    const span = h(seed) < 0.82 ? 1 : 2;
 
     // Shortest-column selection with tie-break + same-photo repulsion.
     // Any column within MIN_COL_SEP of a previous placement of this src
@@ -287,14 +288,18 @@ export function buildScatterLayout(
     const scale      = MIN_SCALE + h(seed + 1) * (MAX_SCALE - MIN_SCALE);
     const slotW      = colW * span + PAD * (span - 1);
     const imgW       = slotW * scale;
-    const frameRatio = snapToStdFrame(raw.width / raw.height);
-    const imgH       = imgW / frameRatio;
+    // Reserve a consistent, moderate box per tile (height = width × one of a
+    // few close aspect ratios). The rendered <img> uses object-fit:cover at
+    // this exact box, so there is NO runtime height correction — which means
+    // no shrunk frames and therefore no empty vertical gaps between cards.
+    const TILE_ARS   = [0.92, 1.06, 1.18, 1.0, 1.28];
+    const imgH       = imgW * TILE_ARS[Math.floor(h(seed + 4) * TILE_ARS.length)];
     const laneBot = Math.max(...colBots.slice(bestCol, bestCol + span));
 
     // Horizontal jitter within available whitespace, vertical stagger
     const maxJX = Math.max(0, (slotW - imgW) * 0.5 - 2);
     const jx    = (h(seed + 2) - 0.5) * 2 * maxJX;
-    const jy    = h(seed + 3) * 44;
+    const jy    = h(seed + 3) * 18; // small vertical stagger — large values open gaps
 
     const baseL = EDGE + bestCol * (colW + PAD) + (slotW - imgW) / 2 + jx;
     const baseT = laneBot + jy;
@@ -329,8 +334,35 @@ export function buildScatterLayout(
       if (newBot > colBots[c]) colBots[c] = newBot;
   }
 
-  const maxBot = placed.reduce((m, img) => Math.max(m, img.top + img.height), 0);
-  return { images: placed, canvasHeight: Math.max(1080, maxBot + BOT_PAD) };
+  // ── Seamless vertical tiling ────────────────────────────────────────
+  // Free masonry leaves ragged column bottoms; tiled vertically that becomes a
+  // large empty band at the y-seam. Fill every column down to a common baseline
+  // (reused photos + one exact-fit filler) so all columns end on the same line.
+  // The only gap across the seam is then TOP_PAD, so no empty band appears.
+  const ARS = [0.92, 1.06, 1.18, 1.0, 1.28];
+  const baseline = Math.max(...colBots) + 200;
+  for (let c = 0; c < COLS; c++) {
+    let guard = 0;
+    while (baseline - colBots[c] > 340 && guard++ < 80) {
+      const raw = rawImages[(c * 131 + guard * 17) % rawImages.length];
+      const iw  = colW * (MIN_SCALE + h(c * 91 + guard * 7) * (MAX_SCALE - MIN_SCALE));
+      const ih  = iw * ARS[Math.floor(h(c * 53 + guard) * ARS.length)];
+      placed.push({ ...raw, left: EDGE + c * (colW + PAD) + (colW - iw) / 2, top: colBots[c], width: iw, height: ih });
+      colBots[c] += ih + PAD;
+    }
+    // Cap the column with one exact-fit filler so it ends precisely on baseline.
+    // Skip tiny remainders (they just become part of the negligible seam gap)
+    // so a filler is never an undersized sliver.
+    const fh = baseline - colBots[c];
+    if (fh > 150) {
+      const raw = rawImages[(c * 199 + 7) % rawImages.length];
+      const iw  = colW * 0.93;
+      placed.push({ ...raw, left: EDGE + c * (colW + PAD) + (colW - iw) / 2, top: colBots[c], width: iw, height: fh });
+      colBots[c] = baseline;
+    }
+  }
+
+  return { images: placed, canvasHeight: Math.max(1080, baseline + TOP_PAD) };
 }
 
 export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {

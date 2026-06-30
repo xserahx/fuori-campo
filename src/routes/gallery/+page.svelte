@@ -25,7 +25,9 @@
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 
-    fetchAllVolunteers().then(vols => { dbVolunteers = vols; });
+    // Cached data is already the full bundled set; only swap if a different
+    // reference comes back, so the layout never recomputes/reshuffles on entry.
+    fetchAllVolunteers().then(vols => { if (vols !== dbVolunteers) dbVolunteers = vols; });
 
     const t = setTimeout(() => { delete document.documentElement.dataset.galleryEntry; }, 1200);
     return () => {
@@ -51,10 +53,13 @@
   // ── Gallery zoom ──────────────────────────────────────────────────
   // MIN: ~2× more photos on screen, still comfortably readable.
   // MAX: pleasantly enlarged before the optimized images soften.
-  const MIN_ZOOM  = 0.5;
-  const MAX_ZOOM  = 1.8;
-  const ZOOM_STEP = 1.25;
-  let zoom = $state(1);
+  const MIN_ZOOM     = 0.5;
+  const MAX_ZOOM     = 1.8;
+  const ZOOM_STEP    = 1.25;
+  // Open in a neutral, slightly-out overview so several photos are visible at
+  // once and the gallery never feels pre-zoomed-in on arrival.
+  const INITIAL_ZOOM = 0.72;
+  let zoom = $state(INITIAL_ZOOM);
 
   const canZoomIn  = $derived(zoom < MAX_ZOOM - 0.001);
   const canZoomOut = $derived(zoom > MIN_ZOOM + 0.001);
@@ -63,8 +68,8 @@
   const zoomIn  = () => { zoom = clampZoom(zoom * ZOOM_STEP); };
   const zoomOut = () => { zoom = clampZoom(zoom / ZOOM_STEP); };
 
-  // Reset to neutral whenever the photo collage isn't the active view.
-  $effect(() => { if (activeToggle !== 'photos') zoom = 1; });
+  // Reset to the overview level whenever the photo collage isn't the active view.
+  $effect(() => { if (activeToggle !== 'photos') zoom = INITIAL_ZOOM; });
 
 </script>
 

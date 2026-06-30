@@ -3,7 +3,7 @@
   import { page } from '$app/state';
   import { goto, preloadData } from '$app/navigation';
   import gsap from 'gsap';
-  import { buildScatterLayoutCached, snapToStdFrame, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildScatterLayoutCached, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
@@ -16,18 +16,9 @@
   let collageRef: HTMLDivElement;
   let innerRef: HTMLDivElement;
 
-  // Correction heights keyed by image src — stable across tile copies.
-  // Only shrinks frames (never grows), fixing portrait images in landscape slots.
-  let corrections = $state<Record<string, number>>({});
-
-  function handleImageLoad(e: Event, img: GalleryImage) {
-    const el = e.currentTarget as HTMLImageElement;
-    if (!el.naturalWidth || !el.naturalHeight) return;
-    const frameRatio = snapToStdFrame(el.naturalWidth / el.naturalHeight);
-    const correctH   = img.width / frameRatio;
-    if (correctH >= img.height - 0.5) return; // never grow
-    corrections[img.src] = correctH;
-  }
+  // Tiles use the exact box reserved by the scatter layout (object-fit:cover
+  // crops the image to fit), so no per-image height correction is needed —
+  // which keeps the masonry gap-free with no shrunk frames.
 
   // ── 3D card tilt (pure GSAP — zero Svelte re-renders at 60 fps) ───
   const TILT_MAX  = 14;
@@ -100,9 +91,11 @@
   // each frame (same loop as the pan), keeping pan + zoom on one transform.
   // `zoomWindow` mirrors the scale at ~10 Hz so the virtual-cull derived
   // recomputes without diffing on every frame.
-  let currentScale = 1;
-  let targetScale  = 1;
-  let zoomWindow   = $state(1);
+  // Seed from the incoming zoom so the gallery opens at its medium overview
+  // level immediately — no zoom-out animation on entry.
+  let currentScale = zoom;
+  let targetScale  = zoom;
+  let zoomWindow   = $state(zoom);
   const SCALE_LERP = 0.14;
   const prefersReduced =
     typeof window !== 'undefined' &&
@@ -158,10 +151,12 @@
       targetX  *= r; targetY  *= r;
     }
 
+    // NB: transformOrigin is set ONCE in onMount, never here. Passing it every
+    // frame makes GSAP re-run its origin compensation, which fights the x/y we
+    // write and makes the gallery tremble while scaling.
     if (innerRef) gsap.set(innerRef, {
       x: currentX, y: currentY,
       scale: currentScale,
-      transformOrigin: '50% 50%', // canvas centre = viewport centre → zoom stays centred
       force3D: true,
     });
 
@@ -311,7 +306,15 @@
       targetX  = rx; targetY  = ry;
       windowX  = rx; windowY  = ry;
     }
-    if (innerRef) gsap.set(innerRef, { x: currentX, y: currentY, force3D: true });
+    // Set the transform origin to the element centre ONCE here (it equals the
+    // viewport centre at translate 0). The per-frame loop only updates x/y/scale,
+    // so GSAP never re-compensates the origin → rock-steady zoom.
+    if (innerRef) gsap.set(innerRef, {
+      x: currentX, y: currentY,
+      scale: currentScale,
+      transformOrigin: '50% 50%',
+      force3D: true,
+    });
     animate();
     window.addEventListener('resize', updateScale);
     window.addEventListener('pointerup', pointerUp);
@@ -332,14 +335,13 @@
     style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth/2}px);top:calc(50vh - {designHeight/2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
   >
     {#each visibleImages as img (`${Math.round(img.left)}|${Math.round(img.top)}`)}
-      {@const h = corrections[img.src] ?? img.height}
       {@const isUnmatched = !!(activeFilter && !(img.tags?.includes(activeFilter)))}
       <button
         class="collage-item"
         class:img-unmatched={isUnmatched}
         class:img-no-click={img.noClick}
         type="button"
-        style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{h}px;"
+        style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
         onpointerdown={(e) => e.stopPropagation()}
         onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
         onclick={() => { if (!img.noClick) openVolunteer(img); }}
@@ -347,7 +349,7 @@
         onmouseleave={onTiltLeave}
       >
         <div class="img-bw-layer">
-          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" onload={(e) => handleImageLoad(e, img)} />
+          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
         </div>
         <div class="img-color-layer">
           <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" draggable="false" />
