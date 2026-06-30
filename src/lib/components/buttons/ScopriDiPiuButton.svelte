@@ -66,7 +66,7 @@
         
         border: var(--stroke-1) solid var(--color-content-accent);
         border-radius: var(--radius-rounded-pill);
-        background: transparent;
+        background: var(--color-background-primary);
         
         /* Il colore base del testo è bianco, ereditato da ButtonLabel */
         color: var(--color-content-body); 

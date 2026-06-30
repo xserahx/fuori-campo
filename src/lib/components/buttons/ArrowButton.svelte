@@ -77,7 +77,7 @@
         padding: var(--spacing-4);
         border: var(--stroke-1) solid var(--color-content-accent);
         border-radius: var(--radius-rounded-pill);
-        background: transparent;
+        background: var(--color-background-primary);
         color: inherit;
         text-decoration: none;
         cursor: pointer;
