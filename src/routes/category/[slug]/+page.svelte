@@ -1,11 +1,9 @@
 <script lang="ts">
   import { page } from '$app/state';
-  import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
+  import BackButton from '$lib/components/buttons/BackButton.svelte';
   import '$lib/styles/tokens.css';
-
-  const BACK_ICON = 'https://www.figma.com/api/mcp/asset/b6c50607-8d2b-4867-bea0-12bc527e0378';
 
   type CategoryInfo = {
     label: string;
@@ -312,10 +310,9 @@
 {#if cat}
   <main class="category-page" id="main-content" class:category-sport={cat?.slug === 'sport'}>
     <div class="category-shell">
-      <button class="back-button" type="button" aria-label="Indietro" onclick={() => goto('/category')}>
-        <img class="back-icon" src={BACK_ICON} alt="" width="18" height="10" draggable="false" />
-        <span class="back-label">INDIETRO</span>
-      </button>
+      <div class="back-btn-wrapper">
+        <BackButton href="/category" ariaLabel="Indietro" />
+      </div>
 
       <section class="hero" aria-labelledby="category-title">
         <div class="hero-title" id="category-title">
@@ -406,39 +403,9 @@
     flex-direction: column;
   }
 
-  .back-button {
-    width: 168px;
-    height: var(--unit-48);
+  .back-btn-wrapper {
     margin-left: var(--spacing-11);
     margin-top: var(--spacing-5);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-3);
-    padding: var(--unit-12) var(--unit-20);
-    border: var(--stroke-1) solid var(--color-content-accent);
-    border-radius: var(--unit-999);
-    background: transparent;
-    color: var(--color-content-body);
-    font-family: var(--font-display);
-    font-size: var(--unit-24);
-    font-weight: 500;
-    line-height: 26px;
-    cursor: pointer;
-  }
-
-  .back-icon {
-    width: 18px;
-    height: 10px;
-    display: block;
-    flex: 0 0 auto;
-  }
-
-  .back-label {
-    display: block;
-    width: 98px;
-    text-align: left;
-    line-height: 26px;
   }
 
   .hero {
@@ -737,7 +704,7 @@
   }
 
   @media (max-width: 700px) {
-    .back-button {
+    .back-btn-wrapper {
       margin-left: var(--spacing-5);
       margin-top: var(--spacing-5);
     }
@@ -808,13 +775,9 @@
       min-width:  max(60px, calc(44px / var(--page-zoom, 1)));
       min-height: max(60px, calc(44px / var(--page-zoom, 1)));
     }
-    .back-button {
-      min-height: max(var(--unit-48), calc(44px / var(--page-zoom, 1)));
-    }
   }
 
   /* ── Focus visible ──────────────────────────────────────────────── */
-  .back-button:focus-visible,
   .arrow-circle:focus-visible {
     outline: var(--stroke-1) solid var(--color-content-accent);
     outline-offset: 3px;
