@@ -432,7 +432,7 @@
     e.preventDefault();           // keep the page pinned, no rubber-banding
     if (wheelLocked) return;
 
-    wheelAccum += e.deltaY;
+    wheelAccum += e.deltaX;
 
     // Drop the accumulator if the user pauses between gestures.
     clearTimeout(wheelIdleTimer);
