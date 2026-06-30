@@ -311,7 +311,7 @@
   <main class="category-page" id="main-content" class:category-sport={cat?.slug === 'sport'}>
     <div class="category-shell">
       <div class="back-btn-wrapper">
-        <BackButton href="/category" ariaLabel="Indietro" />
+        <BackButton onclick={() => history.back()} ariaLabel="Indietro" />
       </div>
 
       <section class="hero" aria-labelledby="category-title">
