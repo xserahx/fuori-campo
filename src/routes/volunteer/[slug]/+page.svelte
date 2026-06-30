@@ -6,6 +6,7 @@
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, ruoloToTag, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
+  import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
 
   /* ── Fixed positions for the blurred background photos ──────────
      A spaced, non-overlapping perimeter layout: three down each side
@@ -210,17 +211,16 @@
     </div>
 
     <!-- "SCOPRI DI PIÙ" → navigate to full profile page -->
-    <button
-      class="expand-btn"
-      type="button"
-      aria-label="Apri profilo completo"
-      onclick={() => {
-        const search = buildGallerySearchParams(currentContext);
-        goto(search ? `/volunteer/${currentSlug}/profile?${search}` : `/volunteer/${currentSlug}/profile`);
-      }}
-    >
-      <span class="expand-btn-label">SCOPRI DI PIÙ</span>
-    </button>
+    <!-- Contenitore che eredita solo la posizione del vecchio bottone -->
+    <div class="expand-btn-container">
+      <ScopriDiPiuButton
+        onclick={() => {
+          const search = buildGallerySearchParams(currentContext);
+          goto(search ? `/volunteer/${currentSlug}/profile?${search}` : `/volunteer/${currentSlug}/profile`);
+        }}
+      />
+    </div>
+
   </div>
 
 </main>
@@ -455,7 +455,7 @@
   .photo-frame--9-16 { width: min(588px,  34vw, calc(var(--avail-h) * 9  / 16)); aspect-ratio: 9 / 16; }
 
   /* Portrait button moves to top-right (avoids caption overlap) */
-  .photo-frame--portrait .expand-btn { bottom: auto; top: 18px; }
+  .photo-frame--portrait .expand-btn-container { bottom: auto; top: 18px; }
 
   /* ── Image: cover fills the frame — no black bars ───────────── */
   .photo-img {
@@ -532,55 +532,19 @@
   }
 
   /* ── "SCOPRI DI PIÙ" pill button ───────────────────────────────── */
-  .expand-btn {
+  /* ── POSIZIONAMENTO DEL BOTTONE ── */
+  .expand-btn-container {
     position: absolute;
-    bottom: 18px;   /* landscape: bottom-right */
-    right: 18px;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 20px;
-    border-radius: 999px;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    background: #0e0e0e;
-    cursor: pointer;
-    overflow: hidden;
-    transition:
-      transform    0.36s cubic-bezier(0.22, 1, 0.36, 1),
-      background   0.36s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow   0.36s cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
+    top: var(--spacing-4-2);   /* Mantiene la posizione esatta in basso a destra */
+    right: var(--spacing-4-2);    /* */
+    z-index: 3;     /* Resta sopra la didascalia[cite: 4] */
   }
 
-  .expand-btn:hover {
-    transform: scale(1.05);
-    background: #0e0e0e;
-  }
-  .expand-btn:active {
-    transform: scale(0.97);
-    transition-duration: 80ms;
-  }
-
-  .expand-btn-label {
-    font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: 500;
-    line-height: 26px;
-    width: 141px;
-    text-align: center;
-    color: #fafafa;
-    white-space: nowrap;
-    pointer-events: none;
-    user-select: none;
-    transition: filter 0.28s ease, color 0.28s ease;
-  }
-
-  /* Hover: text blooms with blur */
-  .expand-btn:hover .expand-btn-label {
-    filter: blur(4px);
-    color: var(--color-content-accent, #bdff5d);
-  }
+  /* Se il frame è verticale (portrait), sposta il contenitore in alto a destra[cite: 4]
+  .photo-frame--portrait .expand-btn-container { 
+    bottom: auto; 
+    top: 18px; 
+  }  */
 
   /* ── Responsive ─────────────────────────────────────────────────────
      Only the per-breakpoint knobs change: the width cap (Figma-max),
@@ -626,7 +590,7 @@
     }
     .arrow::after,
     .close-x::after,
-    .expand-btn::after {
+    .expand-btn-container::after {
       content: '';
       position: absolute;
       top: 50%;
@@ -639,7 +603,7 @@
       min-width:  max(44px, calc(44px / var(--page-zoom, 1)));
       min-height: max(44px, calc(44px / var(--page-zoom, 1)));
     }
-    .expand-btn::after {
+    .expand-btn-container::after {
       min-width:  100%;
       min-height: max(48px, calc(44px / var(--page-zoom, 1)));
     }
