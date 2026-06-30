@@ -10,6 +10,8 @@
   import { fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
   import FiltraPerCategoriaFilter from '$lib/components/filters/FiltraPerCategoriaFilter.svelte';
   import ToggleFotoNomi from '$lib/components/buttons/ToggleFotoNomi.svelte';
+  import ZoomInButton from '$lib/components/buttons/Zoom+Button.svelte';
+  import ZoomOutButton from '$lib/components/buttons/Zoom-Button.svelte';
 
   // Pre-seed from cache so returning users see photos instantly (no loading flash).
   let dbVolunteers = $state<VolunteerSummary[]>(getCachedVolunteers());
@@ -45,7 +47,25 @@
     window.addEventListener('resize', check, { passive: true });
     return () => window.removeEventListener('resize', check);
   });
-  
+
+  // ── Gallery zoom ──────────────────────────────────────────────────
+  // MIN: ~2× more photos on screen, still comfortably readable.
+  // MAX: pleasantly enlarged before the optimized images soften.
+  const MIN_ZOOM  = 0.5;
+  const MAX_ZOOM  = 1.8;
+  const ZOOM_STEP = 1.25;
+  let zoom = $state(1);
+
+  const canZoomIn  = $derived(zoom < MAX_ZOOM - 0.001);
+  const canZoomOut = $derived(zoom > MIN_ZOOM + 0.001);
+
+  const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+  const zoomIn  = () => { zoom = clampZoom(zoom * ZOOM_STEP); };
+  const zoomOut = () => { zoom = clampZoom(zoom / ZOOM_STEP); };
+
+  // Reset to neutral whenever the photo collage isn't the active view.
+  $effect(() => { if (activeToggle !== 'photos') zoom = 1; });
+
 </script>
 
 <svelte:head>
@@ -58,6 +78,13 @@
   <ToggleFotoNomi bind:view={activeToggle} />
 </section>
 
+{#if activeToggle === 'photos' && !isMobile}
+  <section class="zoom" aria-label="Zoom galleria">
+    <ZoomInButton  ariaLabel="Aumenta zoom" onclick={zoomIn}  disabled={!canZoomIn} />
+    <ZoomOutButton ariaLabel="Riduci zoom"  onclick={zoomOut} disabled={!canZoomOut} />
+  </section>
+{/if}
+
 <main class="gallery-page" id="main-content">
   <div class="bg-noise"></div>
 
@@ -65,7 +92,7 @@
     {#if isMobile}
       <MobilePhotosView {activeFilter} {dbVolunteers} />
     {:else}
-      <PhotosView {activeFilter} {dbVolunteers} />
+      <PhotosView {activeFilter} {dbVolunteers} {zoom} />
     {/if}
   {:else}
     <NamesView {activeFilter} volunteers={dbVolunteers} />
@@ -145,12 +172,29 @@
   /* ── FOTO / NOMI toggle ─────────────────────────────────────────── */
   .toggle {
     position: fixed;
-    
+
     left: var(--spacing-11, 72px);
     bottom: var(--unit-48, 48px);
-    
-    z-index: 999; 
-    pointer-events: auto; 
+
+    z-index: 999;
+    pointer-events: auto;
+  }
+
+  /* ── Zoom controls (desktop, photos view only) ──────────────────────
+     Anchored top-left under the logo: left edge aligns with the logo
+     (navbar inline padding = --spacing-11), top clears the navbar.
+     + on top, − below; grouped for functional coherence. */
+  .zoom {
+    position: fixed;
+    left: var(--spacing-11, 72px);
+    top: calc(var(--navbar-height, 125px) + var(--spacing-5, 24px));
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3, 12px);
+
+    z-index: 999;
+    pointer-events: auto;
   }
 
   @media (max-width: 599px) {

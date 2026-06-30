@@ -7,9 +7,10 @@
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
-  let { activeFilter = null, dbVolunteers = [] }: {
+  let { activeFilter = null, dbVolunteers = [], zoom = 1 }: {
     activeFilter?: string | null;
     dbVolunteers?: VolunteerSummary[];
+    zoom?: number;
   } = $props();
 
   let collageRef: HTMLDivElement;
@@ -92,6 +93,23 @@
   let lastWindowUpdate = 0;
   let resizeCount = $state(0);
 
+  // ── Zoom (magnification) ───────────────────────────────────────────
+  // GSAP owns the live scale; `currentScale` eases toward `targetScale`
+  // each frame (same loop as the pan), keeping pan + zoom on one transform.
+  // `zoomWindow` mirrors the scale at ~10 Hz so the virtual-cull derived
+  // recomputes without diffing on every frame.
+  let currentScale = 1;
+  let targetScale  = 1;
+  let zoomWindow   = $state(1);
+  const SCALE_LERP = 0.14;
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Sync the eased target with the prop; the rAF loop eases toward it
+  // (reduced-motion snaps in one frame) and anchors the viewport centre.
+  $effect(() => { targetScale = zoom; });
+
   const FRICTION    = 0.92;
   const LERP        = 0.1;
   const VIRT_MARGIN = 600; // px of off-screen buffer loaded ahead of viewport
@@ -127,12 +145,29 @@
     currentY += (targetY - currentY) * LERP;
     normalizeCoords();
 
-    if (innerRef) gsap.set(innerRef, { x: currentX, y: currentY, force3D: true });
+    // Ease the magnification toward the target and keep the viewport centre
+    // fixed: when the scale changes by ratio r, the pan translate must scale
+    // by r too, otherwise the content drifts off-centre while zooming.
+    const prevScale = currentScale;
+    currentScale += (targetScale - currentScale) * (prefersReduced ? 1 : SCALE_LERP);
+    if (prevScale !== 0 && currentScale !== prevScale) {
+      const r = currentScale / prevScale;
+      currentX *= r; currentY *= r;
+      targetX  *= r; targetY  *= r;
+    }
+
+    if (innerRef) gsap.set(innerRef, {
+      x: currentX, y: currentY,
+      scale: currentScale,
+      transformOrigin: '50% 50%', // canvas centre = viewport centre → zoom stays centred
+      force3D: true,
+    });
 
     const now = performance.now();
     if (now - lastWindowUpdate > 100) {
       windowX = currentX;
       windowY = currentY;
+      zoomWindow = currentScale;
       lastWindowUpdate = now;
     }
 
@@ -221,7 +256,7 @@
   // These differ — using a single square period would misplace the canvas horizontally
   // when naturalH >> designWidth (e.g. 30 000 px with the full volunteer dataset).
   const visibleImages = $derived.by((): GalleryImage[] => {
-    void windowX; void windowY; void resizeCount; void designHeight;
+    void windowX; void windowY; void zoomWindow; void resizeCount; void designHeight;
     if (typeof window === 'undefined') return positionedImages;
 
     const vw   = document.documentElement.clientWidth  || window.innerWidth;
@@ -229,16 +264,19 @@
     const M    = VIRT_MARGIN;
     const tileW = designWidth;   // horizontal repeat period
     const tileH = designHeight;  // vertical repeat period
+    const s     = zoomWindow;    // live magnification — scales canvas px → screen px
 
-    // Screen position of the base tile's top-left corner.
-    const ox = vw / 2 - tileW / 2 + windowX;
-    const oy = vh / 2 - tileH / 2 + windowY;
+    // Screen position of canvas local-x = 0 (top-left). With the centre
+    // transform-origin, screen = ox + s · localX, so all extents below are
+    // measured in scaled (screen) px.
+    const ox = vw / 2 + windowX - s * tileW / 2;
+    const oy = vh / 2 + windowY - s * tileH / 2;
 
     // Tile index ranges that may contribute visible images (with margin).
-    const txMin = Math.floor((-M - ox) / tileW);
-    const txMax = Math.ceil((vw + M - ox) / tileW);
-    const tyMin = Math.floor((-M - oy) / tileH);
-    const tyMax = Math.ceil((vh + M - oy) / tileH);
+    const txMin = Math.floor((-M - ox) / (s * tileW));
+    const txMax = Math.ceil((vw + M - ox) / (s * tileW));
+    const tyMin = Math.floor((-M - oy) / (s * tileH));
+    const tyMax = Math.ceil((vh + M - oy) / (s * tileH));
 
     const result: GalleryImage[] = [];
     for (let tx = txMin; tx <= txMax; tx++) {
@@ -246,10 +284,10 @@
         const dx = tx * tileW;
         const dy = ty * tileH;
         for (const img of positionedImages) {
-          const sx = ox + img.left + dx;
-          const sy = oy + img.top  + dy;
-          if (sx + img.width  > -M && sx < vw + M &&
-              sy + img.height > -M && sy < vh + M) {
+          const sx = ox + s * (img.left + dx);
+          const sy = oy + s * (img.top  + dy);
+          if (sx + img.width  * s > -M && sx < vw + M &&
+              sy + img.height * s > -M && sy < vh + M) {
             result.push(dx === 0 && dy === 0 ? img : { ...img, left: img.left + dx, top: img.top + dy });
           }
         }
