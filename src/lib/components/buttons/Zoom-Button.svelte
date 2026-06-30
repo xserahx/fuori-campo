@@ -34,8 +34,8 @@
 
 <style>
     .x-button {
-        width: 60px;
-        height: 60px;
+        width: var(--spacing-9);
+        height: var(--spacing-9);
         display: inline-flex;
         align-items: center;
         justify-content: center;

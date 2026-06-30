@@ -53,7 +53,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        height: 60px;
+        height: var(--spacing-9);
         border-radius: var(--radius-rounded-pill);
         box-sizing: border-box;
         cursor: pointer;
@@ -106,7 +106,7 @@
     }
 
     .filtra-button.is-x {
-        width: 60px;
+        width: var(--spacing-9);
         padding: 0;
         background-color: var(--color-content-accent);
         color: var(--color-content-body-black);
