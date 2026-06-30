@@ -7,6 +7,8 @@
   import SiteFooter from '$lib/components/SiteFooter.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
+  import VediTutteLeFoto from '$lib/components/buttons/VediTutteLeFoto.svelte';
+  import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.svelte';
   import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
@@ -53,7 +55,10 @@
   );
   const quoteText = $derived(resolvedQuote ?? 'Un’esperienza che non dimenticherò mai.');
 
-  /* ── Photos: this volunteer's own photos (DB first, Figma fallback) ── */
+  /* ── Photos: servono per sapere se mostrare il bottone
+     "VEDI TUTTE LE FOTO" e vengono passate alla galleria overlay
+     quando viene aperta. Niente più carosello inline qui — le foto
+     si vedono solo nell'overlay (PhotoGalleryOverlay). ──────────── */
   const dbPhotos    = $derived(dbVol ? getImageUrls(dbVol) : []);
   const figmaPhotos = $derived(
     imagesRaw
@@ -63,45 +68,16 @@
   const volunteerPhotos = $derived(dbPhotos.length > 0 ? dbPhotos : figmaPhotos);
   const photoCount      = $derived(volunteerPhotos.length);
 
-  /* ── Coverflow carousel — all of THIS volunteer's photos ─────────
-     Active image sits at the centre, the volunteer's other photos flank
-     it on the sides (circular). Premium feel comes from the per-slide
-     GPU transitions in the stylesheet (slide + scale + blur + fade). */
-  let activePhoto = $state(0);
-  $effect(() => { currentSlug; activePhoto = 0; });   // always start centred on photo 0
+  /* ── Stato apertura galleria foto a schermo intero (overlay) ──── */
+  let galleryOpen = $state(false);
+  function openGallery() { galleryOpen = true; }
+  function closeGallery() { galleryOpen = false; }
 
-  function stepPhoto(dir: number) {
-    if (photoCount <= 1) return;
-    activePhoto = (activePhoto + dir + photoCount) % photoCount;
-  }
-
-  /* ── Drag / swipe navigation ─────────────────────────────────── */
-  let dragStartX = $state<number | null>(null);
-  const DRAG_THRESHOLD = 50;
-
-  function onDragStart(e: PointerEvent) {
-    if (photoCount <= 1) return;
-    dragStartX = e.clientX;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
-  }
-
-  function onDragEnd(e: PointerEvent) {
-    if (dragStartX === null) return;
-    const delta = e.clientX - dragStartX;
-    dragStartX = null;
-    if (Math.abs(delta) >= DRAG_THRESHOLD) stepPhoto(delta < 0 ? 1 : -1);
-  }
-
-  /* Minimal *signed* circular distance of slide i from the active one, so the
-     previous photo wraps onto the left and the next onto the right. */
-  function slideOffset(i: number): number {
-    const n = photoCount;
-    if (n <= 1) return 0;
-    let d = (i - activePhoto) % n;
-    if (d >  n / 2) d -= n;
-    if (d < -n / 2) d += n;
-    return d;
-  }
+  // Blocca lo scroll della pagina mentre l'overlay è aperto.
+  $effect(() => {
+    if (!browser) return;
+    document.body.style.overflow = galleryOpen ? 'hidden' : '';
+  });
 
   /* ── Q&A responses ───────────────────────────────────────────── */
   const dbResponses = $derived(
@@ -141,7 +117,7 @@
   $effect(() => {
     if (!browser) return;
     document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
+    if (!galleryOpen) document.body.style.overflow = '';
     document.body.style.paddingTop = '';
   });
 </script>
@@ -154,106 +130,87 @@
 
 <main class="profile" id="main-content">
 
-  <!-- ── INDIETRO button ──────────────────────────────────────────── -->
-  <div class="back-btn-wrapper">
-    <BackButton href={buildGalleryHref(currentContext)} />
-  </div>
+  <!-- ── Hero: back button, nome, quote, ruolo/location + Q&A, bottone foto ── -->
+  <div class="hero">
 
-  <!-- ── Header: hero name (left) + quote (right) ─────────────────── -->
-  <header class="head">
-    <div class="name-hero" role="img" aria-label={volunteerTitle}>
-      {#if nameSurname}<div class="name-surname" aria-hidden="true">{nameSurname}</div>{/if}
-      <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
+    <!-- ── INDIETRO button ────────────────────────────────────────── -->
+    <div class="back-btn-wrapper">
+      <BackButton href={buildGalleryHref(currentContext)} />
     </div>
 
-    <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
-      <p class="quote-body"><span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span></p>
-    </blockquote>
-  </header>
+    <!-- ── Header: hero name (left) + quote (top-right) ─────────────── -->
+    <header class="head">
+      <div class="name-hero" role="img" aria-label={volunteerTitle}>
+        {#if nameSurname}<div class="name-surname" aria-hidden="true">{nameSurname}</div>{/if}
+        <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
+      </div>
 
-  <!-- ── Volunteer info (role + location) ─────────────────────────── -->
-  <div class="vol-info">
-    <p class="info-role">{volunteerRole}</p>
-    <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
-  </div>
+      <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
+        <p class="quote-body"><span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span></p>
+      </blockquote>
+    </header>
 
-  <!-- ── Coverflow carousel — all of this volunteer's photos.
-       Volunteers without any photo simply skip this section (Figma 6197-8306). -->
-  {#if photoCount > 0}
-    <section class="carousel" aria-label="Galleria foto">
-      {#if photoCount > 1}
-        <button class="car-arrow car-arrow--prev" type="button" aria-label="Foto precedente" onclick={() => stepPhoto(-1)}>
-          <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-            <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      {/if}
+    <!-- ── Riga inferiore: ruolo/location (sx) + Q&A a 7 colonne (dx) ── -->
+    <div class="hero-grid">
 
-      <div
-        class="car-stage"
-        class:car-stage--draggable={photoCount > 1}
-        class:car-stage--dragging={dragStartX !== null}
-        role="presentation"
-        onpointerdown={onDragStart}
-        onpointerup={onDragEnd}
-        onpointercancel={onDragEnd}
-      >
-        {#each volunteerPhotos as photoUrl, i (photoUrl + i)}
-          {@const off = slideOffset(i)}
-          <div
-            class="slide"
-            class:slide--active={off === 0}
-            class:slide--far={Math.abs(off) > 1}
-            style="--off:{off}; z-index:{20 - Math.abs(off)};"
-            aria-hidden={off !== 0}
-          >
-            <img class="slide-img" src={photoUrl} alt={off === 0 ? (volunteerTitle || 'foto volunteer') : ''} draggable="false" />
+      <!-- ── Volunteer info (role + location) ────────────────────── -->
+      <div class="vol-info">
+        <p class="info-role">{volunteerRole}</p>
+        <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
+      </div>
+
+      <!-- ── Q&A accordion ──────────────────────────────────────── -->
+      <div class="qa-wrap" role="list">
+        {#each questionTitles as q, i}
+          <div class="qa-item" role="listitem">
+            <button
+              class="qa-row"
+              class:qa-row--open={openQ === i}
+              type="button"
+              aria-expanded={openQ === i}
+              onclick={() => { openQ = openQ === i ? -1 : i; }}
+            >
+              <span class="qa-title">{q}</span>
+              <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">
+                <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+                  <path d="M26 14V38M14 26H38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </button>
+            <div class="qa-sep" class:qa-sep--open={openQ === i}>
+              {#if openQ === i}
+                <div class="qa-answer" role="region" aria-live="polite">
+                  <p>{answerFor(i)}</p>
+                </div>
+              {/if}
+            </div>
           </div>
         {/each}
       </div>
 
-      {#if photoCount > 1}
-        <button class="car-arrow car-arrow--next" type="button" aria-label="Foto successiva" onclick={() => stepPhoto(1)}>
-          <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-            <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
-      {/if}
-    </section>
-  {/if}
+    </div>
 
-  <!-- ── Q&A accordion ────────────────────────────────────────────── -->
-  <div class="qa-wrap" role="list">
-    {#each questionTitles as q, i}
-      <div class="qa-item" role="listitem">
-        <button
-          class="qa-row"
-          class:qa-row--open={openQ === i}
-          type="button"
-          aria-expanded={openQ === i}
-          onclick={() => { openQ = openQ === i ? -1 : i; }}
-        >
-          <span class="qa-title">{q}</span>
-          <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-              <path d="M26 14V38M14 26H38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-        </button>
-        <div class="qa-sep" class:qa-sep--open={openQ === i}>
-          {#if openQ === i}
-            <div class="qa-answer" role="region" aria-live="polite">
-              <p>{answerFor(i)}</p>
-            </div>
-          {/if}
-        </div>
+    <!-- ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra ────────── -->
+    {#if photoCount > 0}
+      <div class="vedi-foto-wrapper">
+        <VediTutteLeFoto onclick={openGallery} />
       </div>
-    {/each}
+    {/if}
+
   </div>
 
 </main>
 
 <SiteFooter />
+
+<!-- ── Galleria foto a schermo intero (overlay sfocato) ─────────── -->
+{#if galleryOpen && photoCount > 0}
+  <PhotoGalleryOverlay
+    photos={volunteerPhotos}
+    altBase={volunteerTitle}
+    onclose={closeGallery}
+  />
+{/if}
 
 <style>
   /* ── Global ─────────────────────────────────────────────────────── */
@@ -268,18 +225,22 @@
   }
 
   /* ── Page shell — scrolls vertically ────────────────────────────── */
-  /* width:100% (not 100vw) so a vertical scrollbar can't push content
-     sideways; min-height:100dvh tracks the dynamic mobile viewport. The
-     document itself scrolls — no overflow lock here, and none is inherited
-     now that the zoom page no longer sets a persistent :global lock. */
   .profile {
     position: relative;
     width: 100%;
     min-height: 100dvh;
-    padding: calc(var(--navbar-height, 125px) + 24px) 0 72px;
+    padding: calc(var(--navbar-height, 125px) + 24px) 0 24px;
     background: #0e0e0e;
     color: #fafafa;
     overflow-x: hidden;
+  }
+
+  /* ── Hero wrapper — contiene tutto fino al bottone "vedi foto",
+     che viene ancorato al suo bordo inferiore (padding-bottom riserva
+     lo spazio per il bottone posizionato in absolute). ─────────────── */
+  .hero {
+    position: relative;
+    padding-bottom: 160px;
   }
 
   /* ── INDIETRO button ─────────────────────────────────────────────── */
@@ -294,7 +255,7 @@
   .head {
     position: relative;
     margin-top: 28px;
-    min-height: 300px;
+    min-height: 220px;
   }
   .name-hero { pointer-events: none; }
   .name-surname,
@@ -318,9 +279,7 @@
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Quote — dynamic: marks pin to the corners of the auto-sized text
-     block, so they reflow with the quote length (no fixed height/offsets).
-     Figma 6250-4987: marks 84px outline, body 32px bold, right-aligned.  */
+  /* ── Quote ─────────────────────────────────────────────────────── */
   .vol-quote {
     position: absolute;
     right: var(--spacing-11, 72px);
@@ -330,12 +289,11 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;   /* text + closing mark hug the right edge */
+    align-items: flex-end;
     font-style: normal;
   }
   .vol-quote--dim { opacity: 0.55; }
 
-  /* Quote marks — inline spans that flow naturally with any quote length */
   .qmark {
     font-family: var(--font-display);
     font-size: calc(84px / max(var(--page-zoom, 1), 0.65));
@@ -348,15 +306,11 @@
     paint-order: stroke fill;
     user-select: none;
   }
-
-  /* Opening mark — baseline of the mark sits on the text baseline */
   .qmark:first-child {
     line-height: 0;
-    vertical-align: -0.5em;  /* visually aligns the mark with the quote text */
+    vertical-align: -0.5em;
     margin-right: calc(8px / max(var(--page-zoom, 1), 0.65));
   }
-
-  /* Closing mark — drops to its own line, right-aligned */
   .qmark:last-child {
     display: block;
     text-align: right;
@@ -379,11 +333,20 @@
     white-space: pre-wrap;
   }
 
+  /* ── Riga inferiore: ruolo/location (5 col) + Q&A (7 col) ───────── */
+  .hero-grid {
+  display: grid;
+  grid-template-columns: 6fr 6fr;   /* era: 5fr 7fr */
+  column-gap: var(--spacing-6, 32px);
+  align-items: start;
+  margin-top: 32px;
+  padding: 0 var(--spacing-11, 72px);
+}
+
   /* ── Volunteer info (role + location) ───────────────────────────── */
   .vol-info {
-    margin: 40px 0 0 74px;
-    width: 640px;
-    max-width: calc(100vw - 96px);
+    margin: 0;
+    min-width: 0;
   }
   .info-role {
     margin: 0 0 8px;
@@ -403,103 +366,23 @@
     color: #fafafa;
   }
 
-  /* ── Coverflow carousel ─────────────────────────────────────────── */
-  .carousel {
-    position: relative;
-    margin: 54px auto 0;
-    width: 100%;
-    height: min(70dvh, 760px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra dell'hero ── */
+  .vedi-foto-wrapper {
+    position:absolute;
+    left: var(--spacing-11, 72px);
+    bottom: var(--spacing-13, 72px);
   }
-
-  .car-stage {
-    position: relative;
-    z-index: 5;
-    width: 100%;
-    height: 100%;
-  }
-  .car-stage--draggable { cursor: grab; }
-  .car-stage--dragging  { cursor: grabbing; user-select: none; }
-
-  /* Each slide is positioned by its circular offset from the active photo:
-     0 = centre (sharp), ±1 = flanking (blurred, scaled down), |off|>1 hidden.
-     --drag-x shifts all slides together during a drag gesture. */
-  .slide {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform:
-      translate3d(-50%, -50%, 0)
-      translate3d(calc(var(--off) * 56%), 0, 0)
-      scale(0.74);
-    filter: blur(7px) brightness(0.62);
-    opacity: 0.5;
-    transition:
-      transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.55s ease,
-      opacity   0.55s ease;
-    will-change: transform, filter, opacity;
-  }
-  .slide--active {
-    transform: translate3d(-50%, -50%, 0) translate3d(0, 0, 0) scale(1);
-    filter: blur(0px) brightness(1);
-    opacity: 1;
-  }
-  .slide--far { opacity: 0 !important; pointer-events: none; transition: none !important; }
-
-  /* Frame matches the image's own ratio → landscape photos show fully
-     (no crop, no letterbox), portraits stay tall. */
-  .slide-img {
-    display: block;
-    max-height: min(70dvh, 760px);
-    max-width: min(46vw, 640px);
-    width: auto;
-    height: auto;
-    border-radius: 4px;
-    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
-    user-select: none;
-    -webkit-user-drag: none;
-  }
-  /* Circular lime-outline nav arrows — anchored to the carousel's own vertical
-     centre (absolute, not fixed) so they flank the photo and scroll with it
-     instead of floating over the page. Spacing-11 from the edges (Figma). */
-  .car-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 30;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--color-content-body, #fafafa);
-    cursor: pointer;
-    padding: 0;
-    transition:
-      color 0.24s ease,
-      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .car-arrow--prev { left:  var(--spacing-5, 24px); }
-  .car-arrow--next { right: var(--spacing-5, 24px); }
-  .car-arrow:hover  { color: var(--color-content-accent, #bdff5d); }
-  .car-arrow:active { transform: translateY(-50%) scale(0.94); transition-duration: 80ms; }
 
   /* ── Q&A accordion (Figma 6251-4989) ────────────────────────────── */
   .qa-wrap {
-    width: min(1059px, calc(100vw - 144px));
-    margin: 72px var(--spacing-11, 72px) 0 auto;
+    width: 100%;
+    margin: 0;
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .qa-item { display: flex; flex-direction: column; }
 
-  /* Title: 36px Forma DJR Display Medium, tracking 1.44px. WHITE by default. */
   .qa-row {
     display: flex;
     align-items: center;
@@ -509,7 +392,7 @@
     padding: 14px 0;
     border: 0;
     background: transparent;
-    color: #fafafa;              /* Color/Link/Default — white in default */
+    color: #fafafa;
     font-size: 36px;
     font-weight: 500;
     line-height: 1.0;
@@ -525,7 +408,6 @@
 
   .qa-title { flex: 1; min-width: 0; word-break: break-word; }
 
-  /* + icon → rotates to × when open. */
   .qa-icon {
     flex-shrink: 0;
     width: 40px;
@@ -540,7 +422,6 @@
   .qa-row:hover .qa-icon { opacity: 1; }
   .qa-icon--open { opacity: 1; transform: rotate(45deg); }
 
-  /* Separator: 2.417px white → lime; open = lime answer card. */
   .qa-sep {
     height: 2.417px;
     background: #fafafa;
@@ -562,8 +443,7 @@
   }
 
   /* ── Focus states ───────────────────────────────────────────────── */
-  .qa-row:focus-visible,
-  .car-arrow:focus-visible {
+  .qa-row:focus-visible {
     outline: 2px solid var(--color-content-accent);
     outline-offset: 3px;
     border-radius: 4px;
@@ -573,13 +453,12 @@
   @media (max-width: 1100px) {
     .vol-quote { right: var(--spacing-5, 24px); top: 4px; width: 300px; }
     .quote-body { font-size: clamp(14px, 2.4vw, 24px); }
-    .vol-info { margin-left: 24px; }
-    .qa-wrap { width: calc(100vw - 48px); margin: 56px 24px 0; }
+    .hero-grid {
+      grid-template-columns: 1fr;
+      row-gap: 40px;
+      padding: 0 24px;
+    }
     .qa-row { font-size: 26px; }
-    .slide-img { max-width: 60vw; }
-    .slide { transform: translate3d(-50%, -50%, 0) translate3d(calc(var(--off) * 62%), 0, 0) scale(0.7); }
-    .car-arrow--prev { left: var(--spacing-5, 24px); }
-    .car-arrow--next { right: var(--spacing-5, 24px); }
   }
 
   @media (max-width: 700px) {
@@ -596,43 +475,28 @@
       padding: 0.6em var(--spacing-5);
     }
     .quote-body { width: 100%; font-size: 18px; }
-    .vol-info { margin: 24px var(--spacing-5) 0; }
+    .hero-grid { padding: 0 var(--spacing-5, 24px); margin-top: 24px; }
     .info-role { font-size: 26px; }
-    .carousel { height: 54dvh; margin-top: 32px; }
-    .slide-img { max-width: 82vw; max-height: 54dvh; }
-    /* On phones the flanking photos would crowd the centre — show one at a time. */
-    .slide:not(.slide--active) { opacity: 0 !important; }
-    .car-arrow { width: 44px; height: 44px; }
-    .car-arrow--prev { left:  var(--spacing-5, 24px); }
-    .car-arrow--next { right: var(--spacing-5, 24px); }
-    .qa-wrap { width: calc(100vw - 2 * var(--spacing-5)); margin: 44px var(--spacing-5) 0; }
     .qa-row { font-size: 18px; letter-spacing: 1px; padding: 12px 0; }
     .qa-icon { width: 28px; height: 28px; }
     .qa-answer { padding: 20px 18px 24px; }
     .qa-answer p { font-size: 16px; }
+
+    /* Su mobile il bottone torna nel flusso normale, sotto la Q&A */
+    .hero { padding-bottom: 56px; }
+    .vedi-foto-wrapper {
+      position: static;
+      margin: 32px var(--spacing-5, 24px) 0;
+    }
   }
 
   /* ── Touch targets ──────────────────────────────────────────────── */
   @media (pointer: coarse) {
     .qa-row { min-height: max(48px, calc(44px / var(--page-zoom, 1))); }
-    .car-arrow {
-      min-width:  max(48px, calc(44px / var(--page-zoom, 1)));
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
-    }
-  }
-
-  /* ── Arrow safe-area positioning ───────────────────────────────── */
-  @media (min-width: 768px) {
-    .car-arrow--prev { left:  var(--spacing-8, 48px); }
-    .car-arrow--next { right: var(--spacing-8, 48px); }
-  }
-  @media (min-width: 1024px) {
-    .car-arrow--prev { left:  var(--spacing-11, 72px); }
-    .car-arrow--next { right: var(--spacing-11, 72px); }
   }
 
   /* ── Reduced motion ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .slide, .qa-sep, .qa-icon, .car-arrow { transition: none; }
+    .qa-sep, .qa-icon { transition: none; }
   }
 </style>
