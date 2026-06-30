@@ -478,7 +478,7 @@
 
   .title-outline {
     color: transparent;
-    -webkit-text-stroke: clamp(var(--unit-1), 0.14vw, var(--stroke-1)) var(--color-content-accent);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     margin-left: var(--spacing-17);
     margin-top: 0;
   }

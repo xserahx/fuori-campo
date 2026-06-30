@@ -130,9 +130,6 @@
     }
     .fuori,
     .campo { text-align: center; }
-    .campo {
-      -webkit-text-stroke-width: 1.5px;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

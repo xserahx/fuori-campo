@@ -315,7 +315,7 @@
   .name-firstname {
     padding-left: clamp(48px, 19vw, 340px);
     color: transparent;
-    -webkit-text-stroke: 2px var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
   }
 
   /* ── Quote — dynamic: marks pin to the corners of the auto-sized text
@@ -343,7 +343,7 @@
     font-weight: 500;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-width: var(--stroke-1);
     -webkit-text-stroke-color: #fafafa;
     paint-order: stroke fill;
     user-select: none;

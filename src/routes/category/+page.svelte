@@ -881,7 +881,7 @@
 
   .title-outline {
     color: transparent;
-    -webkit-text-stroke: clamp(1px, 0.14vw, 2px) var(--color-content-accent);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     display: block;
     white-space: nowrap;
     /* Figma: Outline row px-[spacing/17, 340px] — 340px at 1728px viewport */
@@ -1031,7 +1031,7 @@
     text-transform: uppercase;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 2px var(--color-content-accent);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     width: 352px;
     max-width: 100%;
     white-space: pre-line;

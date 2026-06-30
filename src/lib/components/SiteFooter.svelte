@@ -133,7 +133,7 @@
   .hero-outline {
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: clamp(1px, 0.12vw, 2px) var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
     padding-left: clamp(16px, calc(88px / max(var(--page-zoom, 1), 0.65)), 136px);
   }
 

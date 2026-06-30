@@ -719,7 +719,7 @@
     letter-spacing: var(--ts-scrollitelling-letter-spacing);
     text-transform: uppercase;
     color: transparent;
-    -webkit-text-stroke: clamp(2px, 0.23vw, 4px) var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
     display: block;
     white-space: nowrap;
   }
