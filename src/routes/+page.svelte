@@ -345,11 +345,11 @@
   });
 </script>
 
-<IntroLoader
+<!-- <IntroLoader
   {showIntro}
   {introExiting}
   {loaderProgress}
-/>
+/> -->
 
 <div class="site">
   <main class="landing" id="main-content">
@@ -367,7 +367,7 @@
 
     <section class="story story--right story--numbers safe-area">
       <p use:blurText={{ delay: 65, duration: 800 }}>
-        <span class="accent">18.000</span> alle Olimpiadi e <span class="accent">4.600</span> alle Paralimpiadi
+        <span class="accent">18.000</span> alle Olimpiadi <br>e <span class="accent">4.600</span> alle Paralimpiadi
       </p>
     </section>
 
