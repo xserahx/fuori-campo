@@ -459,9 +459,19 @@
   beforeNavigate(() => {
     document.body.style.overflow   = '';
     document.body.style.paddingTop = '';
+    sessionStorage.setItem('category-pos', String(targetPos));
   });
 
   onMount(() => {
+    onst saved = sessionStorage.getItem('category-pos'); // ← aggiungi da qui
+    if (saved !== null) {
+     targetPos = Number(saved);
+     animPos   = Number(saved);
+     visualPos = Number(saved);
+     position  = mod(Number(saved), N());
+     sessionStorage.removeItem('category-pos');
+    } 
+
     const checkMobile = () => { isMobile = window.innerWidth < 600; };
     checkMobile();
     window.addEventListener('resize', checkMobile);
