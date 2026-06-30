@@ -18,6 +18,8 @@
   import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/data/volunteers';
   import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
+  import ZoomPlusButton from "../lib/components/buttons/Zoom+Button.svelte";
+  import ZoomMinusButton from "../lib/components/buttons/Zoom-Button.svelte";
 
   /* ── Intro loader ─────────────────────────────────────────────────
      First visit shows the loading-page intro; returning via the logo skips it
@@ -353,6 +355,10 @@
 
 <div class="site">
   <main class="landing" id="main-content">
+  <section>
+    <ZoomPlusButton />
+    <ZoomMinusButton />
+  </section>
     <section class="hero-outer" bind:this={heroSection}>
       <div class="hero-inner">
         <BlurTitle quick={introSeen} />
