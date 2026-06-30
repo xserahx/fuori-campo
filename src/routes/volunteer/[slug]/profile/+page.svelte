@@ -229,7 +229,7 @@
     position: relative;
     width: 100%;
     min-height: 100dvh;
-    padding: calc(var(--navbar-height, 125px) + 24px) 0 72px;
+    padding: calc(var(--navbar-height, 125px) + 24px) 0 24px;
     background: #0e0e0e;
     color: #fafafa;
     overflow-x: hidden;
