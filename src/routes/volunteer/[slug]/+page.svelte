@@ -504,9 +504,10 @@
 
   .cap-location {
     margin: 0 0 10px;
-    font-size: clamp(9px, 0.64vw, 13px);
-    font-weight: 500;
-    line-height: 1.4;
+    font-size:      var(--ts-volunteer-location-size);
+    font-weight:    var(--ts-volunteer-location-weight);
+    line-height:    var(--ts-volunteer-location-line-height);
+    letter-spacing: var(--ts-volunteer-location-letter-spacing);
     color: #fafafa;
     /* allow long venue names to wrap instead of overflowing */
     white-space: normal;
