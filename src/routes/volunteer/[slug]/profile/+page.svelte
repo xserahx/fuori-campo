@@ -8,7 +8,7 @@
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
   import VediTutteLeFoto from '$lib/components/buttons/VediTutteLeFoto.svelte';
-import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.svelte';
+  import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.svelte';
   import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 
@@ -130,62 +130,73 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
 
 <main class="profile" id="main-content">
 
-  <!-- ── INDIETRO button ──────────────────────────────────────────── -->
-  <div class="back-btn-wrapper">
-    <BackButton href={buildGalleryHref(currentContext)} />
-  </div>
+  <!-- ── Hero: back button, nome, quote, ruolo/location + Q&A, bottone foto ── -->
+  <div class="hero">
 
-  <!-- ── Header: hero name (left) + quote (right) ─────────────────── -->
-  <header class="head">
-    <div class="name-hero" role="img" aria-label={volunteerTitle}>
-      {#if nameSurname}<div class="name-surname" aria-hidden="true">{nameSurname}</div>{/if}
-      <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
+    <!-- ── INDIETRO button ────────────────────────────────────────── -->
+    <div class="back-btn-wrapper">
+      <BackButton href={buildGalleryHref(currentContext)} />
     </div>
 
-    <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
-      <p class="quote-body"><span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span></p>
-    </blockquote>
-  </header>
+    <!-- ── Header: hero name (left) + quote (top-right) ─────────────── -->
+    <header class="head">
+      <div class="name-hero" role="img" aria-label={volunteerTitle}>
+        {#if nameSurname}<div class="name-surname" aria-hidden="true">{nameSurname}</div>{/if}
+        <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
+      </div>
 
-  <!-- ── Volunteer info (role + location) + VEDI TUTTE LE FOTO ────── -->
-  <div class="vol-info">
-    <p class="info-role">{volunteerRole}</p>
-    <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
+      <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
+        <p class="quote-body"><span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span></p>
+      </blockquote>
+    </header>
 
+    <!-- ── Riga inferiore: ruolo/location (sx) + Q&A a 7 colonne (dx) ── -->
+    <div class="hero-grid">
+
+      <!-- ── Volunteer info (role + location) ────────────────────── -->
+      <div class="vol-info">
+        <p class="info-role">{volunteerRole}</p>
+        <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
+      </div>
+
+      <!-- ── Q&A accordion ──────────────────────────────────────── -->
+      <div class="qa-wrap" role="list">
+        {#each questionTitles as q, i}
+          <div class="qa-item" role="listitem">
+            <button
+              class="qa-row"
+              class:qa-row--open={openQ === i}
+              type="button"
+              aria-expanded={openQ === i}
+              onclick={() => { openQ = openQ === i ? -1 : i; }}
+            >
+              <span class="qa-title">{q}</span>
+              <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">
+                <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+                  <path d="M26 14V38M14 26H38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+            </button>
+            <div class="qa-sep" class:qa-sep--open={openQ === i}>
+              {#if openQ === i}
+                <div class="qa-answer" role="region" aria-live="polite">
+                  <p>{answerFor(i)}</p>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+
+    </div>
+
+    <!-- ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra ────────── -->
     {#if photoCount > 0}
       <div class="vedi-foto-wrapper">
         <VediTutteLeFoto onclick={openGallery} />
       </div>
     {/if}
-  </div>
 
-  <!-- ── Q&A accordion ────────────────────────────────────────────── -->
-  <div class="qa-wrap" role="list">
-    {#each questionTitles as q, i}
-      <div class="qa-item" role="listitem">
-        <button
-          class="qa-row"
-          class:qa-row--open={openQ === i}
-          type="button"
-          aria-expanded={openQ === i}
-          onclick={() => { openQ = openQ === i ? -1 : i; }}
-        >
-          <span class="qa-title">{q}</span>
-          <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-              <path d="M26 14V38M14 26H38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-        </button>
-        <div class="qa-sep" class:qa-sep--open={openQ === i}>
-          {#if openQ === i}
-            <div class="qa-answer" role="region" aria-live="polite">
-              <p>{answerFor(i)}</p>
-            </div>
-          {/if}
-        </div>
-      </div>
-    {/each}
   </div>
 
 </main>
@@ -224,6 +235,14 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
     overflow-x: hidden;
   }
 
+  /* ── Hero wrapper — contiene tutto fino al bottone "vedi foto",
+     che viene ancorato al suo bordo inferiore (padding-bottom riserva
+     lo spazio per il bottone posizionato in absolute). ─────────────── */
+  .hero {
+    position: relative;
+    padding-bottom: 160px;
+  }
+
   /* ── INDIETRO button ─────────────────────────────────────────────── */
   .back-btn-wrapper {
     margin-left: var(--spacing-11, 72px);
@@ -236,7 +255,7 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
   .head {
     position: relative;
     margin-top: 28px;
-    min-height: 300px;
+    min-height: 220px;
   }
   .name-hero { pointer-events: none; }
   .name-surname,
@@ -314,11 +333,20 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
     white-space: pre-wrap;
   }
 
-  /* ── Volunteer info (role + location) + VEDI TUTTE LE FOTO ──────── */
+  /* ── Riga inferiore: ruolo/location (5 col) + Q&A (7 col) ───────── */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    column-gap: var(--spacing-6, 32px);
+    align-items: start;
+    margin-top: 32px;
+    padding: 0 var(--spacing-11, 72px);
+  }
+
+  /* ── Volunteer info (role + location) ───────────────────────────── */
   .vol-info {
-    margin: 40px 0 0 74px;
-    width: 640px;
-    max-width: calc(100vw - 96px);
+    margin: 0;
+    min-width: 0;
   }
   .info-role {
     margin: 0 0 8px;
@@ -337,16 +365,21 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
     white-space: pre-wrap;
     color: #fafafa;
   }
+
+  /* ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra dell'hero ── */
   .vedi-foto-wrapper {
-    margin-top: 40px;
+    position:absolute;
+    left: var(--spacing-11, 72px);
+    bottom: var(--spacing-13, 72px);
   }
 
   /* ── Q&A accordion (Figma 6251-4989) ────────────────────────────── */
   .qa-wrap {
-    width: min(1059px, calc(100vw - 144px));
-    margin: 72px var(--spacing-11, 72px) 0 auto;
+    width: 100%;
+    margin: 0;
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .qa-item { display: flex; flex-direction: column; }
 
@@ -420,8 +453,11 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
   @media (max-width: 1100px) {
     .vol-quote { right: var(--spacing-5, 24px); top: 4px; width: 300px; }
     .quote-body { font-size: clamp(14px, 2.4vw, 24px); }
-    .vol-info { margin-left: 24px; }
-    .qa-wrap { width: calc(100vw - 48px); margin: 56px 24px 0; }
+    .hero-grid {
+      grid-template-columns: 1fr;
+      row-gap: 40px;
+      padding: 0 24px;
+    }
     .qa-row { font-size: 26px; }
   }
 
@@ -439,14 +475,19 @@ import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.sve
       padding: 0.6em var(--spacing-5);
     }
     .quote-body { width: 100%; font-size: 18px; }
-    .vol-info { margin: 24px var(--spacing-5) 0; }
+    .hero-grid { padding: 0 var(--spacing-5, 24px); margin-top: 24px; }
     .info-role { font-size: 26px; }
-    .vedi-foto-wrapper { margin-top: 28px; }
-    .qa-wrap { width: calc(100vw - 2 * var(--spacing-5)); margin: 44px var(--spacing-5) 0; }
     .qa-row { font-size: 18px; letter-spacing: 1px; padding: 12px 0; }
     .qa-icon { width: 28px; height: 28px; }
     .qa-answer { padding: 20px 18px 24px; }
     .qa-answer p { font-size: 16px; }
+
+    /* Su mobile il bottone torna nel flusso normale, sotto la Q&A */
+    .hero { padding-bottom: 56px; }
+    .vedi-foto-wrapper {
+      position: static;
+      margin: 32px var(--spacing-5, 24px) 0;
+    }
   }
 
   /* ── Touch targets ──────────────────────────────────────────────── */
