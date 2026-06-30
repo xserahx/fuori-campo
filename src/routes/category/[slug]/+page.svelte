@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
+  import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
   import '$lib/styles/tokens.css';
 
@@ -359,16 +360,8 @@
           </div>
 
           <div class="frecce" aria-label="Navigazione sotto-ruoli">
-            <button class="arrow-circle" type="button" aria-label="Sotto-ruolo precedente" onclick={() => { activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount; }}>
-              <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-                <path d="M12 2L2 14L12 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <button class="arrow-circle" type="button" aria-label="Sotto-ruolo successivo" onclick={() => { activeRoleIndex = (activeRoleIndex + 1) % roleCount; }}>
-              <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-                <path d="M2 2L12 14L2 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
+            <ArrowButton direction="left"  ariaLabel="Sotto-ruolo precedente" onclick={() => { activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount; }} />
+            <ArrowButton direction="right" ariaLabel="Sotto-ruolo successivo" onclick={() => { activeRoleIndex = (activeRoleIndex + 1) % roleCount; }} />
           </div>
         </div>
       </section>
