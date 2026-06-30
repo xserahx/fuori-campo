@@ -561,35 +561,6 @@
     gap: var(--unit-20);
   }
 
-  .arrow-circle {
-    width: 60px;
-    height: 60px;
-    border-radius: var(--unit-999);
-    border: var(--stroke-1) solid var(--color-content-accent);
-    color: var(--color-content-accent);
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    padding: 0;
-    transition:
-      background  300ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow  300ms ease,
-      transform   280ms cubic-bezier(0.22, 1, 0.36, 1);
-    will-change: transform;
-  }
-
-  .arrow-circle:hover {
-    background: rgba(189, 255, 93, 0.08);
-    transform: scale(1.07);
-  }
-
-  .arrow-circle:active {
-    transform: scale(0.94);
-    transition-duration: 80ms;
-  }
-
   .summary-copy {
     display: flex;
     flex-direction: column;
@@ -746,16 +717,6 @@
       font-size: var(--unit-16);
       line-height: var(--unit-20);
     }
-
-    .arrow-circle {
-      width: var(--unit-40);
-      height: var(--unit-40);
-    }
-
-    .arrow-circle svg {
-      width: 10px;
-      height: var(--unit-20);
-    }
   }
 
   /* ── Touch target compensation ──────────────────────────────────── */
@@ -764,17 +725,9 @@
       min-width:  max(var(--unit-16), calc(44px / var(--page-zoom, 1)));
       min-height: max(var(--unit-16), calc(44px / var(--page-zoom, 1)));
     }
-    .arrow-circle {
-      min-width:  max(60px, calc(44px / var(--page-zoom, 1)));
-      min-height: max(60px, calc(44px / var(--page-zoom, 1)));
-    }
   }
 
   /* ── Focus visible ──────────────────────────────────────────────── */
-  .arrow-circle:focus-visible {
-    outline: var(--stroke-1) solid var(--color-content-accent);
-    outline-offset: 3px;
-  }
 
   .dot:focus-visible {
     outline: var(--stroke-1) solid var(--color-content-accent);
@@ -784,9 +737,6 @@
 
   /* ── Reduced motion ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .arrow-circle {
-      transition: none;
-    }
     .dot::before {
       transition: none;
     }
