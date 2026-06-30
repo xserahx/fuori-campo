@@ -199,7 +199,7 @@
     max-width: min(46vw, 640px);
     width: auto;
     height: auto;
-    border-radius: 4px;
+    border-radius: var(--radius-s, 4px);
     box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
     user-select: none;
     -webkit-user-drag: none;
@@ -216,7 +216,7 @@
     align-items: center;
     justify-content: center;
     border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
+    border-radius: var(--radius-l, 999px);
     background: transparent;
     color: var(--color-content-body, #fafafa);
     cursor: pointer;

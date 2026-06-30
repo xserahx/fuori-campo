@@ -380,7 +380,7 @@
   .collage-item {
     position: absolute;
     overflow: hidden;
-    border-radius: 5px;
+    border-radius: var(--radius-s, 4px);
     box-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
     /* box-shadow is animated by GSAP on hover; opacity handled here */
     transition: opacity 0.45s ease;

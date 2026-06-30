@@ -463,6 +463,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    border-radius: var(--radius-s, 4px);
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
