@@ -10,6 +10,12 @@
   import '$lib/styles/tokens.css';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
 
+
+  import '$lib/styles/reset.css';
+	import '$lib/styles/tokens.css';
+	import '$lib/styles/base.css';
+	import '$lib/styles/utilities.css';
+
   type Volunteer = {
     id: number;
     name: string;
@@ -542,9 +548,11 @@
     </h1>
 
     <p class="hero-body" bind:this={heroBodyEl}>
-      Siamo un gruppo di studenti del Politecnico di Milano e vogliamo raccontare Milano Cortina 2026 
-      attraverso gli occhi dei suoi volontari. Questo sito raccoglie le loro foto e le loro voci, 
-      per dare finalmente un volto a chi finora ne aveva solo dato uno agli altri.
+     Siamo un gruppo di studenti del Politecnico di Milano e il nostro progetto nasce con l'obiettivo 
+     di raccontare Milano Cortina 2026 attraverso lo sguardo di chi ha reso possibile i Giochi dietro 
+     le quinte: i volontari. Il sito raccoglie le loro foto e le loro testimonianze, 
+     restituendo visibilità a chi ha agito nell'ombra con dedizione e sorrisi. 
+     Uno spazio per dare valore, nome e volto a ciascuno di loro.
     </p>
   </section>
 
@@ -752,13 +760,15 @@
     padding-bottom: var(--spacing-10);
     padding-left: 182px;
     padding-right: var(--spacing-17);
-    font-family: var(--font-display);
-    font-size: var(--ts-h2-size);
-    font-weight: var(--ts-h2-weight);
-    line-height: var(--ts-h2-line-height);
-    letter-spacing: var(--ts-h2-letter-spacing);
-    color: var(--color-content-body, #fafafa);
+
+  font-family: var(--font-display);
+  font-size:   var(--ts-scrolling-size);
+  font-weight: var(--ts-scrolling-weight);
+  line-height: var(--ts-scrolling-line-height);
+  color: var(--color-content-body);
+  margin-top: var(--spacing-12);
   }
+
 
   /* ── Carousel wrapper (desktop) ──────────────────────────────── */
   .carousel {
