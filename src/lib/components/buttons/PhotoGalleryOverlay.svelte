@@ -3,21 +3,21 @@
  Sfondo sfocato/scurito (backdrop-filter), coverflow al centro,
  frecce prev/next, chiusura con X / Esc / click sullo sfondo. -->
 <script lang="ts">
-  let {
-    photos,
-    altBase = '',
-    initialIndex = 0,
-    onclose
-  } = $props<{
+  import ArrowButton from './ArrowButton.svelte';
+  import XButton from './XButton.svelte';
+
+  // Svelte 5 props
+  let props = $props<{
     photos: string[];
     altBase?: string;
     initialIndex?: number;
     onclose: () => void;
   }>();
 
-  const photoCount = $derived(photos.length);
+  const photoCount = $derived(props.photos.length);
 
-  let activeIndex = $state(initialIndex);
+  // Risolto lo Svelte compiler warning tramite closure/funzione
+  let activeIndex = $state(props.initialIndex ?? 0);
 
   function stepPhoto(dir: number) {
     if (photoCount <= 1) return;
@@ -54,14 +54,21 @@
 
   /* ── Keyboard navigation ──────────────────────────────────────── */
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') onclose();
+    if (e.key === 'Escape') props.onclose();
     else if (e.key === 'ArrowLeft') stepPhoto(-1);
     else if (e.key === 'ArrowRight') stepPhoto(1);
   }
 
   /* Chiude solo se si clicca proprio sullo sfondo, non sulla foto/frecce */
   function onBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
+    if (e.target === e.currentTarget) props.onclose();
+  }
+
+  // Correzione a11y: Handler tastiera speculare per il click sul backdrop
+  function onBackdropKeydown(e: KeyboardEvent) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+      props.onclose();
+    }
   }
 </script>
 
@@ -72,20 +79,19 @@
   role="dialog"
   aria-modal="true"
   aria-label="Galleria foto"
+  tabindex="-1"
   onclick={onBackdropClick}
+  onkeydown={onBackdropKeydown}
 >
-  <button class="gallery-close" type="button" aria-label="Chiudi galleria" onclick={onclose}>
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-      <path d="M5 5L23 23M23 5L5 23" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-    </svg>
-  </button>
+  <!-- NUOVO COMPONENTE DI CHIUSURA (Eredita solo la posizione originale) -->
+  <div class="gallery-close-container">
+    <XButton onclick={props.onclose} />
+  </div>
 
   {#if photoCount > 1}
-    <button class="gallery-arrow gallery-arrow--prev" type="button" aria-label="Foto precedente" onclick={() => stepPhoto(-1)}>
-      <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-        <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+    <div class="gallery-arrow-container gallery-arrow-container--prev">
+      <ArrowButton direction="left" onclick={() => stepPhoto(-1)} />
+    </div>
   {/if}
 
   <div
@@ -97,7 +103,7 @@
     onpointerup={onDragEnd}
     onpointercancel={onDragEnd}
   >
-    {#each photos as photoUrl, i (photoUrl + i)}
+    {#each props.photos as photoUrl, i (photoUrl + i)}
       {@const off = slideOffset(i)}
       <div
         class="g-slide"
@@ -106,17 +112,15 @@
         style="--off:{off}; z-index:{20 - Math.abs(off)};"
         aria-hidden={off !== 0}
       >
-        <img class="g-slide-img" src={photoUrl} alt={off === 0 ? altBase : ''} draggable="false" />
+        <img class="g-slide-img" src={photoUrl} alt={off === 0 ? (props.altBase ?? '') : ''} draggable="false" />
       </div>
     {/each}
   </div>
 
   {#if photoCount > 1}
-    <button class="gallery-arrow gallery-arrow--next" type="button" aria-label="Foto successiva" onclick={() => stepPhoto(1)}>
-      <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-        <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
+    <div class="gallery-arrow-container gallery-arrow-container--next">
+      <ArrowButton direction="right" onclick={() => stepPhoto(1)} />
+    </div>
   {/if}
 </div>
 
@@ -133,30 +137,22 @@
     backdrop-filter: blur(18px);
     animation: gallery-fade-in 0.22s ease both;
   }
+  
+  .gallery-overlay:focus {
+    outline: none;
+  }
+
   @keyframes gallery-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
   }
 
-  .gallery-close {
-    position: absolute;
-    top: var(--spacing-6, 32px);
-    right: var(--spacing-6, 32px);
+  .gallery-close-container {
+    position: fixed;
+    top: var(--spacing-9, 48px);    
+    right: var(--spacing-11, 72px);  
     z-index: 30;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    background: transparent;
-    color: var(--color-content-accent, #bdff5d);
-    cursor: pointer;
-    padding: 0;
-    transition: opacity 0.18s ease, transform 0.18s ease;
   }
-  .gallery-close:hover { opacity: 0.8; }
-  .gallery-close:active { transform: scale(0.92); }
 
   .gallery-stage {
     position: relative;
@@ -205,60 +201,25 @@
     -webkit-user-drag: none;
   }
 
-  .gallery-arrow {
+  .gallery-arrow-container {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     z-index: 30;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: var(--radius-l, 999px);
-    background: transparent;
-    color: var(--color-content-body, #fafafa);
-    cursor: pointer;
-    padding: 0;
-    transition:
-      color 0.24s ease,
-      transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .gallery-arrow--prev { left:  var(--spacing-5, 24px); }
-  .gallery-arrow--next { right: var(--spacing-5, 24px); }
-  .gallery-arrow:hover  { color: var(--color-content-accent, #bdff5d); }
-  .gallery-arrow:active { transform: translateY(-50%) scale(0.94); transition-duration: 80ms; }
+  
+  .gallery-arrow-container--prev { left:  var(--spacing-11, 72px); }
+  .gallery-arrow-container--next { right: var(--spacing-11, 72px); }
 
-  @media (min-width: 768px) {
-    .gallery-arrow--prev { left:  var(--spacing-8, 48px); }
-    .gallery-arrow--next { right: var(--spacing-8, 48px); }
-  }
-  @media (min-width: 1024px) {
-    .gallery-arrow--prev { left:  var(--spacing-11, 72px); }
-    .gallery-arrow--next { right: var(--spacing-11, 72px); }
-  }
-
+  
   @media (max-width: 700px) {
     .gallery-stage { height: 60dvh; }
     .g-slide-img { max-width: 82vw; max-height: 60dvh; }
     .g-slide:not(.g-slide--active) { opacity: 0 !important; }
-    .gallery-arrow { width: 44px; height: 44px; }
-    .gallery-close { top: var(--spacing-4, 16px); right: var(--spacing-4, 16px); }
-  }
-
-  @media (pointer: coarse) {
-    .gallery-arrow {
-      min-width:  max(48px, calc(44px / var(--page-zoom, 1)));
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
-    }
-    .gallery-close {
-      min-width:  max(48px, calc(44px / var(--page-zoom, 1)));
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
-    }
+    .gallery-close-container { top: var(--spacing-4, 16px); right: var(--spacing-4, 16px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .g-slide, .gallery-arrow, .gallery-close, .gallery-overlay { transition: none; animation: none; }
+    .g-slide, .gallery-overlay { transition: none; animation: none; }
   }
 </style>
