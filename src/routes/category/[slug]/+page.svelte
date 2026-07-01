@@ -756,7 +756,7 @@
     .hero-copy {
       font-size: 26px;
       line-height: 1.02;
-      margin: var(--spacing-5) var(--spacing-6) 0;
+      margin: var(--spacing-5) var(--spacing-5) 0;
       max-width: 100%;
       text-align: right;
     }
