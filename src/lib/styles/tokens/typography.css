@@ -63,19 +63,19 @@
   /* Volunteer name — gallery list  (Medium 500 · 48 px · lh 57.6 px) */
   --ts-volunteer-name-size:           48px;
   --ts-volunteer-name-weight:         500;
-  --ts-volunteer-name-line-height:    57.6px;
+  --ts-volunteer-name-line-height:    1em;
   --ts-volunteer-name-letter-spacing: 0em;
 
   /* Volunteer role  (Medium 500 · 24 px · lh 28.8 px · ls 0.96 px) */
-  --ts-volunteer-role-size:           24px;
+  --ts-volunteer-role-size:           30px;
   --ts-volunteer-role-weight:         500;
-  --ts-volunteer-role-line-height:    28.8px;
-  --ts-volunteer-role-letter-spacing: 0.96px;
+  --ts-volunteer-role-line-height:    1.5em;
+
 
   /* Volunteer location  (Medium 500 · 16 px · lh 19.2 px) */
-  --ts-volunteer-location-size:           16px;
+  --ts-volunteer-location-size:           20px;
   --ts-volunteer-location-weight:         500;
-  --ts-volunteer-location-line-height:    19.2px;
+  --ts-volunteer-location-line-height:    1;
   --ts-volunteer-location-letter-spacing: 0em;
 
   /* Accordion  (Medium 500 · 16 px · lh 19.2 px) */

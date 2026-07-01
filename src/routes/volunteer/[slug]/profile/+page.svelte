@@ -404,11 +404,12 @@
   }
   .info-location {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--ts-volunteer-location-size);
     font-weight: 500;
     line-height: 1.45;
-    letter-spacing: 1px;
+    letter-spacing: auto;
     white-space: pre-wrap;
+    max-width: 600px;
     color: var(--color-content-body);
   }
 

@@ -200,8 +200,8 @@
     <div class="photo-caption">
       <div class="caption-grad" aria-hidden="true"></div>
       <div class="caption-text">
-        <p class="cap-location">{resolvedVenue}</p>
         <p class="cap-role">{volunteerRole}</p>
+        <p class="cap-location">{resolvedVenue}</p>
         <p class="cap-name">{volunteerTitle.toUpperCase()}</p>
       </div>
     </div>
@@ -435,7 +435,8 @@
 
   .caption-text {
     position: relative;
-    padding: 0 26px 18px;
+    padding-left: var(--spacing-4-2);
+    padding-bottom: var(--spacing-4-2);
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -447,8 +448,9 @@
     font-weight:    var(--ts-volunteer-location-weight);
     line-height:    var(--ts-volunteer-location-line-height);
     letter-spacing: var(--ts-volunteer-location-letter-spacing);
-    color: #fafafa;
+    color: var(--color-content-body, #fafafa);
     /* allow long venue names to wrap instead of overflowing */
+    max-width: 400px;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -456,10 +458,10 @@
 
   .cap-role {
     margin: 0;
-    font-size: clamp(16px, 1.53vw, 28px);
-    font-weight: 500;
-    line-height: 1.1;
-    color: #fafafa;
+    font-size: var(--ts-volunteer-role-size);
+    font-weight: var(--ts-volunteer-role-weight);
+    line-height: var(--ts-volunteer-role-line-height);
+    color: var(--color-content-body, #fafafa);
   }
 
   .cap-name {
