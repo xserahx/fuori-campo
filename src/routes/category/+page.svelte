@@ -426,7 +426,7 @@
   let wheelStepTimer: ReturnType<typeof setTimeout> | undefined;
   let wheelIdleTimer: ReturnType<typeof setTimeout> | undefined;
   const WHEEL_STEP    = 30;   // delta needed to commit a step
-  const WHEEL_LOCK_MS = 480;  // min time between steps
+  const WHEEL_LOCK_MS = 1000;  // min time between steps
 
   function onWheel(e: WheelEvent) {
     e.preventDefault();           // keep the page pinned, no rubber-banding
@@ -443,7 +443,7 @@
       wheelAccum  = 0;
       wheelLocked = true;
       clearTimeout(wheelStepTimer);
-      wheelStepTimer = setTimeout(() => { wheelLocked = false; }, WHEEL_LOCK_MS);
+      wheelStepTimer = setTimeout(() => { wheelLocked = false; wheelAccum = 0; }, WHEEL_LOCK_MS);
     }
   }
 
