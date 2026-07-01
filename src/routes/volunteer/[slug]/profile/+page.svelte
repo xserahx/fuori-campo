@@ -166,10 +166,15 @@
       </div>
 
       <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
-        <p class="quote-body">
-          <span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span>
-        </p>
+        <!-- Prima virgoletta estratta e resa indipendente -->
+        <span class="qmark qmark--first" aria-hidden="true">&#8220;</span>
+        
+        <p class="quote-body">{quoteText}</p>
+        
+        <!-- Seconda virgoletta -->
+        <span class="qmark qmark--last" aria-hidden="true">&#8221;</span>
       </blockquote>
+
     </header>
 
     <!-- ── Riga inferiore: ruolo/location (sx) + Q&A a 7 colonne (dx) ── -->
@@ -339,91 +344,94 @@
     opacity: 0.55;
   }
 
+ /* ── STRUTTURA DELLE VIRGOLETTE ── */
   .qmark {
+    display: flex; /* Trasformato in flex per poter allineare il testo internamente */
+    justify-content: flex-end; /* Allinea a destra orizzontalmente */
+    width: 100%;
     font-family: var(--font-display);
-    font-size: calc(84px / max(var(--page-zoom, 1), 0.65));
+    font-size: 84px;
     font-style: normal;
     font-weight: 500;
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke-width: var(--stroke-1);
-    -webkit-text-stroke-color: #fafafa;
+    -webkit-text-stroke-color:var(--color-content-body);
     paint-order: stroke fill;
     user-select: none;
   }
 
-  .qmark:first-child {
-    line-height: 0;
-    vertical-align: -0.5em;
-    margin-right: calc(8px / max(var(--page-zoom, 1), 0.65));
+  .qmark--first {
+    height: 45px;          /* Altezza ridotta per schiacciare la virgoletta verso il basso */
+    line-height: 1;        /* Ripristina la linea di base corretta per l'allineamento */
+    margin-bottom: 0px;    /* Azzerato per incollarla al testo */
   }
 
-  .qmark:last-child {
-    display: block;
-    text-align: right;
-    line-height: 0.8;
-    margin-top: calc(4px / max(var(--page-zoom, 1), 0.65));
+  .qmark--last {
+    align-items: flex-start; /* La seconda virgoletta invece si allinea in alto, vicino al testo */
+    height: 45px;
+    line-height: 0.6;
+    margin-top: 16px;
   }
 
   .quote-body {
-    width: 393px;
     max-width: 100%;
     margin: 0;
     font-family: var(--font-display);
-    font-size: calc(32px / max(var(--page-zoom, 1), 0.65));
+    font-size: var(--ts-cat-size);
     font-style: normal;
     font-weight: 500;
-    line-height: calc(32px / max(var(--page-zoom, 1), 0.65));
-    letter-spacing: 0.96px;
-    color: #fafafa;
+    line-height: 32px;
+    color: var(--color-content-body);
     text-align: right;
     white-space: pre-wrap;
   }
+   
 
-  /* ── Riga inferiore: ruolo/location + Q&A ───────────────────────── */
+  /* ── Grid ───────────────────────────────────────────────────────── */
   .hero-grid {
     display: grid;
     grid-template-columns: 6fr 6fr;
     column-gap: var(--spacing-6, 32px);
     align-items: start;
-    margin-top: 32px;
+    margin-top: 72px;
     padding: 0 var(--spacing-11, 72px);
   }
 
-  /* ── Volunteer info (role + location) ───────────────────────────── */
+  /* ── Info ───────────────────────────────────────────────────────── */
   .vol-info {
     margin: 0;
     min-width: 0;
   }
-
   .info-role {
     margin: 0 0 8px;
     font-size: 36px;
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.0;
     letter-spacing: 1.44px;
     color: var(--color-content-accent, #bdff5d);
   }
-
   .info-location {
     margin: 0;
-    font-size: var(--ts-volunteer-location-size);
+    font-size: 16px;
     font-weight: 500;
     line-height: 1.45;
-    letter-spacing: auto;
+    letter-spacing: 1px;
     white-space: pre-wrap;
-    max-width: 600px;
-    color: #fafafa;
+    color: var(--color-content-body);
   }
 
-  /* ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra dell'hero ── */
+  /* ── FOTO WRAPPER INITIAL FIXED STATE ── */
   .vedi-foto-wrapper {
-    position: absolute;
+    position: fixed;
     left: var(--spacing-11, 72px);
-    bottom: var(--spacing-13, 72px);
+    bottom: var(--unit-48, 48px);
+    z-index: 9999 !important; /* Forza il bottone a stare sopra a qualunque pezzo del footer */
+    pointer-events: auto;
+    will-change: transform;
   }
 
-  /* ── Q&A accordion ──────────────────────────────────────────────── */
+  /* ── Q&A Accordion ──────────────────────────────────────────────── */
   .qa-wrap {
     width: 100%;
     margin: 0;
@@ -431,11 +439,7 @@
     flex-direction: column;
     min-width: 0;
   }
-
-  .qa-item {
-    display: flex;
-    flex-direction: column;
-  }
+  .qa-item { display: flex; flex-direction: column; }
 
   .qa-row {
     display: flex;
@@ -446,31 +450,21 @@
     padding: 14px 0;
     border: 0;
     background: transparent;
-    color: #fafafa;
+    color: var(--color-content-body, #fafafa);
     font-size: 36px;
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.0;
     text-transform: uppercase;
     letter-spacing: 1.44px;
     cursor: pointer;
     text-align: left;
     transition: color 0.18s ease;
   }
-
   .qa-row:hover,
-  .qa-row--open {
-    color: var(--color-content-accent, #bdff5d);
-  }
+  .qa-row--open { color: var(--color-content-accent, #bdff5d); }
+  .qa-row:hover + .qa-sep:not(.qa-sep--open) { background: var(--color-content-accent, #bdff5d); }
 
-  .qa-row:hover + .qa-sep:not(.qa-sep--open) {
-    background: var(--color-content-accent, #bdff5d);
-  }
-
-  .qa-title {
-    flex: 1;
-    min-width: 0;
-    word-break: break-word;
-  }
+  .qa-title { flex: 1; min-width: 0; word-break: break-word; }
 
   .qa-icon {
     flex-shrink: 0;
@@ -480,24 +474,11 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition:
-      opacity 0.18s ease,
-      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
-  .qa-icon svg {
-    width: 100%;
-    height: 100%;
-  }
-
-  .qa-row:hover .qa-icon {
-    opacity: 1;
-  }
-
-  .qa-icon--open {
-    opacity: 1;
-    transform: rotate(45deg);
-  }
+  .qa-icon svg { width: 100%; height: 100%; }
+  .qa-row:hover .qa-icon { opacity: 1; }
+  .qa-icon--open { opacity: 1; transform: rotate(45deg); }
 
   .qa-sep {
     height: 2.417px;
@@ -506,27 +487,21 @@
     overflow: hidden;
     transition: background 200ms ease;
   }
+  .qa-sep--open { height: auto; background: var(--color-content-accent, #bdff5d); }
 
-  .qa-sep--open {
-    height: auto;
-    background: var(--color-content-accent, #bdff5d);
-  }
-
-  .qa-answer {
-    padding: 36px 44px 40px;
-  }
-
+  .qa-answer { padding: 36px 44px 40px; }
+  
+  
   .qa-answer p {
     margin: 0;
     font-size: 24px;
     font-weight: 500;
     line-height: 1.35;
     letter-spacing: 0.96px;
-    color: #0e0e0e;
+    color: var(--color-content-body-black, #0e0e0e);
     white-space: pre-wrap;
   }
 
-  /* ── Focus states ───────────────────────────────────────────────── */
   .qa-row:focus-visible {
     outline: 2px solid var(--color-content-accent);
     outline-offset: 3px;
@@ -535,112 +510,50 @@
 
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1100px) {
-    .vol-quote {
-      right: var(--spacing-5, 24px);
-      top: 4px;
-      width: 300px;
-    }
-
-    .quote-body {
-      font-size: clamp(14px, 2.4vw, 24px);
-    }
-
+    .vol-quote { right: var(--spacing-5, 24px); top: 4px; width: 300px; }
+    .quote-body { font-size: var(--ts-cat-size); }
     .hero-grid {
       grid-template-columns: 1fr;
       row-gap: 40px;
       padding: 0 24px;
     }
-
-    .qa-row {
-      font-size: 26px;
-    }
+    .qa-row { font-size: 26px; }
+    .vedi-foto-wrapper { left: var(--spacing-5, 24px); }
   }
 
   @media (max-width: 700px) {
-    .profile {
-      padding-top: calc(var(--navbar-height, 125px) + 8px);
-    }
-
-    .name-surname {
-      padding-left: var(--spacing-5);
-      font-size: clamp(44px, 13vw, 80px);
-    }
-
-    .name-firstname {
-      padding-left: 40px;
-      font-size: clamp(44px, 13vw, 80px);
-    }
-
-    .head {
-      min-height: 0;
-    }
-
+    .profile { padding-top: calc(var(--navbar-height, 125px) + 8px); }
+    .name-surname  { padding-left: var(--spacing-5); font-size: clamp(44px, 13vw, 80px); }
+    .name-firstname { padding-left: 40px; font-size: clamp(44px, 13vw, 80px); }
+    .head { min-height: 0; }
     .vol-quote {
       position: relative;
-      right: auto;
-      top: auto;
+      right: auto; top: auto;
       width: 100%;
       max-width: 100%;
       margin: 24px 0 0;
       padding: 0.6em var(--spacing-5);
     }
+    .quote-body { width: 100%; font-size: 18px; }
+    .hero-grid { padding: 0 var(--spacing-5, 24px); margin-top: 24px; }
+    .info-role { font-size: 26px; }
+    .qa-row { font-size: 18px; letter-spacing: 1px; padding: 12px 0; }
+    .qa-icon { width: 28px; height: 28px; }
+    .qa-answer { padding: 20px 18px 24px; }
+    .qa-answer p { font-size: 16px; }
 
-    .quote-body {
-      width: 100%;
-      font-size: 18px;
-    }
-
-    .hero-grid {
-      padding: 0 var(--spacing-5, 24px);
-      margin-top: 24px;
-    }
-
-    .info-role {
-      font-size: 26px;
-    }
-
-    .qa-row {
-      font-size: 18px;
-      letter-spacing: 1px;
-      padding: 12px 0;
-    }
-
-    .qa-icon {
-      width: 28px;
-      height: 28px;
-    }
-
-    .qa-answer {
-      padding: 20px 18px 24px;
-    }
-
-    .qa-answer p {
-      font-size: 16px;
-    }
-
-    /* Su mobile il bottone torna nel flusso normale, sotto la Q&A */
-    .hero {
-      padding-bottom: 56px;
-    }
-
+    .hero { padding-bottom: 56px; }
     .vedi-foto-wrapper {
-      position: static;
+      position: static !important;
       margin: 32px var(--spacing-5, 24px) 0;
     }
   }
 
-  /* ── Touch targets ──────────────────────────────────────────────── */
   @media (pointer: coarse) {
-    .qa-row {
-      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
-    }
+    .qa-row { min-height: max(48px, calc(44px / var(--page-zoom, 1))); }
   }
 
-  /* ── Reduced motion ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .qa-sep,
-    .qa-icon {
-      transition: none;
-    }
+    .qa-sep, .qa-icon { transition: none; }
   }
 </style>

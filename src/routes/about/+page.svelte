@@ -761,12 +761,12 @@
     padding-left: 182px;
     padding-right: var(--spacing-17);
 
-  font-family: var(--font-display);
-  font-size:   var(--ts-scrolling-size);
-  font-weight: var(--ts-scrolling-weight);
-  line-height: var(--ts-scrolling-line-height);
-  color: var(--color-content-body);
-  margin-top: var(--spacing-12);
+    font-family: var(--font-display);
+    font-size:   var(--ts-scrolling-size);
+    font-weight: var(--ts-scrolling-weight);
+    line-height: var(--ts-scrolling-line-height);
+    color: var(--color-content-body);
+    margin-top: var(--spacing-12);
   }
 
 
