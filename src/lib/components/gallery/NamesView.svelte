@@ -327,25 +327,27 @@
     right: var(--spacing-11, 72px);
     top: var(--navbar-height, 125px);
     z-index: 35;
-    
+
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: 16px; /* Gap fisso per desktop */
-    
-    /* Previene che su schermi bassi esca dalla pagina, abilitando lo scroll interno */
-    max-height: calc(100dvh - var(--navbar-height, 125px) - var(--spacing-10, 64px));
-    overflow-y: auto;
-    scrollbar-width: none;
-    
+    /* Distribute the letters across the full available height so the whole
+       A–Z list is always visible — never scrolled out of view / cut off. */
+    justify-content: space-between;
+    gap: 0;
+
+    /* Definite height = the vertical space between navbar and bottom margin.
+       Both the box and the letter size derive from this, so they scale
+       together and the full alphabet always fits at any viewport height.
+       The bottom reserve clears the "Filtra per categoria" button (≈108px:
+       spacing-8 padding + spacing-9 button height) so the last letters (V/Z)
+       are never covered by it. */
+    height: calc(100dvh - var(--navbar-height, 125px) - (var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-7, 40px)));
+    overflow: hidden;
+
     padding: 0;
     margin: 0;
     pointer-events: auto;
-  }
-
-  .alpha-sidebar::-webkit-scrollbar {
-    display: none;
   }
 
   .alpha-sidebar__btn {
@@ -354,11 +356,15 @@
     padding: 0;
     cursor: pointer;
     flex-shrink: 0;
-    height:auto;
-    width:100%;
-    
+    height: auto;
+    width: 100%;
+
     font-family: var(--font-display);
-    font-size: 16px;
+    /* Cap at 16px on tall screens; shrink on short ones so up to 26 letters
+       (with line-height 1) never exceed the sidebar height. Must match the
+       sidebar height expression so the letters fill it exactly. */
+    font-size: clamp(8px, calc((100dvh - var(--navbar-height, 125px) - (var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-7, 40px))) / 28), 16px);
+    line-height: 1;
     font-weight: 500;
     font-style: normal;
     text-align: center;
@@ -407,12 +413,12 @@
       top: 96px;
       right: 24px;
       width: 17px;
-      gap: 10px; /* Gap fisso per mobile */
-      max-height: calc(100dvh - 200px);
+      gap: 0;
+      height: calc(100dvh - 200px);
     }
 
     .alpha-sidebar__btn {
-      font-size: 16px;
+      font-size: clamp(8px, calc((100dvh - 200px) / 28), 16px);
     }
   }
 
