@@ -1,7 +1,9 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
+  import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
   import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import Navbar from '$lib/components/Navbar.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
@@ -11,6 +13,8 @@
   import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.svelte';
   import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
   /* ── Page data (dbVol pre-fetched by load function) ─────────── */
   let { data }: { data: PageData } = $props();
@@ -55,10 +59,7 @@
   );
   const quoteText = $derived(resolvedQuote ?? 'Un’esperienza che non dimenticherò mai.');
 
-  /* ── Photos: servono per sapere se mostrare il bottone
-     "VEDI TUTTE LE FOTO" e vengono passate alla galleria overlay
-     quando viene aperta. Niente più carosello inline qui — le foto
-     si vedono solo nell'overlay (PhotoGalleryOverlay). ──────────── */
+  /* ── Photos ──────────────────────────────────────────────────── */
   const dbPhotos    = $derived(dbVol ? getImageUrls(dbVol) : []);
   const figmaPhotos = $derived(
     imagesRaw
@@ -120,6 +121,42 @@
     if (!galleryOpen) document.body.style.overflow = '';
     document.body.style.paddingTop = '';
   });
+
+ 
+ /* ── Logica di Blocco del Bottone Foto prima del Footer ──────── */
+  /* ── Logica di Blocco del Bottone Foto prima del Footer ──────── */
+  /* ── Logica di Blocco del Bottone Foto prima del Footer ──────── */
+  onMount(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const fotoBtn = document.getElementById('sticky-foto-btn');
+    const footerElement = document.querySelector('footer');
+
+    if (fotoBtn && footerElement) {
+      // Creiamo una timeline dedicata che si attiva SOLO quando serve
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: footerElement,
+          // Parte nell'istante esatto in cui la cima del footer si trova a 48px dal fondo del viewport
+          start: "top bottom-=48px", 
+          // Finisce quando il footer ha occupato tutto lo spazio visibile in basso
+          end: "bottom bottom",      
+          scrub: 0, // 0 annulla qualsiasi ritardo o "rimbalzo" intermedio, legandosi al millimetro alla rotella
+          invalidateOnRefresh: true
+        }
+      });
+
+      // Sposta il bottone sull'asse Y esattamente della quota di cui il footer sale
+      tl.to(fotoBtn, {
+        y: () => -(footerElement.offsetHeight),
+        ease: "none" // Fondamentale: linearizza il movimento eliminando accelerate/decelerate intermedie
+      });
+    }
+
+    return () => {
+      ScrollTrigger.getAll().forEach(t => t.kill());
+    };
+  });
 </script>
 
 <svelte:head>
@@ -130,7 +167,6 @@
 
 <main class="profile" id="main-content">
 
-  <!-- ── Hero: back button, nome, quote, ruolo/location + Q&A, bottone foto ── -->
   <div class="hero">
 
     <!-- ── INDIETRO button ────────────────────────────────────────── -->
@@ -150,7 +186,7 @@
       </blockquote>
     </header>
 
-    <!-- ── Riga inferiore: ruolo/location (sx) + Q&A a 7 colonne (dx) ── -->
+    <!-- ── Riga inferiore: ruolo/location (sx) + Q&A (dx) ── -->
     <div class="hero-grid">
 
       <!-- ── Volunteer info (role + location) ────────────────────── -->
@@ -190,9 +226,9 @@
 
     </div>
 
-    <!-- ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra ────────── -->
+    <!-- ── VEDI TUTTE LE FOTO ── -->
     {#if photoCount > 0}
-      <div class="vedi-foto-wrapper">
+      <div id="sticky-foto-btn" class="vedi-foto-wrapper">
         <VediTutteLeFoto onclick={openGallery} />
       </div>
     {/if}
@@ -203,7 +239,7 @@
 
 <SiteFooter />
 
-<!-- ── Galleria foto a schermo intero (overlay sfocato) ─────────── -->
+<!-- ── Galleria overlay ── -->
 {#if galleryOpen && photoCount > 0}
   <PhotoGalleryOverlay
     photos={volunteerPhotos}
@@ -224,7 +260,7 @@
     font-family: var(--font-display);
   }
 
-  /* ── Page shell — scrolls vertically ────────────────────────────── */
+  /* ── Page shell ─────────────────────────────────────────────────── */
   .profile {
     position: relative;
     width: 100%;
@@ -235,9 +271,6 @@
     overflow-x: hidden;
   }
 
-  /* ── Hero wrapper — contiene tutto fino al bottone "vedi foto",
-     che viene ancorato al suo bordo inferiore (padding-bottom riserva
-     lo spazio per il bottone posizionato in absolute). ─────────────── */
   .hero {
     position: relative;
     padding-bottom: 160px;
@@ -251,7 +284,7 @@
     .back-btn-wrapper { margin-left: var(--spacing-5, 24px); }
   }
 
-  /* ── Header: name hero (left) + quote (top-right) ───────────────── */
+  /* ── Header ─────────────────────────────────────────────────────── */
   .head {
     position: relative;
     margin-top: 28px;
@@ -333,17 +366,17 @@
     white-space: pre-wrap;
   }
 
-  /* ── Riga inferiore: ruolo/location (5 col) + Q&A (7 col) ───────── */
+  /* ── Grid ───────────────────────────────────────────────────────── */
   .hero-grid {
-  display: grid;
-  grid-template-columns: 6fr 6fr;   /* era: 5fr 7fr */
-  column-gap: var(--spacing-6, 32px);
-  align-items: start;
-  margin-top: 32px;
-  padding: 0 var(--spacing-11, 72px);
-}
+    display: grid;
+    grid-template-columns: 6fr 6fr;
+    column-gap: var(--spacing-6, 32px);
+    align-items: start;
+    margin-top: 32px;
+    padding: 0 var(--spacing-11, 72px);
+  }
 
-  /* ── Volunteer info (role + location) ───────────────────────────── */
+  /* ── Info ───────────────────────────────────────────────────────── */
   .vol-info {
     margin: 0;
     min-width: 0;
@@ -366,14 +399,17 @@
     color: #fafafa;
   }
 
-  /* ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra dell'hero ── */
+  /* ── FOTO WRAPPER INITIAL FIXED STATE ── */
   .vedi-foto-wrapper {
-    position:absolute;
+    position: fixed;
     left: var(--spacing-11, 72px);
-    bottom: var(--spacing-13, 72px);
+    bottom: var(--unit-48, 48px);
+    z-index: 9999 !important; /* Forza il bottone a stare sopra a qualunque pezzo del footer */
+    pointer-events: auto;
+    will-change: transform;
   }
 
-  /* ── Q&A accordion (Figma 6251-4989) ────────────────────────────── */
+  /* ── Q&A Accordion ──────────────────────────────────────────────── */
   .qa-wrap {
     width: 100%;
     margin: 0;
@@ -432,17 +468,18 @@
   .qa-sep--open { height: auto; background: var(--color-content-accent, #bdff5d); }
 
   .qa-answer { padding: 36px 44px 40px; }
+  
+  /* RIPRISTINATO IL TESTO CHIARO DELLE RISPOSTE */
   .qa-answer p {
     margin: 0;
     font-size: 24px;
     font-weight: 500;
     line-height: 1.35;
     letter-spacing: 0.96px;
-    color: #0e0e0e;
+    color: #fafafa; /* Ritornato bianco leggibile */
     white-space: pre-wrap;
   }
 
-  /* ── Focus states ───────────────────────────────────────────────── */
   .qa-row:focus-visible {
     outline: 2px solid var(--color-content-accent);
     outline-offset: 3px;
@@ -459,6 +496,7 @@
       padding: 0 24px;
     }
     .qa-row { font-size: 26px; }
+    .vedi-foto-wrapper { left: var(--spacing-5, 24px); }
   }
 
   @media (max-width: 700px) {
@@ -482,20 +520,17 @@
     .qa-answer { padding: 20px 18px 24px; }
     .qa-answer p { font-size: 16px; }
 
-    /* Su mobile il bottone torna nel flusso normale, sotto la Q&A */
     .hero { padding-bottom: 56px; }
     .vedi-foto-wrapper {
-      position: static;
+      position: static !important;
       margin: 32px var(--spacing-5, 24px) 0;
     }
   }
 
-  /* ── Touch targets ──────────────────────────────────────────────── */
   @media (pointer: coarse) {
     .qa-row { min-height: max(48px, calc(44px / var(--page-zoom, 1))); }
   }
 
-  /* ── Reduced motion ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .qa-sep, .qa-icon { transition: none; }
   }
