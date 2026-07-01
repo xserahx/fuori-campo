@@ -23,6 +23,10 @@
 	let { children } = $props();
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
+	// Zoom (lightbox) volunteer page — /volunteer/[slug] but not the /profile sub-page.
+	const isVolunteerZoom = $derived(
+		page.url.pathname.startsWith('/volunteer/') && !page.url.pathname.endsWith('/profile')
+	);
 	const isCategoryDetailPage = $derived(page.url.pathname.startsWith('/category/'));
 	const isGalleryPage = $derived(page.url.pathname.startsWith('/gallery'));
 	const isHome = $derived(page.url.pathname === '/');
@@ -290,7 +294,9 @@
 	<link rel="stylesheet" href="https://use.typekit.net/rja4qrb.css" />
 </svelte:head>
 
-<Navbar inverted={$navbarInverted} hidden={$navbarHidden} flat={isGalleryPage} pinned />
+{#if !isVolunteerZoom}
+	<Navbar inverted={$navbarInverted} hidden={$navbarHidden} flat={isGalleryPage} pinned />
+{/if}
 
 {#if showIntro && introSrc}
 	<LoadingIntro
