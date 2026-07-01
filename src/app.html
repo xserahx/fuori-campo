@@ -7,10 +7,17 @@
 		<link rel="stylesheet" href="https://use.typekit.net/wkp6gag.css">
 		<title>Fuori campo</title>
 		<!-- Zoom the root element so every pixel, vw, vh, and fixed position
-		     operates in the 1728×1117 Figma reference frame on every device.
+		     operates in the 1728×1117 Figma reference frame on desktop/tablet.
 		     Set synchronously before first paint — no layout shift.
+
+		     IMPORTANT: below the mobile breakpoint we DO NOT zoom. A root-level
+		     CSS `zoom` suppresses `max-width` media queries on real mobile
+		     engines (WebKit/newer Blink), so the authored mobile breakpoints
+		     never fire on actual phones — only in DevTools emulation. Keeping
+		     zoom = 1 on mobile lets the mobile CSS render at natural device
+		     scale, matching what the inspector shows.
 		     --page-zoom mirrors the zoom value for CSS touch-target compensation. -->
-		<script>try{var _z=window.innerWidth/1728;document.documentElement.style.zoom=String(_z);document.documentElement.style.setProperty('--page-zoom',String(_z))}catch(e){}</script>
+		<script>try{var _mobile=window.matchMedia('(max-width: 700px)').matches;var _z=_mobile?1:window.innerWidth/1728;document.documentElement.style.zoom=String(_z);document.documentElement.style.setProperty('--page-zoom',String(_z))}catch(e){}</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
