@@ -423,7 +423,7 @@
     padding: var(--spacing-5) 0 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .hero-title {
@@ -715,6 +715,14 @@
       padding: var(--spacing-4) 0 0;
     }
 
+    .hero-title {
+      overflow: visible;
+    }
+
+    .title-outline {
+      overflow: visible;
+    }
+
     .dot-frecce {
       justify-content: flex-start;
       gap: var(--spacing-12);
@@ -748,7 +756,7 @@
     .hero-copy {
       font-size: 26px;
       line-height: 1.02;
-      margin: var(--spacing-5) 0 0;
+      margin: var(--spacing-5) var(--spacing-6) 0;
       max-width: 100%;
       text-align: right;
     }
