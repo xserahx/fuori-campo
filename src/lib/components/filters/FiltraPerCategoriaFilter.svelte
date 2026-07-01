@@ -146,6 +146,7 @@
     <div class="filter-panel__backdrop" bind:this={backdropEl}></div>
 
     <!-- stopPropagation prevents the backdrop onclick from firing when clicking within the content column -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="filter-panel__content" onclick={(e) => e.stopPropagation()}>
 
         <div

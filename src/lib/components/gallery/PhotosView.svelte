@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { page } from '$app/state';
   import { goto, preloadData } from '$app/navigation';
   import gsap from 'gsap';
@@ -93,9 +93,9 @@
   // recomputes without diffing on every frame.
   // Seed from the incoming zoom so the gallery opens at its medium overview
   // level immediately — no zoom-out animation on entry.
-  let currentScale = zoom;
-  let targetScale  = zoom;
-  let zoomWindow   = $state(zoom);
+  let currentScale = untrack(() => zoom);
+  let targetScale  = untrack(() => zoom);
+  let zoomWindow   = $state(untrack(() => zoom));
   const SCALE_LERP = 0.14;
   const prefersReduced =
     typeof window !== 'undefined' &&

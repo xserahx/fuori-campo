@@ -7,7 +7,7 @@
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
   import VediTutteLeFoto from '$lib/components/buttons/VediTutteLeFoto.svelte';
-  import PhotoGalleryOverlay from '$lib/components/buttons/PhotoGalleryOverlay.svelte';
+  import PhotoGalleryOverlay from '$lib/components/gallery/PhotoGalleryOverlay.svelte';
   import { getImageUrls } from '$lib/data/volunteers';
   import type { PageData } from './$types';
 

@@ -375,6 +375,7 @@
     
   }
 
+  /* Disabled together with the gallery-gate preview markup above.
   .gallery-gate {
     position: relative;
     height: 100vh;
@@ -387,7 +388,7 @@
     pointer-events: none;
   }
 
-  /* .anticip-img {
+  .anticip-img {
     position: absolute;
     display: block;
     border-radius: 6px;
@@ -407,10 +408,6 @@
     will-change: transform, opacity, filter;
     backface-visibility: hidden;
   } */
-
-  @media (prefers-reduced-motion: reduce) {
-    .anticip-img { transition: none; transform: none; }
-  }
 
   .archivio-link:hover {
     text-decoration: none;

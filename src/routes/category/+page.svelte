@@ -672,9 +672,11 @@
     ></div>
   </div>
 
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="arrow-left" onpointerdown={(e) => e.stopPropagation()}>
     <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
   </div>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="arrow-right" onpointerdown={(e) => e.stopPropagation()}>
     <ArrowButton direction="right" onclick={(e) => onArrowClick(1, e)} />
   </div>

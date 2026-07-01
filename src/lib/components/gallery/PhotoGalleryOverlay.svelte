@@ -3,8 +3,9 @@
  Sfondo sfocato/scurito (backdrop-filter), coverflow al centro,
  frecce prev/next, chiusura con X / Esc / click sullo sfondo. -->
 <script lang="ts">
-  import ArrowButton from './ArrowButton.svelte';
-  import XButton from './XButton.svelte';
+  import { untrack } from 'svelte';
+  import ArrowButton from '../buttons/ArrowButton.svelte';
+  import XButton from '../buttons/XButton.svelte';
 
   // Svelte 5 props
   let props = $props<{
@@ -17,7 +18,7 @@
   const photoCount = $derived(props.photos.length);
 
   // Risolto lo Svelte compiler warning tramite closure/funzione
-  let activeIndex = $state(props.initialIndex ?? 0);
+  let activeIndex = $state(untrack(() => props.initialIndex ?? 0));
 
   function stepPhoto(dir: number) {
     if (photoCount <= 1) return;
