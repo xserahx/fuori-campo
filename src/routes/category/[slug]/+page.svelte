@@ -9,17 +9,17 @@
   type CategoryInfo = {
     label: string;
     image: string;
-    tag:   string;
-    slug:  string;
+    tag: string;
+    slug: string;
   };
 
   const CATEGORIES: CategoryInfo[] = [
-    { label: 'RELAZIONI E COMUNICAZIONE',             image: '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png',              tag: 'relazioni',    slug: 'relazioni'    },
-    { label: 'CERIMONIE E REVENUE',                   image: '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png',                    tag: 'cerimonie',    slug: 'cerimonie'    },
-    { label: 'SPORT E DISCIPLINE',                    image: '/volunteer_images/carosello_categorie/Sport.png',                                  tag: 'sport',        slug: 'sport'        },
-    { label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: '/volunteer_images/carosello_categorie/Area_organizzativa.png',                     tag: 'organizzativa', slug: 'organizzativa' },
-    { label: 'LOGISTICA E TERRITORIO',                image: '/volunteer_images/carosello_categorie/Logistica_e_territorio.png',                 tag: 'logistica',    slug: 'logistica'    },
-    { label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png',    tag: 'gestione',     slug: 'gestione'     },
+    { label: 'RELAZIONI E COMUNICAZIONE', image: '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png', tag: 'relazioni', slug: 'relazioni' },
+    { label: 'CERIMONIE E REVENUE', image: '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png', tag: 'cerimonie', slug: 'cerimonie' },
+    { label: 'SPORT E DISCIPLINE', image: '/volunteer_images/carosello_categorie/Sport.png', tag: 'sport', slug: 'sport' },
+    { label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: '/volunteer_images/carosello_categorie/Area_organizzativa.png', tag: 'organizzativa', slug: 'organizzativa' },
+    { label: 'LOGISTICA E TERRITORIO', image: '/volunteer_images/carosello_categorie/Logistica_e_territorio.png', tag: 'logistica', slug: 'logistica' },
+    { label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png', tag: 'gestione', slug: 'gestione' }
   ];
 
   function legacySlugify(label: string) {
@@ -29,16 +29,18 @@
   function splitTitle(label: string): string[] {
     const match = label.match(/^(.*?)(?:\s+E\s+)(.+)$/);
     if (match) return [match[1].trim(), `E ${match[2].trim()}`];
+
     const words = label.split(/\s+/).filter(Boolean);
     if (words.length <= 2) return [label];
+
     const mid = Math.max(1, Math.ceil(words.length / 2));
     return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
   }
 
   const slug = $derived((page.params as Record<string, string>).slug ?? '');
   const catIdx = $derived(CATEGORIES.findIndex(c => c.slug === slug || legacySlugify(c.label) === slug));
-  const cat    = $derived(catIdx >= 0 ? CATEGORIES[catIdx] : null);
-  const lines  = $derived(cat ? splitTitle(cat.label) : []);
+  const cat = $derived(catIdx >= 0 ? CATEGORIES[catIdx] : null);
+  const lines = $derived(cat ? splitTitle(cat.label) : []);
 
   type SubRole = {
     title: string;
@@ -148,12 +150,12 @@
           description: 'Il salto con gli sci dai trampolini (Normal Hill e Large Hill), valutato per distanza e stile del volo.',
           role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Hill Support Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
         },
-         {
+        {
           title: 'XSMT = Ski Mountaineering',
           description: 'Lo sci alpinismo. Debutta nel 2026 e prevede salite con pelli di foca, tratti a piedi e discese fuori pista.',
           role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
         },
-         {
+        {
           title: 'XSSK = Speed Skating',
           description: 'Pattinaggio di velocità su pista lunga (400m), dove gli atleti competono contro il tempo in corsie separate.',
           role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
@@ -267,39 +269,28 @@
   const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
   const roleCount = $derived(activeSummary.roles.length);
 
-  /* ── Vertical scrolling policy ──────────────────────────────────────
-     Scrolling is enabled ONLY on desktop devices whose SCREEN is smaller
-     than the 16-inch reference (1728×1117). The screen — not the viewport
-     — is the reference: a 16-inch laptop reports screen.height === 1117,
-     but its browser viewport is always shorter (tabs/chrome/dock), so a
-     viewport media query would wrongly flag it as compact. Touch devices
-     (phones/tablets) report `pointer: coarse` and never scroll here. */
-  const REFERENCE_HEIGHT = 1117; // 16-inch reference (1728×1117)
-  let scrollEnabled = $state(false);
-
-  $effect(() => {
-    if (!browser) return;
-
-    const evaluate = () => {
-      const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-      const belowReference = window.screen.height < REFERENCE_HEIGHT;
-      scrollEnabled = isDesktop && belowReference;
-    };
-
-    evaluate();
-    window.addEventListener('resize', evaluate);
-    return () => window.removeEventListener('resize', evaluate);
-  });
-
+  /* ── Fixed page: no vertical scroll on category detail ─────────────── */
   $effect(() => {
     if (!browser) return;
 
     const root = document.documentElement;
-    root.classList.toggle('category-scrollable', scrollEnabled);
-    root.classList.toggle('category-noscroll', !scrollEnabled);
+    const body = document.body;
+
+    const previousHtmlOverflow = root.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyPaddingTop = body.style.paddingTop;
+    const previousBodyMargin = body.style.margin;
+
+    root.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.paddingTop = '0px';
+    body.style.margin = '0';
 
     return () => {
-      root.classList.remove('category-scrollable', 'category-noscroll');
+      root.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.paddingTop = previousBodyPaddingTop;
+      body.style.margin = previousBodyMargin;
     };
   });
 </script>
@@ -354,14 +345,29 @@
                 class:dot--active={index === activeRoleIndex}
                 aria-label={`Mostra sub-ruolo ${index + 1}`}
                 aria-pressed={index === activeRoleIndex}
-                onclick={() => { activeRoleIndex = index; }}
+                onclick={() => {
+                  activeRoleIndex = index;
+                }}
               ></button>
             {/each}
           </div>
 
           <div class="frecce" aria-label="Navigazione sotto-ruoli">
-            <ArrowButton direction="left"  ariaLabel="Sotto-ruolo precedente" onclick={() => { activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount; }} />
-            <ArrowButton direction="right" ariaLabel="Sotto-ruolo successivo" onclick={() => { activeRoleIndex = (activeRoleIndex + 1) % roleCount; }} />
+            <ArrowButton
+              direction="left"
+              ariaLabel="Sotto-ruolo precedente"
+              onclick={() => {
+                activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount;
+              }}
+            />
+
+            <ArrowButton
+              direction="right"
+              ariaLabel="Sotto-ruolo successivo"
+              onclick={() => {
+                activeRoleIndex = (activeRoleIndex + 1) % roleCount;
+              }}
+            />
           </div>
         </div>
       </section>
@@ -372,42 +378,52 @@
 {/if}
 
 <style>
+  :global(html),
   :global(body) {
     margin: 0;
-    background: var(--color-background-primary);
-  }
-
-  :global(html) {
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     background: var(--color-background-primary);
   }
 
   .category-page {
+    position: fixed;
+    inset: 0;
+    width: 100%;
     height: 100dvh;
     background: var(--color-background-primary);
     color: var(--color-content-body);
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
   .category-shell {
     position: relative;
-    height: calc(100dvh - var(--navbar-height));
-    padding: 0;
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) 0 var(--spacing-7);
+    overflow: hidden;
+    background: var(--color-background-primary);
   }
 
   .back-btn-wrapper {
+    position: relative;
+    z-index: 30;
     margin-left: var(--spacing-11);
-    margin-top: var(--spacing-5);
+    margin-top: 0;
   }
 
   .hero {
-    width: min(100%, 1728px);
-    margin: 0 auto;
-    margin-top: 0;
-    padding: 0;
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: var(--spacing-5) 0 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .hero-title {
@@ -415,16 +431,20 @@
     flex-direction: column;
     gap: 0;
     width: 100%;
-    padding: 20px 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   .title-fill,
   .title-outline {
     font-family: var(--font-display);
-    font-size: clamp(var(--unit-56), calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)), var(--unit-200));
+    font-size: clamp(
+      var(--unit-56),
+      calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
+      var(--unit-200)
+    );
     font-weight: 800;
     text-transform: uppercase;
-    /* Figma h1: letterSpacing: 0, leading-[unit/116] = 1:1 with font size */
     letter-spacing: 0;
     line-height: 1;
     white-space: nowrap;
@@ -434,6 +454,8 @@
     color: var(--color-content-accent);
     margin-left: var(--spacing-11);
     margin-bottom: -8px;
+    max-width: calc(100% - var(--spacing-11) - var(--spacing-11));
+    overflow: hidden;
   }
 
   .title-outline {
@@ -441,11 +463,13 @@
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     margin-left: var(--spacing-17);
     margin-top: 0;
+    max-width: calc(100% - var(--spacing-17) - var(--spacing-11));
+    overflow: hidden;
   }
 
-  /* SPORT title: shorter first word needs larger relative stagger */
   .category-sport .title-outline {
     margin-left: clamp(0px, 24.5vw, 268px);
+    max-width: calc(100% - clamp(0px, 24.5vw, 268px) - var(--spacing-11));
   }
 
   .hero-copy {
@@ -464,25 +488,29 @@
   }
 
   .summary-card {
-    position: static;
-    width: auto;
-    margin-top: auto;
-    padding: 0 0 var(--spacing-7) var(--spacing-11);
+    position: fixed;
+    left: var(--spacing-11);
+    bottom: var(--spacing-7);
+    z-index: 20;
+
+    width: min(780px, calc(100% - var(--spacing-11) * 2));
+    padding: 0;
+    margin: 0;
+
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: var(--spacing-4);
+
+    pointer-events: auto;
   }
 
   .summary-top-wrap {
-    min-height: 160px;
     position: relative;
-    width: min(780px, 100%);
-    /* holds height during cross-fade so dot-frecce doesn't jump */
+    width: 100%;
+    min-height: 0;
     display: grid;
-  }
-
-  .category-sport .summary-top-wrap {
-  min-height: 180px;
+    align-items: end;
   }
 
   .summary-top-wrap > :global(*) {
@@ -492,6 +520,7 @@
   .summary-top {
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: var(--spacing-4);
     width: 100%;
   }
@@ -499,7 +528,7 @@
   .summary-meta {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--spacing-2);
     width: 100%;
   }
 
@@ -513,11 +542,40 @@
     color: var(--color-content-accent, #bdff5d);
   }
 
+  .summary-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    max-width: 780px;
+    font-family: var(--font-display);
+    font-size: var(--unit-24);
+    line-height: 26px;
+    color: var(--color-content-body);
+  }
+
+  .summary-copy p {
+    margin: 0;
+  }
+
+  .summary-copy p:first-child {
+    white-space: pre-wrap;
+  }
+
+  .summary-footer {
+    margin-top: 0;
+    font-size: var(--unit-24);
+    line-height: 26px;
+    font-style: italic;
+    color: rgba(250, 250, 250, 0.96);
+  }
+
   .dot-frecce {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    width: min(780px, 100%);
+    width: 100%;
+    flex-shrink: 0;
   }
 
   .dot-nav {
@@ -566,34 +624,6 @@
     gap: var(--unit-20);
   }
 
-  .summary-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    margin: 0;
-    max-width: 780px;
-    font-family: var(--font-display);
-    font-size: var(--unit-24);
-    line-height: 26px;
-    color: var(--color-content-body);
-  }
-
-  .summary-copy p {
-    margin: 0;
-  }
-
-  .summary-copy p:first-child {
-    white-space: pre-wrap;
-  }
-
-  .summary-footer {
-    margin-top: 0;
-    font-size: var(--unit-24);
-    line-height: 26px;
-    font-style: italic;
-    color: rgba(250, 250, 250, 0.96);
-  }
-
   .not-found {
     display: flex;
     align-items: center;
@@ -605,9 +635,16 @@
   }
 
   @media (max-width: 1100px) {
+    .category-shell {
+      padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) var(--spacing-5) var(--spacing-5);
+    }
+
+    .back-btn-wrapper {
+      margin-left: 0;
+    }
+
     .hero {
-      padding: 0 var(--spacing-5);
-      width: auto;
+      padding: var(--spacing-5) 0 0;
     }
 
     .hero-copy {
@@ -624,32 +661,24 @@
     }
 
     .hero-title {
-      padding: var(--spacing-4-2) var(--spacing-5);
+      padding: var(--spacing-4-2) 0 0;
+      max-width: 100%;
+    }
+
+    .title-fill {
+      margin-left: 0;
       max-width: 100%;
     }
 
     .title-outline {
-      /* container now 24px, outline at ~220px total: 220-24=196px */
       margin-left: clamp(0px, 17vw, 196px);
-    }
-
-    .summary-eyebrow {
-      font-size: 24px;
-    }
-
-    .summary-copy,
-    .summary-footer {
-      font-size: 20px;
-      line-height: 24px;
-    }
-
-    .arrow-circle {
-      width: var(--unit-48);
-      height: var(--unit-48);
+      max-width: calc(100% - clamp(0px, 17vw, 196px));
     }
 
     .summary-card {
-      padding: 0 0 var(--spacing-5) var(--spacing-5);
+      left: var(--spacing-5);
+      bottom: var(--spacing-5);
+      width: min(780px, calc(100% - var(--spacing-5) * 2));
     }
 
     .summary-top,
@@ -673,23 +702,27 @@
   }
 
   @media (max-width: 700px) {
+    .category-shell {
+      padding: calc(var(--navbar-height, 125px) + var(--spacing-4)) var(--spacing-4) var(--spacing-4);
+    }
+
     .back-btn-wrapper {
-      margin-left: var(--spacing-5);
-      margin-top: var(--spacing-5);
+      margin-left: 0;
+      margin-top: 0;
     }
 
     .hero {
-      padding: 0;
+      padding: var(--spacing-4) 0 0;
     }
 
     .dot-frecce {
-    justify-content: flex-start;
-    gap: var(--spacing-12); / distanza tra gruppo dots e gruppo frecce /
+      justify-content: flex-start;
+      gap: var(--spacing-12);
     }
 
     .dot-nav {
-    flex-wrap: wrap;
-    max-width: calc(100% - 130px); /* lascia spazio fisso per le due frecce */
+      flex-wrap: wrap;
+      max-width: calc(100% - 130px);
     }
 
     .title-fill,
@@ -702,25 +735,32 @@
     .title-fill {
       margin-left: 0;
       margin-bottom: 0;
+      max-width: 100%;
     }
 
     .title-outline {
       -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
       margin-left: 0;
       margin-top: 0;
+      max-width: 100%;
     }
 
     .hero-copy {
       font-size: 26px;
       line-height: 1.02;
+      margin: var(--spacing-5) 0 0;
+      max-width: 100%;
+      text-align: right;
+    }
+
+    .summary-card {
+      left: var(--spacing-4);
+      bottom: var(--spacing-4);
+      width: calc(100% - var(--spacing-4) * 2);
     }
 
     .summary-top {
       width: 100%;
-    }
-
-    .summary-card {
-      padding: 0 var(--spacing-4) var(--spacing-4) var(--spacing-4);
     }
 
     .summary-eyebrow {
@@ -734,7 +774,6 @@
     }
   }
 
-  /* ── Touch target compensation ──────────────────────────────────── */
   @media (pointer: coarse) {
     .dot {
       padding: var(--spacing-0);
@@ -742,42 +781,15 @@
     }
   }
 
-  /* ── Focus visible ──────────────────────────────────────────────── */
-
   .dot:focus-visible {
     outline: var(--stroke-1) solid var(--color-content-accent);
     outline-offset: 4px;
     border-radius: 50%;
   }
 
-  /* ── Reduced motion ─────────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
     .dot::before {
       transition: none;
     }
-  }
-
-  /* ── Vertical scrolling policy (class set from JS — see <script>) ────
-     `.category-scrollable` → desktop with a screen smaller than the
-     16-inch reference (1728×1117): allow the page to scroll.
-     `.category-noscroll`   → every other case (16-inch+ desktops and all
-     touch devices): scrolling stays disabled. The class lives on <html>
-     and is removed when leaving the page, so other routes are untouched. */
-  :global(html.category-scrollable),
-  :global(html.category-scrollable body) {
-    overflow-y: auto;
-  }
-
-  :global(html.category-scrollable) .category-page {
-    overflow-y: auto;
-  }
-
-  :global(html.category-scrollable) .category-shell {
-    height: auto;
-  }
-
-  :global(html.category-noscroll),
-  :global(html.category-noscroll body) {
-    overflow-y: hidden;
   }
 </style>
