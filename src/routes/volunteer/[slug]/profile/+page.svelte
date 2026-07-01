@@ -182,8 +182,15 @@
       </div>
 
       <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
-        <p class="quote-body"><span class="qmark" aria-hidden={true}>&#8220;</span>{quoteText}<span class="qmark" aria-hidden={true}>&#8221;</span></p>
+        <!-- Prima virgoletta estratta e resa indipendente -->
+        <span class="qmark qmark--first" aria-hidden="true">&#8220;</span>
+        
+        <p class="quote-body">{quoteText}</p>
+        
+        <!-- Seconda virgoletta -->
+        <span class="qmark qmark--last" aria-hidden="true">&#8221;</span>
       </blockquote>
+
     </header>
 
     <!-- ── Riga inferiore: ruolo/location (sx) + Q&A (dx) ── -->
@@ -327,44 +334,50 @@
   }
   .vol-quote--dim { opacity: 0.55; }
 
+  /* ── STRUTTURA DELLE VIRGOLETTE (Speculari e allineate a destra) ── */
+  /* ── STRUTTURA DELLE VIRGOLETTE ── */
   .qmark {
+    display: flex; /* Trasformato in flex per poter allineare il testo internamente */
+    justify-content: flex-end; /* Allinea a destra orizzontalmente */
+    width: 100%;
     font-family: var(--font-display);
-    font-size: calc(84px / max(var(--page-zoom, 1), 0.65));
+    font-size: 84px;
     font-style: normal;
     font-weight: 500;
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke-width: var(--stroke-1);
-    -webkit-text-stroke-color: #fafafa;
+    -webkit-text-stroke-color:var(--color-content-body);
     paint-order: stroke fill;
     user-select: none;
   }
-  .qmark:first-child {
-    line-height: 0;
-    vertical-align: -0.5em;
-    margin-right: calc(8px / max(var(--page-zoom, 1), 0.65));
+
+  .qmark--first {
+    height: 45px;          /* Altezza ridotta per schiacciare la virgoletta verso il basso */
+    line-height: 1;        /* Ripristina la linea di base corretta per l'allineamento */
+    margin-bottom: 0px;    /* Azzerato per incollarla al testo */
   }
-  .qmark:last-child {
-    display: block;
-    text-align: right;
-    line-height: 0.8;
-    margin-top: calc(4px / max(var(--page-zoom, 1), 0.65));
+
+  .qmark--last {
+    align-items: flex-start; /* La seconda virgoletta invece si allinea in alto, vicino al testo */
+    height: 45px;
+    line-height: 0.6;
+    margin-top: 16px;
   }
 
   .quote-body {
-    width: 393px;
     max-width: 100%;
     margin: 0;
     font-family: var(--font-display);
-    font-size: calc(32px / max(var(--page-zoom, 1), 0.65));
+    font-size: var(--ts-cat-size);
     font-style: normal;
     font-weight: 500;
-    line-height: calc(32px / max(var(--page-zoom, 1), 0.65));
-    letter-spacing: 0.96px;
-    color: #fafafa;
+    line-height: 32px;
+    color: var(--color-content-body);
     text-align: right;
     white-space: pre-wrap;
   }
+   
 
   /* ── Grid ───────────────────────────────────────────────────────── */
   .hero-grid {
@@ -372,7 +385,7 @@
     grid-template-columns: 6fr 6fr;
     column-gap: var(--spacing-6, 32px);
     align-items: start;
-    margin-top: 32px;
+    margin-top: 72px;
     padding: 0 var(--spacing-11, 72px);
   }
 
@@ -396,7 +409,7 @@
     line-height: 1.45;
     letter-spacing: 1px;
     white-space: pre-wrap;
-    color: #fafafa;
+    color: var(--color-content-body);
   }
 
   /* ── FOTO WRAPPER INITIAL FIXED STATE ── */
@@ -489,7 +502,7 @@
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1100px) {
     .vol-quote { right: var(--spacing-5, 24px); top: 4px; width: 300px; }
-    .quote-body { font-size: clamp(14px, 2.4vw, 24px); }
+    .quote-body { font-size: var(--ts-cat-size); }
     .hero-grid {
       grid-template-columns: 1fr;
       row-gap: 40px;
