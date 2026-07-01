@@ -14,7 +14,7 @@ const config = {
 	},
 	kit: {
 		paths: {
-			base: process.argv.includes('dev') ? '' : '/fuori-campo'
+			base: ''
 		},
 		adapter: adapter({
 			pages: 'build',
