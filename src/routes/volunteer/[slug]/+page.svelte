@@ -7,6 +7,8 @@
   import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, ruoloToTag, type VolunteerSummary } from '$lib/data/volunteers';
   import type { PageData } from './$types';
   import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
+  import XButton from '$lib/components/buttons/XButton.svelte';
+  import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
 
   /* ── Fixed positions for the blurred background photos ──────────
      A spaced, non-overlapping perimeter layout: three down each side
@@ -163,25 +165,19 @@
     onclick={goBackToGallery}
   ></button>
 
-  <!-- ── Close × button (top-right, per Figma) ───────────────────── -->
-  <button class="close-x" type="button" aria-label="Chiudi" onclick={goBackToGallery}>
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M2 2L20 20M20 2L2 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </button>
+  <!-- ── Contenitore per la posizione del bottone di chiusura ── -->
+  <div class="close-x-container">
+    <XButton onclick={goBackToGallery} />
+  </div>
 
   <!-- ── Navigation arrows ───────────────────────────────────────── -->
-  <button class="arrow arrow--prev" type="button" aria-label="Volunteer precedente" onclick={() => goTo(-1)}>
-    <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-      <path d="M11 2L3 14L11 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <div class="arrow-container arrow-container--prev">
+    <ArrowButton direction="left" onclick={() => goTo(-1)} />
+  </div>
 
-  <button class="arrow arrow--next" type="button" aria-label="Volunteer successivo" onclick={() => goTo(1)}>
-    <svg width="14" height="28" viewBox="0 0 14 28" fill="none" aria-hidden="true">
-      <path d="M3 2L11 14L3 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <div class="arrow-container arrow-container--next">
+    <ArrowButton direction="right" onclick={() => goTo(1)} />
+  </div>
 
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
   <div class="photo-frame photo-frame--{detectedRatio}" class:photo-frame--portrait={isPortrait}>
@@ -318,94 +314,37 @@
     padding: 0;
   }
 
-  /* ── Close × button — Figma: left:1614px top:173px in 1728px canvas ── */
-  .close-x {
+ /* ── POSIZIONAMENTO BOTTONE DI CHIUSURA ── */
+  .close-x-container {
     position: fixed;
-    top: 61px;    /* 173px - 112px browser chrome */
-    right: 82px;  /* 1728 - 1614 - 32 */
-    z-index: 25;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-    color: #fafafa;
-    transition:
-      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.24s ease,
-      color     0.24s ease;
-    will-change: transform;
+    top: var(--spacing-9, 48px);    
+    right: var(--spacing-11, 72px);  /* */
+    z-index: 25;  
   }
 
-  .close-x:hover {
-    color: var(--color-content-accent, #bdff5d);
-    transform: scale(1.2) rotate(8deg);
-  }
-
-  .close-x:active {
-    transform: scale(0.88);
-    transition-duration: 80ms;
+  /* Gestione responsive per schermi piccoli */
+  @media (max-width: 700px) {
+    .close-x-container { 
+      top: 24px; 
+      right: 24px; 
+    }
   }
 
   /* ── Navigation arrows ──────────────────────────────────────────── */
-  .arrow {
+ /* ── POSIZIONAMENTO DELLE FRECCE LATERALI ── */
+  .arrow-container {
     position: fixed;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 20;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--color-content-accent, #bdff5d);
-    border-radius: 999px;
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-    color: var(--color-content-body, #fafafa);
-    transition:
-      color     0.24s ease,
-      transform 0.30s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform;
+    z-index: 20;  /* Resta sopra il frame della foto */
   }
 
-  .arrow--prev {
-    left: var(--spacing-5);
-    transform: translateY(-50%) translateX(0);
-  }
-  .arrow--prev:hover {
-    color: var(--color-content-accent, #bdff5d);
-  }
-  .arrow--prev:active {
-    transform: translateY(-50%) scale(0.94);
-    transition-duration: 80ms;
+  .arrow-container--prev {
+    left: var(--spacing-11, 72px); 
   }
 
-  .arrow--next {
-    right: var(--spacing-5);
-    transform: translateY(-50%) translateX(0);
-  }
-  .arrow--next:hover {
-    color: var(--color-content-accent, #bdff5d);
-  }
-  .arrow--next:active {
-    transform: translateY(-50%) scale(0.94);
-    transition-duration: 80ms;
-  }
-
-  @media (min-width: 768px) {
-    .arrow--prev { left:  var(--spacing-8); }
-    .arrow--next { right: var(--spacing-8); }
-  }
-
-  @media (min-width: 1024px) {
-    .arrow--prev { left:  var(--spacing-11); }
-    .arrow--next { right: var(--spacing-11); }
+  .arrow-container--next {
+    right: var(--spacing-11, 72px); 
   }
 
   /* ── Main photo frame ───────────────────────────────────────────── */
