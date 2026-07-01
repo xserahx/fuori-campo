@@ -120,7 +120,11 @@
 
 .landing {
   width: 100%;
-  overflow: hidden;
+  /* `clip` (non `hidden`) taglia l'overflow orizzontale SENZA creare un
+     scroll-container: così i pannelli `position: sticky` delle domande
+     restano ancorati al viewport e non al .landing (che altrimenti li
+     renderebbe statici). overflow-y resta visible. */
+  overflow-x: clip;
 }
 
 .hero-outer {

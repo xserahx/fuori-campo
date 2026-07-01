@@ -548,7 +548,7 @@
     </h1>
 
     <p class="hero-body" bind:this={heroBodyEl}>
-     Siamo un gruppo di studenti del Politecnico di Milano e il nostro progetto nasce con l'obiettivo 
+     Siamo un gruppo di studentesse del Politecnico di Milano e il nostro progetto nasce con l'obiettivo 
      di raccontare Milano Cortina 2026 attraverso lo sguardo di chi ha reso possibile i Giochi dietro 
      le quinte: i volontari. Il sito raccoglie le loro foto e le loro testimonianze, 
      restituendo visibilità a chi ha agito nell'ombra con dedizione e sorrisi. 

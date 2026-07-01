@@ -119,9 +119,7 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // ── GESTIONE NAVBAR E PARALLAX HERO ──
-    let inHero = true;
-    
+    // ── PARALLAX HERO (scrive --hero-scroll-p per il titolo) ──
     ScrollTrigger.create({
       trigger: heroSection,
       start: 'top top',
@@ -129,41 +127,51 @@
       onUpdate: (self) => document.documentElement.style.setProperty('--hero-scroll-p', self.progress.toFixed(3)),
     });
 
-    ScrollTrigger.create({
-      trigger: heroSection,
-      start: 'top top',
-      end: 'bottom 45%',
-      onToggle: (self) => { 
-        inHero = self.isActive; 
-        if (self.isActive) navbarHidden.set(false); 
-      }
-    });
+    // ── NAVBAR: nascosta durante lo scrollytelling ──
+    // Visibile nella hero in cima; si nasconde appena inizia il racconto (prima
+    // .story) e riappare solo all'ultimo testo (.story--summary). Chi vuole
+    // navigare la richiama portando il mouse in cima allo schermo ("peek").
+    let scrollHidden = false; // lo scrollytelling vuole la navbar nascosta
+    let peek = false;         // mouse in cima allo schermo → mostrala comunque
+    const applyNavbar = () => navbarHidden.set(scrollHidden && !peek);
 
+    // Ricalcolo self-correcting a ogni frame dalle posizioni live (niente edge
+    // di toggle da mancare): la navbar è nascosta quando il racconto è iniziato
+    // (la prima .story ha superato il centro) e finché l'ultimo testo
+    // (.story--summary) non raggiunge il centro dello schermo → poi riappare.
+    const introEl   = document.querySelector<HTMLElement>('.story--intro');
+    const summaryEl = document.querySelector<HTMLElement>('.story--summary');
     ScrollTrigger.create({
       start: 0,
       end: 'max',
-      onUpdate: (self) => {
-        if (inHero) return;
-        if (self.scroll() <= 20) { navbarHidden.set(false); return; }
-        navbarHidden.set(self.direction === 1); 
+      onUpdate: () => {
+        if (!introEl || !summaryEl) return;
+        const mid = window.innerHeight * 0.5;
+        const introTop   = introEl.getBoundingClientRect().top;
+        const summaryTop = summaryEl.getBoundingClientRect().top;
+        scrollHidden = introTop <= mid && summaryTop > mid;
+        applyNavbar();
       },
     });
 
-  // ── LAYERED PINNING: IL MOTORE ──
-    const panels = gsap.utils.toArray('.layered-panel');
-    
-    // TRUCCO INFALLIBILE: Fissiamo l'altezza in pixel esatti calcolati dal JS 
-    // per sconfiggere il bug dello zoom e annullare il bordo nero in basso.
-    const setPanelHeights = () => {
-      gsap.set(panels, { height: window.innerHeight });
+    const onNavPeek = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return;
+      const next = e.clientY <= 64;
+      if (next !== peek) { peek = next; applyNavbar(); }
     };
-    setPanelHeights(); // Lo eseguiamo subito
-    
-    // Aggiorniamo l'altezza se l'utente ridimensiona la finestra
-    window.addEventListener('resize', setPanelHeights);
+    window.addEventListener('pointermove', onNavPeek, { passive: true });
 
-    panels.forEach((panel: any, index) => {
-      // 1. Cambio colore Navbar
+  // ── LAYERED STACKING (CSS sticky) ──
+    // Lo stacking dei pannelli è nativo del browser via `position: sticky`
+    // (vedi .layered-panel nel CSS): ogni domanda resta incollata in cima e la
+    // successiva le scorre sopra. Essendo calcolato dal browser nello stesso
+    // spazio di coordinate dello `zoom` globale su <html>, NON soffre del bug di
+    // misura del pin di ScrollTrigger sotto `zoom` — che, agganciandosi, faceva
+    // partire il pannello successivo un filo in anticipo. Qui GSAP serve solo a
+    // sincronizzare il colore della navbar.
+    const panels = gsap.utils.toArray('.layered-panel');
+
+    panels.forEach((panel: any) => {
       ScrollTrigger.create({
         trigger: panel,
         start: "top center",
@@ -173,17 +181,6 @@
             navbarInverted.set(panel.classList.contains('panel--lime'));
           }
         }
-      });
-
-      // 2. Se è l'ultimo pannello, non lo blocchiamo per farlo scorrere via in alto
-      if (index === panels.length - 1) return;
-
-      // 3. Pinning pulito senza anticipatePin (che a volte causava lo scatto nel tuo setup)
-      ScrollTrigger.create({
-        trigger: panel,
-        start: "top top",
-        pin: true,
-        pinSpacing: false
       });
     });
 
@@ -244,6 +241,8 @@
 
     return () => {
       navbarInverted.set(false);
+      navbarHidden.set(false);
+      window.removeEventListener('pointermove', onNavPeek);
       window.removeEventListener('wheel',      onWheel);
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove',  onTouchMove);
@@ -253,11 +252,11 @@
   });
 </script>
 
-<!-- <IntroLoader
+<IntroLoader
   {showIntro}
   {introExiting}
   {loaderProgress}
-/> -->
+/>
 
 <div class="site">
   <main class="landing" id="main-content">
@@ -443,25 +442,38 @@
   }
 
   .layered-panel {
-    /* L'altezza non è più qui, la calcola GSAP al millimetro! */
+    /* Stacking nativo: ogni pannello resta incollato in cima (sticky) mentre il
+       successivo (z-index più alto) gli scorre sopra. L'altezza è divisa per lo
+       zoom globale di <html> così riempie ESATTAMENTE il viewport visivo:
+       (100dvh / zoom) * zoom = 100dvh. Niente pin GSAP → niente scatto/anticipo. */
+    /* --hold: quanto scroll la domanda resta FERMA a schermo pieno (sfondo
+       corretto, nessun pannello che sale) prima che la successiva inizi a
+       salire. È realizzato come margine sotto al pannello: lo sticky resta
+       incollato per tutta la sua durata, quindi durante il margine la domanda
+       è bloccata piena, poi la successiva sale. */
+    --hold: 30dvh;
+    position: sticky;
+    top: 0;
+    height: calc(100dvh / var(--page-zoom, 1));
+
     width: 100% !important;
     max-width: 100% !important;
-    min-height: 100dvh !important;
-    
+
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    
+
     box-sizing: border-box;
     padding: var(--spacing-5, 24px);
-    position: relative;
-    z-index: 10;
-    margin: 0 !important; 
-    
-    transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
-    will-change: transform;
+    margin: 0 0 calc(var(--hold) / var(--page-zoom, 1)) !important;
+    overflow: hidden;
+  }
+
+  /* L'ultima domanda non ha un "successivo" da attendere: nessun hold, così
+     scorre via verso la sezione riepilogo senza spazio morto. */
+  .layered-panel:last-child {
+    margin-bottom: 0 !important;
   }
 
   .layered-panel:nth-child(1) { z-index: 1; }
