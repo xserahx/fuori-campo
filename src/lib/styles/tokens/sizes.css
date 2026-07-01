@@ -53,8 +53,9 @@
   --spacing-19: 500px;
 
   /* ── Radius  (Figma: Radius/*) ──────────────────────────────── */
-  --radius-l:            24px;    /* pill container */
-  --radius-m:            16px;    /* pill active    */
+  --radius-s:            4px;     /* images  */
+  --radius-l:            24px;    
+  --radius-m:            16px;    
   --radius-rounded-pill: 999px;  /* toggle outer   */
 
   /* ── Stroke  (Figma: Stroke/*) ──────────────────────────────── */
