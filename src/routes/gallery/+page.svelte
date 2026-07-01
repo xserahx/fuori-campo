@@ -40,7 +40,7 @@
   const initialContext = readGalleryContext(page.url.searchParams);
 
   let activeToggle = $state<'photos' | 'names'>(initialContext.view);
-  let activeFilter  = $state<string | null>(initialContext.filter);
+  let activeFilters = $state<string[]>(initialContext.filters);
   let isMobile = $state(false);
 
   $effect(() => {
@@ -77,7 +77,7 @@
   <title>Gallery — Fuori Campo</title>
 </svelte:head>
 
-<FiltraPerCategoriaFilter bind:activeFilter={activeFilter} />
+<FiltraPerCategoriaFilter bind:activeFilters={activeFilters} />
 
 <section class="toggle" aria-label="Controlli galleria">
   <ToggleFotoNomi bind:view={activeToggle} />
@@ -95,12 +95,12 @@
 
   {#if activeToggle === 'photos'}
     {#if isMobile}
-      <MobilePhotosView {activeFilter} {dbVolunteers} />
+      <MobilePhotosView {activeFilters} {dbVolunteers} />
     {:else}
-      <PhotosView {activeFilter} {dbVolunteers} {zoom} />
+      <PhotosView {activeFilters} {dbVolunteers} {zoom} />
     {/if}
   {:else}
-    <NamesView {activeFilter} volunteers={dbVolunteers} />
+    <NamesView {activeFilters} volunteers={dbVolunteers} />
   {/if}
 
   <!-- Edge fades -->

@@ -2,11 +2,12 @@
     import { gsap } from 'gsap';
     import FilterLabel from './FilterLabel.svelte';
     import FiltraPerCategoriaButton from '../buttons/FiltraPerCategoriaButton.svelte';
+    import Icon from '../buttons/Icon.svelte';
 
     let {
-        activeFilter = $bindable(null)
+        activeFilters = $bindable([])
     } = $props<{
-        activeFilter?: string | null;
+        activeFilters?: string[];
     }>();
 
     const categorie = [
@@ -17,6 +18,14 @@
         { id: 'relazioni',     label: 'RELAZIONI<br>E COMUNICAZIONE'             },
         { id: 'sport',         label: 'SPORT<br>E DISCIPLINE'                    }
     ];
+
+    /* Selected categories, in the panel's display order, for the chip row. */
+    const selectedCategorie = $derived(
+        categorie.filter((cat) => activeFilters.includes(cat.id))
+    );
+
+    /* Chip text — the category name on one line (drop the layout <br>). */
+    const chipName = (label: string) => label.replace(/<br\s*\/?>/gi, ' ');
 
     let isOpen     = $state(false);
     let linksEl    = $state<HTMLElement | null>(null);
@@ -30,8 +39,8 @@
     let closeTl: gsap.core.Timeline | null = null;
 
     const bottoneVariant = $derived.by(() => {
-        if (isOpen)            return 'close-x';
-        if (activeFilter !== null) return 'filter-selected';
+        if (isOpen)                    return 'close-x';
+        if (activeFilters.length > 0)  return 'filter-selected';
         return 'default';
     });
 
@@ -41,9 +50,24 @@
         if (e.key === 'Escape' && isOpen) isOpen = false;
     }
 
+    /* Maximum number of categories that can be active at once. */
+    const MAX_FILTERS = 3;
+    const filtersFull = $derived(activeFilters.length >= MAX_FILTERS);
+
+    /* Toggle a category in/out of the active set. The panel stays open so
+       several categories can be picked in one pass. Adding is capped at
+       MAX_FILTERS; removing (or toggling an already-active one off) always works. */
     function selezionaCategoria(id: string) {
-        activeFilter = activeFilter === id ? null : id;
-        isOpen = false;
+        if (activeFilters.includes(id)) {
+            activeFilters = activeFilters.filter((f) => f !== id);
+        } else if (!filtersFull) {
+            activeFilters = [...activeFilters, id];
+        }
+    }
+
+    /* Remove a single filter via its chip's X — updates badge + results live. */
+    function removeFilter(id: string) {
+        activeFilters = activeFilters.filter((f) => f !== id);
     }
 
     /* ─────────────────────────────────────────────────────────────────────
@@ -162,7 +186,8 @@
                 -->
                 <div class="filter-item-wrap">
                     <FilterLabel
-                        active={activeFilter === cat.id}
+                        active={activeFilters.includes(cat.id)}
+                        disabled={filtersFull && !activeFilters.includes(cat.id)}
                         onclick={() => selezionaCategoria(cat.id)}
                     >
                         {@html cat.label}
@@ -172,8 +197,25 @@
         </div>
 
         <div class="filter-panel__trigger">
+            {#if selectedCategorie.length > 0 && !isOpen}
+                <div class="filter-chips">
+                    {#each selectedCategorie as cat (cat.id)}
+                        <button
+                            type="button"
+                            class="filter-chip"
+                            aria-label={`Rimuovi filtro ${chipName(cat.label)}`}
+                            onclick={() => removeFilter(cat.id)}
+                        >
+                            <span class="filter-chip__label">{chipName(cat.label)}</span>
+                            <span class="filter-chip__x"><Icon name="x" /></span>
+                        </button>
+                    {/each}
+                </div>
+            {/if}
+
             <FiltraPerCategoriaButton
                 variant={bottoneVariant}
+                badge={activeFilters.length}
                 onclick={togglePanel}
             />
         </div>
@@ -272,8 +314,66 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
+        gap: var(--spacing-3);
         width: 100%;
         pointer-events: auto;
+    }
+
+    /* ── Selected-filter chips ─────────────────────────────────────────
+       Sit to the left of the trigger button. Same height / radius / border
+       as .filtra-button so they read as one family; wrap onto multiple rows
+       when several categories are active. */
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: var(--spacing-2);
+        min-width: 0;
+    }
+
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-2);
+        height: var(--spacing-9);
+        padding: var(--spacing-3) var(--spacing-4-2);
+        box-sizing: border-box;
+        border-radius: var(--radius-rounded-pill);
+        border: var(--stroke-1) solid var(--color-content-accent);
+        background-color: var(--color-background-primary);
+        color: var(--color-content-body);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color 200ms ease, color 200ms ease;
+    }
+
+    .filter-chip__label {
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+
+    .filter-chip__x {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    @media (hover: hover) {
+        .filter-chip:hover {
+            background-color: var(--color-content-accent);
+            color: var(--color-content-body-black);
+        }
+    }
+
+    .filter-chip:active {
+        opacity: 0.85;
     }
 
     /* ── Tablet ─────────────────────────────────────────────────────── */
@@ -299,6 +399,12 @@
             padding-right:  var(--spacing-5);
             padding-bottom: var(--spacing-6-2);
             padding-top:    calc(var(--navbar-height) + var(--spacing-4));
+        }
+
+        /* The trigger collapses to a 50px icon here — chips would overflow the
+           narrow viewport, so the count badge alone conveys the selection. */
+        .filter-chips {
+            display: none;
         }
 
         .filter-panel__links {

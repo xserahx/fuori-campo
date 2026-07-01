@@ -2,7 +2,7 @@ type GalleryView = 'photos' | 'names';
 
 type GalleryContext = {
   view: GalleryView;
-  filter: string | null;
+  filters: string[];
   photoX: number;
   photoY: number;
   namesScroll: number;
@@ -19,7 +19,10 @@ export function readGalleryContext(searchParams: URLSearchParams): GalleryContex
 
   return {
     view,
-    filter: filter && filter.trim() ? filter : null,
+    // Persisted as a comma-separated list; empty/blank → no active filters.
+    filters: filter
+      ? filter.split(',').map((f) => f.trim()).filter(Boolean)
+      : [],
     photoX: parseNumber(searchParams.get('photoX')),
     photoY: parseNumber(searchParams.get('photoY')),
     namesScroll: parseNumber(searchParams.get('namesScroll')),
@@ -33,8 +36,8 @@ export function buildGallerySearchParams(context: Partial<GalleryContext>): stri
     params.set('view', context.view);
   }
 
-  if (context.filter) {
-    params.set('filter', context.filter);
+  if (context.filters && context.filters.length > 0) {
+    params.set('filter', context.filters.join(','));
   }
 
   if (context.view === 'names') {

@@ -7,8 +7,8 @@
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
-  let { activeFilter = null, dbVolunteers = [], zoom = 1 }: {
-    activeFilter?: string | null;
+  let { activeFilters = [], dbVolunteers = [], zoom = 1 }: {
+    activeFilters?: string[];
     dbVolunteers?: VolunteerSummary[];
     zoom?: number;
   } = $props();
@@ -227,7 +227,7 @@
 
     const params = new URLSearchParams(buildGallerySearchParams({
       view: 'photos',
-      filter: activeFilter,
+      filters: activeFilters,
       photoX: currentX,
       photoY: currentY,
     }));
@@ -335,7 +335,7 @@
     style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth/2}px);top:calc(50vh - {designHeight/2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
   >
     {#each visibleImages as img (`${Math.round(img.left)}|${Math.round(img.top)}`)}
-      {@const isUnmatched = !!(activeFilter && !(img.tags?.includes(activeFilter)))}
+      {@const isUnmatched = activeFilters.length > 0 && !activeFilters.some((f) => img.tags?.includes(f))}
       <button
         class="collage-item"
         class:img-unmatched={isUnmatched}

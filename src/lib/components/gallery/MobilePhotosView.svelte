@@ -3,8 +3,8 @@
   import { slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
-  let { activeFilter = null, dbVolunteers = [] }: {
-    activeFilter?: string | null;
+  let { activeFilters = [], dbVolunteers = [] }: {
+    activeFilters?: string[];
     dbVolunteers?: VolunteerSummary[];
   } = $props();
 
@@ -15,7 +15,7 @@
     const result: GalleryImage[] = [];
     for (const img of all) {
       if (img.noClick || !img.slug) continue;
-      if (activeFilter && !img.tags?.includes(activeFilter)) continue;
+      if (activeFilters.length > 0 && !activeFilters.some((f) => img.tags?.includes(f))) continue;
       if (seen.has(img.slug)) continue;
       seen.add(img.slug);
       result.push(img);

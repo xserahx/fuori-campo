@@ -1,21 +1,25 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    let { 
-        children, 
-        onclick, 
-        active = false // Prop booleana per attivare lo stato selezionato
-    } = $props<{ 
-        children: Snippet; 
+    let {
+        children,
+        onclick,
+        active = false, // Prop booleana per attivare lo stato selezionato
+        disabled = false // Disattivato quando si è raggiunto il limite di filtri
+    } = $props<{
+        children: Snippet;
         onclick?: (event: MouseEvent) => void;
         active?: boolean;
+        disabled?: boolean;
     }>();
 </script>
 
-<button 
-    type="button" 
-    class="filter-label" 
+<button
+    type="button"
+    class="filter-label"
     class:is-active={active}
+    class:is-disabled={disabled}
+    {disabled}
     {onclick}
 >
     {@render children()}
@@ -64,6 +68,17 @@
     /* Feedback visivo istantaneo al tocco/click (active nativo) */
     .filter-label:active {
         color: var(--color-content-accent);
+    }
+
+    /* ── STATO DISABILITATO (limite filtri raggiunto) ── */
+    .filter-label.is-disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+    @media (hover: hover) {
+        .filter-label.is-disabled:hover {
+            color: var(--color-content-body);
+        }
     }
 
     /* ── RESPONSIVE MOBILE (< 600PX) ── */

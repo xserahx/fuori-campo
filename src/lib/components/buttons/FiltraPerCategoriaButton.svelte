@@ -7,15 +7,20 @@
     let {
         variant = 'default',
         onclick,
-        ariaLabel
+        ariaLabel,
+        badge = 0
     } = $props<{
         variant?: ButtonVariant;
         onclick?: (event: MouseEvent) => void;
         ariaLabel?: string;
+        badge?: number;
     }>();
 
+    /* Count badge — only while the panel is closed (when open the button is an X). */
+    const showBadge = $derived(badge > 0 && variant !== 'close-x');
+
     const computedAriaLabel = $derived(
-        ariaLabel ?? (variant === 'close-x' ? 'Chiudi menu filtri' : variant === 'filter-selected' ? 'Filtro applicato. Cambia categoria' : 'Filtra per categoria')
+        ariaLabel ?? (variant === 'close-x' ? 'Chiudi menu filtri' : variant === 'filter-selected' ? `Filtri applicati: ${badge}. Apri menu filtri` : 'Filtra per categoria')
     );
 </script>
 
@@ -28,6 +33,9 @@
     aria-label={computedAriaLabel}
     onclick={onclick}
 >
+    {#if showBadge}
+        <span class="filtra-button__badge" aria-hidden="true">{badge}</span>
+    {/if}
     <div class="filtra-button__content">
         <span class="desktop-only">
             {#if variant === 'close-x'}
@@ -50,6 +58,7 @@
     .mobile-only { display: none; }
 
     .filtra-button {
+        position: relative;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -81,6 +90,30 @@
         justify-content: center;
         font-size: 30px;
         line-height: 1;
+    }
+
+    /* ── Count badge (top-right corner) ── */
+    .filtra-button__badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translate(35%, -35%);
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        box-sizing: border-box;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-rounded-pill);
+        background-color: var(--color-content-body-black);
+        border: var(--stroke-1) solid var(--color-content-accent);
+        color: var(--color-content-accent);
+        font-family: var(--font-display);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1;
+        pointer-events: none;
     }
 
     /* ── STATI DESKTOP ── */

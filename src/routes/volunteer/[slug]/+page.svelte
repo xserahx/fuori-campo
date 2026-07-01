@@ -110,7 +110,7 @@
 
   /* ── Navigation: same category as the current volunteer ─────────── */
   const peers = $derived.by(() => {
-    const tag = ruoloToTag(dbVol?.ruolo_generale ?? null) ?? currentContext.filter;
+    const tag = ruoloToTag(dbVol?.ruolo_generale ?? null) ?? currentContext.filters[0] ?? null;
     if (tag) return allVols.filter(v => ruoloToTag(v.ruolo_generale) === tag && v.ha_immagini);
     return allVols.filter(v => v.ha_immagini);
   });

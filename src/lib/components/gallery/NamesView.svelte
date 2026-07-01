@@ -22,10 +22,10 @@
   const LETTER_BREAK_HEIGHT = $derived(isMobile ? 66 : 100); 
 
   let {
-    activeFilter = null,
+    activeFilters = [],
     volunteers = []
   }: {
-    activeFilter?: string | null;
+    activeFilters?: string[];
     volunteers?: VolunteerSummary[];
   } = $props();
 
@@ -68,8 +68,8 @@
   type PersonWithOffset = Person & { topOffset: number; letterBreakBefore: boolean };
 
   const visibleWithOffsets = $derived.by((): PersonWithOffset[] => {
-    const visible = activeFilter
-      ? people.filter(p => p.tags.includes(activeFilter!))
+    const visible = activeFilters.length > 0
+      ? people.filter(p => activeFilters.some((f) => p.tags.includes(f)))
       : people;
     let cumulative = 0;
     return visible.map((p, i) => {
@@ -122,7 +122,7 @@
   function openVolunteer(person: Person) {
     const search = buildGallerySearchParams({
       view: 'names',
-      filter: activeFilter,
+      filters: activeFilters,
       namesScroll: namesInteractionRef?.scrollTop ?? 0
     });
 
