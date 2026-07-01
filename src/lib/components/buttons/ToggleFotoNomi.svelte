@@ -106,7 +106,15 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        pointer-events: none; /* Lascia che il click attraversi e venga preso dal bottone */
+
+        /* CENTRAGGIO REALE SUL TESTO */
+        text-align: center;
+        text-box: trim-both cap alphabetic;
+
+        line-height: 1;
+        transform: translateY(0.3px);
+
+        pointer-events: none;
         color: var(--color-content-body);
         transition: color 150ms ease;
     }
@@ -134,6 +142,11 @@
             padding-left: var(--spacing-4-2);
             padding-right: var(--spacing-4-2);
          
+        }
+
+        .toggle-text-wrapper {
+            line-height: 1;
+            transform: translateY(0.2px);
         }
     }
 </style> 

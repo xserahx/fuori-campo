@@ -16,11 +16,14 @@
         badge?: number;
     }>();
 
-    /* Count badge — only while the panel is closed (when open the button is an X). */
     const showBadge = $derived(badge > 0 && variant !== 'close-x');
 
     const computedAriaLabel = $derived(
-        ariaLabel ?? (variant === 'close-x' ? 'Chiudi menu filtri' : variant === 'filter-selected' ? `Filtri applicati: ${badge}. Apri menu filtri` : 'Filtra per categoria')
+        ariaLabel ?? (variant === 'close-x'
+            ? 'Chiudi menu filtri'
+            : variant === 'filter-selected'
+                ? `Filtri applicati: ${badge}. Apri menu filtri`
+                : 'Filtra per categoria')
     );
 </script>
 
@@ -36,12 +39,13 @@
     {#if showBadge}
         <span class="filtra-button__badge" aria-hidden="true">{badge}</span>
     {/if}
+
     <div class="filtra-button__content">
         <span class="desktop-only">
             {#if variant === 'close-x'}
                 <span class="filtra-button__icon"><Icon name="x" /></span>
             {:else}
-                <ButtonLabel>FILTRA PER CATEGORIA</ButtonLabel>
+                <span class="filtra-button-label"><ButtonLabel>FILTRA PER CATEGORIA</ButtonLabel></span>
             {/if}
         </span>
 
@@ -69,7 +73,6 @@
         background-color: var(--color-background-primary);
         border: var(--stroke-1) solid var(--color-content-accent);
         
-        /* Animazione fluida nativa */
         transition: 
             width 300ms cubic-bezier(0.25, 1, 0.5, 1),
             padding 300ms cubic-bezier(0.25, 1, 0.5, 1),
@@ -92,7 +95,6 @@
         line-height: 1;
     }
 
-    /* ── Count badge (top-right corner) ── */
     .filtra-button__badge {
         position: absolute;
         top: 0;
@@ -116,7 +118,6 @@
         pointer-events: none;
     }
 
-    /* ── STATI DESKTOP ── */
     .filtra-button.is-default {
         padding: var(--spacing-3) var(--spacing-4-2);
         color: var(--color-content-body);
@@ -145,7 +146,30 @@
         color: var(--color-content-body-black);
     }
 
-    /* ── RESPONSIVE MOBILE (< 600PX) ── */
+    .filtra-button-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        text-align: center;
+
+        text-box-trim: both;
+        text-box-edge: cap alphabetic;
+
+        line-height: 1;
+        transform: translateY(0.3px);
+
+        color: inherit;
+        transition: color 150ms ease;
+    }
+
+    @media (max-width: 599px) {
+        :global(.filtra-button-label) {
+            line-height: 1;
+            transform: translateY(0.2px);
+        }
+    }
+
     @media (max-width: 599px) {
         .desktop-only { display: none; }
         .mobile-only { display: inline-flex; }
