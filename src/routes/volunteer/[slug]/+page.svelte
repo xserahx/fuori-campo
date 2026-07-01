@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../../../lib/styles/tokens.css';
   import { onMount } from 'svelte';
+  import { gsap } from 'gsap';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
@@ -10,16 +11,46 @@
   import XButton from '$lib/components/buttons/XButton.svelte';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
 
-  /* ── Fixed positions for the blurred background photos ──────────
-     A spaced, non-overlapping perimeter layout: three down each side
-     plus a top- and bottom-centre accent. Every tile is the same fixed
-     box (width + aspect-ratio set in CSS), so the regions never touch.   */
-  const BG_POS = [
-    'left:2%;top:5%;',    'left:84%;top:3%;',
-    'left:1%;top:40%;',   'left:85%;top:39%;',
-    'left:3%;top:75%;',   'left:83%;top:73%;',
-    'left:43%;top:2%;',   'left:44%;top:79%;',
-  ];
+  /* ── Blurred background photo field (the "cosmos" atmosphere) ─────
+     Each neighbour photo is a soft, low-opacity tile scattered around
+     the central frame. Tiles carry their own size / blur / opacity so
+     the field reads with depth: larger + sharper + brighter nearer the
+     frame ("near"), smaller + blurrier + fainter toward the corners
+     ("far"). All values are inline so they win over the base .bg-photo. */
+  /* ── Scattered collage layout ────────────────────────────────────
+     One tile per cell of a 6×4 grid (a few cells left empty), each at a
+     varied size, aspect and alignment so the field reads as an organic
+     collage — like the gallery — with generous dark space between tiles.
+     One-tile-per-cell + within-cell sizing guarantees NO overlap. */
+  const BG_COLS = 6;
+  const BG_ROWS = 4;
+  const BG_SKIP = new Set(['4-1', '2-2', '5-3', '3-4']); // "col-row" empty cells
+  // Deterministic pseudo-random so the scatter is stable (no reshuffle per frame).
+  const rnd = (n: number) => {
+    const x = Math.sin(n * 999.7) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  const BG_TILES = (() => {
+    const tiles: string[] = [];
+    let k = 0;
+    for (let r = 1; r <= BG_ROWS; r++) {
+      for (let c = 1; c <= BG_COLS; c++) {
+        if (BG_SKIP.has(`${c}-${r}`)) continue;
+        const w    = 60 + Math.round(rnd(k * 1.3 + 1) * 36);                 // 60–96%
+        const ar   = ['4 / 3', '3 / 2', '16 / 9', '1 / 1', '3 / 4'][Math.floor(rnd(k * 2.1 + 2) * 5)];
+        const jx   = ['start', 'center', 'end'][Math.floor(rnd(k * 5.1 + 4) * 3)];
+        const jy   = ['start', 'center', 'end'][Math.floor(rnd(k * 6.3 + 5) * 3)];
+        const blur = 8 + Math.round(rnd(k * 3.7 + 3) * 8);                   // 8–16px
+        const op   = (0.30 + rnd(k * 7.9 + 6) * 0.25).toFixed(2);           // .30–.55
+        tiles.push(
+          `grid-column:${c}; grid-row:${r}; width:${w}%; aspect-ratio:${ar};` +
+          `justify-self:${jx}; align-self:${jy}; filter:blur(${blur}px) saturate(0.85); opacity:${op};`
+        );
+        k++;
+      }
+    }
+    return tiles;
+  })();
 
   /* ── Page data ────────────────────────────────────────────────── */
   let { data }: { data: PageData } = $props();
@@ -46,27 +77,42 @@
       .split(',').map(s => s.trim()).filter(Boolean)
   );
 
-  const bgPaths = $derived.by(() => {
-    const paths: string[] = [];
+  const BG_COUNT = BG_TILES.length; // number of scatter cells (6×4 minus skipped)
 
-    if (neighborSlugs.length > 0) {
-      // Ordered by gallery proximity — use one photo per neighbour volunteer.
-      for (const s of neighborSlugs) {
-        if (paths.length >= 8) break;
-        const vol = allVols.find(v => v.slug === s);
-        if (!vol?.ha_immagini) continue;
-        const p = vol.image_paths?.[0] ?? vol.image_path;
-        if (p) paths.push(p);
-      }
-    } else {
-      // Fallback (direct navigation / arrow nav): seed-stable selection from
-      // other volunteers so the background is never the current subject.
+  const bgPaths = $derived.by(() => {
+    // Never show the current subject: exclude the displayed image and every
+    // photo belonging to this volunteer.
+    const excluded = new Set<string>();
+    if (imgParam) excluded.add(imgParam);
+    if (dbVol?.image_path) excluded.add(dbVol.image_path);
+    for (const p of dbVol?.image_paths ?? []) excluded.add(p);
+
+    const paths: string[] = [];
+    const used = new Set<string>();
+    const add = (p?: string | null) => {
+      // Dedupe: a photo already used (or excluded) is never repeated.
+      if (!p || excluded.has(p) || used.has(p)) return;
+      used.add(p);
+      paths.push(p);
+    };
+
+    // 1) Photos NEAR the selected one — the gallery passes the spatially
+    //    closest volunteers, ordered by proximity, one photo each.
+    for (const s of neighborSlugs) {
+      if (paths.length >= BG_COUNT) break;
+      if (s === currentSlug) continue;
+      const vol = allVols.find(v => v.slug === s);
+      if (vol?.ha_immagini) add(vol.image_paths?.[0] ?? vol.image_path);
+    }
+
+    // 2) Top up (direct/arrow nav, or few neighbours) with a seed-stable set
+    //    of other volunteers — still deduped and never the current subject.
+    if (paths.length < BG_COUNT) {
       const seed = currentSlug.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
       const others = allVols.filter(v => v.slug !== currentSlug && v.ha_immagini);
-      for (let i = 0; paths.length < 8 && i < others.length; i++) {
+      for (let i = 0; paths.length < BG_COUNT && i < others.length; i++) {
         const vol = others[(seed + i) % others.length];
-        const p = vol.image_paths?.[0] ?? vol.image_path;
-        if (p) paths.push(p);
+        add(vol.image_paths?.[0] ?? vol.image_path);
       }
     }
 
@@ -130,6 +176,42 @@
   function goBackToGallery() {
     goto(buildGalleryHref(currentContext));
   }
+
+  /* ── 3D card tilt — same feel as the gallery cards (GSAP, pointer-follow) ── */
+  const TILT_MAX  = 12;
+  const TILT_DEAD = 0.28;
+
+  function onTiltMove(e: MouseEvent) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const card = e.currentTarget as HTMLElement;
+    const rect = card.getBoundingClientRect();
+    const nx = (e.clientX - (rect.left + rect.width  * 0.5)) / (rect.width  * 0.5);
+    const ny = (e.clientY - (rect.top  + rect.height * 0.5)) / (rect.height * 0.5);
+    const ax = Math.max(0, (Math.abs(nx) - TILT_DEAD) / (1 - TILT_DEAD));
+    const ay = Math.max(0, (Math.abs(ny) - TILT_DEAD) / (1 - TILT_DEAD));
+    const rotY =  Math.sign(nx) * ax * TILT_MAX;
+    const rotX = -Math.sign(ny) * ay * TILT_MAX * 0.75;
+    const sdx =  rotY * 2.0;
+    const sdy = -rotX * 1.4 + 16;
+    const sbl =  52 + (Math.abs(rotX) + Math.abs(rotY)) * 1.6;
+    gsap.to(card, {
+      rotateX: rotX, rotateY: rotY,
+      z: 12,
+      transformPerspective: 1100,
+      transformOrigin: '50% 50%',
+      boxShadow: `${sdx}px ${sdy}px ${sbl}px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)`,
+      duration: 0.25, ease: 'power2.out', overwrite: 'auto',
+    });
+  }
+
+  function onTiltLeave(e: MouseEvent) {
+    const card = e.currentTarget as HTMLElement;
+    gsap.to(card, {
+      rotateX: 0, rotateY: 0, z: 0,
+      boxShadow: '0 18px 60px rgba(0,0,0,0.55), 0 4px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.05)',
+      duration: 0.6, ease: 'power3.out', overwrite: 'auto',
+    });
+  }
 </script>
 
 <svelte:head>
@@ -138,23 +220,22 @@
 
 <main class="lb" id="main-content">
 
-  <!-- ── Blurred background: only this volunteer's photos ──────── -->
+  <!-- ── Blurred background: photos near the selected one in the gallery ── -->
   <div class="bg-scatter" aria-hidden="true">
-    {#each bgPaths as path, i (path)}
+    {#each bgPaths.slice(0, BG_TILES.length) as path, i (path)}
       <img
         src={getImageUrl(path)}
         alt=""
         class="bg-photo"
         draggable="false"
-        style={BG_POS[i]}
+        style={BG_TILES[i]}
       />
     {/each}
   </div>
 
-  <!-- Overlay 1 — desaturate + heavy blur -->
-  <div class="bg-ov bg-ov-1" aria-hidden="true"></div>
-  <!-- Overlay 2 — darken + medium blur -->
-  <div class="bg-ov bg-ov-2" aria-hidden="true"></div>
+  <!-- Depth vignette — darkens the edges into the cosmos, keeps the centre
+       clear so the sharp frame reads as the focal point. -->
+  <div class="bg-vignette" aria-hidden="true"></div>
 
   <!-- ── Click-background-to-close ────────────────────────────────── -->
   <!-- z:3 — above dark overlays, below photo frame (z:5) and arrows (z:20) -->
@@ -180,7 +261,13 @@
   </div>
 
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
-  <div class="photo-frame photo-frame--{detectedRatio}" class:photo-frame--portrait={isPortrait}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="photo-frame photo-frame--{detectedRatio}"
+    class:photo-frame--portrait={isPortrait}
+    onmousemove={onTiltMove}
+    onmouseleave={onTiltLeave}
+  >
 
     <!-- Main image -->
     {#if resolvedSrc && !imgError}
@@ -195,6 +282,10 @@
     {:else}
       <div class="photo-placeholder"></div>
     {/if}
+
+    <!-- Gallery "card" texture: fine grain + soft vignette (matches PhotosView) -->
+    <div class="card-noise" aria-hidden="true"></div>
+    <div class="card-vignette" aria-hidden="true"></div>
 
     <!-- Bottom gradient + text caption -->
     <div class="photo-caption">
@@ -252,53 +343,61 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: #0e0e0e;
+    /* ── COSMOS atmosphere ──────────────────────────────────────────
+       A soft cool glow blooms behind the subject and falls off into a
+       deep near-black at the edges — minimal, spacious, "deep space". */
+    background:
+      radial-gradient(120% 90% at 50% 34%, rgba(38, 44, 58, 0.55) 0%, rgba(20, 22, 28, 0.0) 52%),
+      radial-gradient(140% 130% at 50% 50%, #101216 0%, #0a0a0c 62%, #070708 100%);
   }
 
-  /* ── Background scatter ─────────────────────────────────────────── */
+  /* ── Background field ───────────────────────────────────────────
+     A full 4×3 grid spanning the whole viewport. Each neighbour photo
+     fills one cell, so the field covers the entire background (no empty
+     space) with no overlaps and no repeats. A small gap gives a natural
+     separation between tiles; the focal frame sits on top of the centre. */
   .bg-scatter {
     position: absolute;
     inset: 0;
     z-index: 0;
     overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    /* Gutter + edge inset give the scatter its gallery-like dark spacing. */
+    gap: 1.4vw;
+    padding: 1.2vw;
   }
 
   .bg-photo {
-    position: absolute;
-    /* Fixed, identical box for every tile → the spaced positions in BG_POS
-       can never touch or overlap. */
-    width: 14%;
-    aspect-ratio: 4 / 3;
+    /* Per-tile width / aspect / alignment come inline (BG_TILES); the tile
+       stays inside its own cell, so tiles never overlap. max-height caps any
+       tall aspect so it can't bleed into the cell above/below. */
     height: auto;
-    border-radius: 10px;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 12px;
     object-fit: cover;
-    /* Subtle: low opacity + a touch of blur so each photo reads as a soft,
-       separated layer rather than a busy collage competing with the subject. */
-    opacity: 0.28;
-    filter: blur(1.5px);
+    /* Gently desaturated so the field reads as cool atmosphere, not a busy
+       collage competing with the sharp subject. blur/opacity overridden inline. */
+    opacity: 0.35;
+    filter: blur(12px) saturate(0.85);
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
   }
 
-  .bg-ov {
+  /* ── Depth vignette ─────────────────────────────────────────────
+     One subtle layer (replaces the old double wash): darkens the edges
+     so the scattered tiles melt into the cosmos, while leaving the
+     centre clear for the focal frame. */
+  .bg-vignette {
     position: absolute;
     inset: 0;
-    pointer-events: none;
-  }
-
-  .bg-ov-1 {
     z-index: 1;
-    background: #0e0e0e;
-    opacity: 0.5;
-    mix-blend-mode: saturation;
-    backdrop-filter: blur(11px);
-  }
-
-  .bg-ov-2 {
-    z-index: 2;
-    background: rgba(26, 26, 26, 0.65);
-    backdrop-filter: blur(5px);
+    pointer-events: none;
+    background:
+      radial-gradient(115% 100% at 50% 50%, rgba(10, 10, 12, 0) 40%, rgba(9, 9, 11, 0.55) 74%, rgba(7, 7, 8, 0.82) 100%);
   }
 
   /* ── Close background ───────────────────────────────────────────── */
@@ -370,7 +469,18 @@
     z-index: 5;
     overflow: hidden;
     background: #111;
-    animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* ── Gallery "card" effect ── rounded corners, elevation shadow and a
+       hairline border, mirroring .collage-item in PhotosView (scaled up for
+       the larger focal frame). */
+    border-radius: var(--radius-s, 4px);
+    box-shadow:
+      0 18px 60px rgba(0, 0, 0, 0.55),
+      0 4px 20px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
+    /* `backwards` (not `both`): applies the `from` state before the entrance
+       to avoid a flash, but does NOT forwards-fill — so after the animation
+       the GSAP tilt is free to drive `transform` on hover. */
+    animation: frame-enter 700ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 
     /* Vertical budget: how tall the frame may grow relative to the
        *dynamic* viewport height. dvh tracks mobile chrome show/hide,
@@ -412,6 +522,28 @@
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, #111 0%, #1c1c1c 100%);
+  }
+
+  /* ── Card texture overlays (match PhotosView .img-noise / .img-vignette) ──
+     Sit above the image (z:1) but below the caption (z:2), so the caption
+     text stays crisp. */
+  .card-noise {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 3px 3px;
+    mix-blend-mode: overlay;
+    opacity: 0.12;
+  }
+
+  .card-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.42) 100%);
   }
 
   /* ── Caption ────────────────────────────────────────────────────── */

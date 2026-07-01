@@ -222,7 +222,7 @@
       if (seen.has(s)) continue;
       seen.add(s);
       neighborSlugs.push(s);
-      if (neighborSlugs.length >= 8) break;
+      if (neighborSlugs.length >= 20) break;
     }
 
     const params = new URLSearchParams(buildGallerySearchParams({
