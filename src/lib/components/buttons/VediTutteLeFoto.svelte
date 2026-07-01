@@ -28,7 +28,7 @@
     <span class="back-button__icon" aria-hidden="true">
         <Icon name="ph ph-plus" />
     </span>
-    <ButtonLabel>VEDI TUTTE LE FOTO</ButtonLabel> 
+    <ButtonLabel>ESPLORA FOTO</ButtonLabel> 
 {/snippet}
 
 {#if href}

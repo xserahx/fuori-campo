@@ -148,7 +148,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(-72px);
+  /* No transform here: .title-wrap inside is `position: fixed` and centers
+     itself on the real viewport. A transform on this ancestor would make it
+     the fixed-position containing block instead, breaking that centering. */
 }
 
 /* ================================================================
