@@ -428,7 +428,7 @@
     padding: 14px 0;
     border: 0;
     background: transparent;
-    color: #fafafa;
+    color: var(--color-content-body, #fafafa);
     font-size: 36px;
     font-weight: 500;
     line-height: 1.0;
@@ -469,14 +469,14 @@
 
   .qa-answer { padding: 36px 44px 40px; }
   
-  /* RIPRISTINATO IL TESTO CHIARO DELLE RISPOSTE */
+  
   .qa-answer p {
     margin: 0;
     font-size: 24px;
     font-weight: 500;
     line-height: 1.35;
     letter-spacing: 0.96px;
-    color: #fafafa; /* Ritornato bianco leggibile */
+    color: var(--color-content-body-black, #0e0e0e);
     white-space: pre-wrap;
   }
 
