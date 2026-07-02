@@ -316,7 +316,14 @@
         align-items: center;
         gap: var(--spacing-3);
         width: 100%;
+        box-sizing: border-box;
         pointer-events: auto;
+
+        /* Reserve the bottom-left zone occupied by the fixed FOTO/NOMI toggle
+           (.toggle → left: --spacing-11, ~188px wide) plus a gap, so the chip
+           row can never slide under or collide with it. Chips are right-aligned
+           and wrap, so overflow stacks upward into free space instead. */
+        padding-left: calc(var(--spacing-11) + var(--unit-200) + var(--spacing-6));
     }
 
     /* ── Selected-filter chips ─────────────────────────────────────────
@@ -339,6 +346,10 @@
         height: var(--spacing-9);
         padding: var(--spacing-3) var(--spacing-4-2);
         box-sizing: border-box;
+        /* Never let one long-labelled chip exceed the reserved chip area and
+           reach the toggle: cap it to the container and ellipsise the label. */
+        max-width: 100%;
+        min-width: 0;
         border-radius: var(--radius-rounded-pill);
         border: var(--stroke-1) solid var(--color-content-accent);
         background-color: var(--color-background-primary);
@@ -349,13 +360,29 @@
     }
 
     .filter-chip__label {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
         font-family: var(--font-display);
-        font-size: 16px;
-        font-weight: 500;
-        line-height: 1;
-        letter-spacing: 0;
+        /* Match the filter button label exactly (ButtonLabel → --ts-nav-link). */
+        font-size: var(--ts-nav-link-size, 24px);
+        font-weight: var(--ts-nav-link-weight, 500);
+        letter-spacing: var(--ts-nav-link-letter-spacing, 0em);
         text-transform: uppercase;
+
+        /* Same optical-centering trick as ButtonLabel / .filtra-button-label:
+           trim the line box to the cap height so the glyphs sit dead-centre. */
+        text-box-trim: both;
+        text-box-edge: cap alphabetic;
+        line-height: 1;
+        transform: translateY(0.3px);
     }
+
+    /* Keep the × from being squeezed when the label ellipsises. */
+    .filter-chip__x { flex: 0 0 auto; }
 
     .filter-chip__x {
         display: inline-flex;
@@ -405,6 +432,11 @@
            narrow viewport, so the count badge alone conveys the selection. */
         .filter-chips {
             display: none;
+        }
+
+        /* No chips on mobile, so drop the toggle safe-area reservation. */
+        .filter-panel__trigger {
+            padding-left: 0;
         }
 
         .filter-panel__links {

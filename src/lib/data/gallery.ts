@@ -176,6 +176,51 @@ export function snapToStdFrame(wPerH: number): number {
   );
 }
 
+/* ── Measured photo aspect-ratio store ───────────────────────────────
+   The masonry needs each photo's real orientation to reserve a frame of the
+   right shape (horizontal → landscape, vertical → portrait). Natural sizes are
+   only known once an image decodes, so we cache the measured width/height ratio
+   (keyed by storage path) in localStorage. The layout then builds from these on
+   the next visit — correct AND gap-free, with no runtime reshuffle. Until a
+   photo has been measured once it falls back to a neutral near-square box. */
+const AR_STORE_KEY = 'gallery-photo-ar';
+let _arMap: Map<string, number> | null = null;
+
+function arMap(): Map<string, number> {
+  if (_arMap) return _arMap;
+  _arMap = new Map();
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(AR_STORE_KEY);
+      if (raw) for (const [k, v] of Object.entries(JSON.parse(raw) as Record<string, number>)) _arMap.set(k, v);
+    } catch { /* corrupt/blocked storage — start empty */ }
+  }
+  return _arMap;
+}
+
+/** Record a photo's natural width/height ratio. Returns true if it was new/changed. */
+export function recordImageAspect(key: string, wPerH: number): boolean {
+  if (!Number.isFinite(wPerH) || wPerH <= 0) return false;
+  const m = arMap();
+  const prev = m.get(key);
+  if (prev !== undefined && Math.abs(prev - wPerH) < 0.01) return false;
+  m.set(key, wPerH);
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem(AR_STORE_KEY, JSON.stringify(Object.fromEntries(m))); } catch { /* ignore */ }
+  }
+  return true;
+}
+
+/** Neutral near-square boxes used until a photo's true orientation is known. */
+const FALLBACK_HW = [0.92, 1.06, 1.18, 1.0, 1.28] as const;
+
+/** Height ÷ width for a tile: the photo's real snapped orientation if measured,
+ *  else a neutral near-square fallback chosen by `fallbackIdx`. */
+function tileHW(img: GalleryImage, fallbackIdx: number): number {
+  const wPerH = arMap().get(img.path ?? img.src);
+  return wPerH ? 1 / snapToStdFrame(wPerH) : FALLBACK_HW[fallbackIdx % FALLBACK_HW.length];
+}
+
 /**
  * Masonry scatter layout with AABB collision detection.
  *
@@ -288,12 +333,11 @@ export function buildScatterLayout(
     const scale      = MIN_SCALE + h(seed + 1) * (MAX_SCALE - MIN_SCALE);
     const slotW      = colW * span + PAD * (span - 1);
     const imgW       = slotW * scale;
-    // Reserve a consistent, moderate box per tile (height = width × one of a
-    // few close aspect ratios). The rendered <img> uses object-fit:cover at
-    // this exact box, so there is NO runtime height correction — which means
-    // no shrunk frames and therefore no empty vertical gaps between cards.
-    const TILE_ARS   = [0.92, 1.06, 1.18, 1.0, 1.28];
-    const imgH       = imgW * TILE_ARS[Math.floor(h(seed + 4) * TILE_ARS.length)];
+    // Reserve the frame at the photo's real orientation (snapped to 16:9 / 4:3 /
+    // 3:4 / 9:16) once it has been measured — so horizontal photos get a
+    // landscape frame and vertical ones a portrait frame. The masonry packs on
+    // this height, so it stays gap-free. Unmeasured photos use a neutral box.
+    const imgH       = imgW * tileHW(raw, Math.floor(h(seed + 4) * FALLBACK_HW.length));
     const laneBot = Math.max(...colBots.slice(bestCol, bestCol + span));
 
     // Horizontal jitter within available whitespace, vertical stagger
@@ -339,14 +383,13 @@ export function buildScatterLayout(
   // large empty band at the y-seam. Fill every column down to a common baseline
   // (reused photos + one exact-fit filler) so all columns end on the same line.
   // The only gap across the seam is then TOP_PAD, so no empty band appears.
-  const ARS = [0.92, 1.06, 1.18, 1.0, 1.28];
   const baseline = Math.max(...colBots) + 200;
   for (let c = 0; c < COLS; c++) {
     let guard = 0;
     while (baseline - colBots[c] > 340 && guard++ < 80) {
       const raw = rawImages[(c * 131 + guard * 17) % rawImages.length];
       const iw  = colW * (MIN_SCALE + h(c * 91 + guard * 7) * (MAX_SCALE - MIN_SCALE));
-      const ih  = iw * ARS[Math.floor(h(c * 53 + guard) * ARS.length)];
+      const ih  = iw * tileHW(raw, Math.floor(h(c * 53 + guard) * FALLBACK_HW.length));
       placed.push({ ...raw, left: EDGE + c * (colW + PAD) + (colW - iw) / 2, top: colBots[c], width: iw, height: ih });
       colBots[c] += ih + PAD;
     }
@@ -394,16 +437,23 @@ export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
 }
 
 // Ref-equality cache: same rawImages array → same layout object → $derived stays stable.
+// `version` lets the caller force a rebuild after new aspect ratios are measured
+// (so frames snap to the right orientation) without changing the rawImages ref.
 let _layoutCacheKey: GalleryImage[] | null = null;
+let _layoutCacheVersion = -1;
 let _layoutCacheValue: ReturnType<typeof buildScatterLayout> | null = null;
 
 export function buildScatterLayoutCached(
   rawImages: GalleryImage[],
-  canvasWidth = 9600
+  canvasWidth = 9600,
+  version = 0
 ): ReturnType<typeof buildScatterLayout> {
-  if (_layoutCacheKey === rawImages && _layoutCacheValue !== null) return _layoutCacheValue;
+  if (_layoutCacheKey === rawImages && _layoutCacheVersion === version && _layoutCacheValue !== null) {
+    return _layoutCacheValue;
+  }
   _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages, 12), canvasWidth);
   _layoutCacheKey = rawImages;
+  _layoutCacheVersion = version;
   return _layoutCacheValue;
 }
 

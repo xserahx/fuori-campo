@@ -112,8 +112,9 @@
         border: var(--stroke-1) solid var(--color-content-accent);
         color: var(--color-content-accent);
         font-family: var(--font-display);
-        font-size: 13px;
-        font-weight: 700;
+        /* Tokenised — was 13px, incoherent with the rest of the type scale. */
+        font-size: var(--ts-navigation-size, 16px);
+        font-weight: var(--ts-navigation-weight, 700);
         line-height: 1;
         pointer-events: none;
     }

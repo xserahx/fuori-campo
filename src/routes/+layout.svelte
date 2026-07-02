@@ -8,9 +8,7 @@
 	import Lenis from 'lenis';
 
 	import Navbar from '$lib/components/Navbar.svelte';
-	import LoadingIntro from '$lib/components/LoadingIntro.svelte';
 	import PageTransition from '$lib/components/PageTransition.svelte';
-	import { imagesRaw } from '$lib/data/gallery';
 	import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
 
 	import '$lib/styles/reset.css';
@@ -45,28 +43,6 @@
 
 		document.body.style.backgroundColor = '';
 		document.documentElement.style.backgroundColor = '';
-	});
-
-	// ── Loading intro ───────────────────────────────────────────────────────
-	let showIntro = $state(false);
-	let introSrc = $state<string | null>(null);
-
-	$effect(() => {
-		if (!browser || introSrc || showIntro) return;
-
-		const forceIntroPreview = page.url.searchParams.get('intro') === '1';
-		const seen = sessionStorage.getItem('introSeen');
-
-		if (!seen || forceIntroPreview) {
-			const preview =
-				imagesRaw.find((img) => img.name === 'Rudy Bre') ??
-				imagesRaw.find((img) => !!img.name);
-
-			if (preview?.src) {
-				introSrc = preview.src;
-				showIntro = true;
-			}
-		}
 	});
 
 	// ── Smooth scrolling Lenis — homepage only ──────────────────────────────
@@ -296,19 +272,6 @@
 
 {#if !isVolunteerZoom}
 	<Navbar inverted={$navbarInverted} hidden={$navbarHidden} flat={isGalleryPage} pinned />
-{/if}
-
-{#if showIntro && introSrc}
-	<LoadingIntro
-		src={introSrc}
-		on:complete={() => {
-			if (page.url.searchParams.get('intro') !== '1') {
-				sessionStorage.setItem('introSeen', '1');
-			}
-
-			showIntro = false;
-		}}
-	/>
 {/if}
 
 {@render children()}

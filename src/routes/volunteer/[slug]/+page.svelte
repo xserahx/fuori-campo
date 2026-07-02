@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../../../lib/styles/tokens.css';
   import { onMount } from 'svelte';
-  import { gsap } from 'gsap';
+  import { tilt } from '$lib/actions/tilt';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
@@ -177,41 +177,17 @@
     goto(buildGalleryHref(currentContext));
   }
 
-  /* ── 3D card tilt — same feel as the gallery cards (GSAP, pointer-follow) ── */
-  const TILT_MAX  = 12;
-  const TILT_DEAD = 0.28;
-
-  function onTiltMove(e: MouseEvent) {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const card = e.currentTarget as HTMLElement;
-    const rect = card.getBoundingClientRect();
-    const nx = (e.clientX - (rect.left + rect.width  * 0.5)) / (rect.width  * 0.5);
-    const ny = (e.clientY - (rect.top  + rect.height * 0.5)) / (rect.height * 0.5);
-    const ax = Math.max(0, (Math.abs(nx) - TILT_DEAD) / (1 - TILT_DEAD));
-    const ay = Math.max(0, (Math.abs(ny) - TILT_DEAD) / (1 - TILT_DEAD));
-    const rotY =  Math.sign(nx) * ax * TILT_MAX;
-    const rotX = -Math.sign(ny) * ay * TILT_MAX * 0.75;
-    const sdx =  rotY * 2.0;
-    const sdy = -rotX * 1.4 + 16;
-    const sbl =  52 + (Math.abs(rotX) + Math.abs(rotY)) * 1.6;
-    gsap.to(card, {
-      rotateX: rotX, rotateY: rotY,
-      z: 12,
-      transformPerspective: 1100,
-      transformOrigin: '50% 50%',
-      boxShadow: `${sdx}px ${sdy}px ${sbl}px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06)`,
-      duration: 0.25, ease: 'power2.out', overwrite: 'auto',
-    });
-  }
-
-  function onTiltLeave(e: MouseEvent) {
-    const card = e.currentTarget as HTMLElement;
-    gsap.to(card, {
-      rotateX: 0, rotateY: 0, z: 0,
-      boxShadow: '0 18px 60px rgba(0,0,0,0.55), 0 4px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.05)',
-      duration: 0.6, ease: 'power3.out', overwrite: 'auto',
-    });
-  }
+  /* ── 3D card tilt — spring-driven, same feel as the gallery (see
+     $lib/actions/tilt, ReactBits TiltedCard). Live two-layer shadow that
+     matches the frame's CSS resting elevation at rest and leans with tilt. */
+  const tiltShadow = (rx: number, ry: number, h: number) => {
+    const sdx = ry * 2.0;
+    const sdy = -rx * 1.4 + 18;
+    const sbl = 60 + (Math.abs(rx) + Math.abs(ry)) * 1.6;
+    const alpha = 0.55 + 0.05 * h;
+    const rim = 0.05 + 0.01 * h;
+    return `${sdx}px ${sdy}px ${sbl}px rgba(0,0,0,${alpha}), 0 4px 20px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,${rim})`;
+  };
 </script>
 
 <svelte:head>
@@ -265,8 +241,14 @@
   <div
     class="photo-frame photo-frame--{detectedRatio}"
     class:photo-frame--portrait={isPortrait}
-    onmousemove={onTiltMove}
-    onmouseleave={onTiltLeave}
+    use:tilt={{
+      max: 12,
+      tiltXFactor: 0.85,
+      perspective: 1100,
+      scale: 1.04,
+      lift: 12,
+      shadow: tiltShadow,
+    }}
   >
 
     <!-- Main image -->

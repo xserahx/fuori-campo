@@ -3,7 +3,8 @@
   import { page } from '$app/state';
   import { goto, preloadData } from '$app/navigation';
   import gsap from 'gsap';
-  import { buildScatterLayoutCached, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { tilt } from '$lib/actions/tilt';
+  import { buildScatterLayoutCached, recordImageAspect, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
@@ -16,45 +17,54 @@
   let collageRef: HTMLDivElement;
   let innerRef: HTMLDivElement;
 
-  // Tiles use the exact box reserved by the scatter layout (object-fit:cover
-  // crops the image to fit), so no per-image height correction is needed —
-  // which keeps the masonry gap-free with no shrunk frames.
+  // ── Frame orientation ─────────────────────────────────────────────
+  // The masonry reserves each tile at the photo's real orientation (snapped to
+  // 16:9 / 4:3 / 3:4 / 9:16) — horizontal → landscape frame, vertical → portrait.
+  // Orientation is only known once an image decodes, so we measure every unique
+  // photo up-front (in parallel, off-screen) and cache it (localStorage). When a
+  // fresh set finishes measuring we bump `arVersion` once, which rebuilds the
+  // layout with correct frames in-place — photos land in the right frame on
+  // first load with NO page reload. Return visits read the cache and never
+  // reflow (recordImageAspect reports no change).
+  let arVersion = $state(0);
 
-  // ── 3D card tilt (pure GSAP — zero Svelte re-renders at 60 fps) ───
-  const TILT_MAX  = 14;
-  const TILT_DEAD = 0.28;
+  $effect(() => {
+    const imgs = rawImages;
+    if (imgs.length === 0) return;
 
-  function onTiltMove(e: MouseEvent) {
-    if (isDragging) return;
-    const card = e.currentTarget as HTMLElement;
-    const rect  = card.getBoundingClientRect();
-    const nx = (e.clientX - (rect.left + rect.width  * 0.5)) / (rect.width  * 0.5);
-    const ny = (e.clientY - (rect.top  + rect.height * 0.5)) / (rect.height * 0.5);
-    const ax = Math.max(0, (Math.abs(nx) - TILT_DEAD) / (1 - TILT_DEAD));
-    const ay = Math.max(0, (Math.abs(ny) - TILT_DEAD) / (1 - TILT_DEAD));
-    const rotY =  Math.sign(nx) * ax * TILT_MAX;
-    const rotX = -Math.sign(ny) * ay * TILT_MAX * 0.75;
-    const sdx =  rotY * 1.6;
-    const sdy = -rotX * 1.1 + 7;
-    const sbl =  28 + (Math.abs(rotX) + Math.abs(rotY)) * 0.9;
-    gsap.to(card, {
-      rotateX: rotX, rotateY: rotY,
-      z: 10,
-      transformPerspective: 720,
-      transformOrigin: '50% 50%',
-      boxShadow: `${sdx}px ${sdy}px ${sbl}px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06)`,
-      duration: 0.22, ease: 'power2.out', overwrite: 'auto',
-    });
-  }
+    const uniq = new Map<string, string>();
+    for (const im of imgs) uniq.set(im.path ?? im.src, im.src);
 
-  function onTiltLeave(e: MouseEvent) {
-    const card = e.currentTarget as HTMLElement;
-    gsap.to(card, {
-      rotateX: 0, rotateY: 0, z: 0,
-      boxShadow: '0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)',
-      duration: 0.55, ease: 'power3.out', overwrite: 'auto',
-    });
-  }
+    let remaining = uniq.size;
+    let changed = false;
+    let cancelled = false;
+    const finish = () => { if (!cancelled && --remaining <= 0 && changed) arVersion++; };
+
+    for (const [key, src] of uniq) {
+      const probe = new Image();
+      probe.decoding = 'async';
+      probe.onload = () => {
+        if (probe.naturalWidth && recordImageAspect(key, probe.naturalWidth / probe.naturalHeight)) changed = true;
+        finish();
+      };
+      probe.onerror = finish;
+      probe.src = src;
+    }
+
+    return () => { cancelled = true; };
+  });
+
+  // ── 3D card tilt — spring-driven (see $lib/actions/tilt, ReactBits feel).
+  // A live, continuous box-shadow that eases with the same spring: it reads
+  // as the CSS resting shadow at rest and deepens/leans as the card tilts.
+  const tiltShadow = (rx: number, ry: number, h: number) => {
+    const sdx = ry * 1.6;
+    const sdy = -rx * 1.1 + 2 + 5 * h;
+    const sbl = 16 + 12 * h + (Math.abs(rx) + Math.abs(ry)) * 0.9;
+    const alpha = 0.5 + 0.35 * h;
+    const rim = 0.03 + 0.03 * h;
+    return `${sdx}px ${sdy}px ${sbl}px rgba(0,0,0,${alpha}), 0 0 0 1px rgba(255,255,255,${rim})`;
+  };
 
   // Canvas layout width — scatter algorithm uses this as horizontal extent,
   // and it doubles as the horizontal tiling period. Kept wide so the tile
@@ -105,9 +115,20 @@
   // (reduced-motion snaps in one frame) and anchors the viewport centre.
   $effect(() => { targetScale = zoom; });
 
-  const FRICTION    = 0.92;
-  const LERP        = 0.1;
-  const VIRT_MARGIN = 600; // px of off-screen buffer loaded ahead of viewport
+  // Momentum tuning — deliberately calm & floaty (not fast): a long, gentle
+  // glide that eases to rest, à la the reference infinite-scroll feel.
+  // FRICTION closer to 1 = longer, softer decay; a low LERP = the transform
+  // trails the target smoothly (weighty, never snappy).
+  const FRICTION    = 0.94;
+  const LERP        = 0.055;
+  // Wheel / trackpad → vertical navigation. Kept low so a scroll notch nudges
+  // the gallery gently; the eased loop below smooths it into a glide.
+  const WHEEL_SPEED = 0.75;
+  // Off-screen buffer (screen px) rendered around the viewport on every side, so
+  // tiles are already mounted — and their images already decoded (see the
+  // up-front measure/preload) — before you scroll to them. Generous so photos
+  // never pop in at the edge as you pan.
+  const VIRT_MARGIN = 1600;
 
   // ── Coordinate normalisation ───────────────────────────────────────
   // After the user pans many tile-widths away, snap raw coords back by
@@ -183,10 +204,12 @@
   function pointerMove(e: PointerEvent) {
     if (!isDragging) return;
     const dt = Math.max(performance.now() - lastTime, 1);
-    targetX += (e.clientX - lastX) * 1.2;
-    targetY += (e.clientY - lastY) * 1.2;
-    velX = ((e.clientX - lastX) / dt) * 16;
-    velY = ((e.clientY - lastY) / dt) * 16;
+    // 1:1 drag tracking (content follows the cursor) with a gentle fling so a
+    // release drifts a little and settles — never a fast throw.
+    targetX += (e.clientX - lastX) * 1.0;
+    targetY += (e.clientY - lastY) * 1.0;
+    velX = ((e.clientX - lastX) / dt) * 5;
+    velY = ((e.clientY - lastY) / dt) * 5;
     // No clamping — infinite scroll.
     lastX = e.clientX;
     lastY = e.clientY;
@@ -194,6 +217,33 @@
   }
 
   function pointerUp() { isDragging = false; }
+
+  // Wheel / trackpad scrolls the gallery VERTICALLY; the ← / → arrow keys move
+  // horizontally (drag still moves in every direction). Feeding the target lets
+  // the eased loop glide the motion smoothly.
+  function onWheel(e: WheelEvent) {
+    if (isDragging) return;
+    e.preventDefault();
+    targetY -= e.deltaY * WHEEL_SPEED;
+    velX = 0; velY = 0; // wheel drives the target directly — no leftover fling
+  }
+
+  // Keyboard: ← / → pan horizontally, ↑ / ↓ vertically. Auto-repeat while a key
+  // is held feeds the eased loop for a continuous, smooth glide.
+  const KEY_STEP = 220;
+  function onKeyDown(e: KeyboardEvent) {
+    const el = e.target as HTMLElement | null;
+    if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+    let handled = true;
+    switch (e.key) {
+      case 'ArrowLeft':  targetX += KEY_STEP; break;
+      case 'ArrowRight': targetX -= KEY_STEP; break;
+      case 'ArrowUp':    targetY += KEY_STEP; break;
+      case 'ArrowDown':  targetY -= KEY_STEP; break;
+      default: handled = false;
+    }
+    if (handled) { e.preventDefault(); velX = 0; velY = 0; }
+  }
 
   function updateScale() { resizeCount++; }
 
@@ -243,8 +293,9 @@
   const rawImages = $derived(
     dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : []
   );
-  // buildScatterLayoutCached: ref-equal rawImages → same layout object, no recompute.
-  const photoLayout      = $derived(buildScatterLayoutCached(rawImages, designWidth));
+  // buildScatterLayoutCached: ref-equal rawImages + same arVersion → same layout
+  // object (no recompute); a bumped arVersion rebuilds once with correct frames.
+  const photoLayout      = $derived(buildScatterLayoutCached(rawImages, designWidth, arVersion));
   const positionedImages = $derived(photoLayout.images);
   const designHeight     = $derived(photoLayout.canvasHeight);
 
@@ -318,9 +369,13 @@
     animate();
     window.addEventListener('resize', updateScale);
     window.addEventListener('pointerup', pointerUp);
+    collageRef?.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
     return () => {
       window.removeEventListener('resize', updateScale);
       window.removeEventListener('pointerup', pointerUp);
+      collageRef?.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeyDown);
       cancelAnimationFrame(rafId);
     };
   });
@@ -345,8 +400,15 @@
         onpointerdown={(e) => e.stopPropagation()}
         onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
         onclick={() => { if (!img.noClick) openVolunteer(img); }}
-        onmousemove={onTiltMove}
-        onmouseleave={onTiltLeave}
+        use:tilt={{
+          max: 14,
+          tiltXFactor: 0.85,
+          perspective: 720,
+          scale: 1.05,
+          lift: 10,
+          shadow: tiltShadow,
+          disabled: () => isDragging,
+        }}
       >
         <div class="img-bw-layer">
           <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
