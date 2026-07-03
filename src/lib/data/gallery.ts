@@ -211,6 +211,14 @@ export function recordImageAspect(key: string, wPerH: number): boolean {
   return true;
 }
 
+/** True when every image's orientation is already known (measured/cached), so
+ *  the masonry can be built correct on the first try — no placeholder + reflow. */
+export function hasAllAspects(images: GalleryImage[]): boolean {
+  const m = arMap();
+  for (const img of images) if (!m.has(img.path ?? img.src)) return false;
+  return true;
+}
+
 /** Neutral near-square boxes used until a photo's true orientation is known. */
 const FALLBACK_HW = [0.92, 1.06, 1.18, 1.0, 1.28] as const;
 
@@ -437,23 +445,18 @@ export function buildInfiniteImages(rawImages: GalleryImage[], waves = 8) {
 }
 
 // Ref-equality cache: same rawImages array → same layout object → $derived stays stable.
-// `version` lets the caller force a rebuild after new aspect ratios are measured
-// (so frames snap to the right orientation) without changing the rawImages ref.
+// The layout is built once, only after all orientations are known (see the
+// gallery's `ready` gate), so no version/invalidation is needed.
 let _layoutCacheKey: GalleryImage[] | null = null;
-let _layoutCacheVersion = -1;
 let _layoutCacheValue: ReturnType<typeof buildScatterLayout> | null = null;
 
 export function buildScatterLayoutCached(
   rawImages: GalleryImage[],
-  canvasWidth = 9600,
-  version = 0
+  canvasWidth = 9600
 ): ReturnType<typeof buildScatterLayout> {
-  if (_layoutCacheKey === rawImages && _layoutCacheVersion === version && _layoutCacheValue !== null) {
-    return _layoutCacheValue;
-  }
+  if (_layoutCacheKey === rawImages && _layoutCacheValue !== null) return _layoutCacheValue;
   _layoutCacheValue = buildScatterLayout(buildInfiniteImages(rawImages, 12), canvasWidth);
   _layoutCacheKey = rawImages;
-  _layoutCacheVersion = version;
   return _layoutCacheValue;
 }
 

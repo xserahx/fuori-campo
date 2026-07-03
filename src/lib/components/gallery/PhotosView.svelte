@@ -4,7 +4,7 @@
   import { goto, preloadData } from '$app/navigation';
   import gsap from 'gsap';
   import { tilt } from '$lib/actions/tilt';
-  import { buildScatterLayoutCached, recordImageAspect, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildScatterLayoutCached, recordImageAspect, hasAllAspects, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
 
@@ -20,38 +20,42 @@
   // ── Frame orientation ─────────────────────────────────────────────
   // The masonry reserves each tile at the photo's real orientation (snapped to
   // 16:9 / 4:3 / 3:4 / 9:16) — horizontal → landscape frame, vertical → portrait.
-  // Orientation is only known once an image decodes, so we measure every unique
-  // photo up-front (in parallel, off-screen) and cache it (localStorage). When a
-  // fresh set finishes measuring we bump `arVersion` once, which rebuilds the
-  // layout with correct frames in-place — photos land in the right frame on
-  // first load with NO page reload. Return visits read the cache and never
-  // reflow (recordImageAspect reports no change).
-  let arVersion = $state(0);
+  // Orientation is only known once an image decodes. To enter the gallery ALREADY
+  // in the correct layout (no placeholder → reflow "reload"), we build the masonry
+  // exactly once — after every photo's orientation is known. Return visits read
+  // the cache and are ready instantly; a first-ever visit measures every unique
+  // photo up-front (in parallel, off-screen), which also warms the image cache so
+  // they appear immediately. A timeout caps the wait so it can never hang.
+  let ready = $state(false);
 
   $effect(() => {
     const imgs = rawImages;
     if (imgs.length === 0) return;
+    if (hasAllAspects(imgs)) { ready = true; return; }   // cached → build now, no wait
 
     const uniq = new Map<string, string>();
     for (const im of imgs) uniq.set(im.path ?? im.src, im.src);
 
     let remaining = uniq.size;
-    let changed = false;
-    let cancelled = false;
-    const finish = () => { if (!cancelled && --remaining <= 0 && changed) arVersion++; };
+    let done = false;
+    const settle = () => { if (!done) { done = true; ready = true; } };
+    const finish = () => { if (--remaining <= 0) settle(); };
 
     for (const [key, src] of uniq) {
       const probe = new Image();
       probe.decoding = 'async';
       probe.onload = () => {
-        if (probe.naturalWidth && recordImageAspect(key, probe.naturalWidth / probe.naturalHeight)) changed = true;
+        if (probe.naturalWidth) recordImageAspect(key, probe.naturalWidth / probe.naturalHeight);
         finish();
       };
       probe.onerror = finish;
       probe.src = src;
     }
 
-    return () => { cancelled = true; };
+    // Never block entry longer than this; any stragglers use a fallback box and
+    // correct themselves (from cache) on the next visit.
+    const cap = setTimeout(settle, 2500);
+    return () => { done = true; clearTimeout(cap); };
   });
 
   // ── 3D card tilt — spring-driven (see $lib/actions/tilt, ReactBits feel).
@@ -293,9 +297,11 @@
   const rawImages = $derived(
     dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : []
   );
-  // buildScatterLayoutCached: ref-equal rawImages + same arVersion → same layout
-  // object (no recompute); a bumped arVersion rebuilds once with correct frames.
-  const photoLayout      = $derived(buildScatterLayoutCached(rawImages, designWidth, arVersion));
+  // Built once, only after orientations are known (`ready`), so the very first
+  // render is already the correct layout — no placeholder pass, no reflow.
+  const photoLayout      = $derived(
+    ready ? buildScatterLayoutCached(rawImages, designWidth) : { images: [], canvasHeight: 1080 }
+  );
   const positionedImages = $derived(photoLayout.images);
   const designHeight     = $derived(photoLayout.canvasHeight);
 
@@ -445,7 +451,7 @@
     border-radius: var(--radius-s, 4px);
     box-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
     /* box-shadow is animated by GSAP on hover; opacity handled here */
-    transition: opacity 0.45s ease;
+    transition: opacity 0.45s ease, filter 0.5s ease;
     cursor: pointer;
     pointer-events: auto;
     border: 0;
@@ -513,13 +519,16 @@
   .img-no-click:hover .collage-img { transform: scale(1); }
 
   /* ── Filter state ─────────────────────────────────────────────── */
+  /* Unselected photos get the zoom page's background treatment — a soft
+     blur(12px) saturate(0.85) at low opacity — applied to the WHOLE tile so
+     its rectangular edge/border feathers out too (not just the image), and the
+     crisp elevation shadow is dropped. They recede into a dreamy field behind
+     the sharp matches; eases in via .collage-item's filter transition. */
   .img-unmatched {
-    opacity: 0.45;
+    opacity: 0.4;
     pointer-events: none;
-  }
-  .img-unmatched .img-color-layer { opacity: 0; }
-  .img-unmatched .collage-img--bw {
-    filter: grayscale(100%) contrast(0.82) brightness(0.42);
+    filter: blur(12px) saturate(0.85);
+    box-shadow: none;
   }
 
   /* ── Texture overlays ─────────────────────────────────────────── */
