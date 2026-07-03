@@ -59,7 +59,7 @@
        MAX_FILTERS; removing (or toggling an already-active one off) always works. */
     function selezionaCategoria(id: string) {
         if (activeFilters.includes(id)) {
-            activeFilters = activeFilters.filter((f) => f !== id);
+            activeFilters = activeFilters.filter((f: string) => f !== id);
         } else if (!filtersFull) {
             activeFilters = [...activeFilters, id];
         }
@@ -67,7 +67,7 @@
 
     /* Remove a single filter via its chip's X — updates badge + results live. */
     function removeFilter(id: string) {
-        activeFilters = activeFilters.filter((f) => f !== id);
+        activeFilters = activeFilters.filter((f: string) => f !== id);
     }
 
     /* ─────────────────────────────────────────────────────────────────────
