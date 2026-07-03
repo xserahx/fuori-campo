@@ -1,6 +1,8 @@
 <script lang="ts">
   import '../../../lib/styles/tokens.css';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
+  import { get } from 'svelte/store';
+  import gsap from 'gsap';
   import { tilt } from '$lib/actions/tilt';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -10,6 +12,15 @@
   import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
   import XButton from '$lib/components/buttons/XButton.svelte';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
+  import {
+    photoFlight,
+    arriveEntry,
+    launchExit,
+    rectOf,
+    FLIGHT_DURATION_MS,
+    FLIGHT_REVEAL_MS,
+    type FlightRect,
+  } from '$lib/stores/photoFlight';
 
   /* ── Blurred background photo field (the "cosmos" atmosphere) ─────
      Each neighbour photo is a soft, low-opacity tile scattered around
@@ -61,6 +72,49 @@
 
   onMount(() => {
     fetchAllVolunteers().then(vols => { allVols = vols; });
+  });
+
+  /* ── Shared-element "photo fly" — gallery click → this frame ──────
+     If a flight was launched by a gallery click (see PhotosView), report
+     this frame's rect once it's laid out at its final size so the overlay
+     (mounted in the root layout) can fly the clone into place. entryRect is
+     kept locally for the page's lifetime — including through arrow
+     navigation — so closing can always fly back to that original slot. */
+  let frameEl        = $state<HTMLElement | null>(null);
+  let entryRect       = $state<FlightRect | null>(null);
+  let flightEntry     = $state(false); // frame hidden while the clone is mid-flight
+  // Permanent for the page's lifetime (unlike flightEntry): once a flight is
+  // in play, the frame's own frame-enter keyframes must stay off for good —
+  // toggling `animation: none` on and off would replay it from scratch the
+  // moment flightEntry clears, double-animating on top of the flight reveal.
+  let suppressEntranceAnim = $state(false);
+  let arrivalReported = false;
+
+  onMount(() => {
+    const s = get(photoFlight);
+    if (s.active && s.phase === 'entering' && !s.to && s.from) {
+      entryRect = s.from;
+      flightEntry = true;
+      suppressEntranceAnim = true;
+      // Park the caption lines beneath their clip masks now (frame is still
+      // opacity:0, so this is invisible) — revealCaption() below plays their
+      // actual entrance the instant the photo reaches max zoom, so the text
+      // gets its own motion instead of just riding the frame's opacity fade.
+      parkCaption();
+      // Safety net: if the image never loads (error / no image), the overlay's
+      // own timeout resets the flight, but the frame must still reveal.
+      setTimeout(() => { flightEntry = false; revealCaption(); }, FLIGHT_DURATION_MS + 400);
+    } else {
+      // No flight (direct URL load / refresh): frame-enter plays its one
+      // keyframe entrance normally. But `class="photo-frame photo-frame--{ratio}"`
+      // gets reassigned wholesale on every later arrow navigation (detectedRatio
+      // changes), and reassigning an element's className mid-animation makes
+      // Chrome restart any CSS `animation` still bound to it — replaying the
+      // blur/scale/translateY entrance a second time right as the crossfade
+      // and caption settle. Disarm it for good once its single intended
+      // play has had time to finish, so nothing can ever restart it again.
+      setTimeout(() => { suppressEntranceAnim = true; }, 750);
+    }
   });
 
   /* ── Reactive state from URL ─────────────────────────────────── */
@@ -150,9 +204,159 @@
   let detectedRatio = $state<'16-9' | '4-3' | '3-4' | '9-16'>('16-9');
   const isPortrait  = $derived(detectedRatio === '3-4' || detectedRatio === '9-16');
 
-  $effect(() => { currentSlug; imgParam; imgError = false; detectedRatio = '16-9'; });
+  // NB: does NOT reset detectedRatio. The frame keeps the OUTGOING photo's
+  // shape until the incoming photo's real ratio is known (handleImageLoad) —
+  // snapping to a hardcoded '16-9' here first made the frame jump twice
+  // (old shape → forced 16:9 → real shape), worst when going portrait ↔
+  // landscape. morphFrame() below animates the one, correct shape change.
+  $effect(() => { currentSlug; imgParam; imgError = false; });
 
-  function handleImageLoad(e: Event) {
+  /* ── Arrow-navigation crossfade ───────────────────────────────────
+     Peer navigation (goTo) changes the route, which updates `resolvedSrc`
+     but otherwise just swaps the <img> src instantly. To read as a single
+     continuous "scroll between images" motion instead of a hard cut, the
+     outgoing photo is kept mounted on top and eased out (fade + scale up)
+     while the incoming one (already in the DOM below it) eases in from a
+     slight scale-down — a GSAP crossfade, not a Svelte transition, so it
+     stays on the same timeline/easing as the rest of the frame's motion.
+     The frame itself is morphed (FLIP: old px size → new px size) in the
+     same duration, so a portrait ↔ landscape switch reshapes smoothly
+     instead of snapping the instant the aspect-ratio class changes. */
+  let mainImgEl: HTMLImageElement | undefined = $state();
+  let outgoingImgEl: HTMLImageElement | undefined = $state();
+  let outgoingSrc = $state<string | null>(null);
+  let lastResolvedSrc: string | null = null;
+  let pendingFrameFrom: FlightRect | null = null;
+
+  $effect(() => {
+    const src = resolvedSrc;
+    if (src === lastResolvedSrc) return;
+    const prev = lastResolvedSrc;
+    lastResolvedSrc = src;
+    // Only crossfade photo → photo (a fresh flight entry or a volunteer with
+    // no image at all just renders normally, no outgoing layer to animate).
+    if (prev && src && !flightEntry) {
+      outgoingSrc = prev;
+      // Snapshot the frame's CURRENT (still-old-ratio) size — the "from" of
+      // the FLIP morph, taken before detectedRatio has any chance to change.
+      pendingFrameFrom = frameEl ? rectOf(frameEl) : null;
+      // Caption text is already reactively bound to the NEW volunteer by
+      // this point — park it back below the clip mask synchronously, in the
+      // same tick, before the browser paints, so nothing flashes at rest
+      // before crossfadePhoto reveals it.
+      parkCaption();
+      crossfadePhoto();
+    } else {
+      outgoingSrc = null;
+      pendingFrameFrom = null;
+    }
+  });
+
+  // 'power2.inOut' eases in AND out gently — no fast burst at the start the
+  // way the previous 'expo.out' gave, shared here so the crossfade, the
+  // frame morph, and the caption stagger all move on the same calm curve.
+  const XFADE_EASE = 'power2.inOut';
+  const XFADE_DUR  = 0.85;
+
+  // ── Caption entrance (shared: arrow-nav crossfade + gallery-click flight)
+  // All three lines slide up from beneath their clip-mask wrapper together —
+  // same start, same duration, same end. NB: earlier versions staggered the
+  // lines (offsetting each line's start by ~0.08s, FiltraPerCategoriaFilter-
+  // style) — that meant one line was still finishing its own entrance after
+  // an earlier line had already visibly stopped, which read as an unwanted
+  // second movement on the text. No stagger = nothing can still be moving
+  // once any line has settled. parkCaption() hides the lines (call before
+  // they'd otherwise be visible); revealCaption() plays the entrance.
+  // killTweensOf first in both: guards against a straggler tween from a
+  // still-in-flight PREVIOUS reveal (e.g. two arrow clicks in quick
+  // succession) fighting a freshly-started one on the same element/property.
+  function parkCaption() {
+    gsap.killTweensOf('.cap-line');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    gsap.set('.cap-line', { yPercent: 140 });
+  }
+
+  function revealCaption(delay = 0) {
+    gsap.killTweensOf('.cap-line');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      gsap.set('.cap-line', { yPercent: 0 });
+      return;
+    }
+    gsap.to('.cap-line', { yPercent: 0, duration: 0.9, ease: 'power2.out', force3D: false, delay });
+  }
+
+  async function crossfadePhoto() {
+    await tick();
+    if (!mainImgEl) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) { outgoingSrc = null; revealCaption(); return; }
+
+    gsap.killTweensOf([mainImgEl, outgoingImgEl, '.cap-line'].filter(Boolean));
+
+    // Incoming photo: soft-focus pull — starts slightly blurred & larger,
+    // sharpens and settles to size as it fades in.
+    gsap.fromTo(mainImgEl,
+      { opacity: 0, scale: 1.1, filter: 'blur(10px)' },
+      { opacity: 1, scale: 1, filter: 'blur(0px)', duration: XFADE_DUR, ease: XFADE_EASE,
+        onComplete: () => { if (mainImgEl) gsap.set(mainImgEl, { clearProps: 'filter' }); } }
+    );
+
+    // NB: revealCaption() is NOT called here. It fires from handleImageLoad's
+    // pendingFrameFrom branch instead, at the exact same instant morphFrame
+    // starts — see the note there for why (a mismatch made the settled
+    // caption look like it "moved again" once the frame resize caught up).
+
+    if (outgoingImgEl) {
+      gsap.to(outgoingImgEl, {
+        opacity: 0, scale: 1.1, filter: 'blur(10px)', duration: XFADE_DUR, ease: XFADE_EASE,
+        onComplete: () => { outgoingSrc = null; },
+      });
+    }
+  }
+
+  // FLIP-morphs the frame from its old pixel size to its new one. Freezes
+  // aspect-ratio to 'auto' for the duration (otherwise the CSS aspect-ratio
+  // rule — already switched to the new class — would fight the width tween
+  // by re-deriving height every frame instead of letting both axes ease
+  // together). Same easing/duration as crossfadePhoto so the reshape and
+  // the photo fade read as one motion rather than two things coinciding.
+  //
+  // Deliberately does NOT clearProps the inline width/height/aspectRatio at
+  // the end (unlike an earlier version of this function). The filters panel
+  // hit exactly this class of bug: its own reveal tween's onComplete used to
+  // clearProps back to the CSS value, and the FiltraPerCategoriaFilter.svelte
+  // history shows that call was removed — the CSS-recomputed `min(...)`/
+  // aspect-ratio value doesn't always exactly match the px value GSAP
+  // animated to (this app applies a document-wide `zoom` scale in app.html,
+  // which can round slightly differently), so clearing right as the frame
+  // "settles" reintroduces a fresh snap at that exact instant — precisely
+  // the kind of "still moving after it looks done" symptom being chased
+  // here. Leaving the explicit inline px in place means the frame's box
+  // never changes again after this tween, full stop; the next morphFrame
+  // call (next navigation) just overwrites it with a fresh explicit value.
+  //
+  // `onSettled` fires once the frame's box is truly done changing — the
+  // caption is nested inside it via position:absolute, so it must never be
+  // revealed before this: revealing while the frame is still animating
+  // width/height lets the still-moving box keep nudging the caption's
+  // rendered position for the remainder of the resize, on EVERY line at
+  // once (since they're all anchored the same way), which is a very close
+  // match for the "all three lines drift a few px up" report.
+  function morphFrame(from: FlightRect, to: FlightRect, onSettled: () => void) {
+    if (!frameEl || (from.width === to.width && from.height === to.height) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onSettled();
+      return;
+    }
+    gsap.killTweensOf(frameEl);
+    gsap.set(frameEl, { width: from.width, height: from.height, aspectRatio: 'auto' });
+    gsap.to(frameEl, {
+      width: to.width, height: to.height, duration: XFADE_DUR, ease: XFADE_EASE,
+      onComplete: onSettled,
+    });
+  }
+
+  async function handleImageLoad(e: Event) {
     const img = e.currentTarget as HTMLImageElement;
     const r = img.naturalWidth / img.naturalHeight;
     // Geometric midpoints between adjacent supported ratios
@@ -160,6 +364,37 @@
     else if (r < 1.0)   detectedRatio = '3-4';  // < √(3/4 × 4/3) = 1
     else if (r < 1.540) detectedRatio = '4-3';  // < √(4/3 × 16/9)
     else                detectedRatio = '16-9';
+
+    if (flightEntry && !arrivalReported && frameEl) {
+      arrivalReported = true;
+      // Wait for the ratio class change above to actually lay out, so the
+      // reported rect matches the frame's real final size, not the '16-9'
+      // default it started with.
+      await tick();
+      requestAnimationFrame(() => {
+        if (frameEl) arriveEntry(rectOf(frameEl));
+        // Fires the instant the photo reaches max zoom — the frame's own
+        // opacity fade (--flight-reveal-ms) and the caption's slide-up
+        // entrance both start here, together, so the text arrives with the
+        // photo instead of trailing it.
+        setTimeout(() => { flightEntry = false; revealCaption(); }, FLIGHT_DURATION_MS);
+      });
+    } else if (pendingFrameFrom) {
+      const from = pendingFrameFrom;
+      pendingFrameFrom = null;
+      // Caption reveal is gated on morphFrame's onSettled — NOT fired here —
+      // because the caption sits inside the frame via position:absolute, and
+      // revealing it while the frame's width/height are still being tweened
+      // lets the still-resizing box keep nudging the caption's rendered
+      // position for the remainder of the resize. Waiting the extra beat
+      // means the caption only ever appears once the frame is truly at its
+      // final, unchanging size — nothing left that could move it afterward.
+      await tick();
+      requestAnimationFrame(() => {
+        if (frameEl) morphFrame(from, rectOf(frameEl), revealCaption);
+        else revealCaption();
+      });
+    }
   }
 
   /* ── Display values — DB is the single source of truth ──────── */
@@ -201,6 +436,12 @@
   }
 
   function goBackToGallery() {
+    // Fly back into the original gallery slot — always that slot, even if
+    // arrow navigation moved to a different peer first, since that's where
+    // the gallery's restored pan position will actually show this photo.
+    if (frameEl && entryRect && resolvedSrc) {
+      launchExit(resolvedSrc, rectOf(frameEl), entryRect);
+    }
     goto(buildGalleryHref(currentContext));
   }
 
@@ -290,8 +531,12 @@
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    bind:this={frameEl}
     class="photo-frame photo-frame--{detectedRatio}"
     class:photo-frame--portrait={isPortrait}
+    class:photo-frame--flight={flightEntry}
+    class:photo-frame--suppress-anim={suppressEntranceAnim}
+    style={suppressEntranceAnim ? `--flight-reveal-ms:${FLIGHT_REVEAL_MS}ms` : undefined}
     use:tilt={{
       max: 12,
       tiltXFactor: 0.85,
@@ -302,16 +547,29 @@
     }}
   >
 
-    <!-- Main image -->
+    <!-- Main image (+ outgoing layer mid-crossfade, see crossfadePhoto) -->
     {#if resolvedSrc && !imgError}
-      <img
-        src={resolvedSrc}
-        alt={volunteerTitle}
-        class="photo-img"
-        draggable="false"
-        onload={handleImageLoad}
-        onerror={() => { imgError = true; }}
-      />
+      <div class="photo-img-stack">
+        {#if outgoingSrc}
+          <img
+            bind:this={outgoingImgEl}
+            src={outgoingSrc}
+            alt=""
+            class="photo-img photo-img--outgoing"
+            draggable="false"
+            aria-hidden="true"
+          />
+        {/if}
+        <img
+          bind:this={mainImgEl}
+          src={resolvedSrc}
+          alt={volunteerTitle}
+          class="photo-img"
+          draggable="false"
+          onload={handleImageLoad}
+          onerror={() => { imgError = true; pendingFrameFrom = null; revealCaption(); }}
+        />
+      </div>
     {:else}
       <div class="photo-placeholder"></div>
     {/if}
@@ -324,9 +582,9 @@
     <div class="photo-caption">
       <div class="caption-grad" aria-hidden="true"></div>
       <div class="caption-text">
-        <p class="cap-role">{volunteerRole}</p>
-        <p class="cap-location">{resolvedVenue}</p>
-        <p class="cap-name">{volunteerTitle.toUpperCase()}</p>
+        <div class="cap-line-wrap"><p class="cap-role cap-line">{volunteerRole}</p></div>
+        <div class="cap-line-wrap"><p class="cap-location cap-line">{resolvedVenue}</p></div>
+        <div class="cap-line-wrap"><p class="cap-name cap-line">{volunteerTitle.toUpperCase()}</p></div>
       </div>
     </div>
 
@@ -557,8 +815,35 @@
   /* Portrait button moves to top-right (avoids caption overlap) */
   .photo-frame--portrait .expand-btn-container { bottom: auto; top: 18px; }
 
+  /* ── Shared-element "photo fly" entrance ──────────────────────────
+     When a flight is in play, the frame-enter keyframes are replaced by the
+     PhotoFlightOverlay's clone animating in from the gallery — the frame
+     itself just needs to fade in once the clone arrives, not run its own
+     motion on top. `--suppress-anim` is permanent for the page's lifetime;
+     `--flight` toggles the actual hide/reveal.
+     The transition duration MUST match FLIGHT_REVEAL_MS exactly (passed in
+     via the inline --flight-reveal-ms var): the clone's own fade-out uses
+     the same constant, starting at the same instant, so the bare clone and
+     the real, captioned frame crossfade in lockstep — no window where the
+     photo already looks "arrived" while the info is still fading in. */
+  .photo-frame--suppress-anim {
+    animation: none;
+    transition: opacity var(--flight-reveal-ms, 260ms) ease-in-out;
+  }
+  .photo-frame--suppress-anim.photo-frame--flight {
+    opacity: 0;
+  }
+
   /* ── Image: cover fills the frame — no black bars ───────────── */
+  .photo-img-stack {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
   .photo-img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -567,6 +852,13 @@
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
+  }
+
+  /* Outgoing photo during an arrow-navigation crossfade — sits above the
+     incoming image (still below the noise/vignette/caption overlays) and
+     is eased out by GSAP (crossfadePhoto); removed once faded to opacity 0. */
+  .photo-img--outgoing {
+    z-index: 1;
   }
 
   .photo-placeholder {
@@ -623,6 +915,15 @@
     display: flex;
     flex-direction: column;
     gap: 0;
+  }
+
+  /* Clip mask for the arrow-navigation caption reveal — same role as
+     .filter-item-wrap in FiltraPerCategoriaFilter: hides the line while
+     GSAP parks it at yPercent:140, so sliding to 0 reads as emerging from
+     beneath the row rather than sliding in from off-frame. */
+  .cap-line-wrap {
+    overflow: hidden;
+    line-height: 1;
   }
 
   .cap-location {

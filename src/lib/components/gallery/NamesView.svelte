@@ -196,14 +196,12 @@
         
         <!-- Il distanziatore viene stampato sempre per garantire l'ingombro fisico -->
         {#if person.letterBreakBefore}
-          <div 
-            id={`letter-${normalizeFirstLetter(person.cognome)}`} 
-            class="letter-spacer" 
+          <div
+            id={`letter-${normalizeFirstLetter(person.cognome)}`}
+            class="letter-spacer"
             aria-hidden="true"
           >
-            {#if isMobile}
-              <span class="letter-label">{normalizeFirstLetter(person.cognome)}</span>
-            {/if}
+            <span class="letter-label">{normalizeFirstLetter(person.cognome)}</span>
           </div>
         {/if}
 
@@ -272,13 +270,35 @@
     height: 0;
   }
 
-  /* Distanziatore gruppi di lettere (100px su desktop) */
+  /* Distanziatore gruppi di lettere (100px su desktop) — the extra 40px on
+     top of the original ~60px gap is reserved for the capital letter, so
+     the pre-existing spacing between groups stays intact above it. */
   .letter-spacer {
     display: flex;
     flex-shrink: 0;
     pointer-events: none;
     align-items: flex-start;
-    height: var(--spacing-9, 60px);
+    height: 100px;
+  }
+
+  /* Capital accent-green section letter — desktop default; overridden
+     smaller on mobile below. */
+  .letter-label {
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--color-content-accent, #bdff5d);
+    text-transform: uppercase;
+  }
+
+  /* Desktop only: sit the letter at the bottom of the spacer, right above
+     the name row it introduces — mobile keeps its own explicit height/
+     alignment via the max-width override below. */
+  @media (min-width: 600px) {
+    .letter-spacer {
+      align-items: flex-end;
+    }
   }
 
   .names-interaction__item {

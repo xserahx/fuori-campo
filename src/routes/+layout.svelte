@@ -9,6 +9,7 @@
 
 	import Navbar from '$lib/components/Navbar.svelte';
 	import PageTransition from '$lib/components/PageTransition.svelte';
+	import PhotoFlightOverlay from '$lib/components/PhotoFlightOverlay.svelte';
 	import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
 
 	import '$lib/styles/reset.css';
@@ -288,6 +289,7 @@
 {@render children()}
 
 <PageTransition />
+<PhotoFlightOverlay />
 
 <style>
 	:global(body) {

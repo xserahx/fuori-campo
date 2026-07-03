@@ -7,6 +7,7 @@
   import { buildScatterLayoutCached, recordImageAspect, hasAllAspects, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
+  import { rectOf, launchEntry } from '$lib/stores/photoFlight';
 
   let { activeFilters = [], dbVolunteers = [], zoom = 1 }: {
     activeFilters?: string[];
@@ -251,8 +252,14 @@
 
   function updateScale() { resizeCount++; }
 
-  function openVolunteer(image: GalleryImage) {
+  function openVolunteer(image: GalleryImage, tileEl: HTMLElement) {
     const slug = image.slug ?? slugify(image.name, 0);
+
+    // Hand the clicked tile's on-screen rect + src to the shared-element
+    // overlay (mounted in the root layout, so it survives this navigation)
+    // before navigating — the zoom page reports its own frame rect once
+    // mounted, and the overlay flies the clone between the two.
+    launchEntry(image.src, rectOf(tileEl));
 
     // Unwrap tile offset to get base canvas coords for neighbour search.
     // H and V have separate periods (designWidth vs designHeight).
@@ -428,7 +435,7 @@
         style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
         onpointerdown={(e) => e.stopPropagation()}
         onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
-        onclick={() => { if (!img.noClick) openVolunteer(img); }}
+        onclick={(e) => { if (!img.noClick) openVolunteer(img, e.currentTarget); }}
         use:tilt={{
           max: 14,
           tiltXFactor: 0.85,
