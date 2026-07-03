@@ -123,6 +123,48 @@
   let detectedRatio = $state<'16-9' | '4-3' | '3-4' | '9-16'>('16-9');
   const isPortrait  = $derived(detectedRatio === '3-4' || detectedRatio === '9-16');
 
+  /* ── Real zoom field ──────────────────────────────────────────────
+     PhotosView snapshots the gallery neighbours as they sat around the clicked
+     photo (offsets + sizes, relative to it). Rendering them here — scaled so the
+     clicked photo maps onto this frame — makes the page a true zoom-IN on that
+     photo, showing the same surrounding layout. Falls back to the decorative
+     BG_TILES field on arrow/direct navigation (no snapshot). */
+  type ZoomTile = { dx: number; dy: number; w: number; h: number; src: string };
+  let zoomField  = $state<{ cw: number; ch: number; tiles: ZoomTile[] } | null>(null);
+  let fieldScale = $state(1);
+  let frameEl    = $state<HTMLElement | null>(null);
+  let entrySlug  = '';
+
+  onMount(() => {
+    try {
+      const raw = sessionStorage.getItem('zoomField');
+      if (raw) zoomField = JSON.parse(raw);
+      sessionStorage.removeItem('zoomField'); // consume once
+    } catch { /* no snapshot → decorative field */ }
+  });
+
+  // The snapshot describes only the originally-clicked photo; drop it once the
+  // user arrow-navigates to a different one.
+  $effect(() => {
+    const s = currentSlug;
+    if (!entrySlug) entrySlug = s;
+    else if (s !== entrySlug) zoomField = null;
+  });
+
+  // Scale the field so the clicked photo's box maps onto this frame's width —
+  // preserving the gallery's relative spacing (a proportional zoom-in).
+  $effect(() => {
+    void detectedRatio; // frame width changes with the snapped ratio
+    if (!zoomField || !frameEl) return;
+    const measure = () => {
+      const w = frameEl?.getBoundingClientRect().width ?? 0;
+      if (w > 0 && zoomField) fieldScale = w / zoomField.cw;
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  });
+
   $effect(() => { currentSlug; imgParam; imgError = false; detectedRatio = '16-9'; });
 
   function handleImageLoad(e: Event) {
@@ -197,17 +239,38 @@
 <main class="lb" id="main-content">
 
   <!-- ── Blurred background: photos near the selected one in the gallery ── -->
-  <div class="bg-scatter" aria-hidden="true">
-    {#each bgPaths.slice(0, BG_TILES.length) as path, i (path)}
-      <img
-        src={getImageUrl(path)}
-        alt=""
-        class="bg-photo"
-        draggable="false"
-        style={BG_TILES[i]}
-      />
-    {/each}
-  </div>
+  {#if zoomField}
+    <!-- Real gallery neighbours in their actual relative positions, scaled up so
+         the clicked photo maps onto the frame — a true zoom-in on that photo. -->
+    <div class="bg-scatter bg-scatter--real" aria-hidden="true">
+      {#each zoomField.tiles as t, i (i)}
+        {@const nd   = Math.hypot(t.dx, t.dy) / zoomField.cw}
+        {@const near = Math.max(0, Math.min(1, 1 - nd / 10))}
+        {@const blur = (6 + (1 - near) * 10).toFixed(1)}
+        {@const op   = (0.30 + near * 0.30).toFixed(2)}
+        <img
+          src={t.src}
+          alt=""
+          class="bg-photo bg-photo--real"
+          draggable="false"
+          style="left:calc(50% + {t.dx * fieldScale}px); top:calc(50% + {t.dy * fieldScale}px); width:{t.w * fieldScale}px; height:{t.h * fieldScale}px; filter:blur({blur}px) saturate(0.85); opacity:{op};"
+        />
+      {/each}
+    </div>
+  {:else}
+    <!-- Fallback (arrow / direct nav, no snapshot): the decorative neighbour field. -->
+    <div class="bg-scatter" aria-hidden="true">
+      {#each bgPaths.slice(0, BG_TILES.length) as path, i (path)}
+        <img
+          src={getImageUrl(path)}
+          alt=""
+          class="bg-photo"
+          draggable="false"
+          style={BG_TILES[i]}
+        />
+      {/each}
+    </div>
+  {/if}
 
   <!-- Depth vignette — darkens the edges into the cosmos, keeps the centre
        clear so the sharp frame reads as the focal point. -->
@@ -239,6 +302,7 @@
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    bind:this={frameEl}
     class="photo-frame photo-frame--{detectedRatio}"
     class:photo-frame--portrait={isPortrait}
     use:tilt={{
@@ -367,6 +431,24 @@
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
+  }
+
+  /* Real gallery field: absolutely placed at each neighbour's true offset from
+     the clicked photo (position/size/blur/opacity all inline). */
+  .bg-scatter--real {
+    display: block;
+    padding: 0;
+    z-index: 1; /* above the decorative base fill, still below the frame */
+  }
+  .bg-photo--real {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    height: auto;               /* overridden inline with an explicit px height */
+    max-width: none;
+    max-height: none;
+    border-radius: var(--radius-s, 4px);  /* match the gallery tile radius */
+    object-fit: cover;
+    will-change: transform;
   }
 
   /* ── Depth vignette ─────────────────────────────────────────────

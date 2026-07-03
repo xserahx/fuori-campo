@@ -279,6 +279,27 @@
       if (neighborSlugs.length >= 20) break;
     }
 
+    // Snapshot the on-screen neighbours as they sit RIGHT NOW, relative to the
+    // clicked photo, so the zoom page can rebuild the exact same scatter around
+    // it — a real zoom-into-the-photo rather than a generic decorative field.
+    // (sessionStorage, not the URL, so it can hold the full field cheaply.)
+    try {
+      const ccx = image.left + image.width / 2;
+      const ccy = image.top + image.height / 2;
+      const field = visibleImages
+        .filter((t) => t !== image)
+        .map((t) => ({
+          dx: (t.left + t.width / 2) - ccx,
+          dy: (t.top + t.height / 2) - ccy,
+          w: t.width,
+          h: t.height,
+          src: t.src,
+        }))
+        .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))
+        .slice(0, 48);
+      sessionStorage.setItem('zoomField', JSON.stringify({ cw: image.width, ch: image.height, tiles: field }));
+    } catch { /* storage unavailable — zoom page falls back to its own field */ }
+
     const params = new URLSearchParams(buildGallerySearchParams({
       view: 'photos',
       filters: activeFilters,
