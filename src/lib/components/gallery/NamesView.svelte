@@ -59,9 +59,7 @@
   }
 
   function formatDisplayName(person: Person): string {
-    return person.displayName.toUpperCase().split(' ').map(word =>
-      word.length >= 8 ? word.replace(/(.{7})/g, '$1­') : word
-    ).join(' ');
+    return person.displayName.toUpperCase();
   }
 
   /* ── Lista Visibile con calcolo altezze e stacchi ── */
@@ -201,9 +199,7 @@
             class="letter-spacer" 
             aria-hidden="true"
           >
-            {#if isMobile}
               <span class="letter-label">{normalizeFirstLetter(person.cognome)}</span>
-            {/if}
           </div>
         {/if}
 
@@ -277,15 +273,17 @@
     display: flex;
     flex-shrink: 0;
     pointer-events: none;
-    align-items: flex-start;
-    height: var(--spacing-9, 60px);
-  }
+    align-items: flex-end;
+    height: var(--spacing-14);
+    padding-top: 80px;
+    }
 
   .names-interaction__item {
     position: relative;
     border: 0;
     background: transparent;
     color: var(--color-content-body, #fafafa);
+    flex-shrink: 0; 
 
     /* Sostituito min-height rigido con padding verticale responsive */
     padding-top: var(--spacing-4, 32px);
@@ -330,10 +328,11 @@
 
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     /* Distribute the letters across the full available height so the whole
        A–Z list is always visible — never scrolled out of view / cut off. */
-    justify-content: space-between;
+    justify-content: flex-start;
+    align: right;
     gap: 0;
 
     /* Definite height = the vertical space between navbar and bottom margin.
@@ -342,13 +341,20 @@
        The bottom reserve clears the "Filtra per categoria" button (≈108px:
        spacing-8 padding + spacing-9 button height) so the last letters (V/Z)
        are never covered by it. */
-    height: calc(100dvh - var(--navbar-height, 125px) - (var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-7, 40px)));
-    overflow: hidden;
+    height: calc(135dvh - var(--navbar-height, 125px) - (var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-7, 40px)));
+    overflow-y: auto;
 
     padding: 0;
     margin: 0;
     pointer-events: auto;
   }
+
+  .letter-label { //impostazioni per lettera verde su desktop
+      font-family: var(--font-display);
+      font-size: 84px;
+      color: var(--color-content-accent, #bdff5d);
+      font-weight: 500;
+    }
 
   .alpha-sidebar__btn {
     border: 0;
@@ -357,13 +363,13 @@
     cursor: pointer;
     flex-shrink: 0;
     height: auto;
-    width: 100%;
+    width: 20px;
 
     font-family: var(--font-display);
     /* Cap at 16px on tall screens; shrink on short ones so up to 26 letters
        (with line-height 1) never exceed the sidebar height. Must match the
        sidebar height expression so the letters fill it exactly. */
-    font-size: clamp(8px, calc((100dvh - var(--navbar-height, 125px) - (var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-7, 40px))) / 28), 16px);
+    font-size: 16px;
     line-height: 1;
     font-weight: 500;
     font-style: normal;
@@ -382,6 +388,7 @@
     .names-interaction {
       left: 24px;
       right: 42px;
+      gap: 20px;
     }
 
     .names-stage {
@@ -390,20 +397,23 @@
 
     .names-interaction__item {
       min-height: 28px;
-      font-size: 24px;
-      line-height: 28px;
-      padding: 0 8px 8px 0;
+      font-size: 45px;
+      line-height: 45px;
+      padding: 0 0 8px 0;
+      white-space: normal;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
     /* Distanziatore per mobile: 66px di altezza totale + visualizzazione testo */
     .letter-spacer {
-      height: 66px;
+      height: 86px;
       padding-top: 46px; 
     }
     
     .letter-label {
       font-family: var(--font-display);
-      font-size: 20px;
+      font-size: 45px;
       color: var(--color-content-accent, #bdff5d);
       font-weight: 500;
     }
@@ -411,14 +421,16 @@
     /* Sidebar alfabetica su mobile */
     .alpha-sidebar {
       top: 96px;
-      right: 24px;
-      width: 17px;
+      right: 20px;
+      width: 28px;
       gap: 0;
-      height: calc(100dvh - 200px);
+      height: calc(135dvh - 200px);
+      flex-wrap: nowrap;
     }
 
     .alpha-sidebar__btn {
-      font-size: clamp(8px, calc((100dvh - 200px) / 28), 16px);
+      font-size: 16px;
+      width: 100%;
     }
   }
 
@@ -428,7 +440,6 @@
     outline: 2px solid var(--color-content-accent);
     outline-offset: 4px;
     border-radius: 4px;
-    color: var(--color-content-accent);
   }
 
   @media (pointer: coarse) {
