@@ -5,7 +5,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import ArrowButton from '../buttons/ArrowButton.svelte';
-  import XButton from '../buttons/XButton.svelte';
+  import IconButton from '../buttons/IconButton.svelte';
 
   // Svelte 5 props
   let props = $props<{
@@ -86,7 +86,7 @@
 >
   <!-- NUOVO COMPONENTE DI CHIUSURA (Eredita solo la posizione originale) -->
   <div class="gallery-close-container">
-    <XButton onclick={props.onclose} />
+    <IconButton variant="close" onclick={props.onclose} />
   </div>
 
   {#if photoCount > 1}

@@ -4,7 +4,7 @@
   import { goto, preloadData } from '$app/navigation';
   import gsap from 'gsap';
   import { tilt } from '$lib/actions/tilt';
-  import { buildScatterLayoutCached, recordImageAspect, hasAllAspects, slugify, type GalleryImage } from '$lib/data/gallery';
+  import { buildScatterLayoutCached, recordImageAspect, hasAllAspects, isLayoutBuilt, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
   import { rectOf, launchEntry } from '$lib/stores/photoFlight';
@@ -27,9 +27,12 @@
   // the cache and are ready instantly; a first-ever visit measures every unique
   // photo up-front (in parallel, off-screen), which also warms the image cache so
   // they appear immediately. A timeout caps the wait so it can never hang.
-  let ready = $state(false);
+  // Start ready if a layout was already built this session (i.e. we're re-mounting
+  // after a toggle to the names view) — the switch back is then instant, no gate.
+  let ready = $state(isLayoutBuilt());
 
   $effect(() => {
+    if (ready) return;
     const imgs = rawImages;
     if (imgs.length === 0) return;
     if (hasAllAspects(imgs)) { ready = true; return; }   // cached → build now, no wait

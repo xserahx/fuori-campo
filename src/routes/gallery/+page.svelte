@@ -10,8 +10,7 @@
   import { fetchAllVolunteers, getCachedVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
   import FiltraPerCategoriaFilter from '$lib/components/filters/FiltraPerCategoriaFilter.svelte';
   import ToggleFotoNomi from '$lib/components/buttons/ToggleFotoNomi.svelte';
-  import ZoomInButton from '$lib/components/buttons/Zoom+Button.svelte';
-  import ZoomOutButton from '$lib/components/buttons/Zoom-Button.svelte';
+  import IconButton from '$lib/components/buttons/IconButton.svelte';
 
   // Pre-seed from cache so returning users see photos instantly (no loading flash).
   let dbVolunteers = $state<VolunteerSummary[]>(getCachedVolunteers());
@@ -85,8 +84,8 @@
 
 {#if activeToggle === 'photos' && !isMobile}
   <section class="zoom" aria-label="Zoom galleria">
-    <ZoomInButton  ariaLabel="Aumenta zoom" onclick={zoomIn}  disabled={!canZoomIn} />
-    <ZoomOutButton ariaLabel="Riduci zoom"  onclick={zoomOut} disabled={!canZoomOut} />
+    <IconButton variant="zoom-in"  ariaLabel="Aumenta zoom" onclick={zoomIn}  disabled={!canZoomIn} />
+    <IconButton variant="zoom-out" ariaLabel="Riduci zoom"  onclick={zoomOut} disabled={!canZoomOut} />
   </section>
 {/if}
 

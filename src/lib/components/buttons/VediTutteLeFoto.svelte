@@ -3,7 +3,7 @@
 
 <script lang="ts">
     import Icon from './Icon.svelte';
-    import ButtonLabel from './ButtonLabel.svelte'; 
+    import ButtonLabel from './ButtonLabel.svelte';
 
     let {
         href,

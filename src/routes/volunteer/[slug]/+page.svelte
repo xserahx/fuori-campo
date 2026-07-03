@@ -8,9 +8,10 @@
   import { goto } from '$app/navigation';
   import { buildGalleryHref, buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { getImageUrl, fetchAllVolunteers, getCachedVolunteers, ruoloToTag, type VolunteerSummary } from '$lib/data/volunteers';
+  import { snapToStdFrame } from '$lib/data/gallery';
   import type { PageData } from './$types';
   import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
-  import XButton from '$lib/components/buttons/XButton.svelte';
+  import IconButton from '$lib/components/buttons/IconButton.svelte';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import {
     photoFlight,
@@ -260,29 +261,40 @@
 
   // ── Caption entrance (shared: arrow-nav crossfade + gallery-click flight)
   // All three lines slide up from beneath their clip-mask wrapper together —
-  // same start, same duration, same end. NB: earlier versions staggered the
-  // lines (offsetting each line's start by ~0.08s, FiltraPerCategoriaFilter-
-  // style) — that meant one line was still finishing its own entrance after
-  // an earlier line had already visibly stopped, which read as an unwanted
-  // second movement on the text. No stagger = nothing can still be moving
-  // once any line has settled. parkCaption() hides the lines (call before
-  // they'd otherwise be visible); revealCaption() plays the entrance.
+  // same start, same duration, same end (no stagger — an earlier staggered
+  // version left later lines visibly still moving after earlier ones had
+  // already stopped).
+  //
+  // Uses a FIXED PIXEL `y` offset, not `yPercent`. `yPercent` requires GSAP to
+  // measure each element's own rendered height internally to convert the
+  // percentage to px. This app applies `document.documentElement.style.zoom`
+  // globally (app.html) for its responsive scaling, and this codebase has
+  // already hit — and documented — GSAP's own measurements being unreliable
+  // under that zoom (see the ScrollTrigger pin fix in "fix question panels
+  // animation": native `position: sticky` replaced GSAP's pin because GSAP's
+  // measurement "made the next panel start a hair early" under zoom). A
+  // plain `y: Npx` needs no such runtime measurement, so it can't be thrown
+  // off the same way — which a concurrent parent resize (morphFrame, running
+  // at the same time) made especially likely to trigger.
+  //
   // killTweensOf first in both: guards against a straggler tween from a
   // still-in-flight PREVIOUS reveal (e.g. two arrow clicks in quick
   // succession) fighting a freshly-started one on the same element/property.
+  const CAP_PARK_Y = 60; // covers the tallest line (.cap-name) at every breakpoint
+
   function parkCaption() {
     gsap.killTweensOf('.cap-line');
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    gsap.set('.cap-line', { yPercent: 140 });
+    gsap.set('.cap-line', { y: CAP_PARK_Y });
   }
 
   function revealCaption(delay = 0) {
     gsap.killTweensOf('.cap-line');
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      gsap.set('.cap-line', { yPercent: 0 });
+      gsap.set('.cap-line', { y: 0 });
       return;
     }
-    gsap.to('.cap-line', { yPercent: 0, duration: 0.9, ease: 'power2.out', force3D: false, delay });
+    gsap.to('.cap-line', { y: 0, duration: 0.9, ease: 'power2.out', force3D: false, delay });
   }
 
   async function crossfadePhoto() {
@@ -358,12 +370,13 @@
 
   async function handleImageLoad(e: Event) {
     const img = e.currentTarget as HTMLImageElement;
-    const r = img.naturalWidth / img.naturalHeight;
-    // Geometric midpoints between adjacent supported ratios
-    if      (r < 0.649) detectedRatio = '9-16'; // < √(9/16 × 3/4)
-    else if (r < 1.0)   detectedRatio = '3-4';  // < √(3/4 × 4/3) = 1
-    else if (r < 1.540) detectedRatio = '4-3';  // < √(4/3 × 16/9)
-    else                detectedRatio = '16-9';
+    // Use the SAME snap the gallery masonry uses (snapToStdFrame), so this frame
+    // always matches the photo's gallery frame — no more portrait/landscape drift.
+    const snapped = snapToStdFrame(img.naturalWidth / img.naturalHeight);
+    detectedRatio = snapped > 1.5 ? '16-9'
+                  : snapped > 1.0 ? '4-3'
+                  : snapped > 0.66 ? '3-4'
+                  : '9-16';
 
     if (flightEntry && !arrivalReported && frameEl) {
       arrivalReported = true;
@@ -391,8 +404,16 @@
       // final, unchanging size — nothing left that could move it afterward.
       await tick();
       requestAnimationFrame(() => {
-        if (frameEl) morphFrame(from, rectOf(frameEl), revealCaption);
-        else revealCaption();
+        if (frameEl) {
+          // The previous morph left explicit inline width/height on the frame,
+          // which would mask THIS photo's real ratio — so measuring the target
+          // would return the old size (from === to) and the shape would never
+          // change between photos. Clear them so CSS recomputes the correct
+          // target for the new ratio, then morph old → new. Both happen in the
+          // same frame (no paint between), so there's no visible jump.
+          gsap.set(frameEl, { clearProps: 'width,height,aspectRatio' });
+          morphFrame(from, rectOf(frameEl), revealCaption);
+        } else revealCaption();
       });
     }
   }
@@ -516,7 +537,7 @@
 
   <!-- ── Contenitore per la posizione del bottone di chiusura ── -->
   <div class="close-x-container">
-    <XButton onclick={goBackToGallery} />
+    <IconButton variant="close" onclick={goBackToGallery} />
   </div>
 
   <!-- ── Navigation arrows ───────────────────────────────────────── -->

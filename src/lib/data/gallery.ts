@@ -460,9 +460,10 @@ export function buildScatterLayoutCached(
   return _layoutCacheValue;
 }
 
-// Manually maintained list of volunteer names to ensure full coverage in the
-// names view. Kept as plain strings so it can be merged with the people
-// derived from `imagesRaw` at render time.
+export function isLayoutBuilt(): boolean {
+  return _layoutCacheValue !== null;
+}
+
 export const volunteersNames: string[] = [
   "Airaghi Giuseppe",
   "Amedeo Aureliano",
