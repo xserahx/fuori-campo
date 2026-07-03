@@ -11,12 +11,22 @@
     image: string;
     tag: string;
     slug: string;
+    // Figma hand-picks the two-line title split per category — it isn't a
+    // consistent rule (compare "RELAZIONI E" / "COMUNICAZIONE" vs "GESTIONE
+    // OPERATIVA" / "E FAN EXPERIENCE") — so it can't be derived generically.
+    // Falls back to splitTitle()'s auto-split when omitted.
+    titleLines?: [string, string];
+    // Figma's own renderer fits some longer second lines (e.g. "E DISCIPLINE")
+    // on one line at the spec'd 43px, but the real web font runs slightly
+    // wider, wrapping to an unwanted third line. Rather than shrinking every
+    // title to fit the tightest case, this narrows just the ones that need it.
+    mobileTitleSize?: number;
   };
 
   const CATEGORIES: CategoryInfo[] = [
-    { label: 'RELAZIONI E COMUNICAZIONE', image: '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png', tag: 'relazioni', slug: 'relazioni' },
+    { label: 'RELAZIONI E COMUNICAZIONE', titleLines: ['RELAZIONI E', 'COMUNICAZIONE'], image: '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png', tag: 'relazioni', slug: 'relazioni' },
     { label: 'CERIMONIE E REVENUE', image: '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png', tag: 'cerimonie', slug: 'cerimonie' },
-    { label: 'SPORT E DISCIPLINE', image: '/volunteer_images/carosello_categorie/Sport.png', tag: 'sport', slug: 'sport' },
+    { label: 'SPORT E DISCIPLINE', titleLines: ['SPORT', 'E DISCIPLINE'], mobileTitleSize: 40, image: '/volunteer_images/carosello_categorie/Sport.png', tag: 'sport', slug: 'sport' },
     { label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: '/volunteer_images/carosello_categorie/Area_organizzativa.png', tag: 'organizzativa', slug: 'organizzativa' },
     { label: 'LOGISTICA E TERRITORIO', image: '/volunteer_images/carosello_categorie/Logistica_e_territorio.png', tag: 'logistica', slug: 'logistica' },
     { label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png', tag: 'gestione', slug: 'gestione' }
@@ -40,7 +50,7 @@
   const slug = $derived((page.params as Record<string, string>).slug ?? '');
   const catIdx = $derived(CATEGORIES.findIndex(c => c.slug === slug || legacySlugify(c.label) === slug));
   const cat = $derived(catIdx >= 0 ? CATEGORIES[catIdx] : null);
-  const lines = $derived(cat ? splitTitle(cat.label) : []);
+  const lines = $derived(cat ? (cat.titleLines ?? splitTitle(cat.label)) : []);
 
   type SubRole = {
     title: string;
@@ -307,7 +317,11 @@
       </div>
 
       <section class="hero" aria-labelledby="category-title">
-        <div class="hero-title" id="category-title">
+        <div
+          class="hero-title"
+          id="category-title"
+          style={cat.mobileTitleSize ? `--mobile-title-size: ${cat.mobileTitleSize}px` : undefined}
+        >
           {#each lines as line, i}
             {#if i === 0}
               <span class="title-fill">{line}</span>
@@ -405,6 +419,7 @@
     padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) 0 var(--spacing-7);
     overflow: hidden;
     background: var(--color-background-primary);
+    box-sizing: border-box;
   }
 
   .back-btn-wrapper {
@@ -431,6 +446,7 @@
     flex-direction: column;
     gap: 0;
     width: 100%;
+    min-width: 0;
     padding: 0;
     overflow: hidden;
   }
@@ -456,6 +472,10 @@
     margin-bottom: -8px;
     max-width: calc(100% - var(--spacing-11) - var(--spacing-11));
     overflow: hidden;
+    /* Flex children default to min-width:auto, which lets long titles ignore
+       max-width and overflow past the safe area — this forces max-width to
+       actually apply. */
+    min-width: 0;
   }
 
   .title-outline {
@@ -465,6 +485,7 @@
     margin-top: 0;
     max-width: calc(100% - var(--spacing-17) - var(--spacing-11));
     overflow: hidden;
+    min-width: 0;
   }
 
   .category-sport .title-outline {
@@ -477,6 +498,7 @@
     padding: 0;
     width: 1318px;
     max-width: calc(100% - var(--spacing-11) - var(--spacing-4));
+    min-width: 0;
     text-align: right;
     font-family: var(--font-display);
     font-size: clamp(34px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 45px);
@@ -703,7 +725,13 @@
 
   @media (max-width: 700px) {
     .category-shell {
-      padding: calc(var(--navbar-height, 125px) + var(--spacing-4)) var(--spacing-4) var(--spacing-4);
+      /* Figma (node 4454:8798, "Categoria-spiegazione_mobile") measures a
+         symmetric 24px (--spacing-5) inset on both sides for every element
+         on this screen — back button, title, dots, description column, and
+         the arrows' own padding-right all land at exactly 24px from the
+         frame edge. The navbar's 27px is a separate value used only for its
+         own row, not meant to line up with page content below it. */
+      padding: calc(var(--navbar-height, 125px) + var(--spacing-4)) var(--spacing-5) var(--spacing-4);
     }
 
     .back-btn-wrapper {
@@ -723,10 +751,9 @@
       overflow: visible;
     }
 
-    .dot-frecce {
-      justify-content: flex-start;
-      gap: var(--spacing-12);
-    }
+    /* No override here — inherits justify-content: space-between from the
+       base rule, same as desktop: dots left, arrows pinned to the right
+       edge of the card (at the end of the text column). */
 
     .dot-nav {
       flex-wrap: wrap;
@@ -736,7 +763,7 @@
     .title-fill,
     .title-outline {
       white-space: normal;
-      font-size: 43px;
+      font-size: var(--mobile-title-size, 43px);
       line-height: var(--unit-36);
     }
 
@@ -753,18 +780,41 @@
       max-width: 100%;
     }
 
+    /* The base .category-sport .title-outline rule indents "E DISCIPLINE" and
+       narrows its column for desktop. That selector's (0,2,0) specificity beats
+       the plain .title-outline mobile reset above (0,1,0) — media queries add no
+       specificity — so on mobile the indent + narrow width would wrap it to a
+       third line ("E" / "DISCIPLINE"). Match the specificity here to keep the
+       second line full-width: "SPORT" on line 1, "E DISCIPLINE" on line 2. */
+    .category-sport .title-outline {
+      margin-left: 0;
+      max-width: 100%;
+    }
+
     .hero-copy {
       font-size: 26px;
       line-height: 1.02;
-      margin: var(--spacing-5) var(--spacing-5) 0;
+      /* No right margin: the hero already sits inside .category-shell's 24px
+         padding, so the hero's right edge IS the safe line — the same line the
+         title's right edge lands on. An extra right margin would inset the copy
+         24px further and break that alignment. width:auto fills the hero width
+         so text-align:right lands the text flush against the title's right edge. */
+      margin: var(--spacing-5) 0 0;
+      width: auto;
       max-width: 100%;
       text-align: right;
     }
 
     .summary-card {
-      left: var(--spacing-4);
-      bottom: var(--spacing-4);
-      width: calc(100% - var(--spacing-4) * 2);
+      /* Normal flow instead of position:fixed — Figma's dev-mode spacing
+         (77px above, between the hero quote and "EVM =") is a real gap from
+         the preceding element, not a leftover distance from a bottom-pinned
+         box. .category-shell's own 24px padding already provides the
+         left/right safe area, so no left/width override is needed here. */
+      position: static;
+      margin-top: 77px;
+      width: auto;
+      gap: 40px;
     }
 
     .summary-top {
@@ -779,6 +829,20 @@
     .summary-footer {
       font-size: var(--unit-16);
       line-height: var(--unit-20);
+    }
+  }
+
+  /* Figma pairs the dots and arrows as two separate vertical bands, not one
+     bottom-aligned row: the dots (nodes 6318:7449-7453) end at y783.6 while the
+     arrow block (node 6383:5897 "Frecce verticali mobile") starts 9px lower at
+     y793 and hangs down to the frame bottom. The base .dot-frecce rule bottom-
+     aligns both (align-items:flex-end), which drops the dots to the arrows'
+     bottom. Below the arrow's mobile size (50px, see ArrowButton @max-width:599),
+     lift the dot row by arrow-height + 9px so its bottom lands 9px above the
+     arrows' top while the arrows stay pinned to the card's bottom edge. */
+  @media (max-width: 599px) {
+    .dot-nav {
+      margin-bottom: calc(50px + 9px);
     }
   }
 

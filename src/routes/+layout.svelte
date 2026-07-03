@@ -6,6 +6,7 @@
 	import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 	import Lenis from 'lenis';
+	import { initWindowSmoothScroll } from '$lib/actions/smoothScroll';
 
 	import Navbar from '$lib/components/Navbar.svelte';
 	import PageTransition from '$lib/components/PageTransition.svelte';
@@ -52,34 +53,20 @@
 		document.documentElement.style.backgroundColor = '';
 	});
 
-	// ── Smooth scrolling Lenis — homepage only ──────────────────────────────
+	// ── Smooth scrolling Lenis — every page except gallery ──────────────────
+	// Gallery has no window scroll at all (body/html overflow forced hidden);
+	// its internal scroll containers get their own container-scoped instance
+	// (see smoothScrollContainer, used in MobilePhotosView/NamesView).
 	let lenis: Lenis | null = null;
 
 	$effect(() => {
-		if (!browser || !isHome) return;
+		if (!browser || isGalleryPage) return;
 
-		const l = new Lenis({
-			duration: 1.1,
-			smoothWheel: true
-		});
-
-		// Zero the scroll the instant Lenis takes over — tied directly to its
-		// own (re)creation rather than a separately-timed afterNavigate call,
-		// so there's no window where a stale native scroll position can show.
-		l.scrollTo(0, { immediate: true });
-
-		lenis = l;
-		l.on('scroll', ScrollTrigger.update);
-
-		const tickerFn = (time: number) => l.raf(time * 1000);
-
-		gsap.ticker.add(tickerFn);
-		gsap.ticker.lagSmoothing(0);
+		const scroll = initWindowSmoothScroll();
+		lenis = scroll.lenis;
 
 		return () => {
-			gsap.ticker.remove(tickerFn);
-			gsap.ticker.lagSmoothing(500, 33);
-			l.destroy();
+			scroll.destroy();
 			lenis = null;
 		};
 	});
