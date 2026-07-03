@@ -437,9 +437,10 @@
   .lead-paragraph,
   .story--quote,
   .quote {
-    font-size:   24px;
-    line-height: 28.8px;
-    font-weight: 500;
+    font-size:      24px;
+    line-height:    28.8px;
+    font-weight:    500;
+    letter-spacing: 0.96px;
     max-width: 100%;
   }
 
@@ -465,7 +466,7 @@
 
   .story--summary {
     max-width:  100%;
-    margin-top: 300px;
+    margin-top: 0;
   }
 
   .story--quote-left {

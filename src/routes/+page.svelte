@@ -13,6 +13,7 @@
   import "../lib/styles/tokens.css";
   import BlurTitle from "../lib/components/BlurTitle.svelte";
   import { blurText } from "../lib/actions/blurText";
+  import { scrollReveal } from "../lib/actions/scrollReveal";
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/data/volunteers';
@@ -284,7 +285,7 @@
 
     <section class="story story--right story--numbers safe-area ">
       <p use:blurText={{ delay: 65, duration: 800 }}>
-        <span class="accent">18.000</span> alle Olimpiadi <br>e <span class="accent">4.600</span> alle Paralimpiadi
+        <span class="accent">18.000</span> alle Olimpiadi e<br> <span class="accent">4.600</span> alle Paralimpiadi
       </p>
     </section>
 
@@ -296,7 +297,7 @@
 
     <section class="story story--quote story--quote-right safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Nella narrazione ufficiale erano spesso <span class="accent">ignorati</span>
+        Nella narrazione ufficiale erano spesso <span class="accent">dati per scontati</span>
       </p>
     </section>
 
@@ -304,40 +305,41 @@
     <div class="questions-container">
       
       <section class="layered-panel panel--lime question">
-        <h2>
+        <h2 use:scrollReveal>
           <span class="accent">MA </span>
-          <span class="ghost-black">CHI SONO </span><br />
-          <span class="accent">DAVVERO</span>
+          <span class="ghost-black">CHI SONO </span><br class="br-desktop" />
+          <span class="accent">DAVVERO</span><br class="br-mobile" />
           <span class="accent">I VOLONTARI?</span>
         </h2>
       </section>
 
       <section class="layered-panel panel--dark question">
-        <h2>
-          <span class="ghost-lime">PERCHÉ </span>
-          <span class="accent">HANNO DECISO</span><br />
+        <h2 use:scrollReveal>
+          <span class="ghost-lime">PERCHÈ </span>
+          <span class="accent">HANNO DECISO</span><br class="br-desktop" />
           <span class="accent">DI CANDIDARSI?</span>
         </h2>
       </section>
 
       <section class="layered-panel panel--lime question">
-        <h2>
-          <span class="ghost-black">COSA FACEVANO</span><br />
+        <h2 use:scrollReveal>
+          <span class="ghost-black">COSA FACEVANO</span><br class="br-desktop" />
           <span class="accent">CONCRETAMENTE?</span>
         </h2>
       </section>
 
       <section class="layered-panel panel--dark question">
-        <h2>
-          <span class="accent">NE È VALSA LA PENA?</span><br />
-          <span class="ghost-lime">LO RIFAREBBERO?</span>
+        <h2 use:scrollReveal>
+          <span class="ghost-lime">NE È VALSA </span><br class="br-mobile" />
+          <span class="accent">LA PENA?</span><br />
+          <span class="accent">LO RIFAREBBERO?</span>
         </h2>
       </section>
 
     </div>
 
     <section class="story story--left story--summary safe-area">
-      <p use:blurText={{ delay: 65, duration: 750, threshold: 0.2 }}>
+      <p class="story-summary-copy" use:blurText={{ delay: 65, duration: 750, threshold: 0.2 }}>
         Abbiamo chiesto ai volontari <br>di raccontarsi. <br>Le loro testimonianze sono raccolte in questo
         <a href="/gallery" class="accent archivio-link">archivio</a>
       </p>
@@ -377,6 +379,7 @@
   }
   .story--quote-right {
     padding-bottom: 50dvh !important; 
+    text-align: right;
   }
   /* ── Aggiunto cuscinetto di spazio prima della galleria ── */
   .story--summary {
@@ -425,6 +428,10 @@
   :global(.question h2 span) {
     display: inline-block;
     will-change: transform, opacity, filter;
+  }
+
+  :global(.layered-panel h2 br.br-mobile) {
+    display: none;
   }
 
 
@@ -515,8 +522,119 @@
 
   /* Per sicurezza su schermi piccoli */
   @media (max-width: 600px) {
+    .story--summary.safe-area {
+      padding-top: 300px;
+      padding-right: 0;
+      padding-bottom: 200px;
+      padding-left: var(--spacing-5, 24px);
+    }
+
+    .story-summary-copy {
+      width: min(340px, calc(100vw - 48px));
+      margin: 0;
+      color: var(--color-content-body, #fafafa);
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 24px;
+      letter-spacing: 0.96px;
+    }
+
+    .story-summary-copy br {
+      display: none;
+    }
+
+    .questions-container {
+      min-height: 2352px;
+      background: var(--color-content-accent, #bdff5d);
+      overflow: hidden;
+    }
+
+    .layered-panel {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+      background: transparent;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+    }
+
     .layered-panel h2 {
-      font-size: 42px; 
+      width: min(353px, calc(100vw - 48px));
+      margin: 0;
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 32px;
+      letter-spacing: 1.08px;
+      color: var(--color-content-body-black, #0e0e0e);
+    }
+
+    .layered-panel h2 br.br-desktop {
+      display: none;
+    }
+
+    .layered-panel h2 br.br-mobile {
+      display: inline;
+    }
+
+    /* Overrides the desktop `.question h2 span { display: inline-block }`
+       rule, which would otherwise make multi-word spans (and the per-word
+       .scroll-reveal-word spans injected by the scrollReveal action) wrap as
+       rigid atomic units instead of flowing/breaking naturally like text. */
+    .layered-panel h2 span {
+      display: inline;
+    }
+
+    .panel--lime,
+    .panel--dark {
+      background-color: var(--color-content-accent, #bdff5d) !important;
+      color: var(--color-content-body-black, #0e0e0e);
+      padding: 0;
+      text-align: left;
+    }
+
+    .panel--lime .accent,
+    .panel--dark .accent,
+    .ghost-lime,
+    .ghost-black {
+      color: var(--color-content-body-black, #0e0e0e) !important;
+      -webkit-text-stroke-width: 0 !important;
+      -webkit-text-stroke-color: transparent !important;
+    }
+
+    .layered-panel:nth-child(1) {
+      top: 0;
+      padding-top: 400px;
+      padding-left: var(--spacing-5, 24px);
+      justify-content: flex-start;
+    }
+
+    .layered-panel:nth-child(2) {
+      top: 896px;
+      padding-right: var(--spacing-5, 24px);
+      justify-content: flex-end;
+    }
+
+    .layered-panel:nth-child(3) {
+      top: 1392px;
+      padding-left: var(--spacing-5, 24px);
+      justify-content: flex-start;
+    }
+
+    .layered-panel:nth-child(4) {
+      top: 1856px;
+      padding-right: var(--spacing-5, 24px);
+      justify-content: flex-end;
+    }
+
+    .layered-panel:nth-child(2) h2,
+    .layered-panel:nth-child(4) h2 {
+      text-align: right;
     }
   }
 
