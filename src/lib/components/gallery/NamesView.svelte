@@ -331,9 +331,9 @@
     align-items: flex-end;
     /* Distribute the letters across the full available height so the whole
        A–Z list is always visible — never scrolled out of view / cut off. */
-    justify-content: flex-start;
+    justify-content: space-between;
     align: right;
-    gap: 0;
+    gap: 8px;
 
     /* Definite height = the vertical space between navbar and bottom margin.
        Both the box and the letter size derive from this, so they scale
