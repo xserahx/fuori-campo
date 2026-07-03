@@ -70,8 +70,10 @@
 
   /* ── Background: spatially adjacent volunteers passed from the gallery ──
      When arriving from PhotosView the URL carries `neighbors=slug1,slug2,…`
-     (the 8 gallery cards closest to the clicked photo). Arrow navigation
-     strips the param so we fall back to a seed-stable selection instead.  */
+     (the closest gallery cards to the clicked photo). Arrow navigation strips
+     the param — that's how we tell "fresh open from the gallery" apart from
+     "moved with the arrows", so the background can stay locked to the photo
+     that was originally opened (see bgPaths below).                        */
   const neighborSlugs = $derived(
     (page.url.searchParams.get('neighbors') ?? '')
       .split(',').map(s => s.trim()).filter(Boolean)
@@ -79,7 +81,14 @@
 
   const BG_COUNT = BG_TILES.length; // number of scatter cells (6×4 minus skipped)
 
-  const bgPaths = $derived.by(() => {
+  // Locked once per gallery entry and left untouched by arrow navigation, so
+  // the atmosphere never changes while browsing peers — only a fresh open
+  // from the gallery (a new `neighbors` param) re-rolls it.
+  let bgPaths = $state<string[]>([]);
+
+  $effect(() => {
+    if (neighborSlugs.length === 0 && bgPaths.length > 0) return; // arrow nav: keep the locked background
+
     // Never show the current subject: exclude the displayed image and every
     // photo belonging to this volunteer.
     const excluded = new Set<string>();
@@ -105,8 +114,8 @@
       if (vol?.ha_immagini) add(vol.image_paths?.[0] ?? vol.image_path);
     }
 
-    // 2) Top up (direct/arrow nav, or few neighbours) with a seed-stable set
-    //    of other volunteers — still deduped and never the current subject.
+    // 2) Top up (direct nav, or few neighbours) with a seed-stable set of
+    //    other volunteers — still deduped and never the current subject.
     if (paths.length < BG_COUNT) {
       const seed = currentSlug.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
       const others = allVols.filter(v => v.slug !== currentSlug && v.ha_immagini);
@@ -116,54 +125,30 @@
       }
     }
 
-    return paths;
+    bgPaths = paths;
+  });
+
+  /* ── Real background field ───────────────────────────────────────
+     PhotosView snapshots the gallery neighbours as they sat around the
+     clicked photo — already converted to on-screen px — so this page can
+     render the exact same arrangement as a fixed field: no rescaling, no
+     animation, and (since it's read once and never cleared) unaffected by
+     arrow navigation. Falls back to the decorative bgPaths field above when
+     there's no snapshot (direct URL load / arrow nav without one). */
+  type BgTile = { dx: number; dy: number; w: number; h: number; src: string };
+  let bgField = $state<{ cw: number; tiles: BgTile[] } | null>(null);
+
+  onMount(() => {
+    try {
+      const raw = sessionStorage.getItem('bgField');
+      if (raw) bgField = JSON.parse(raw);
+      sessionStorage.removeItem('bgField'); // consume once
+    } catch { /* no snapshot → decorative field */ }
   });
 
   let imgError      = $state(false);
   let detectedRatio = $state<'16-9' | '4-3' | '3-4' | '9-16'>('16-9');
   const isPortrait  = $derived(detectedRatio === '3-4' || detectedRatio === '9-16');
-
-  /* ── Real zoom field ──────────────────────────────────────────────
-     PhotosView snapshots the gallery neighbours as they sat around the clicked
-     photo (offsets + sizes, relative to it). Rendering them here — scaled so the
-     clicked photo maps onto this frame — makes the page a true zoom-IN on that
-     photo, showing the same surrounding layout. Falls back to the decorative
-     BG_TILES field on arrow/direct navigation (no snapshot). */
-  type ZoomTile = { dx: number; dy: number; w: number; h: number; src: string };
-  let zoomField  = $state<{ cw: number; ch: number; tiles: ZoomTile[] } | null>(null);
-  let fieldScale = $state(1);
-  let frameEl    = $state<HTMLElement | null>(null);
-  let entrySlug  = '';
-
-  onMount(() => {
-    try {
-      const raw = sessionStorage.getItem('zoomField');
-      if (raw) zoomField = JSON.parse(raw);
-      sessionStorage.removeItem('zoomField'); // consume once
-    } catch { /* no snapshot → decorative field */ }
-  });
-
-  // The snapshot describes only the originally-clicked photo; drop it once the
-  // user arrow-navigates to a different one.
-  $effect(() => {
-    const s = currentSlug;
-    if (!entrySlug) entrySlug = s;
-    else if (s !== entrySlug) zoomField = null;
-  });
-
-  // Scale the field so the clicked photo's box maps onto this frame's width —
-  // preserving the gallery's relative spacing (a proportional zoom-in).
-  $effect(() => {
-    void detectedRatio; // frame width changes with the snapped ratio
-    if (!zoomField || !frameEl) return;
-    const measure = () => {
-      const w = frameEl?.getBoundingClientRect().width ?? 0;
-      if (w > 0 && zoomField) fieldScale = w / zoomField.cw;
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  });
 
   $effect(() => { currentSlug; imgParam; imgError = false; detectedRatio = '16-9'; });
 
@@ -238,13 +223,16 @@
 
 <main class="lb" id="main-content">
 
-  <!-- ── Blurred background: photos near the selected one in the gallery ── -->
-  {#if zoomField}
-    <!-- Real gallery neighbours in their actual relative positions, scaled up so
-         the clicked photo maps onto the frame — a true zoom-in on that photo. -->
+  <!-- ── Blurred background: photos near the selected one in the gallery ──
+       Locked to the photo originally opened from the gallery — unaffected
+       by arrow navigation (bgField is read once on mount; bgPaths is locked
+       by the effect above). -->
+  {#if bgField}
+    <!-- Real gallery neighbours, at the exact on-screen offsets they had
+         around the clicked photo — a fixed field, no rescaling/animation. -->
     <div class="bg-scatter bg-scatter--real" aria-hidden="true">
-      {#each zoomField.tiles as t, i (i)}
-        {@const nd   = Math.hypot(t.dx, t.dy) / zoomField.cw}
+      {#each bgField.tiles as t, i (i)}
+        {@const nd   = Math.hypot(t.dx, t.dy) / bgField.cw}
         {@const near = Math.max(0, Math.min(1, 1 - nd / 10))}
         {@const blur = (6 + (1 - near) * 10).toFixed(1)}
         {@const op   = (0.30 + near * 0.30).toFixed(2)}
@@ -253,7 +241,7 @@
           alt=""
           class="bg-photo bg-photo--real"
           draggable="false"
-          style="left:calc(50% + {t.dx * fieldScale}px); top:calc(50% + {t.dy * fieldScale}px); width:{t.w * fieldScale}px; height:{t.h * fieldScale}px; filter:blur({blur}px) saturate(0.85); opacity:{op};"
+          style="left:calc(50% + {t.dx}px); top:calc(50% + {t.dy}px); width:{t.w}px; height:{t.h}px; filter:blur({blur}px) saturate(0.85); opacity:{op};"
         />
       {/each}
     </div>
@@ -302,7 +290,6 @@
   <!-- ── Photo frame + caption ────────────────────────────────────── -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    bind:this={frameEl}
     class="photo-frame photo-frame--{detectedRatio}"
     class:photo-frame--portrait={isPortrait}
     use:tilt={{
@@ -433,8 +420,9 @@
     -webkit-user-drag: none;
   }
 
-  /* Real gallery field: absolutely placed at each neighbour's true offset from
-     the clicked photo (position/size/blur/opacity all inline). */
+  /* Real gallery field: each neighbour placed at its exact on-screen offset
+     from the clicked photo (position/size/blur/opacity all inline, already
+     in on-screen px — no further scaling here). */
   .bg-scatter--real {
     display: block;
     padding: 0;
@@ -448,7 +436,6 @@
     max-height: none;
     border-radius: var(--radius-s, 4px);  /* match the gallery tile radius */
     object-fit: cover;
-    will-change: transform;
   }
 
   /* ── Depth vignette ─────────────────────────────────────────────

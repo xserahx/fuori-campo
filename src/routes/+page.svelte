@@ -1,6 +1,12 @@
-<script lang="ts">
+<script module lang="ts">
+  // Module-scope (not component-scope): survives every SPA remount of this
+  // page within the same browser session — e.g. clicking the logo to come
+  // back home — but resets to false on an actual full page load (first
+  // visit or hard reload), since that re-evaluates the whole module fresh.
   let introPlayed = false;
+</script>
 
+<script lang="ts">
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import { goto, afterNavigate } from "$app/navigation";
@@ -72,6 +78,10 @@
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.documentElement.style.setProperty('--gate-p', '0');
+    // --hero-scroll-p lives on <html>, which survives SPA navigation — if the
+    // hero was scrolled past before leaving, it's left stuck near/at 1, which
+    // zeroes out BlurTitle's opacity (calc(1 - p * 1.6)) on the next visit.
+    document.documentElement.style.setProperty('--hero-scroll-p', '0');
 
     const landing = document.querySelector<HTMLElement>('.landing');
     if (landing) gsap.set(landing, { clearProps: 'filter,transform,opacity' });

@@ -280,8 +280,10 @@
     }
 
     // Snapshot the on-screen neighbours as they sit RIGHT NOW, relative to the
-    // clicked photo, so the zoom page can rebuild the exact same scatter around
-    // it — a real zoom-into-the-photo rather than a generic decorative field.
+    // clicked photo — the zoom page renders this fixed field as-is (no rescaling,
+    // no animation), so it reads as a literal continuation of the gallery.
+    // Coordinates are converted to on-screen px (× currentScale) up front, so
+    // the zoom page can place them with a plain 1:1 offset.
     // (sessionStorage, not the URL, so it can hold the full field cheaply.)
     try {
       const ccx = image.left + image.width / 2;
@@ -289,16 +291,16 @@
       const field = visibleImages
         .filter((t) => t !== image)
         .map((t) => ({
-          dx: (t.left + t.width / 2) - ccx,
-          dy: (t.top + t.height / 2) - ccy,
-          w: t.width,
-          h: t.height,
+          dx: ((t.left + t.width / 2) - ccx) * currentScale,
+          dy: ((t.top + t.height / 2) - ccy) * currentScale,
+          w: t.width * currentScale,
+          h: t.height * currentScale,
           src: t.src,
         }))
         .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))
         .slice(0, 48);
-      sessionStorage.setItem('zoomField', JSON.stringify({ cw: image.width, ch: image.height, tiles: field }));
-    } catch { /* storage unavailable — zoom page falls back to its own field */ }
+      sessionStorage.setItem('bgField', JSON.stringify({ cw: image.width * currentScale, tiles: field }));
+    } catch { /* storage unavailable — zoom page falls back to its decorative field */ }
 
     const params = new URLSearchParams(buildGallerySearchParams({
       view: 'photos',

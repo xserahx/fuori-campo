@@ -18,6 +18,12 @@
 
 	gsap.registerPlugin(DrawSVGPlugin, ScrollTrigger);
 
+	// The browser's own back/forward scroll memory races our manual reset
+	// below (afterNavigate / Lenis init) — a restored native scroll position
+	// can apply before or after ours depending on timing. Owning restoration
+	// ourselves removes that race entirely.
+	if (browser) history.scrollRestoration = 'manual';
+
 	let { children } = $props();
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
@@ -55,6 +61,11 @@
 			duration: 1.1,
 			smoothWheel: true
 		});
+
+		// Zero the scroll the instant Lenis takes over — tied directly to its
+		// own (re)creation rather than a separately-timed afterNavigate call,
+		// so there's no window where a stale native scroll position can show.
+		l.scrollTo(0, { immediate: true });
 
 		lenis = l;
 		l.on('scroll', ScrollTrigger.update);
