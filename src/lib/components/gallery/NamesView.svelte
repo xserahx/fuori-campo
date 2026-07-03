@@ -341,7 +341,7 @@
        The bottom reserve clears the "Filtra per categoria" button (≈108px:
        spacing-8 padding + spacing-9 button height) so the last letters (V/Z)
        are never covered by it. */
-    height: calc(135dvh - var(--navbar-height, 125px) - (var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-7, 40px)));
+    height: calc(100dvh - var(--navbar-height, 125px) - (var(--spacing-4, 48px) + var(--spacing-4, 60px) + var(--spacing-4, 40px)));
     overflow-y: auto;
 
     padding: 0;
@@ -424,7 +424,7 @@
       right: 20px;
       width: 28px;
       gap: 0;
-      height: calc(135dvh - 200px);
+      height: calc(100dvh - 90px);
       flex-wrap: nowrap;
     }
 
