@@ -34,6 +34,7 @@
   // ─── STATI GLOBALI E CAROSELLO ───
   let isMobile  = $state(false);
   let targetPos = $state(0); 
+  let isReady   = $state(false);
 
   const N = () => categories.length;
   function mod(n: number, m: number) { return ((n % m) + m) % m; }
@@ -194,6 +195,11 @@
      sessionStorage.removeItem('category-pos');
     } 
 
+    // Riattiva l'animazione CSS solo dopo aver forzato la posizione statica iniziale
+    setTimeout(() => {
+      isReady = true;
+    }, 50);
+
     const checkMobile = () => { isMobile = window.innerWidth < 600; };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -267,7 +273,7 @@
 >
   <div class="stage">
     <div class="container-3d">
-      <div class="ring" style="transform: translateZ(900px) rotateY({ringRotation}deg);">
+      <div class="ring" class:ready={isReady} style="transform: translateZ(900px) rotateY({ringRotation}deg);">
         {#each categories as cat, i}
           {@const isActive = currentIndex === i}
           <div 
@@ -287,6 +293,8 @@
       </div>
     </div>
   </div>
+
+<div class="progressive-blur-overlay" aria-hidden="true"></div>
 
 <div class="arrow-left" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
     <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
@@ -351,7 +359,15 @@
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: none; /* Animazione disattivata di base al momento del mount */
+  }
+
+  .ring.ready {
+    /* La transizione si attiva solo quando la pagina è caricata, per i successivi click */
+    /* 0.85s e una curva ease-out-cubic per una decelerazione prolungata */
+    transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: transform;
   }
 
 
@@ -361,8 +377,11 @@
     border-radius: 4px; /* Il raggio che volevi */
     overflow: hidden;
     /* Effetto bianco e nero di base per le card laterali */
-    filter: grayscale(100%);
-    transition: filter 0.6s ease, transform 0.6s ease;
+    filter: grayscale(0%);
+    transition: filter 0.85s ease, transform 0.85s ease, box-shadow 0.85s ease;
+    /* Previene i cali di framerate causati dall'animazione del filtro grayscale */
+    will-change: transform, filter;
+
     pointer-events: none; /* Disabilita il click sulle card laterali */
     cursor: pointer;
   }
@@ -378,7 +397,7 @@
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.5); /* Scurisce le laterali */
-    transition: background 0.6s ease;
+    transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* ─── STATO ATTIVO (Card Centrale) ─── */
@@ -392,6 +411,40 @@
   .card-3d.active .card-overlay {
     background: rgba(0, 0, 0, 0); /* Rimuove l'oscuramento */
   }
+
+
+/* ─── LENTE DI SFOCATURA PROGRESSIVA ─── */
+  .progressive-blur-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5; /* Deve stare sopra allo .stage (z-index: 1) ma sotto alle frecce/titolo (z-index: 10+) */
+    pointer-events: none; /* Fondamentale: i click devono passare attraverso questo livello! */
+    
+    /* L'effetto di base che cattura tutto ciò che c'è dietro */
+    backdrop-filter: blur(12px) saturate(0.85);
+    -webkit-backdrop-filter: blur(12px) saturate(0.85);
+
+    /* LA MAGIA: Una maschera lineare che "buca" il centro del livello */
+    mask-image: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 1) 0%,     /* Bordo sinistro: Blur 100% */
+      rgba(0, 0, 0, 1) 25%,    /* Mantiene il blur solido per un pezzo */
+      rgba(0, 0, 0, 0) 40%,    /* Sfuma a 0 blur (zona card attiva) */
+      rgba(0, 0, 0, 0) 40%,    /* Mantiene 0 blur per tutta la larghezza della card attiva */
+      rgba(0, 0, 0, 1) 75%,    /* Ricomincia a sfocare verso destra */
+      rgba(0, 0, 0, 1) 100%    /* Bordo destro: Blur 100% */
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(0, 0, 0, 1) 25%,
+      rgba(0, 0, 0, 0) 40%,
+      rgba(0, 0, 0, 0) 40%,
+      rgba(0, 0, 0, 1) 75%,
+      rgba(0, 0, 0, 1) 100%
+    );
+  }
+
 
   /*------------------*/
 
