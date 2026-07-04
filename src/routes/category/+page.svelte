@@ -273,13 +273,13 @@
 >
   <div class="stage">
     <div class="container-3d">
-      <div class="ring" class:ready={isReady} style="transform: translateZ(900px) rotateY({ringRotation}deg);">
+      <div class="ring" class:ready={isReady} style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);">
         {#each categories as cat, i}
           {@const isActive = currentIndex === i}
           <div 
             class="card-3d" 
             class:active={isActive}
-            style="transform: rotateY({i * -60}deg) translateZ(-350px);"
+            style="transform: rotateY({i * -60}deg) translateZ(var(--card-radius));"
             role="button"
             tabindex={isActive ? 0 : -1}
             aria-current={isActive ? 'true' : undefined}
@@ -337,6 +337,7 @@
   }
   /*NUOVI STILI GEMINI */
   /* ─── CSS 3D CAROUSEL ─── */
+  /* ─── CSS 3D CAROUSEL ─── */
   .stage {
     position: absolute;
     inset: 0;
@@ -344,14 +345,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1; /* Sotto al titolo e alle frecce */
+    z-index: 1; 
+    /* Variabili rimosse da qui */
   }
 
   .container-3d {
-    perspective: 900px; /* La "telecamera" è a 1500px dallo schermo */
-    width: 35vw; 
+    perspective: var(--camera-z);
+    width: var(--card-width);
     height: 55vh; 
-    max-width: 500px;
     max-height: 700px;
   }
 
@@ -413,50 +414,30 @@
   }
 
 
-/* ─── LENTE DI SFOCATURA PROGRESSIVA ─── */
-  .progressive-blur-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 5; /* Deve stare sopra allo .stage (z-index: 1) ma sotto alle frecce/titolo (z-index: 10+) */
-    pointer-events: none; /* Fondamentale: i click devono passare attraverso questo livello! */
-    
-    /* L'effetto di base che cattura tutto ciò che c'è dietro */
-    backdrop-filter: blur(20px) saturate(0.85);
-    -webkit-backdrop-filter: blur(20px) saturate(0.85);
-
-    /* LA MAGIA: Una maschera lineare che "buca" il centro del livello */
-    mask-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 1) 0%,     /* Bordo sinistro: Blur 100% */
-      rgba(0, 0, 0, 1) 20%,    /* Mantiene il blur solido per un pezzo */
-      rgba(0, 0, 0, 0) 35%,    /* Sfuma a 0 blur (zona card attiva) */
-      rgba(0, 0, 0, 0) 65%,    /* Mantiene 0 blur per tutta la larghezza della card attiva */
-      rgba(0, 0, 0, 1) 80%,    /* Ricomincia a sfocare verso destra */
-      rgba(0, 0, 0, 1) 100%    /* Bordo destro: Blur 100% */
-    );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 1) 0%,
-      rgba(0, 0, 0, 1) 20%,
-      rgba(0, 0, 0, 0) 35%,
-      rgba(0, 0, 0, 0) 65%,
-      rgba(0, 0, 0, 1) 80%,
-      rgba(0, 0, 0, 1) 100%
-    );
-  }
+  
+  
 
 
   /*------------------*/
 
   .carousel {
     position: fixed;
-    /* inset: 0 pins all four edges to the viewport — no dvh/vw unit needed */
     inset: 0;
     background: var(--color-background-primary);
     overflow: hidden;
     cursor: grab;
     user-select: none;
     touch-action: none;
+    
+    /* ── MATEMATICA RESPONSIVA GLOBALE ── */
+    /* Card più stretta: 26vw invece di 35vw, tetto massimo a 420px */
+    --card-width: clamp(240px, 26vw, 420px); 
+    
+    /* Il raggio si adatta automaticamente */
+    --card-radius: calc(var(--card-width) * -0.86); 
+    
+    /* Telecamera leggermente più lontana (* 2.8) per vedere meglio i lati */
+    --camera-z: calc(var(--card-width) * 2.8);
   }
   .carousel:active { cursor: grabbing; }
 
