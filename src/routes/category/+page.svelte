@@ -414,8 +414,45 @@
   }
 
 
-  
-  
+  /* ─── LENTE DI SFOCATURA PROGRESSIVA ─── */
+  .progressive-blur-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5; 
+    pointer-events: none; 
+    
+    backdrop-filter: blur(12px) saturate(0.85);
+    -webkit-backdrop-filter: blur(12px) saturate(0.85);
+
+    /* Area centrale trasparente allargata (da 0.55 a 0.8) 
+       e gradiente riadattato proporzionalmente verso l'esterno */
+    mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.8),
+      transparent calc(50% + var(--card-width) * 0.8),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.8),
+      transparent calc(50% + var(--card-width) * 0.8),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
+  }
 
 
   /*------------------*/
