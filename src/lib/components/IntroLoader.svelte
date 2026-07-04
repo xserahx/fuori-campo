@@ -115,7 +115,7 @@
     position: absolute;
     inset: 0;
     overflow: hidden;
-    background: #000;
+    background: var(--color-background-primary);
     color: var(--color-content-body);
   }
 
