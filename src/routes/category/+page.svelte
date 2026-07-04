@@ -13,12 +13,12 @@
     mobileOutlineLh?: number;
   };
 
-  const IMG_RELAZIONI = '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png';
-  const IMG_CERIMONIE = '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png';
-  const IMG_SPORT = '/volunteer_images/carosello_categorie/Sport.png';
-  const IMG_AREAORGANIZZATIVA = '/volunteer_images/carosello_categorie/Area_organizzativa.png';
-  const IMG_LOGISTICA = '/volunteer_images/carosello_categorie/Logistica_e_territorio.png';
-  const IMG_GESTIONE = '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png';
+  const IMG_RELAZIONI = '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.webp';
+  const IMG_CERIMONIE = '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.webp';
+  const IMG_SPORT = '/volunteer_images/carosello_categorie/Sport.webp';
+  const IMG_AREAORGANIZZATIVA = '/volunteer_images/carosello_categorie/Area_organizzativa.webp';
+  const IMG_LOGISTICA = '/volunteer_images/carosello_categorie/Logistica_e_territorio.webp';
+  const IMG_GESTIONE = '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.webp';
   
   const defaultCategories: Category[] = [
     { id: 1, label: 'RELAZIONI E COMUNICAZIONE',             image: IMG_RELAZIONI },
