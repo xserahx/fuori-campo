@@ -352,10 +352,9 @@
   .container-3d {
     perspective: var(--camera-z);
     width: var(--card-width);
-    height: 55vh; 
-    max-height: 700px;
+    
+    aspect-ratio: 1 / 1; 
   }
-
   .ring {
     width: 100%;
     height: 100%;
@@ -391,7 +390,6 @@
     width: 100%;
     height: 100%;
     background-size: cover;
-    background-position: center;
   }
 
   .card-overlay {
@@ -421,8 +419,8 @@
     z-index: 5; 
     pointer-events: none; 
     
-    backdrop-filter: blur(12px) saturate(0.85);
-    -webkit-backdrop-filter: blur(12px) saturate(0.85);
+    backdrop-filter: blur(15px) saturate(0.85);
+    -webkit-backdrop-filter: blur(15px) saturate(0.85);
 
     /* Area centrale trasparente allargata (da 0.55 a 0.8) 
        e gradiente riadattato proporzionalmente verso l'esterno */
