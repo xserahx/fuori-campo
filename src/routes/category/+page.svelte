@@ -421,26 +421,26 @@
     pointer-events: none; /* Fondamentale: i click devono passare attraverso questo livello! */
     
     /* L'effetto di base che cattura tutto ciò che c'è dietro */
-    backdrop-filter: blur(12px) saturate(0.85);
-    -webkit-backdrop-filter: blur(12px) saturate(0.85);
+    backdrop-filter: blur(20px) saturate(0.85);
+    -webkit-backdrop-filter: blur(20px) saturate(0.85);
 
     /* LA MAGIA: Una maschera lineare che "buca" il centro del livello */
     mask-image: linear-gradient(
       to right,
       rgba(0, 0, 0, 1) 0%,     /* Bordo sinistro: Blur 100% */
-      rgba(0, 0, 0, 1) 25%,    /* Mantiene il blur solido per un pezzo */
-      rgba(0, 0, 0, 0) 40%,    /* Sfuma a 0 blur (zona card attiva) */
-      rgba(0, 0, 0, 0) 40%,    /* Mantiene 0 blur per tutta la larghezza della card attiva */
-      rgba(0, 0, 0, 1) 75%,    /* Ricomincia a sfocare verso destra */
+      rgba(0, 0, 0, 1) 20%,    /* Mantiene il blur solido per un pezzo */
+      rgba(0, 0, 0, 0) 35%,    /* Sfuma a 0 blur (zona card attiva) */
+      rgba(0, 0, 0, 0) 65%,    /* Mantiene 0 blur per tutta la larghezza della card attiva */
+      rgba(0, 0, 0, 1) 80%,    /* Ricomincia a sfocare verso destra */
       rgba(0, 0, 0, 1) 100%    /* Bordo destro: Blur 100% */
     );
     -webkit-mask-image: linear-gradient(
       to right,
       rgba(0, 0, 0, 1) 0%,
-      rgba(0, 0, 0, 1) 25%,
-      rgba(0, 0, 0, 0) 40%,
-      rgba(0, 0, 0, 0) 40%,
-      rgba(0, 0, 0, 1) 75%,
+      rgba(0, 0, 0, 1) 20%,
+      rgba(0, 0, 0, 0) 35%,
+      rgba(0, 0, 0, 0) 65%,
+      rgba(0, 0, 0, 1) 80%,
       rgba(0, 0, 0, 1) 100%
     );
   }
