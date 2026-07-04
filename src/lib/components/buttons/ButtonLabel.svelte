@@ -18,15 +18,14 @@
         justify-content: center;
 
         text-align: center;
-        text-box-trim: both;
-        text-box-edge: cap alphabetic;
+        text-box: trim-both cap alphabetic;
 
         font-family: var(--font-display);
         font-size: var(--ts-nav-link-size, 24px);
         font-weight: var(--ts-nav-link-weight, 500);
 
         line-height: 1;
-        transform: translateY(0.3px);
+        transform: translateY(-1.6px);
 
         color: inherit;
         transition: color 150ms ease;
@@ -36,8 +35,8 @@
         .button-label {
             font-size: var(--ts-navigation-size, 16px);
             font-weight: var(--ts-navigation-weight, 700);
-            line-height: 1;
-            transform: translateY(0.2px);
+            transform: translateY(-1.2px);
+
         }
     }
 </style>

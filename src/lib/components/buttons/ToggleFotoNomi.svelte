@@ -104,15 +104,7 @@
 
     .toggle-text-wrapper {
         display: inline-flex;
-        align-items: center;
         justify-content: center;
-
-        /* CENTRAGGIO REALE SUL TESTO */
-        text-align: center;
-        text-box: trim-both cap alphabetic;
-
-        line-height: 1;
-        transform: translateY(0.3px);
 
         pointer-events: none;
         color: var(--color-content-body);
@@ -144,9 +136,5 @@
          
         }
 
-        .toggle-text-wrapper {
-            line-height: 1;
-            transform: translateY(0.2px);
-        }
     }
 </style> 
