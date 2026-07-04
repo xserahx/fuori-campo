@@ -81,7 +81,8 @@
         pointer-events: none;
         z-index: 1;
 
-        /* Un'ombra solida che sborda leggermente per riempire il gap nero di anti-aliasing */
+        /* Un'ombra solida che sborda leggermente per riempire il gap nero di anti-aliasing --> 
+        per chi correggerà il codice non mettere 2px se no si sminchia tutto */
         box-shadow: 0 0 0 1.5px var(--color-content-accent);
         
         transition: transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
