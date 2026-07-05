@@ -51,7 +51,7 @@
     }
 
     /* Maximum number of categories that can be active at once. */
-    const MAX_FILTERS = 3;
+    const MAX_FILTERS = 2;
     const filtersFull = $derived(activeFilters.length >= MAX_FILTERS);
 
     /* Toggle a category in/out of the active set. The panel stays open so
