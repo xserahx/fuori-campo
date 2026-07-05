@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
-  import { browser } from '$app/environment';
+  import { beforeNavigate } from '$app/navigation';
   import { fade } from 'svelte/transition';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
@@ -11,15 +12,7 @@
     image: string;
     tag: string;
     slug: string;
-    // Figma hand-picks the two-line title split per category — it isn't a
-    // consistent rule (compare "RELAZIONI E" / "COMUNICAZIONE" vs "GESTIONE
-    // OPERATIVA" / "E FAN EXPERIENCE") — so it can't be derived generically.
-    // Falls back to splitTitle()'s auto-split when omitted.
     titleLines?: [string, string];
-    // Figma's own renderer fits some longer second lines (e.g. "E DISCIPLINE")
-    // on one line at the spec'd 43px, but the real web font runs slightly
-    // wider, wrapping to an unwanted third line. Rather than shrinking every
-    // title to fit the tightest case, this narrows just the ones that need it.
     mobileTitleSize?: number;
   };
 
@@ -279,28 +272,122 @@
   const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
   const roleCount = $derived(activeSummary.roles.length);
 
-  /* ── Fixed page: no vertical scroll on category detail ─────────────── */
+  let summaryMeasureEl: HTMLDivElement | null = $state(null);
+  let summaryMaxTextHeight = $state(0);
+  let summaryMeasureRaf = 0;
+  let summaryMeasureObserver: ResizeObserver | null = null;
+
+  function measureSummaryMaxTextHeight() {
+    if (!summaryMeasureEl) return;
+
+    const children = Array.from(summaryMeasureEl.children) as HTMLElement[];
+    let maxHeight = 0;
+
+    for (const child of children) {
+      const rect = child.getBoundingClientRect();
+      maxHeight = Math.max(maxHeight, Math.ceil(rect.height));
+    }
+
+    summaryMaxTextHeight = maxHeight;
+  }
+
+  function queueSummaryMeasurement() {
+    if (typeof window === 'undefined') return;
+    if (summaryMeasureRaf) return;
+
+    summaryMeasureRaf = requestAnimationFrame(async () => {
+      summaryMeasureRaf = 0;
+
+      await tick();
+      measureSummaryMaxTextHeight();
+    });
+  }
+
+  function setupSummaryMeasureObserver() {
+    if (typeof ResizeObserver === 'undefined' || !summaryMeasureEl) return;
+
+    summaryMeasureObserver?.disconnect();
+
+    summaryMeasureObserver = new ResizeObserver(() => {
+      queueSummaryMeasurement();
+    });
+
+    summaryMeasureObserver.observe(summaryMeasureEl);
+
+    for (const child of Array.from(summaryMeasureEl.children)) {
+      summaryMeasureObserver.observe(child);
+    }
+  }
+
   $effect(() => {
-    if (!browser) return;
+    activeSummary.roles;
+
+    if (typeof window === 'undefined') return;
+
+    queueSummaryMeasurement();
+  });
+
+  function unlockCategoryScroll() {
+    if (typeof document === 'undefined') return;
 
     const root = document.documentElement;
     const body = document.body;
 
-    const previousHtmlOverflow = root.style.overflow;
-    const previousBodyOverflow = body.style.overflow;
-    const previousBodyPaddingTop = body.style.paddingTop;
-    const previousBodyMargin = body.style.margin;
+    root.style.removeProperty('overflow');
+    root.style.removeProperty('overflow-y');
+    root.style.removeProperty('height');
+    root.style.removeProperty('position');
 
-    root.style.overflow = 'hidden';
-    body.style.overflow = 'hidden';
-    body.style.paddingTop = '0px';
-    body.style.margin = '0';
+    body.style.removeProperty('overflow');
+    body.style.removeProperty('overflow-y');
+    body.style.removeProperty('height');
+    body.style.removeProperty('position');
+    body.style.removeProperty('padding-top');
+    body.style.removeProperty('margin');
+
+    root.classList.remove('lenis-stopped');
+    body.classList.remove('lenis-stopped');
+  }
+
+  beforeNavigate(() => {
+    unlockCategoryScroll();
+  });
+
+  onMount(() => {
+    unlockCategoryScroll();
+    queueSummaryMeasurement();
+
+    tick().then(() => {
+      setupSummaryMeasureObserver();
+      queueSummaryMeasurement();
+    });
+
+    const frame = requestAnimationFrame(() => {
+      unlockCategoryScroll();
+      queueSummaryMeasurement();
+    });
+
+    const timer = window.setTimeout(() => {
+      unlockCategoryScroll();
+      queueSummaryMeasurement();
+    }, 120);
+
+    window.addEventListener('resize', queueSummaryMeasurement);
 
     return () => {
-      root.style.overflow = previousHtmlOverflow;
-      body.style.overflow = previousBodyOverflow;
-      body.style.paddingTop = previousBodyPaddingTop;
-      body.style.margin = previousBodyMargin;
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+      window.removeEventListener('resize', queueSummaryMeasurement);
+
+      if (summaryMeasureRaf) {
+        cancelAnimationFrame(summaryMeasureRaf);
+        summaryMeasureRaf = 0;
+      }
+
+      summaryMeasureObserver?.disconnect();
+      summaryMeasureObserver = null;
+
+      unlockCategoryScroll();
     };
   });
 </script>
@@ -334,7 +421,11 @@
         <p class="hero-copy">{activeSummary.subtitle}</p>
       </section>
 
-      <section class="summary-card" aria-label="Categoria e sottocategoria">
+      <section
+        class="summary-card"
+        aria-label="Categoria e sottocategoria"
+        style={`--summary-max-text-height: ${summaryMaxTextHeight}px`}
+      >
         <div class="summary-top-wrap">
           {#key activeRoleIndex}
             <div class="summary-top" in:fade={{ duration: 300, delay: 120 }} out:fade={{ duration: 180 }}>
@@ -348,6 +439,21 @@
               </div>
             </div>
           {/key}
+        </div>
+
+        <div class="summary-measure" bind:this={summaryMeasureEl} aria-hidden="true">
+          {#each activeSummary.roles as measuredRole}
+            <div class="summary-top summary-top--measure">
+              <div class="summary-meta">
+                <p class="summary-eyebrow">{measuredRole.title}</p>
+              </div>
+
+              <div class="summary-copy">
+                <p>{measuredRole.description}</p>
+                <p class="summary-footer">{measuredRole.role}</p>
+              </div>
+            </div>
+          {/each}
         </div>
 
         <div class="dot-frecce">
@@ -397,29 +503,31 @@
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
     background: var(--color-background-primary);
   }
 
   .category-page {
-    position: fixed;
-    inset: 0;
+    position: relative;
     width: 100%;
-    height: 100dvh;
+    min-height: 100dvh;
     background: var(--color-background-primary);
     color: var(--color-content-body);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   .category-shell {
     position: relative;
     width: 100%;
-    height: 100dvh;
+    min-height: 100dvh;
     padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) 0 var(--spacing-7);
-    overflow: hidden;
+    overflow: visible;
     background: var(--color-background-primary);
     box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
   }
 
   .back-btn-wrapper {
@@ -427,6 +535,7 @@
     z-index: 30;
     margin-left: var(--spacing-11);
     margin-top: 0;
+    flex-shrink: 0;
   }
 
   .hero {
@@ -439,6 +548,7 @@
     display: flex;
     flex-direction: column;
     overflow: visible;
+    flex-shrink: 0;
   }
 
   .hero-title {
@@ -472,9 +582,6 @@
     margin-bottom: -8px;
     max-width: calc(100% - var(--spacing-11) - var(--spacing-11));
     overflow: hidden;
-    /* Flex children default to min-width:auto, which lets long titles ignore
-       max-width and overflow past the safe area — this forces max-width to
-       actually apply. */
     min-width: 0;
   }
 
@@ -510,19 +617,26 @@
   }
 
   .summary-card {
-    position: fixed;
-    left: var(--spacing-11);
-    bottom: var(--spacing-7);
+    --summary-arrows-size: 60px;
+    --summary-controls-gap: 40px;
+    --summary-dots-lift: 9px;
+    --summary-side-offset: var(--spacing-11);
+    --summary-column-width: calc(50vw - var(--summary-side-offset));
+    --summary-bottom-reserve: calc(var(--summary-arrows-size) + var(--summary-controls-gap));
+    --summary-card-max-height: calc(var(--summary-max-text-height, 0px) + var(--summary-bottom-reserve));
+
+    position: relative;
     z-index: 20;
 
-    width: min(780px, calc(100% - var(--spacing-11) * 2));
-    padding: 0;
-    margin: 0;
+    width: var(--summary-column-width);
+    max-width: var(--summary-column-width);
+    min-height: var(--summary-card-max-height);
+    padding: 0 0 var(--summary-bottom-reserve);
+    margin: auto 0 0 var(--summary-side-offset);
 
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    gap: var(--spacing-4);
 
     pointer-events: auto;
   }
@@ -530,7 +644,7 @@
   .summary-top-wrap {
     position: relative;
     width: 100%;
-    min-height: 0;
+    min-height: var(--summary-max-text-height, 0px);
     display: grid;
     align-items: end;
   }
@@ -544,6 +658,20 @@
     flex-direction: column;
     justify-content: flex-end;
     gap: var(--spacing-4);
+    width: 100%;
+  }
+
+  .summary-measure {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: var(--summary-bottom-reserve);
+    width: 100%;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .summary-top--measure {
     width: 100%;
   }
 
@@ -569,7 +697,7 @@
     flex-direction: column;
     gap: 0;
     margin: 0;
-    max-width: 780px;
+    max-width: 100%;
     font-family: var(--font-display);
     font-size: var(--unit-24);
     line-height: 26px;
@@ -593,17 +721,25 @@
   }
 
   .dot-frecce {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     width: 100%;
-    flex-shrink: 0;
+    min-height: var(--summary-arrows-size);
+
+    pointer-events: auto;
   }
 
   .dot-nav {
     display: flex;
     align-items: flex-end;
     gap: var(--spacing-2);
+    margin-bottom: calc(var(--summary-arrows-size) + var(--summary-dots-lift));
   }
 
   .dot {
@@ -698,9 +834,12 @@
     }
 
     .summary-card {
-      left: var(--spacing-5);
-      bottom: var(--spacing-5);
-      width: min(780px, calc(100% - var(--spacing-5) * 2));
+      --summary-side-offset: 0px;
+      --summary-column-width: min(780px, calc(100vw - var(--spacing-5) * 2));
+
+      width: var(--summary-column-width);
+      max-width: var(--summary-column-width);
+      margin: auto 0 0 0;
     }
 
     .summary-top,
@@ -725,12 +864,6 @@
 
   @media (max-width: 700px) {
     .category-shell {
-      /* Figma (node 4454:8798, "Categoria-spiegazione_mobile") measures a
-         symmetric 24px (--spacing-5) inset on both sides for every element
-         on this screen — back button, title, dots, description column, and
-         the arrows' own padding-right all land at exactly 24px from the
-         frame edge. The navbar's 27px is a separate value used only for its
-         own row, not meant to line up with page content below it. */
       padding: calc(var(--navbar-height, 125px) + var(--spacing-4)) var(--spacing-5) var(--spacing-4);
     }
 
@@ -750,10 +883,6 @@
     .title-outline {
       overflow: visible;
     }
-
-    /* No override here — inherits justify-content: space-between from the
-       base rule, same as desktop: dots left, arrows pinned to the right
-       edge of the card (at the end of the text column). */
 
     .dot-nav {
       flex-wrap: wrap;
@@ -780,12 +909,6 @@
       max-width: 100%;
     }
 
-    /* The base .category-sport .title-outline rule indents "E DISCIPLINE" and
-       narrows its column for desktop. That selector's (0,2,0) specificity beats
-       the plain .title-outline mobile reset above (0,1,0) — media queries add no
-       specificity — so on mobile the indent + narrow width would wrap it to a
-       third line ("E" / "DISCIPLINE"). Match the specificity here to keep the
-       second line full-width: "SPORT" on line 1, "E DISCIPLINE" on line 2. */
     .category-sport .title-outline {
       margin-left: 0;
       max-width: 100%;
@@ -794,11 +917,6 @@
     .hero-copy {
       font-size: 26px;
       line-height: 1.02;
-      /* No right margin: the hero already sits inside .category-shell's 24px
-         padding, so the hero's right edge IS the safe line — the same line the
-         title's right edge lands on. An extra right margin would inset the copy
-         24px further and break that alignment. width:auto fills the hero width
-         so text-align:right lands the text flush against the title's right edge. */
       margin: var(--spacing-5) 0 0;
       width: auto;
       max-width: 100%;
@@ -806,15 +924,12 @@
     }
 
     .summary-card {
-      /* Normal flow instead of position:fixed — Figma's dev-mode spacing
-         (77px above, between the hero quote and "EVM =") is a real gap from
-         the preceding element, not a leftover distance from a bottom-pinned
-         box. .category-shell's own 24px padding already provides the
-         left/right safe area, so no left/width override is needed here. */
-      position: static;
-      margin-top: 77px;
+      --summary-column-width: 100%;
+
+      position: relative;
       width: auto;
-      gap: 40px;
+      max-width: 100%;
+      margin: auto 0 0;
     }
 
     .summary-top {
@@ -832,17 +947,13 @@
     }
   }
 
-  /* Figma pairs the dots and arrows as two separate vertical bands, not one
-     bottom-aligned row: the dots (nodes 6318:7449-7453) end at y783.6 while the
-     arrow block (node 6383:5897 "Frecce verticali mobile") starts 9px lower at
-     y793 and hangs down to the frame bottom. The base .dot-frecce rule bottom-
-     aligns both (align-items:flex-end), which drops the dots to the arrows'
-     bottom. Below the arrow's mobile size (50px, see ArrowButton @max-width:599),
-     lift the dot row by arrow-height + 9px so its bottom lands 9px above the
-     arrows' top while the arrows stay pinned to the card's bottom edge. */
   @media (max-width: 599px) {
+    .summary-card {
+      --summary-arrows-size: 50px;
+    }
+
     .dot-nav {
-      margin-bottom: calc(50px + 9px);
+      margin-bottom: calc(var(--summary-arrows-size) + var(--summary-dots-lift));
     }
   }
 
