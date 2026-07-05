@@ -94,10 +94,14 @@
   let velY = 0;
   let isDragging = false;
   let draggedDuringPointer = false;
+  let pointerStartX = 0;
+  let pointerStartY = 0;
   let lastX = 0;
   let lastY = 0;
   let lastTime = 0;
   let rafId: number;
+
+  const CLICK_DRAG_THRESHOLD = 6;
 
   // windowX/Y: updated at ~10 Hz so Svelte only re-diffs the visible list 10× per second.
   let windowX = $state(initialContext.photoX);
@@ -207,6 +211,8 @@
     isDragging = true;
     draggedDuringPointer = false;
 
+    pointerStartX = e.clientX;
+    pointerStartY = e.clientY;
     lastX = e.clientX;
     lastY = e.clientY;
     lastTime = performance.now();
@@ -227,8 +233,10 @@
 
     const dx = e.clientX - lastX;
     const dy = e.clientY - lastY;
+    const totalDx = e.clientX - pointerStartX;
+    const totalDy = e.clientY - pointerStartY;
 
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    if (Math.hypot(totalDx, totalDy) > CLICK_DRAG_THRESHOLD) {
       draggedDuringPointer = true;
     }
 
@@ -263,6 +271,8 @@
   }
 
   function tilePointerDown(e: PointerEvent) {
+    draggedDuringPointer = false;
+
     if (e.pointerType === 'touch' || e.pointerType === 'pen') {
       pointerDown(e);
       e.stopPropagation();
@@ -276,6 +286,7 @@
     if (draggedDuringPointer) {
       e.preventDefault();
       e.stopPropagation();
+      draggedDuringPointer = false;
       return;
     }
 
