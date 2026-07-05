@@ -82,4 +82,12 @@
     .x-button:active .x-icon-wrapper {
         color: var(--color-content-accent);
     }
+
+    @media (max-width: 599px) {
+        .x-button {
+            padding: var(--spacing-4);
+            height: 50px;
+            width: 50px;
+        }
+    }
 </style>
