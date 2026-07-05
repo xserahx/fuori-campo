@@ -34,12 +34,26 @@
   const PREVIEW_WIDTH = 420;
 
   const previewLayout = [
-    { left: '7%',  top: '16%', w: 250, dx: -64, dy: 28, b: 22, ar: '4 / 3',  rot: -1.4 },
-    { left: '68%', top: '11%', w: 300, dx:  72, dy: 22, b: 26, ar: '16 / 9', rot:  0.9 },
-    { left: '52%', top: '57%', w: 220, dx:  44, dy: 52, b: 20, ar: '3 / 4',  rot:  1.2 },
-    { left: '16%', top: '60%', w: 280, dx: -52, dy: 46, b: 24, ar: '3 / 2',  rot: -0.8 },
-    { left: '37%', top: '33%', w: 320, dx:   0, dy: 60, b: 18, ar: '16 / 9', rot:  0.4 },
-    { left: '81%', top: '62%', w: 210, dx:  84, dy: 38, b: 28, ar: '4 / 3',  rot:  1.6 },
+    { left: '7%',  top: '6%',  w: '250px', dx: -64, dy: 28, b: 22, ar: '4 / 3',  rot: -1.4 },
+    { left: '68%', top: '3%',  w: '300px', dx:  72, dy: 22, b: 26, ar: '16 / 9', rot:  0.9 },
+    { left: '52%', top: '42%', w: '220px', dx:  44, dy: 52, b: 20, ar: '3 / 4',  rot:  1.2 },
+    { left: '16%', top: '45%', w: '280px', dx: -52, dy: 46, b: 24, ar: '3 / 2',  rot: -0.8 },
+    { left: '37%', top: '22%', w: '320px', dx:   0, dy: 60, b: 18, ar: '16 / 9', rot:  0.4 },
+    { left: '81%', top: '47%', w: '210px', dx:  84, dy: 38, b: 28, ar: '4 / 3',  rot:  1.6 },
+  ];
+
+  // Desktop widths (210–320px) overflow a phone screen — most cards land off
+  // the right edge and get clipped, so the anticipation looks empty on mobile.
+  // Widths are in vw so the scatter scales to ANY phone (≈320–430px): the cards
+  // stay proportionally on-screen everywhere, not just at 375px. left/top are
+  // already percentages, so they adapt too.
+  const previewLayoutMobile = [
+    { left: '2%',  top: '8%',  w: '40vw', dx: -34, dy: 22, b: 16, ar: '4 / 3',  rot: -1.4 },
+    { left: '49%', top: '5%',  w: '45vw', dx:  40, dy: 18, b: 18, ar: '16 / 9', rot:  0.9 },
+    { left: '47%', top: '41%', w: '37vw', dx:  28, dy: 38, b: 15, ar: '3 / 4',  rot:  1.2 },
+    { left: '3%',  top: '44%', w: '42vw', dx: -30, dy: 34, b: 17, ar: '3 / 2',  rot: -0.8 },
+    { left: '22%', top: '23%', w: '47vw', dx:   0, dy: 40, b: 14, ar: '16 / 9', rot:  0.4 },
+    { left: '54%', top: '60%', w: '40vw', dx:  44, dy: 28, b: 20, ar: '4 / 3',  rot:  1.6 },
   ];
 
   function buildPreviewPhotos(vols: ReturnType<typeof getCachedVolunteers>): string[] {
@@ -56,6 +70,20 @@
   }
 
   let previewPhotos = $state<string[]>(buildPreviewPhotos(getCachedVolunteers()));
+
+  // Swap the anticipation layout to the phone-sized one below 600px (matches
+  // the CSS mobile breakpoint) so the cards stay on-screen.
+  let previewIsMobile = $state(false);
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 600px)');
+    const update = () => (previewIsMobile = mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  });
+
+  const activePreviewLayout = $derived(previewIsMobile ? previewLayoutMobile : previewLayout);
 
   $effect(() => {
     if (typeof window === 'undefined') return;
@@ -204,7 +232,8 @@
       onLeaveBack: () => navbarInverted.set(false)
     });
 
-    // ── GALLERY GATE PREVIEW (Anticipazione) ──
+    // ── GALLERY GATE — ANTICIPAZIONE ──
+    // Prima viewport del gate: le foto emergono dal blur mentre entrano.
     ScrollTrigger.create({
       trigger: galleryGate,
       start: 'top bottom',
@@ -212,41 +241,35 @@
       onUpdate: (self) => {
         const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
         const ss = (t: number) => t * t * (3 - 2 * t);
-        const gp = ss(clamp((self.progress - 0.12) / 0.88, 0, 1));
+        // No dead zone at the start: the photos begin emerging the instant the
+        // gate crests the viewport bottom (immediately after the last sentence),
+        // reaching full reveal slightly before the gate fills the screen.
+        const gp = ss(clamp(self.progress / 0.88, 0, 1));
         document.documentElement.style.setProperty('--gate-p', gp.toFixed(3));
+
+        // Fire the page transition from this onUpdate too — the photos are fully
+        // revealed by progress ~0.88 (gp hits 1), so at 0.9 we hand off to the
+        // gallery. This is the robust trigger on mobile: it rides the same
+        // per-frame scroll callback that's already animating the reveal, so it
+        // can't be missed the way an onEnter pinned to the last scrollable pixel
+        // can be under Lenis easing + a dynamic mobile toolbar.
+        if (self.progress >= 0.9) navigateToGallery();
       },
     });
 
-    // ── INGRESSO GALLERIA (A fondo pagina) ──
-    let galleryReady = false;
-    const maxScroll  = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    let galleryGuard = window.scrollY >= maxScroll() - 120;
-    const atBottom   = () => window.scrollY >= maxScroll() - 4;
-
-    const tryEnterGallery = (down: boolean) => {
-      if (galleryTransitionPending) return;
-      if (down && atBottom()) {
-        if (galleryGuard) return;
-        if (galleryReady) navigateToGallery();
-        else              galleryReady = true;
-      } else if (!down) {
-        galleryReady = false;
-        galleryGuard = false;
-      }
-    };
-    
-    const onWheel = (e: WheelEvent) => tryEnterGallery(e.deltaY > 0);
-    let touchY = 0;
-    const onTouchStart = (e: TouchEvent) => { touchY = e.touches[0].clientY; };
-    const onTouchMove  = (e: TouchEvent) => {
-      const dy = touchY - e.touches[0].clientY;
-      touchY = e.touches[0].clientY;
-      if (Math.abs(dy) > 1) tryEnterGallery(dy > 0);
-    };
-    
-    window.addEventListener('wheel',      onWheel,      { passive: true });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove',  onTouchMove,  { passive: true });
+    // ── GALLERY GATE — INGRESSO GALLERIA ──
+    // La transizione parte a 'top top': l'istante in cui le foto riempiono lo
+    // schermo (fine del reveal). NON a 'bottom bottom' (fondo del documento):
+    // quel punto è l'ultimo pixel scrollabile e su mobile — con l'easing di
+    // Lenis e la toolbar dinamica (dvh) — non viene raggiunto in modo
+    // affidabile, quindi onEnter non scattava e la transizione non partiva.
+    // Il gate ha ~50dvh di margine sotto (vedi height) così 'top top' cade
+    // ben prima del fondo ed è sempre raggiunto scrollando dentro le foto.
+    ScrollTrigger.create({
+      trigger: galleryGate,
+      start: 'top top',
+      onEnter: () => navigateToGallery(),
+    });
 
     fetchAllVolunteers().then(vols => { previewPhotos = buildPreviewPhotos(vols); });
 
@@ -254,9 +277,6 @@
       navbarInverted.set(false);
       navbarHidden.set(false);
       window.removeEventListener('pointermove', onNavPeek);
-      window.removeEventListener('wheel',      onWheel);
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove',  onTouchMove);
       // Rimuove tutti gli ScrollTrigger quando si cambia pagina
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
@@ -345,7 +365,7 @@
       </p>
     </section>
 
-    <!-- <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
+    <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
       <div class="gallery-anticipation">
         {#each previewPhotos as src, i}
           <img
@@ -355,11 +375,11 @@
             loading="eager"
             decoding="async"
             draggable="false"
-            style={`left:${previewLayout[i].left}; top:${previewLayout[i].top}; width:${previewLayout[i].w}px; aspect-ratio:${previewLayout[i].ar}; --dx:${previewLayout[i].dx}px; --dy:${previewLayout[i].dy}px; --b:${previewLayout[i].b}px; --rot:${previewLayout[i].rot}deg;`}
+            style={`left:${activePreviewLayout[i].left}; top:${activePreviewLayout[i].top}; width:${activePreviewLayout[i].w}; aspect-ratio:${activePreviewLayout[i].ar}; --dx:${activePreviewLayout[i].dx}px; --dy:${activePreviewLayout[i].dy}px; --b:${activePreviewLayout[i].b}px; --rot:${activePreviewLayout[i].rot}deg;`}
           />
         {/each}
       </div>
-    </div> -->
+    </div>
 
   </main>
 </div>
@@ -381,22 +401,31 @@
     padding-bottom: 50dvh !important; 
     text-align: right;
   }
-  /* ── Aggiunto cuscinetto di spazio prima della galleria ── */
+  /* Piccolo respiro dopo l'ultima frase: quel tanto che basta perché non sia
+     incollata alla galleria, ma senza vuoto — le foto iniziano a emergere
+     appena si scorre oltre la frase, come continuazione del racconto. */
   .story--summary {
-    padding-bottom: 40vh;
-    
+    padding-bottom: var(--spacing-13);
   }
 
-  /* Disabled together with the gallery-gate preview markup above.
   .gallery-gate {
     position: relative;
-    height: 100vh;
-    overflow: hidden;
+    /* Le foto emergono mentre il gate entra e riempiono lo schermo a 'top top'
+       (dopo ~1 viewport di scroll) → lì parte la transizione. L'altezza è 1
+       viewport visivo + ~50dvh di margine: quel margine NON viene mai scrollato
+       (si transiziona a 'top top', prima), serve solo a garantire che 'top top'
+       cada ben prima dell'ultimo pixel del documento, così su mobile il trigger
+       scatta sempre. Diviso per lo zoom globale di <html> come i .layered-panel
+       così il primo viewport copre ESATTAMENTE lo schermo visivo. */
+    height: calc((100dvh + 50dvh) / var(--page-zoom, 1));
   }
 
   .gallery-anticipation {
-    position: absolute;
-    inset: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
     pointer-events: none;
   }
 
@@ -419,7 +448,7 @@
       rotate(calc(var(--rot, 0deg) * (1 - var(--gate-p, 0))));
     will-change: transform, opacity, filter;
     backface-visibility: hidden;
-  } */
+  }
 
   .archivio-link:hover {
     text-decoration: none;
@@ -523,9 +552,10 @@
   /* Per sicurezza su schermi piccoli */
   @media (max-width: 600px) {
     .story--summary.safe-area {
-      padding-top: 300px;
+      padding-top: var(--spacing-15);
       padding-right: 0;
-      padding-bottom: 200px;
+      /* Tight gap so the photo section follows the last sentence directly. */
+      padding-bottom: var(--spacing-9);
       padding-left: var(--spacing-5, 24px);
     }
 
