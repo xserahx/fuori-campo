@@ -30,6 +30,21 @@ export function rectOf(el: Element): FlightRect {
   return { left: r.left, top: r.top, width: r.width, height: r.height };
 }
 
+/** Like rectOf, but measures the element's RESTING box — with its own
+ *  transform neutralised. The gallery tiles (and the zoom frame) carry a
+ *  live tilt transform (scale + rotate + lift) while hovered; measuring the
+ *  raw getBoundingClientRect would capture that tilted/scaled box and make
+ *  the flight start (or land) at a shifted, oversized origin. Ancestor
+ *  transforms (the collage pan/zoom) are preserved — only the element's own
+ *  transform is removed for the measurement, then restored. */
+export function restingRectOf(el: HTMLElement): FlightRect {
+  const prev = el.style.transform;
+  el.style.transform = 'none';
+  const r = el.getBoundingClientRect();
+  el.style.transform = prev;
+  return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
+
 /** Gallery click: the destination rect isn't known yet — the zoom page reports it via arriveEntry. */
 export function launchEntry(src: string, from: FlightRect) {
   photoFlight.set({ active: true, phase: 'entering', src, from, to: null });

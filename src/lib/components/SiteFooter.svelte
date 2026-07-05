@@ -237,9 +237,9 @@
     }
 
     .hero-fill,
-    .hero-outline  { font-size: clamp(56px, 18vw, 88px); }
+    .hero-outline  { font-size: clamp(40px, 13vw, 64px); }
 
-    .hero-outline { padding-left: 14px; }
+    .hero-outline { padding-left: 10px; }
 
     .footer-bottom { padding-top: var(--spacing-4); /* 16px */ }
 
