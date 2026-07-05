@@ -151,13 +151,21 @@
     /* ── Bottone foto: sale insieme al footer (comportamento commit 0da3185) ──
        Il bottone è position:fixed in basso a sinistra e ScrollTrigger lo trascina
        su esattamente dell'altezza del footer man mano che questo entra, così si
-       "aggancia" al footer senza sovrapporsi. */
+       "aggancia" al footer senza sovrapporsi. Stesso comportamento su desktop e
+       mobile. */
     gsap.registerPlugin(ScrollTrigger);
 
     const fotoBtn = document.getElementById('sticky-foto-btn');
     const footerElement = document.querySelector('footer');
 
     if (fotoBtn && footerElement) {
+      /* Distanza minima tra il bottone e il bordo alto del footer al capolinea,
+         dal token di spacing (--spacing-5 = 24px). */
+      const FOOTER_GAP =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--spacing-5')
+        ) || 24;
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: footerElement,
@@ -169,9 +177,24 @@
       });
 
       tl.to(fotoBtn, {
-        y: () => -(footerElement as HTMLElement).offsetHeight,
+        /* Il bottone sale al massimo fino a FOOTER_GAP px sopra la cima del
+           footer e non entra mai dentro. Calcolo su misure reali (altezza
+           footer + offset `bottom` del bottone) così vale desktop e mobile. */
+        y: () => {
+          const footerH = (footerElement as HTMLElement).offsetHeight;
+          const bottomOffset =
+            parseFloat(getComputedStyle(fotoBtn as HTMLElement).bottom) || 0;
+          return -Math.max(0, footerH - bottomOffset + FOOTER_GAP);
+        },
         ease: 'none'
       });
+
+      /* Il footer usa un font display (FUORI CAMPO): la sua altezza è affidabile
+         solo dopo il caricamento dei font, altrimenti su mobile il bottone si
+         aggancia alla quota sbagliata. Ricalcoliamo lo ScrollTrigger a font pronti. */
+      if (typeof document !== 'undefined' && document.fonts?.ready) {
+        document.fonts.ready.then(() => ScrollTrigger.refresh());
+      }
     }
 
     return () => {
@@ -358,7 +381,11 @@
 
     <!-- ── VEDI TUTTE LE FOTO — fixed, sale col footer (commit 0da3185) ── -->
     {#if photoCount > 0}
-      <div id="sticky-foto-btn" class="vedi-foto-wrapper">
+      <div
+        id="sticky-foto-btn"
+        class="vedi-foto-wrapper"
+        class:vedi-foto-wrapper--hidden={galleryOpen}
+      >
         <VediTutteLeFoto onclick={openGallery} />
       </div>
     {/if}
@@ -678,6 +705,12 @@
     z-index: 9999 !important; /* Sopra a qualunque pezzo del footer */
     pointer-events: auto;
     will-change: transform;
+  }
+
+  /* Nascosto mentre l'overlay galleria foto è aperto (resta nel DOM così lo
+     ScrollTrigger che lo aggancia al footer continua a funzionare alla chiusura). */
+  .vedi-foto-wrapper--hidden {
+    display: none;
   }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
