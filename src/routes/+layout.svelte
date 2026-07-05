@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { browser } from '$app/environment';
-	import { onNavigate, afterNavigate } from '$app/navigation';
+	import { beforeNavigate, onNavigate, afterNavigate } from '$app/navigation';
 	import { gsap } from 'gsap';
 	import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -20,22 +20,95 @@
 
 	gsap.registerPlugin(DrawSVGPlugin, ScrollTrigger);
 
-	// The browser's own back/forward scroll memory races our manual reset
-	// below (afterNavigate / Lenis init) — a restored native scroll position
-	// can apply before or after ours depending on timing. Owning restoration
-	// ourselves removes that race entirely.
 	if (browser) history.scrollRestoration = 'manual';
 
 	let { children } = $props();
 
 	const isVolunteerPage = $derived(page.url.pathname.startsWith('/volunteer'));
-	// Zoom (lightbox) volunteer page — /volunteer/[slug] but not the /profile sub-page.
+
 	const isVolunteerZoom = $derived(
 		page.url.pathname.startsWith('/volunteer/') && !page.url.pathname.endsWith('/profile')
 	);
+
 	const isCategoryDetailPage = $derived(page.url.pathname.startsWith('/category/'));
 	const isGalleryPage = $derived(page.url.pathname.startsWith('/gallery'));
 	const isHome = $derived(page.url.pathname === '/');
+
+	/*
+		Queste sono le route che possono gestire intenzionalmente una pagina fixed.
+		Tutte le altre devono essere scrollabili e quindi non devono ereditare
+		overflow:hidden da pagine precedenti.
+	*/
+	function routeKeepsWindowLocked(pathname: string) {
+		const isAboutMobile =
+			pathname === '/about' &&
+			typeof window !== 'undefined' &&
+			window.matchMedia('(max-width: 599px)').matches;
+
+		return (
+			pathname === '/gallery' ||
+			pathname === '/category' ||
+			pathname.startsWith('/category/') ||
+			isAboutMobile
+		);
+	}
+
+	function clearGlobalScrollLock() {
+		if (!browser) return;
+
+		const root = document.documentElement;
+		const body = document.body;
+
+		root.style.removeProperty('overflow');
+		root.style.removeProperty('overflow-y');
+		root.style.removeProperty('height');
+		root.style.removeProperty('position');
+
+		body.style.removeProperty('overflow');
+		body.style.removeProperty('overflow-y');
+		body.style.removeProperty('height');
+		body.style.removeProperty('position');
+		body.style.removeProperty('padding-top');
+
+		root.classList.remove('lenis-stopped');
+		body.classList.remove('lenis-stopped');
+	}
+
+	function restoreScrollableRoute(pathname: string) {
+		if (!browser) return;
+		if (routeKeepsWindowLocked(pathname)) return;
+
+		clearGlobalScrollLock();
+
+		if (lenis) {
+			lenis.start();
+			lenis.resize();
+		}
+
+		ScrollTrigger.refresh();
+	}
+
+	function scheduleScrollableRouteRestore(pathname: string) {
+		if (!browser) return;
+
+		restoreScrollableRoute(pathname);
+
+		requestAnimationFrame(() => {
+			restoreScrollableRoute(pathname);
+
+			requestAnimationFrame(() => {
+				restoreScrollableRoute(pathname);
+			});
+		});
+
+		window.setTimeout(() => {
+			restoreScrollableRoute(pathname);
+		}, 80);
+
+		window.setTimeout(() => {
+			restoreScrollableRoute(pathname);
+		}, 240);
+	}
 
 	$effect(() => {
 		if (!browser) return;
@@ -53,30 +126,31 @@
 		document.documentElement.style.backgroundColor = '';
 	});
 
-	// ── Smooth scrolling Lenis — every page except gallery ──────────────────
-	// Gallery has no window scroll at all (body/html overflow forced hidden);
-	// its internal scroll containers get their own container-scoped instance
-	// (see smoothScrollContainer, used in MobilePhotosView/NamesView).
 	let lenis: Lenis | null = null;
 
 	$effect(() => {
 		if (!browser || isGalleryPage) return;
 
+		clearGlobalScrollLock();
+
 		const scroll = initWindowSmoothScroll();
 		lenis = scroll.lenis;
+
+		if (lenis) {
+			lenis.start();
+			lenis.resize();
+		}
 
 		return () => {
 			scroll.destroy();
 			lenis = null;
+			clearGlobalScrollLock();
 		};
 	});
 
-	// ── Global navbar hide/show on native vertical scroll ───────────────────
 	$effect(() => {
 		if (!browser) return;
 
-		// Nella home la gestione resta affidata alla home,
-		// perché lì c'è Lenis + ScrollTrigger.
 		if (isHome) return;
 
 		let lastY = window.scrollY;
@@ -120,23 +194,31 @@
 		};
 	});
 
-	// ── Navigation cleanup ──────────────────────────────────────────────────
-	afterNavigate(() => {
-		document.documentElement.style.overflow = '';
-		document.body.style.overflow = '';
-		document.body.style.paddingTop = '';
+	beforeNavigate((navigation) => {
+		const toPathname = navigation.to?.url.pathname ?? '';
+
+		if (!routeKeepsWindowLocked(toPathname)) {
+			clearGlobalScrollLock();
+		}
+	});
+
+	afterNavigate((navigation) => {
+		const pathname = navigation.to?.url.pathname ?? page.url.pathname;
+
 		navbarHidden.set(false);
+		navbarInverted.set(false);
 
 		if (lenis) {
+			lenis.start();
+			lenis.resize();
 			lenis.scrollTo(0, { immediate: true });
 		} else {
 			window.scrollTo(0, 0);
 		}
 
-		ScrollTrigger.refresh();
+		scheduleScrollableRouteRestore(pathname);
 	});
 
-	// ── Page transition ─────────────────────────────────────────────────────
 	function ptEls(): { overlay: HTMLElement; path: SVGPathElement } | null {
 		const overlay = document.querySelector<HTMLElement>('#pt-overlay');
 		const path = document.querySelector<SVGPathElement>('#pt-path');

@@ -1,7 +1,9 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
+  import { onDestroy, onMount } from 'svelte';
   import { page } from '$app/state';
   import { browser } from '$app/environment';
+  import { beforeNavigate } from '$app/navigation';
   import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
   import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
@@ -81,11 +83,81 @@
     galleryOpen = false;
   }
 
-  // Blocca lo scroll della pagina mentre l'overlay è aperto.
+  /*
+    La pagina profilo deve scrollare sempre.
+    L'unico momento in cui blocchiamo lo scroll è quando è aperto
+    PhotoGalleryOverlay. Quando l'overlay si chiude o quando cambi pagina,
+    ripuliamo sia html sia body.
+  */
+  function unlockProfileScroll() {
+    if (!browser) return;
+
+    const root = document.documentElement;
+    const body = document.body;
+
+    root.style.removeProperty('overflow');
+    root.style.removeProperty('overflow-y');
+    root.style.removeProperty('height');
+    root.style.removeProperty('position');
+
+    body.style.removeProperty('overflow');
+    body.style.removeProperty('overflow-y');
+    body.style.removeProperty('height');
+    body.style.removeProperty('position');
+    body.style.removeProperty('padding-top');
+
+    root.classList.remove('lenis-stopped');
+    body.classList.remove('lenis-stopped');
+  }
+
+  function lockProfileGalleryScroll() {
+    if (!browser) return;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  }
+
+  beforeNavigate(() => {
+    unlockProfileScroll();
+  });
+
+  onMount(() => {
+    unlockProfileScroll();
+
+    requestAnimationFrame(() => {
+      unlockProfileScroll();
+
+      requestAnimationFrame(() => {
+        unlockProfileScroll();
+      });
+    });
+
+    window.setTimeout(() => {
+      unlockProfileScroll();
+    }, 120);
+
+    return () => {
+      unlockProfileScroll();
+    };
+  });
+
+  onDestroy(() => {
+    unlockProfileScroll();
+  });
+
   $effect(() => {
     if (!browser) return;
 
-    document.body.style.overflow = galleryOpen ? 'hidden' : '';
+    if (!galleryOpen) {
+      unlockProfileScroll();
+      return;
+    }
+
+    lockProfileGalleryScroll();
+
+    return () => {
+      unlockProfileScroll();
+    };
   });
 
   /* ── Q&A responses ───────────────────────────────────────────── */
@@ -126,19 +198,6 @@
 
     return volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.';
   }
-
-  // Clear any scroll-lock left over from the gallery / category / homepage.
-  $effect(() => {
-    if (!browser) return;
-
-    document.documentElement.style.overflow = '';
-
-    if (!galleryOpen) {
-      document.body.style.overflow = '';
-    }
-
-    document.body.style.paddingTop = '';
-  });
 </script>
 
 <svelte:head>
@@ -168,9 +227,9 @@
       <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
         <!-- Prima virgoletta estratta e resa indipendente -->
         <span class="qmark qmark--first" aria-hidden="true">&#8220;</span>
-        
+
         <p class="quote-body">{quoteText}</p>
-        
+
         <!-- Seconda virgoletta -->
         <span class="qmark qmark--last" aria-hidden="true">&#8221;</span>
       </blockquote>
@@ -344,10 +403,10 @@
     opacity: 0.55;
   }
 
- /* ── STRUTTURA DELLE VIRGOLETTE ── */
+  /* ── STRUTTURA DELLE VIRGOLETTE ── */
   .qmark {
-    display: flex; /* Trasformato in flex per poter allineare il testo internamente */
-    justify-content: flex-end; /* Allinea a destra orizzontalmente */
+    display: flex;
+    justify-content: flex-end;
     width: 100%;
     font-family: var(--font-display);
     font-size: 84px;
@@ -356,19 +415,19 @@
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke-width: var(--stroke-1);
-    -webkit-text-stroke-color:var(--color-content-body);
+    -webkit-text-stroke-color: var(--color-content-body);
     paint-order: stroke fill;
     user-select: none;
   }
 
   .qmark--first {
-    height: 45px;          /* Altezza ridotta per schiacciare la virgoletta verso il basso */
-    line-height: 1;        /* Ripristina la linea di base corretta per l'allineamento */
-    margin-bottom: 0px;    /* Azzerato per incollarla al testo */
+    height: 45px;
+    line-height: 1;
+    margin-bottom: 0px;
   }
 
   .qmark--last {
-    align-items: flex-start; /* La seconda virgoletta invece si allinea in alto, vicino al testo */
+    align-items: flex-start;
     height: 45px;
     line-height: 0.6;
     margin-top: 16px;
@@ -386,7 +445,6 @@
     text-align: right;
     white-space: pre-wrap;
   }
-   
 
   /* ── Grid ───────────────────────────────────────────────────────── */
   .hero-grid {
@@ -403,6 +461,7 @@
     margin: 0;
     min-width: 0;
   }
+
   .info-role {
     margin: 0 0 8px;
     font-size: 36px;
@@ -411,6 +470,7 @@
     letter-spacing: 1.44px;
     color: var(--color-content-accent, #bdff5d);
   }
+
   .info-location {
     margin: 0;
     font-size: 16px;
@@ -426,7 +486,7 @@
     position: fixed;
     left: var(--spacing-11, 72px);
     bottom: var(--unit-48, 48px);
-    z-index: 9999 !important; /* Forza il bottone a stare sopra a qualunque pezzo del footer */
+    z-index: 9999 !important;
     pointer-events: auto;
     will-change: transform;
   }
@@ -439,7 +499,11 @@
     flex-direction: column;
     min-width: 0;
   }
-  .qa-item { display: flex; flex-direction: column; }
+
+  .qa-item {
+    display: flex;
+    flex-direction: column;
+  }
 
   .qa-row {
     display: flex;
@@ -460,11 +524,21 @@
     text-align: left;
     transition: color 0.18s ease;
   }
-  .qa-row:hover,
-  .qa-row--open { color: var(--color-content-accent, #bdff5d); }
-  .qa-row:hover + .qa-sep:not(.qa-sep--open) { background: var(--color-content-accent, #bdff5d); }
 
-  .qa-title { flex: 1; min-width: 0; word-break: break-word; }
+  .qa-row:hover,
+  .qa-row--open {
+    color: var(--color-content-accent, #bdff5d);
+  }
+
+  .qa-row:hover + .qa-sep:not(.qa-sep--open) {
+    background: var(--color-content-accent, #bdff5d);
+  }
+
+  .qa-title {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
 
   .qa-icon {
     flex-shrink: 0;
@@ -476,9 +550,20 @@
     opacity: 0;
     transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .qa-icon svg { width: 100%; height: 100%; }
-  .qa-row:hover .qa-icon { opacity: 1; }
-  .qa-icon--open { opacity: 1; transform: rotate(45deg); }
+
+  .qa-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .qa-row:hover .qa-icon {
+    opacity: 1;
+  }
+
+  .qa-icon--open {
+    opacity: 1;
+    transform: rotate(45deg);
+  }
 
   .qa-sep {
     height: 2.417px;
@@ -487,11 +572,16 @@
     overflow: hidden;
     transition: background 200ms ease;
   }
-  .qa-sep--open { height: auto; background: var(--color-content-accent, #bdff5d); }
 
-  .qa-answer { padding: 36px 44px 40px; }
-  
-  
+  .qa-sep--open {
+    height: auto;
+    background: var(--color-content-accent, #bdff5d);
+  }
+
+  .qa-answer {
+    padding: 36px 44px 40px;
+  }
+
   .qa-answer p {
     margin: 0;
     font-size: 24px;
@@ -510,39 +600,97 @@
 
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1100px) {
-    .vol-quote { right: var(--spacing-5, 24px); top: 4px; width: 300px; }
-    .quote-body { font-size: var(--ts-cat-size); }
+    .vol-quote {
+      right: var(--spacing-5, 24px);
+      top: 4px;
+      width: 300px;
+    }
+
+    .quote-body {
+      font-size: var(--ts-cat-size);
+    }
+
     .hero-grid {
       grid-template-columns: 1fr;
       row-gap: 40px;
       padding: 0 24px;
     }
-    .qa-row { font-size: 26px; }
-    .vedi-foto-wrapper { left: var(--spacing-5, 24px); }
+
+    .qa-row {
+      font-size: 26px;
+    }
+
+    .vedi-foto-wrapper {
+      left: var(--spacing-5, 24px);
+    }
   }
 
   @media (max-width: 700px) {
-    .profile { padding-top: calc(var(--navbar-height, 125px) + 8px); }
-    .name-surname  { padding-left: var(--spacing-5); font-size: clamp(44px, 13vw, 80px); }
-    .name-firstname { padding-left: 40px; font-size: clamp(44px, 13vw, 80px); }
-    .head { min-height: 0; }
+    .profile {
+      padding-top: calc(var(--navbar-height, 125px) + 8px);
+    }
+
+    .name-surname {
+      padding-left: var(--spacing-5);
+      font-size: clamp(44px, 13vw, 80px);
+    }
+
+    .name-firstname {
+      padding-left: 40px;
+      font-size: clamp(44px, 13vw, 80px);
+    }
+
+    .head {
+      min-height: 0;
+    }
+
     .vol-quote {
       position: relative;
-      right: auto; top: auto;
+      right: auto;
+      top: auto;
       width: 100%;
       max-width: 100%;
       margin: 24px 0 0;
       padding: 0.6em var(--spacing-5);
     }
-    .quote-body { width: 100%; font-size: 18px; }
-    .hero-grid { padding: 0 var(--spacing-5, 24px); margin-top: 24px; }
-    .info-role { font-size: 26px; }
-    .qa-row { font-size: 18px; letter-spacing: 1px; padding: 12px 0; }
-    .qa-icon { width: 28px; height: 28px; }
-    .qa-answer { padding: 20px 18px 24px; }
-    .qa-answer p { font-size: 16px; }
 
-    .hero { padding-bottom: 56px; }
+    .quote-body {
+      width: 100%;
+      font-size: 18px;
+    }
+
+    .hero-grid {
+      padding: 0 var(--spacing-5, 24px);
+      margin-top: 24px;
+    }
+
+    .info-role {
+      font-size: 26px;
+    }
+
+    .qa-row {
+      font-size: 18px;
+      letter-spacing: 1px;
+      padding: 12px 0;
+    }
+
+    .qa-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .qa-answer {
+      padding: 20px 18px 24px;
+    }
+
+    .qa-answer p {
+      font-size: 16px;
+    }
+
+    .hero {
+      padding-bottom: 56px;
+    }
+
     .vedi-foto-wrapper {
       position: static !important;
       margin: 32px var(--spacing-5, 24px) 0;
@@ -550,10 +698,15 @@
   }
 
   @media (pointer: coarse) {
-    .qa-row { min-height: max(48px, calc(44px / var(--page-zoom, 1))); }
+    .qa-row {
+      min-height: max(48px, calc(44px / var(--page-zoom, 1)));
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .qa-sep, .qa-icon { transition: none; }
+    .qa-sep,
+    .qa-icon {
+      transition: none;
+    }
   }
 </style>
