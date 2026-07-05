@@ -110,11 +110,73 @@
     body.classList.remove('lenis-stopped');
   }
 
+  function unlockProfileScrollIfGalleryClosed() {
+    if (galleryOpen) return;
+
+    unlockProfileScroll();
+  }
+
   function lockProfileGalleryScroll() {
     if (!browser) return;
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+  }
+
+  /* ── Bottone foto: fixed fino alla fine dell'accordion ───────── */
+  let photoButtonAnchorEl: HTMLElement | null = $state(null);
+  let photoButtonEl: HTMLElement | null = $state(null);
+  let photoButtonDocked = $state(false);
+  let photoButtonHeight = $state(56);
+  let photoButtonRaf = 0;
+
+  function updatePhotoButtonMeasurements() {
+    if (!photoButtonEl) return;
+
+    const rect = photoButtonEl.getBoundingClientRect();
+
+    if (rect.height > 0) {
+      photoButtonHeight = rect.height;
+    }
+  }
+
+  function getPhotoButtonBottomOffset() {
+    if (!photoButtonEl) return 48;
+
+    const rawValue = getComputedStyle(photoButtonEl)
+      .getPropertyValue('--photo-button-bottom')
+      .trim();
+
+    const parsedValue = Number.parseFloat(rawValue);
+
+    return Number.isFinite(parsedValue) ? parsedValue : 48;
+  }
+
+  function updatePhotoButtonDocking() {
+    if (!browser || !photoButtonAnchorEl || !photoButtonEl) return;
+
+    updatePhotoButtonMeasurements();
+
+    const anchorRect = photoButtonAnchorEl.getBoundingClientRect();
+    const fixedBottomOffset = getPhotoButtonBottomOffset();
+    const fixedButtonTop = window.innerHeight - fixedBottomOffset - photoButtonHeight;
+
+    /*
+      Finché il punto naturale del bottone, cioè l'anchor sotto l'accordion,
+      è più in basso del bottone fixed, il bottone resta fixed.
+      Quando l'anchor raggiunge la stessa quota verticale, il bottone diventa statico
+      e rimane agganciato alla fine dell'accordion.
+    */
+    photoButtonDocked = anchorRect.top <= fixedButtonTop;
+  }
+
+  function queuePhotoButtonDockingUpdate() {
+    if (!browser || photoButtonRaf) return;
+
+    photoButtonRaf = requestAnimationFrame(() => {
+      photoButtonRaf = 0;
+      updatePhotoButtonDocking();
+    });
   }
 
   beforeNavigate(() => {
@@ -123,26 +185,56 @@
 
   onMount(() => {
     unlockProfileScroll();
+    queuePhotoButtonDockingUpdate();
 
-    requestAnimationFrame(() => {
-      unlockProfileScroll();
+    let secondFrame = 0;
 
-      requestAnimationFrame(() => {
-        unlockProfileScroll();
+    const firstFrame = requestAnimationFrame(() => {
+      unlockProfileScrollIfGalleryClosed();
+      queuePhotoButtonDockingUpdate();
+
+      secondFrame = requestAnimationFrame(() => {
+        unlockProfileScrollIfGalleryClosed();
+        queuePhotoButtonDockingUpdate();
       });
     });
 
-    window.setTimeout(() => {
-      unlockProfileScroll();
+    const unlockTimer = window.setTimeout(() => {
+      unlockProfileScrollIfGalleryClosed();
+      queuePhotoButtonDockingUpdate();
     }, 120);
+
+    window.addEventListener('scroll', queuePhotoButtonDockingUpdate, { passive: true });
+    window.addEventListener('resize', queuePhotoButtonDockingUpdate);
 
     return () => {
       unlockProfileScroll();
+
+      cancelAnimationFrame(firstFrame);
+
+      if (secondFrame) {
+        cancelAnimationFrame(secondFrame);
+      }
+
+      window.clearTimeout(unlockTimer);
+
+      window.removeEventListener('scroll', queuePhotoButtonDockingUpdate);
+      window.removeEventListener('resize', queuePhotoButtonDockingUpdate);
+
+      if (photoButtonRaf) {
+        cancelAnimationFrame(photoButtonRaf);
+        photoButtonRaf = 0;
+      }
     };
   });
 
   onDestroy(() => {
     unlockProfileScroll();
+
+    if (photoButtonRaf) {
+      cancelAnimationFrame(photoButtonRaf);
+      photoButtonRaf = 0;
+    }
   });
 
   $effect(() => {
@@ -150,6 +242,7 @@
 
     if (!galleryOpen) {
       unlockProfileScroll();
+      queuePhotoButtonDockingUpdate();
       return;
     }
 
@@ -157,6 +250,7 @@
 
     return () => {
       unlockProfileScroll();
+      queuePhotoButtonDockingUpdate();
     };
   });
 
@@ -190,6 +284,22 @@
   $effect(() => {
     currentSlug;
     openQ = -1;
+
+    if (browser) {
+      queuePhotoButtonDockingUpdate();
+    }
+  });
+
+  $effect(() => {
+    openQ;
+
+    if (browser) {
+      queuePhotoButtonDockingUpdate();
+
+      requestAnimationFrame(() => {
+        queuePhotoButtonDockingUpdate();
+      });
+    }
   });
 
   function answerFor(i: number): string {
@@ -285,10 +395,23 @@
 
     </div>
 
-    <!-- ── VEDI TUTTE LE FOTO — ancorato in basso a sinistra ────────── -->
+    <!-- ── VEDI TUTTE LE FOTO — fixed fino alla fine dell'accordion ── -->
     {#if photoCount > 0}
-      <div class="vedi-foto-wrapper">
-        <VediTutteLeFoto onclick={openGallery} />
+      <div
+        class="vedi-foto-anchor"
+        bind:this={photoButtonAnchorEl}
+        style={`--photo-button-height: ${photoButtonHeight}px`}
+      >
+        <div
+          bind:this={photoButtonEl}
+          class={`vedi-foto-wrapper ${
+            photoButtonDocked
+              ? 'vedi-foto-wrapper--docked'
+              : 'vedi-foto-wrapper--floating'
+          }`}
+        >
+          <VediTutteLeFoto onclick={openGallery} />
+        </div>
       </div>
     {/if}
 
@@ -323,6 +446,9 @@
 
   /* ── Page shell — scrolls vertically ────────────────────────────── */
   .profile {
+    --profile-side-offset: var(--spacing-11, 72px);
+    --photo-button-bottom: var(--unit-48, 48px);
+
     position: relative;
     width: 100%;
     min-height: 100dvh;
@@ -332,9 +458,7 @@
     overflow-x: hidden;
   }
 
-  /* ── Hero wrapper — contiene tutto fino al bottone "vedi foto",
-     che viene ancorato al suo bordo inferiore (padding-bottom riserva
-     lo spazio per il bottone posizionato in absolute). ─────────────── */
+  /* ── Hero wrapper ───────────────────────────────────────────────── */
   .hero {
     position: relative;
     padding-bottom: 160px;
@@ -342,12 +466,12 @@
 
   /* ── INDIETRO button ─────────────────────────────────────────────── */
   .back-btn-wrapper {
-    margin-left: var(--spacing-11, 72px);
+    margin-left: var(--profile-side-offset);
   }
 
   @media (max-width: 700px) {
     .back-btn-wrapper {
-      margin-left: var(--spacing-5, 24px);
+      margin-left: var(--profile-side-offset);
     }
   }
 
@@ -374,7 +498,7 @@
   }
 
   .name-surname {
-    padding-left: var(--spacing-11, 72px);
+    padding-left: var(--profile-side-offset);
     margin-bottom: -8px;
     color: var(--color-content-accent, #bdff5d);
   }
@@ -453,7 +577,7 @@
     column-gap: var(--spacing-6, 32px);
     align-items: start;
     margin-top: 72px;
-    padding: 0 var(--spacing-11, 72px);
+    padding: 0 var(--profile-side-offset);
   }
 
   /* ── Info ───────────────────────────────────────────────────────── */
@@ -479,16 +603,6 @@
     letter-spacing: 1px;
     white-space: pre-wrap;
     color: var(--color-content-body);
-  }
-
-  /* ── FOTO WRAPPER INITIAL FIXED STATE ── */
-  .vedi-foto-wrapper {
-    position: fixed;
-    left: var(--spacing-11, 72px);
-    bottom: var(--unit-48, 48px);
-    z-index: 9999 !important;
-    pointer-events: auto;
-    will-change: transform;
   }
 
   /* ── Q&A Accordion ──────────────────────────────────────────────── */
@@ -598,6 +712,34 @@
     border-radius: 4px;
   }
 
+  /* ── FOTO BUTTON: anchor naturale sotto l'accordion ───────────── */
+  .vedi-foto-anchor {
+    margin-top: 40px;
+    margin-left: var(--profile-side-offset);
+    min-height: var(--photo-button-height, 56px);
+    pointer-events: none;
+  }
+
+  .vedi-foto-wrapper {
+    pointer-events: auto;
+  }
+
+  /* Stato 1: prima della fine dell'accordion, il bottone è fixed sulla viewport */
+  .vedi-foto-wrapper--floating {
+    position: fixed;
+    left: var(--profile-side-offset);
+    bottom: var(--photo-button-bottom);
+    z-index: 40;
+  }
+
+  /* Stato 2: raggiunta la fine dell'accordion, il bottone resta agganciato lì */
+  .vedi-foto-wrapper--docked {
+    position: static;
+    display: flex;
+    justify-content: flex-start;
+    z-index: auto;
+  }
+
   /* ── Responsive ─────────────────────────────────────────────────── */
   @media (max-width: 1100px) {
     .vol-quote {
@@ -613,25 +755,23 @@
     .hero-grid {
       grid-template-columns: 1fr;
       row-gap: 40px;
-      padding: 0 24px;
     }
 
     .qa-row {
       font-size: 26px;
     }
-
-    .vedi-foto-wrapper {
-      left: var(--spacing-5, 24px);
-    }
   }
 
   @media (max-width: 700px) {
     .profile {
+      --profile-side-offset: var(--spacing-5, 24px);
+      --photo-button-bottom: 32px;
+
       padding-top: calc(var(--navbar-height, 125px) + 8px);
     }
 
     .name-surname {
-      padding-left: var(--spacing-5);
+      padding-left: var(--profile-side-offset);
       font-size: clamp(44px, 13vw, 80px);
     }
 
@@ -651,7 +791,7 @@
       width: 100%;
       max-width: 100%;
       margin: 24px 0 0;
-      padding: 0.6em var(--spacing-5);
+      padding: 0.6em var(--profile-side-offset);
     }
 
     .quote-body {
@@ -660,7 +800,7 @@
     }
 
     .hero-grid {
-      padding: 0 var(--spacing-5, 24px);
+      padding: 0 var(--profile-side-offset);
       margin-top: 24px;
     }
 
@@ -691,9 +831,9 @@
       padding-bottom: 56px;
     }
 
-    .vedi-foto-wrapper {
-      position: static !important;
-      margin: 32px var(--spacing-5, 24px) 0;
+    .vedi-foto-anchor {
+      margin-top: 32px;
+      margin-left: var(--profile-side-offset);
     }
   }
 
