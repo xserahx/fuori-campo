@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { onDestroy, onMount } from 'svelte';
   import { goto, beforeNavigate } from '$app/navigation';
   import { fade } from 'svelte/transition';
@@ -7,14 +8,12 @@
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
   import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
-  import '$lib/styles/tokens.css';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
 
-
   import '$lib/styles/reset.css';
-	import '$lib/styles/tokens.css';
-	import '$lib/styles/base.css';
-	import '$lib/styles/utilities.css';
+  import '$lib/styles/tokens.css';
+  import '$lib/styles/base.css';
+  import '$lib/styles/utilities.css';
 
   type Volunteer = {
     id: number;
@@ -97,12 +96,20 @@
     cMat: any;  sMat: any;
     texIdx: number;
   };
+
   let slots: Slot[]             = [];
   let textures: THREE.Texture[] = [];
 
   const N = () => volunteers.length;
-  function mod(n: number, m: number) { return ((n % m) + m) % m; }
-  function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+
+  function mod(n: number, m: number) {
+    return ((n % m) + m) % m;
+  }
+
+  function lerp(a: number, b: number, t: number) {
+    return a + (b - a) * t;
+  }
+
   function smoothstep(x: number) {
     x = Math.max(0, Math.min(1, x));
     return x * x * (3 - 2 * x);
@@ -129,6 +136,25 @@
   let volInfoBlockEl: HTMLElement | null = $state(null);
   let mobileInfoEl:   HTMLElement | null = $state(null);
   let gsapCtx: gsap.Context | null = null;
+
+  function unlockAboutPageScroll() {
+    if (!browser) return;
+
+    document.documentElement.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('overflow-y');
+
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('overflow-y');
+    document.body.style.removeProperty('padding-top');
+  }
+
+  function lockAboutMobileScroll() {
+    if (!browser) return;
+
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingTop = '0';
+  }
 
   let touchStartY = 0;
   let isDragging  = false;
@@ -223,24 +249,32 @@
 
   function buildScene() {
     if (!canvasEl || !containerEl) return;
+
     scene = new THREE.Scene();
     timer = new THREE.Timer();
+
     const w = containerEl.clientWidth;
     const h = containerEl.clientHeight;
+
     camera = new THREE.PerspectiveCamera(52, w / h, 0.1, 100);
     camera.position.set(0, 0, ARC_R * 0.98);
+
     renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(w, h);
     renderer.setClearColor(0x000000, 0);
+
     const loader = new THREE.TextureLoader();
+
     textures = volunteers.map(vol => {
       const t = loader.load(vol.image, () => { _lastVisual = -9999; }, undefined as any, undefined as any);
       t.colorSpace = THREE.NoColorSpace;
       return t;
     });
+
     for (let s = 0; s < N_SLOTS; s++) {
       const initIdx = mod(startIndex + s - HALF, N());
+
       const cMat = new THREE.ShaderMaterial({
         uniforms: {
           uTex:   { value: textures[initIdx] },
@@ -248,9 +282,12 @@
           uFade:  { value: 0 },
           uBlend: { value: 0 },
         },
-        vertexShader: C_VERT, fragmentShader: C_FRAG,
-        transparent: true, depthWrite: false,
+        vertexShader: C_VERT,
+        fragmentShader: C_FRAG,
+        transparent: true,
+        depthWrite: false,
       });
+
       const sMat = new THREE.ShaderMaterial({
         uniforms: {
           uTex:  { value: textures[initIdx] },
@@ -259,43 +296,60 @@
           uFade: { value: 0 },
           uDist: { value: 0 },
         },
-        vertexShader: S_VERT, fragmentShader: S_FRAG,
-        transparent: true, depthWrite: false,
+        vertexShader: S_VERT,
+        fragmentShader: S_FRAG,
+        transparent: true,
+        depthWrite: false,
       });
+
       const cMesh = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1), cMat);
       const sMesh = new THREE.Mesh(new THREE.PlaneGeometry(SIDE_W, SIDE_H, 1, 1), sMat);
+
       scene.add(cMesh);
       scene.add(sMesh);
+
       slots.push({ cMesh, sMesh, cMat, sMat, texIdx: initIdx });
     }
+
     animate();
     updateCardBounds();
   }
 
   let _lastVisual = -9999;
+
   function animate() {
     if (!renderer || !scene || !camera || !timer) return;
+
     animFrameId = requestAnimationFrame(animate);
     timer.update();
+
     const t = timer.getElapsed();
     const prevAnimPos = animPos;
+
     animPos = lerp(animPos, targetPos, LERP_K);
+
     const visual = animPos + dragLive;
     visualPos = visual;
+
     // Skip GPU render when nothing changed
     const settled = !isDragging
       && Math.abs(animPos - prevAnimPos) < 0.00005
       && Math.abs(visual - _lastVisual) < 0.00005;
+
     if (settled) return;
+
     _lastVisual = visual;
+
     slots.forEach((slot, s) => {
       const slotOffset = s - HALF;
       const catIdx = mod(Math.round(visual) + slotOffset, N());
+
       if (slot.texIdx !== catIdx) {
         slot.texIdx                   = catIdx;
         slot.cMat.uniforms.uTex.value = textures[catIdx];
         slot.sMat.uniforms.uTex.value = textures[catIdx];
       }
+
       const fracOffset = visual - Math.round(visual);
       const displayRel = slotOffset - fracOffset;
       const absD       = Math.abs(displayRel);
@@ -308,11 +362,13 @@
       const sf         = smoothstep(Math.max(0, absD - 0.02) * 2.1)
                        * (1 - smoothstep(Math.max(0, absD - 2.15) * 1.5));
       const normDist   = Math.min(1, Math.max(0, (absD - 0.18) / 1.2));
+
       slot.cMesh.position.set(px, 0, pz + 0.03);
       slot.cMesh.rotation.set(0, ry, 0);
       slot.cMesh.visible                = cf > 0.003;
       slot.cMat.uniforms.uFade.value    = cf;
       slot.cMat.uniforms.uTime.value    = t;
+
       slot.sMesh.position.set(px, 0, pz - 0.03);
       slot.sMesh.rotation.set(0, ry, 0);
       slot.sMesh.visible                = true;
@@ -321,12 +377,13 @@
       slot.sMat.uniforms.uSide.value    = signD;
       slot.sMat.uniforms.uDist.value    = normDist;
     });
+
     renderer.render(scene, camera);
   }
 
   function navigate(dir: number) {
     targetPos += dir;
-    position   = mod(targetPos, N());
+    position = mod(targetPos, N());
   }
 
   function onArrowClick(dir: number, e: MouseEvent) {
@@ -340,42 +397,58 @@
     dragLive   = 0;
     (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
   }
+
   function onPointerMove(e: PointerEvent) {
     if (!isDragging || !containerEl) return;
     dragLive = (dragStartX - e.clientX) / (containerEl.clientWidth * 0.38);
   }
+
   function onPointerUp() {
     if (!isDragging) return;
+
     isDragging = false;
+
     if (Math.abs(dragLive) < 0.08 && containerEl) {
       const ratio = Math.abs(dragStartX - containerEl.clientWidth / 2) / containerEl.clientWidth;
+
       if (ratio < 0.22) {
         dragLive = 0;
         handleTitleClick();
         return;
       }
     }
-    if      (dragLive >  0.35) { targetPos++; }
-    else if (dragLive < -0.35) { targetPos--; }
+
+    if (dragLive > 0.35) {
+      targetPos++;
+    } else if (dragLive < -0.35) {
+      targetPos--;
+    }
+
     position = mod(targetPos, N());
     dragLive = 0;
   }
 
   function updateCardBounds() {
     if (!camera || !containerEl) return;
+
     const topRight = new THREE.Vector3(CARD_W / 2, CARD_H / 2, 0.03);
     topRight.project(camera);
+
     const w = containerEl.clientWidth;
     const h = containerEl.clientHeight;
     const screenX = (topRight.x + 1) / 2 * w;
     const screenY = (-topRight.y + 1) / 2 * h;
+
     containerEl.style.setProperty('--card-right-px', `${w - screenX}px`);
     containerEl.style.setProperty('--card-top-px', `${screenY}px`);
   }
 
   function onResize() {
     if (!renderer || !containerEl || !camera) return;
-    const w = containerEl.clientWidth, h = containerEl.clientHeight;
+
+    const w = containerEl.clientWidth;
+    const h = containerEl.clientHeight;
+
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
@@ -385,6 +458,7 @@
   function onTouchStart(e: TouchEvent) {
     touchStartY = e.touches[0].clientY;
   }
+
   function onTouchEnd(e: TouchEvent) {
     const dy = touchStartY - e.changedTouches[0].clientY;
     if (Math.abs(dy) > 40) navigate(dy > 0 ? 1 : -1);
@@ -393,39 +467,51 @@
   async function handleTitleClick() {
     const idx = mod(Math.round(animPos || 0), N());
     const volunteer = volunteers[idx];
-    if (volunteer?.slug) goto(`/volunteer/${volunteer.slug}/profile`);
+
+    if (volunteer?.slug) {
+      goto(`/volunteer/${volunteer.slug}/profile`);
+    }
   }
 
   beforeNavigate(() => {
-    document.body.style.overflow   = '';
-    document.body.style.paddingTop = '';
+    unlockAboutPageScroll();
   });
 
   onMount(() => {
-    const checkMobile = () => { isMobile = window.innerWidth < 600; };
+    const checkMobile = () => {
+      isMobile = window.innerWidth < 600;
+    };
+
+    unlockAboutPageScroll();
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    const prev = { pt: document.body.style.paddingTop, ov: document.body.style.overflow };
+
     document.body.style.paddingTop = '0';
-    // Non blocchiamo overflow: la hero deve scrollare
+
+    // Desktop: la pagina About deve scrollare normalmente.
+    // Mobile: il carousel è fixed fullscreen, quindi blocchiamo lo scroll solo lì.
     if (!isMobile) {
       buildScene();
       window.addEventListener('resize', onResize);
     } else {
-      document.body.style.overflow = 'hidden';
+      lockAboutMobileScroll();
     }
 
     // ── GSAP blur-reveal for hero ──────────────────────────────────────
     gsap.registerPlugin(ScrollTrigger);
+
     gsapCtx = gsap.context(() => {
       const spans = h1El ? Array.from(h1El.querySelectorAll('span')) : [];
+
       if (spans.length) {
         // End at blur(0px) and DON'T clear the filter: removing the blur at the
         // end of the tween switches the text off the filter render path, which
         // snaps it ~1px upward. Keeping a no-op blur(0px) (and the identity
         // transform) leaves the rasterization path unchanged, so the text
         // settles without the micro-shift.
-        gsap.fromTo(spans,
+        gsap.fromTo(
+          spans,
           { opacity: 0, filter: 'blur(28px)', y: 22 },
           {
             opacity: 1,
@@ -435,12 +521,14 @@
             stagger: 0.13,
             ease: 'expo.out',
             delay: 0.08,
-            clearProps: 'willChange',
+            clearProps: 'willChange'
           }
         );
       }
+
       if (heroBodyEl) {
-        gsap.fromTo(heroBodyEl,
+        gsap.fromTo(
+          heroBodyEl,
           { opacity: 0, filter: 'blur(20px)', y: 16 },
           {
             opacity: 1,
@@ -449,25 +537,35 @@
             duration: 1.5,
             ease: 'expo.out',
             delay: 0.32,
-            clearProps: 'willChange',
+            clearProps: 'willChange'
           }
         );
       }
     });
 
     return () => {
-      document.body.style.paddingTop = prev.pt;
-      document.body.style.overflow   = prev.ov;
+      unlockAboutPageScroll();
       window.removeEventListener('resize', checkMobile);
     };
   });
 
   onDestroy(() => {
+    unlockAboutPageScroll();
+
     gsapCtx?.revert();
     ScrollTrigger.getAll().forEach(t => t.kill());
-    if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(animFrameId);
-    try { renderer?.dispose(); } catch (e) {}
-    if (typeof window !== 'undefined') window.removeEventListener('resize', onResize);
+
+    if (typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(animFrameId);
+    }
+
+    try {
+      renderer?.dispose();
+    } catch (e) {}
+
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', onResize);
+    }
   });
 
   // ─── reactive state ───────────────────────────────────────────────
@@ -481,17 +579,22 @@
       if (dragLive < -0.001) return -1;
       return 0;
     }
+
     const delta = targetPos - visualPos;
+
     if (delta > 0.001) return 1;
     if (delta < -0.001) return -1;
+
     return 0;
   });
 
   let edgeBlend = $derived.by(() => {
     if (transitionDirection === 0) return 0;
+
     const rawProgress = isDragging
       ? Math.min(1, Math.abs(dragLive) / 0.35)
       : Math.min(1, Math.abs(targetPos - visualPos));
+
     return smoothstep(rawProgress);
   });
 
@@ -507,23 +610,37 @@
   $effect(() => {
     const _trigger = currentIndex; // track volunteer changes
     const root = volInfoBlockEl ?? mobileInfoEl;
+
     if (!root) return;
+
     const subtitle = root.querySelector('.vol-subtitle');
     const role     = root.querySelector('.vol-role');
     const words    = Array.from(root.querySelectorAll('.vol-name-word'));
     const smEls    = [subtitle, role].filter(Boolean);
+
     gsap.killTweensOf([...smEls, ...words]);
+
     if (smEls.length) {
       gsap.from(smEls, {
-        opacity: 0, filter: 'blur(20px)', y: 10,
-        duration: 0.65, ease: 'expo.out', stagger: 0.05,
+        opacity: 0,
+        filter: 'blur(20px)',
+        y: 10,
+        duration: 0.65,
+        ease: 'expo.out',
+        stagger: 0.05,
         clearProps: 'filter,willChange',
       });
     }
+
     if (words.length) {
       gsap.from(words, {
-        opacity: 0, filter: 'blur(28px)', y: 18,
-        duration: 1.0, ease: 'expo.out', stagger: 0.08, delay: 0.06,
+        opacity: 0,
+        filter: 'blur(28px)',
+        y: 18,
+        duration: 1.0,
+        ease: 'expo.out',
+        stagger: 0.08,
+        delay: 0.06,
         clearProps: 'filter,willChange',
       });
     }
@@ -548,140 +665,163 @@
     </h1>
 
     <p class="hero-body" bind:this={heroBodyEl}>
-     Siamo un gruppo di studentesse del Politecnico di Milano e il nostro progetto nasce con l'obiettivo 
-     di raccontare Milano Cortina 2026 attraverso lo sguardo di chi ha reso possibile i Giochi dietro 
-     le quinte: i volontari. Il sito raccoglie le loro foto e le loro testimonianze, 
-     restituendo visibilità a chi ha agito nell'ombra con dedizione e sorrisi. 
-     Uno spazio per dare valore, nome e volto a ciascuno di loro.
+      Siamo un gruppo di studentesse del Politecnico di Milano e il nostro progetto nasce con l'obiettivo
+      di raccontare Milano Cortina 2026 attraverso lo sguardo di chi ha reso possibile i Giochi dietro
+      le quinte: i volontari. Il sito raccoglie le loro foto e le loro testimonianze,
+      restituendo visibilità a chi ha agito nell'ombra con dedizione e sorrisi.
+      Uno spazio per dare valore, nome e volto a ciascuno di loro.
     </p>
   </section>
 
-<!-- ══════════════════════════════════════════════════════════════════
-     MOBILE
-══════════════════════════════════════════════════════════════════ -->
-{#if isMobile}
-<section class="mobile-carousel" id="main-content"
-  ontouchstart={onTouchStart}
-  ontouchend={onTouchEnd}
-  aria-label="Volunteer carousel"
->
-  {#key currentIndex}
-    <div
-      class="mobile-bg"
-      style="background-image: url('{volunteers[currentIndex]?.image}')"
-      in:fade={{ duration: 500, delay: 80 }}
-      out:fade={{ duration: 400 }}
-    ></div>
-  {/key}
+  <!-- ══════════════════════════════════════════════════════════════════
+       MOBILE
+  ══════════════════════════════════════════════════════════════════ -->
+  {#if isMobile}
+    <section
+      class="mobile-carousel"
+      id="main-content"
+      ontouchstart={onTouchStart}
+      ontouchend={onTouchEnd}
+      aria-label="Volunteer carousel"
+    >
+      {#key currentIndex}
+        <div
+          class="mobile-bg"
+          style="background-image: url('{volunteers[currentIndex]?.image}')"
+          in:fade={{ duration: 500, delay: 80 }}
+          out:fade={{ duration: 400 }}
+        ></div>
+      {/key}
 
-  <div class="mobile-blur mobile-blur--top"    aria-hidden="true"></div>
-  <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
+      <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
+      <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
 
-  <div class="mobile-info" bind:this={mobileInfoEl}>
-    <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
-    <span class="vol-role">{currentVolunteer?.role}</span>
-    <div class="vol-name-lines">
-      {#each nameWords as word}
-        <span class="vol-name-word">{word}</span>
-      {/each}
-    </div>
-  </div>
+      <div class="mobile-info" bind:this={mobileInfoEl}>
+        <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
+        <span class="vol-role">{currentVolunteer?.role}</span>
 
-  <div class="scopri-mobile-wrap">
-    <ScopriDiPiuButton dark onclick={handleTitleClick} />
-  </div>
-
-  <div class="mobile-nav-circles">
-    <ArrowButton direction="up"   onclick={() => navigate(-1)} />
-    <ArrowButton direction="down" onclick={() => navigate(1)}  />
-  </div>
-</section>
-
-<!-- ══════════════════════════════════════════════════════════════════
-     DESKTOP
-══════════════════════════════════════════════════════════════════ -->
-{:else}
-<section class="carousel" id="main-content" bind:this={containerEl}
-  onpointerdown={onPointerDown}
-  onpointermove={onPointerMove}
-  onpointerup={onPointerUp}
-  onpointerleave={onPointerUp}
-  aria-label="Volunteer carousel"
->
-  <canvas bind:this={canvasEl}></canvas>
-
-  <!-- Edge blur panels -->
-  <div class="edge-panel edge-panel--left" aria-hidden="true">
-    <div class="edge-panel__layer" style={`background-image: url('${leftOutgoingImage}'); opacity:${1 - edgeBlend};`}></div>
-    <div class="edge-panel__layer" style={`background-image: url('${leftIncomingImage}'); opacity:${edgeBlend};`}></div>
-  </div>
-  <div class="edge-panel edge-panel--right" aria-hidden="true">
-    <div class="edge-panel__layer" style={`background-image: url('${rightOutgoingImage}'); opacity:${1 - edgeBlend};`}></div>
-    <div class="edge-panel__layer" style={`background-image: url('${rightIncomingImage}'); opacity:${edgeBlend};`}></div>
-  </div>
-
-  <!-- Arrows -->
-  <div class="arrow-left"  role="none" onpointerdown={(e) => e.stopPropagation()}>
-    <ArrowButton direction="left"  onclick={(e) => onArrowClick(-1, e)} />
-  </div>
-  <div class="arrow-right" role="none" onpointerdown={(e) => e.stopPropagation()}>
-    <ArrowButton direction="right" onclick={(e) => onArrowClick(1,  e)} />
-  </div>
-
-  <!-- Curved masks -->
-  <div class="curve-frame" aria-hidden="true">
-    <svg class="curve curve-top"    viewBox="0 0 1000 260" preserveAspectRatio="none">
-      <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
-    </svg>
-    <svg class="curve curve-bottom" viewBox="0 0 1000 260" preserveAspectRatio="none">
-      <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
-    </svg>
-  </div>
-
-  <!-- Sfumatura nera dietro al testo, sopra la card centrale -->
-  <svg class="card-bottom-fade" aria-hidden="true" viewBox="0 0 1000 260" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="fadeGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%"  stop-color="#000" stop-opacity="0" />
-        <stop offset="38%" stop-color="#000" stop-opacity="0.4" />
-        <stop offset="72%" stop-color="#000" stop-opacity="0.78" />
-        <stop offset="100%" stop-color="#000" stop-opacity="0.92" />
-      </linearGradient>
-    </defs>
-    <path d="M0,0 H1000 V145 C780,85 220,85 0,145 Z" fill="url(#fadeGrad)" />
-  </svg>
-
-  <div class="card-overlay" aria-live="polite">
-    <!-- Bottone in alto a destra — posizionato tramite CSS vars calcolate dal 3D -->
-    {#if currentVolunteer?.slug}
-      <div class="overlay-top" role="none" onpointerdown={(e) => e.stopPropagation()}>
-        <ScopriDiPiuButton dark href="/volunteer/{currentVolunteer.slug}/profile" />
+        <div class="vol-name-lines">
+          {#each nameWords as word}
+            <span class="vol-name-word">{word}</span>
+          {/each}
+        </div>
       </div>
-    {/if}
 
-    <!-- Info in basso a sinistra -->
-    <div class="overlay-inner">
-      <div class="overlay-bottom">
-        <div class="vol-info-block"
-          bind:this={volInfoBlockEl}
-          role="button" tabindex="0"
-          onclick={handleTitleClick}
-          onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
-        >
-          <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
-          <span class="vol-role">{currentVolunteer?.role}</span>
-          <div class="vol-name-lines">
-            {#each nameWords as word}
-              <span class="vol-name-word">{word}</span>
-            {/each}
+      <div class="scopri-mobile-wrap">
+        <ScopriDiPiuButton dark onclick={handleTitleClick} />
+      </div>
+
+      <div class="mobile-nav-circles">
+        <ArrowButton direction="up" onclick={() => navigate(-1)} />
+        <ArrowButton direction="down" onclick={() => navigate(1)} />
+      </div>
+    </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       DESKTOP
+  ══════════════════════════════════════════════════════════════════ -->
+  {:else}
+    <section
+      class="carousel"
+      id="main-content"
+      bind:this={containerEl}
+      onpointerdown={onPointerDown}
+      onpointermove={onPointerMove}
+      onpointerup={onPointerUp}
+      onpointerleave={onPointerUp}
+      aria-label="Volunteer carousel"
+    >
+      <canvas bind:this={canvasEl}></canvas>
+
+      <!-- Edge blur panels -->
+      <div class="edge-panel edge-panel--left" aria-hidden="true">
+        <div
+          class="edge-panel__layer"
+          style={`background-image: url('${leftOutgoingImage}'); opacity:${1 - edgeBlend};`}
+        ></div>
+        <div
+          class="edge-panel__layer"
+          style={`background-image: url('${leftIncomingImage}'); opacity:${edgeBlend};`}
+        ></div>
+      </div>
+
+      <div class="edge-panel edge-panel--right" aria-hidden="true">
+        <div
+          class="edge-panel__layer"
+          style={`background-image: url('${rightOutgoingImage}'); opacity:${1 - edgeBlend};`}
+        ></div>
+        <div
+          class="edge-panel__layer"
+          style={`background-image: url('${rightIncomingImage}'); opacity:${edgeBlend};`}
+        ></div>
+      </div>
+
+      <!-- Arrows -->
+      <div class="arrow-left" role="none" onpointerdown={(e) => e.stopPropagation()}>
+        <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
+      </div>
+
+      <div class="arrow-right" role="none" onpointerdown={(e) => e.stopPropagation()}>
+        <ArrowButton direction="right" onclick={(e) => onArrowClick(1, e)} />
+      </div>
+
+      <!-- Curved masks -->
+      <div class="curve-frame" aria-hidden="true">
+        <svg class="curve curve-top" viewBox="0 0 1000 260" preserveAspectRatio="none">
+          <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
+        </svg>
+
+        <svg class="curve curve-bottom" viewBox="0 0 1000 260" preserveAspectRatio="none">
+          <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
+        </svg>
+      </div>
+
+      <!-- Sfumatura nera dietro al testo, sopra la card centrale -->
+      <svg class="card-bottom-fade" aria-hidden="true" viewBox="0 0 1000 260" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="fadeGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#000" stop-opacity="0" />
+            <stop offset="38%" stop-color="#000" stop-opacity="0.4" />
+            <stop offset="72%" stop-color="#000" stop-opacity="0.78" />
+            <stop offset="100%" stop-color="#000" stop-opacity="0.92" />
+          </linearGradient>
+        </defs>
+        <path d="M0,0 H1000 V145 C780,85 220,85 0,145 Z" fill="url(#fadeGrad)" />
+      </svg>
+
+      <div class="card-overlay" aria-live="polite">
+        <!-- Bottone in alto a destra — posizionato tramite CSS vars calcolate dal 3D -->
+        {#if currentVolunteer?.slug}
+          <div class="overlay-top" role="none" onpointerdown={(e) => e.stopPropagation()}>
+            <ScopriDiPiuButton dark href="/volunteer/{currentVolunteer.slug}/profile" />
+          </div>
+        {/if}
+
+        <!-- Info in basso a sinistra -->
+        <div class="overlay-inner">
+          <div class="overlay-bottom">
+            <div
+              class="vol-info-block"
+              bind:this={volInfoBlockEl}
+              role="button"
+              tabindex="0"
+              onclick={handleTitleClick}
+              onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
+            >
+              <span class="vol-subtitle">{currentVolunteer?.subtitle}</span>
+              <span class="vol-role">{currentVolunteer?.role}</span>
+
+              <div class="vol-name-lines">
+                {#each nameWords as word}
+                  <span class="vol-name-word">{word}</span>
+                {/each}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-</section>
-{/if}
+    </section>
+  {/if}
 
 </main>
 
@@ -762,13 +902,12 @@
     padding-right: var(--spacing-17);
 
     font-family: var(--font-display);
-    font-size:   var(--ts-scrolling-size);
+    font-size: var(--ts-scrolling-size);
     font-weight: var(--ts-scrolling-weight);
     line-height: var(--ts-scrolling-line-height);
     color: var(--color-content-body);
     margin-top: var(--spacing-12);
   }
-
 
   /* ── Carousel wrapper (desktop) ──────────────────────────────── */
   .carousel {
@@ -783,7 +922,10 @@
     user-select: none;
     touch-action: none;
   }
-  .carousel:active { cursor: grabbing; }
+
+  .carousel:active {
+    cursor: grabbing;
+  }
 
   .carousel::before {
     content: '';
@@ -812,12 +954,14 @@
   /* ── Edge blur panels ─────────────────────────────────────────── */
   .edge-panel {
     position: absolute;
-    top: 0; bottom: 0;
+    top: 0;
+    bottom: 0;
     width: min(30vw, 460px);
     pointer-events: none;
     z-index: 2;
     overflow: hidden;
   }
+
   .edge-panel__layer {
     position: absolute;
     inset: -8% -6%;
@@ -828,6 +972,7 @@
     -webkit-filter: blur(20px) saturate(1.08);
     will-change: opacity;
   }
+
   .edge-panel--left {
     left: 0;
     border-radius: 0 32px 32px 0;
@@ -836,6 +981,7 @@
     mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 42%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.2) 92%, rgba(0,0,0,0) 100%);
     -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 42%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.2) 92%, rgba(0,0,0,0) 100%);
   }
+
   .edge-panel--right {
     right: 0;
     border-radius: 32px 0 0 32px;
@@ -844,19 +990,25 @@
     mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 42%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.2) 92%, rgba(0,0,0,0) 100%);
     -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 42%, rgba(0,0,0,0.9) 60%, rgba(0,0,0,0.55) 78%, rgba(0,0,0,0.2) 92%, rgba(0,0,0,0) 100%);
   }
+
   .edge-panel--left::after,
   .edge-panel--right::after {
     content: '';
     position: absolute;
-    top: 0; bottom: 0;
+    top: 0;
+    bottom: 0;
     pointer-events: none;
   }
+
   .edge-panel--left::after {
-    left: 0; width: 100%;
-    background: linear-gradient(90deg,  rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.36) 24%, rgba(0,0,0,0.14) 52%, rgba(0,0,0,0.18) 72%, rgba(0,0,0,0.42) 88%, rgba(0,0,0,0.75) 100%);
+    left: 0;
+    width: 100%;
+    background: linear-gradient(90deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.36) 24%, rgba(0,0,0,0.14) 52%, rgba(0,0,0,0.18) 72%, rgba(0,0,0,0.42) 88%, rgba(0,0,0,0.75) 100%);
   }
+
   .edge-panel--right::after {
-    right: 0; width: 100%;
+    right: 0;
+    width: 100%;
     background: linear-gradient(270deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.36) 24%, rgba(0,0,0,0.14) 52%, rgba(0,0,0,0.18) 72%, rgba(0,0,0,0.42) 88%, rgba(0,0,0,0.75) 100%);
   }
 
@@ -867,34 +1019,59 @@
     pointer-events: none;
     z-index: 3;
   }
+
   .curve {
     position: absolute;
-    left: 0; width: 100%;
+    left: 0;
+    width: 100%;
     fill: var(--color-background-primary, #0e0e0e);
   }
-  .curve-top    { top: 0;    height: clamp(120px, 30vh, 260px); }
-  .curve-bottom { bottom: 0; height: clamp(110px, 28vh, 240px); }
+
+  .curve-top {
+    top: 0;
+    height: clamp(120px, 30vh, 260px);
+  }
+
+  .curve-bottom {
+    bottom: 0;
+    height: clamp(110px, 28vh, 240px);
+  }
 
   /* ── Arrows ───────────────────────────────────────────────────── */
   .arrow-left {
     position: absolute;
-    top: 50%; transform: translateY(-50%);
+    top: 50%;
+    transform: translateY(-50%);
     left: var(--spacing-5, 24px);
     z-index: 12;
   }
+
   .arrow-right {
     position: absolute;
-    top: 50%; transform: translateY(-50%);
+    top: 50%;
+    transform: translateY(-50%);
     right: var(--spacing-5, 24px);
     z-index: 12;
   }
+
   @media (min-width: 768px) {
-    .arrow-left  { left:  var(--spacing-8,  48px); }
-    .arrow-right { right: var(--spacing-8,  48px); }
+    .arrow-left {
+      left: var(--spacing-8, 48px);
+    }
+
+    .arrow-right {
+      right: var(--spacing-8, 48px);
+    }
   }
+
   @media (min-width: 1024px) {
-    .arrow-left  { left:  var(--spacing-11, 72px); }
-    .arrow-right { right: var(--spacing-11, 72px); }
+    .arrow-left {
+      left: var(--spacing-11, 72px);
+    }
+
+    .arrow-right {
+      right: var(--spacing-11, 72px);
+    }
   }
 
   /* ── Sfumatura nera dietro al testo, sulla foto centrale ───────── */
@@ -906,7 +1083,7 @@
     height: clamp(110px, 28vh, 240px); /* identico a .curve-bottom */
     pointer-events: none;
     z-index: 4;
-}
+  }
 
   /* ── Card overlay: allineato alla card centrale ───────────────── */
   /*
@@ -938,7 +1115,7 @@
   .overlay-inner {
     width: clamp(280px, 34vw, 560px);
     padding-bottom: calc(clamp(110px, 28vh, 240px) - 40px);
-    padding-left:  24px;
+    padding-left: 24px;
     padding-right: 24px;
 
     display: flex;
@@ -1022,7 +1199,9 @@
 
   /* Sul mobile il carousel è fixed e fullscreen: nascondi la hero */
   @media (max-width: 599px) {
-    .hero { display: none; }
+    .hero {
+      display: none;
+    }
   }
 
   .mobile-bg {
@@ -1035,18 +1214,21 @@
 
   .mobile-blur {
     position: absolute;
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     height: 44%;
     pointer-events: none;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }
+
   .mobile-blur--top {
     top: 0;
     background: linear-gradient(180deg, rgba(14,14,14,0.35) 0%, rgba(14,14,14,0) 100%);
     mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0) 100%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0) 100%);
   }
+
   .mobile-blur--bottom {
     bottom: 0;
     background: linear-gradient(0deg,
@@ -1062,7 +1244,8 @@
   /* Info mobile — stessa struttura desktop ma senza bottone inline */
   .mobile-info {
     position: absolute;
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     bottom: 100px;
     padding: var(--spacing-6, 24px) var(--spacing-5, 20px);
     display: flex;
@@ -1077,13 +1260,16 @@
     font-size: 9px;
     margin-bottom: 4px;
   }
+
   .mobile-info .vol-role {
     font-size: 14px;
     margin-bottom: 6px;
   }
+
   .mobile-info .vol-name-lines {
     line-height: 0.88;
   }
+
   .mobile-info .vol-name-word {
     font-size: 43px;
   }
@@ -1109,6 +1295,10 @@
 
   /* ── Reduced motion ───────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .vol-subtitle, .vol-role, .vol-name-word { transition: none; }
+    .vol-subtitle,
+    .vol-role,
+    .vol-name-word {
+      transition: none;
+    }
   }
 </style>
