@@ -18,6 +18,7 @@
     arriveEntry,
     launchExit,
     rectOf,
+    restingRectOf,
     FLIGHT_DURATION_MS,
     FLIGHT_REVEAL_MS,
     type FlightRect,
@@ -345,7 +346,7 @@
 
       requestAnimationFrame(() => {
         if (frameEl) {
-          arriveEntry(rectOf(frameEl));
+          arriveEntry(restingRectOf(frameEl));
         }
 
         setTimeout(() => {
@@ -417,7 +418,7 @@
 
   function goBackToGallery() {
     if (frameEl && entryRect && resolvedSrc) {
-      launchExit(resolvedSrc, rectOf(frameEl), entryRect);
+      launchExit(resolvedSrc, restingRectOf(frameEl), entryRect);
     }
 
     goto(buildGalleryHref(currentContext));

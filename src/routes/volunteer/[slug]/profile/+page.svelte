@@ -1,7 +1,10 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
   import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import { onDestroy, onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
   import { page } from '$app/state';
   import { browser } from '$app/environment';
   import { beforeNavigate } from '$app/navigation';
@@ -124,89 +127,52 @@
     document.body.style.overflow = 'hidden';
   }
 
-  /* ── Bottone foto: fixed fino alla fine dell'accordion ───────── */
-  let photoButtonAnchorEl: HTMLElement | null = $state(null);
-  let photoButtonEl: HTMLElement | null = $state(null);
-  let photoButtonDocked = $state(false);
-  let photoButtonHeight = $state(56);
-  let photoButtonRaf = 0;
-
-  function updatePhotoButtonMeasurements() {
-    if (!photoButtonEl) return;
-
-    const rect = photoButtonEl.getBoundingClientRect();
-
-    if (rect.height > 0) {
-      photoButtonHeight = rect.height;
-    }
-  }
-
-  function getPhotoButtonBottomOffset() {
-    if (!photoButtonEl) return 48;
-
-    const rawValue = getComputedStyle(photoButtonEl)
-      .getPropertyValue('--photo-button-bottom')
-      .trim();
-
-    const parsedValue = Number.parseFloat(rawValue);
-
-    return Number.isFinite(parsedValue) ? parsedValue : 48;
-  }
-
-  function updatePhotoButtonDocking() {
-    if (!browser || !photoButtonAnchorEl || !photoButtonEl) return;
-
-    updatePhotoButtonMeasurements();
-
-    const anchorRect = photoButtonAnchorEl.getBoundingClientRect();
-    const fixedBottomOffset = getPhotoButtonBottomOffset();
-    const fixedButtonTop = window.innerHeight - fixedBottomOffset - photoButtonHeight;
-
-    /*
-      Finché il punto naturale del bottone, cioè l'anchor sotto l'accordion,
-      è più in basso del bottone fixed, il bottone resta fixed.
-      Quando l'anchor raggiunge la stessa quota verticale, il bottone diventa statico
-      e rimane agganciato alla fine dell'accordion.
-    */
-    photoButtonDocked = anchorRect.top <= fixedButtonTop;
-  }
-
-  function queuePhotoButtonDockingUpdate() {
-    if (!browser || photoButtonRaf) return;
-
-    photoButtonRaf = requestAnimationFrame(() => {
-      photoButtonRaf = 0;
-      updatePhotoButtonDocking();
-    });
-  }
-
   beforeNavigate(() => {
     unlockProfileScroll();
   });
 
   onMount(() => {
     unlockProfileScroll();
-    queuePhotoButtonDockingUpdate();
 
     let secondFrame = 0;
 
     const firstFrame = requestAnimationFrame(() => {
       unlockProfileScrollIfGalleryClosed();
-      queuePhotoButtonDockingUpdate();
 
       secondFrame = requestAnimationFrame(() => {
         unlockProfileScrollIfGalleryClosed();
-        queuePhotoButtonDockingUpdate();
       });
     });
 
     const unlockTimer = window.setTimeout(() => {
       unlockProfileScrollIfGalleryClosed();
-      queuePhotoButtonDockingUpdate();
     }, 120);
 
-    window.addEventListener('scroll', queuePhotoButtonDockingUpdate, { passive: true });
-    window.addEventListener('resize', queuePhotoButtonDockingUpdate);
+    /* ── Bottone foto: sale insieme al footer (comportamento commit 0da3185) ──
+       Il bottone è position:fixed in basso a sinistra e ScrollTrigger lo trascina
+       su esattamente dell'altezza del footer man mano che questo entra, così si
+       "aggancia" al footer senza sovrapporsi. */
+    gsap.registerPlugin(ScrollTrigger);
+
+    const fotoBtn = document.getElementById('sticky-foto-btn');
+    const footerElement = document.querySelector('footer');
+
+    if (fotoBtn && footerElement) {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: footerElement,
+          start: 'top bottom-=48px',
+          end: 'bottom bottom',
+          scrub: 0,
+          invalidateOnRefresh: true
+        }
+      });
+
+      tl.to(fotoBtn, {
+        y: () => -(footerElement as HTMLElement).offsetHeight,
+        ease: 'none'
+      });
+    }
 
     return () => {
       unlockProfileScroll();
@@ -219,23 +185,12 @@
 
       window.clearTimeout(unlockTimer);
 
-      window.removeEventListener('scroll', queuePhotoButtonDockingUpdate);
-      window.removeEventListener('resize', queuePhotoButtonDockingUpdate);
-
-      if (photoButtonRaf) {
-        cancelAnimationFrame(photoButtonRaf);
-        photoButtonRaf = 0;
-      }
+      ScrollTrigger.getAll().forEach((t) => t.kill());
     };
   });
 
   onDestroy(() => {
     unlockProfileScroll();
-
-    if (photoButtonRaf) {
-      cancelAnimationFrame(photoButtonRaf);
-      photoButtonRaf = 0;
-    }
   });
 
   $effect(() => {
@@ -243,7 +198,6 @@
 
     if (!galleryOpen) {
       unlockProfileScroll();
-      queuePhotoButtonDockingUpdate();
       return;
     }
 
@@ -251,7 +205,6 @@
 
     return () => {
       unlockProfileScroll();
-      queuePhotoButtonDockingUpdate();
     };
   });
 
@@ -285,22 +238,6 @@
   $effect(() => {
     currentSlug;
     openQ = -1;
-
-    if (browser) {
-      queuePhotoButtonDockingUpdate();
-    }
-  });
-
-  $effect(() => {
-    openQ;
-
-    if (browser) {
-      queuePhotoButtonDockingUpdate();
-
-      requestAnimationFrame(() => {
-        queuePhotoButtonDockingUpdate();
-      });
-    }
   });
 
   function answerFor(i: number): string {
@@ -310,45 +247,21 @@
     return volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.';
   }
 
-  /* ── Rivelazione risposta all'apertura dell'accordion ─────────────
-     Comparsa morbida: la risposta si mette a fuoco (blur → nitido) e sfuma in
-     opacità, senza spostamenti (niente translate → nessuno scatto di 1px alla
-     fine). Il <p> viene rimontato a ogni apertura
-     ({#if openQ === i}), quindi l'action riparte a ogni click. */
-  function revealAnswer(node: HTMLElement) {
-    const reduce = typeof matchMedia !== 'undefined'
-      && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) return;
+  /* ── Transizioni risposta (apertura E chiusura) ───────────────────
+     Transizioni Svelte così l'animazione parte sia al mount (apertura) sia
+     allo smonto (chiusura): Svelte tiene l'elemento nel DOM finché l'uscita
+     non finisce. Il pannello lime usa `slide` (altezza), il testo si mette a
+     fuoco con blur→nitido. Reduced-motion → durata 0. */
+  const prefersReduced = () =>
+    typeof matchMedia !== 'undefined'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const tween = gsap.fromTo(
-      node,
-      { opacity: 0, filter: 'blur(12px)' },
-      {
-        opacity: 1,
-        filter: 'blur(0px)',
-        duration: 1,
-        ease: 'power3.out',
-        clearProps: 'filter,opacity'
-      }
-    );
-    return { destroy() { tween.kill(); } };
-  }
-
-  /* ── Apertura del pannello lime (.qa-sep) ─────────────────────────
-     Il pannello cresce dolcemente dalla riga sottile all'altezza piena
-     invece di comparire di scatto. .qa-sep ha overflow:hidden che maschera
-     il contenuto durante la crescita. clearProps riporta a height:auto. */
-  function expandPanel(node: HTMLElement) {
-    const reduce = typeof matchMedia !== 'undefined'
-      && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) return;
-
-    const tween = gsap.fromTo(
-      node,
-      { height: 0 },
-      { height: 'auto', duration: 0.5, ease: 'power3.out', clearProps: 'height' }
-    );
-    return { destroy() { tween.kill(); } };
+  function blurFade(_node: HTMLElement, { duration = 700 }: { duration?: number } = {}) {
+    return {
+      duration: prefersReduced() ? 0 : duration,
+      easing: cubicOut,
+      css: (t: number) => `opacity: ${t}; filter: blur(${(1 - t) * 10}px);`
+    };
   }
 </script>
 
@@ -424,36 +337,29 @@
               </span>
             </button>
 
-            <div class="qa-sep" class:qa-sep--open={openQ === i}>
-              {#if openQ === i}
-                <div class="qa-answer" role="region" aria-live="polite" use:expandPanel>
-                  <p use:revealAnswer>{answerFor(i)}</p>
+            <div class="qa-sep" class:qa-sep--open={openQ === i}></div>
+
+            {#if openQ === i}
+              <div
+                class="qa-panel"
+                in:slide={{ duration: 520, easing: cubicOut }}
+                out:slide={{ duration: 400, easing: cubicOut }}
+              >
+                <div class="qa-answer" role="region" aria-live="polite">
+                  <p in:blurFade={{ duration: 900 }} out:blurFade={{ duration: 360 }}>{answerFor(i)}</p>
                 </div>
-              {/if}
-            </div>
+              </div>
+            {/if}
           </div>
         {/each}
       </div>
 
     </div>
 
-    <!-- ── VEDI TUTTE LE FOTO — fixed fino alla fine dell'accordion ── -->
+    <!-- ── VEDI TUTTE LE FOTO — fixed, sale col footer (commit 0da3185) ── -->
     {#if photoCount > 0}
-      <div
-        class="vedi-foto-anchor"
-        bind:this={photoButtonAnchorEl}
-        style={`--photo-button-height: ${photoButtonHeight}px`}
-      >
-        <div
-          bind:this={photoButtonEl}
-          class={`vedi-foto-wrapper ${
-            photoButtonDocked
-              ? 'vedi-foto-wrapper--docked'
-              : 'vedi-foto-wrapper--floating'
-          }`}
-        >
-          <VediTutteLeFoto onclick={openGallery} />
-        </div>
+      <div id="sticky-foto-btn" class="vedi-foto-wrapper">
+        <VediTutteLeFoto onclick={openGallery} />
       </div>
     {/if}
 
@@ -729,9 +635,19 @@
     transition: background 200ms ease;
   }
 
+  /* Riga sottile che si tinge di lime quando la domanda è aperta; il pannello
+     (.qa-panel) è un fratello separato così può collassare in chiusura senza
+     essere tagliato di netto dalla riga. */
   .qa-sep--open {
-    height: auto;
     background: var(--color-content-accent, #bdff5d);
+  }
+
+  /* Pannello lime della risposta: monta/smonta con transition:slide (altezza).
+     overflow:hidden maschera il testo durante apertura/chiusura. */
+  .qa-panel {
+    background: var(--color-content-accent, #bdff5d);
+    overflow: hidden;
+    flex-shrink: 0;
   }
 
   .qa-answer {
@@ -754,32 +670,14 @@
     border-radius: 4px;
   }
 
-  /* ── FOTO BUTTON: anchor naturale sotto l'accordion ───────────── */
-  .vedi-foto-anchor {
-    margin-top: 40px;
-    margin-left: var(--profile-side-offset);
-    min-height: var(--photo-button-height, 56px);
-    pointer-events: none;
-  }
-
+  /* ── FOTO BUTTON: fixed in basso a sinistra, sale col footer via ScrollTrigger ── */
   .vedi-foto-wrapper {
-    pointer-events: auto;
-  }
-
-  /* Stato 1: prima della fine dell'accordion, il bottone è fixed sulla viewport */
-  .vedi-foto-wrapper--floating {
     position: fixed;
-    left: var(--profile-side-offset);
-    bottom: var(--photo-button-bottom);
-    z-index: 40;
-  }
-
-  /* Stato 2: raggiunta la fine dell'accordion, il bottone resta agganciato lì */
-  .vedi-foto-wrapper--docked {
-    position: static;
-    display: flex;
-    justify-content: flex-start;
-    z-index: auto;
+    left: var(--profile-side-offset, var(--spacing-11, 72px));
+    bottom: var(--photo-button-bottom, var(--unit-48, 48px));
+    z-index: 9999 !important; /* Sopra a qualunque pezzo del footer */
+    pointer-events: auto;
+    will-change: transform;
   }
 
   /* ── Responsive ─────────────────────────────────────────────────── */
@@ -873,9 +771,9 @@
       padding-bottom: 56px;
     }
 
-    .vedi-foto-anchor {
-      margin-top: 32px;
-      margin-left: var(--profile-side-offset);
+    .vedi-foto-wrapper {
+      position: static !important;
+      margin: 32px var(--spacing-5, 24px) 0;
     }
   }
 
