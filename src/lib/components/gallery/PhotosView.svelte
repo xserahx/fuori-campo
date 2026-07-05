@@ -7,7 +7,7 @@
   import { buildScatterLayoutCached, recordImageAspect, hasAllAspects, isLayoutBuilt, slugify, type GalleryImage } from '$lib/data/gallery';
   import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
   import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
-  import { rectOf, launchEntry } from '$lib/stores/photoFlight';
+  import { restingRectOf, launchEntry } from '$lib/stores/photoFlight';
 
   let { activeFilters = [], dbVolunteers = [], zoom = 1 }: {
     activeFilters?: string[];
@@ -354,7 +354,10 @@
     // overlay (mounted in the root layout, so it survives this navigation)
     // before navigating — the zoom page reports its own frame rect once
     // mounted, and the overlay flies the clone between the two.
-    launchEntry(image.src, rectOf(tileEl));
+    // restingRectOf (not rectOf): the tile is hovered → tilt-transformed at
+    // click time, so its raw bounding box is scaled/rotated/lifted. We need
+    // the thumbnail's true resting position or the flight starts off-origin.
+    launchEntry(image.src, restingRectOf(tileEl));
 
     // Unwrap tile offset to get base canvas coords for neighbour search.
     // H and V have separate periods (designWidth vs designHeight).

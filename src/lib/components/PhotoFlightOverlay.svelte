@@ -73,15 +73,13 @@
     clearTimeout(holdTimeout);
     visible = true;
 
-    // Box always sits at `from`; the tween below only ever animates
-    // transform away from (and, on arrival, back toward) identity.
-    setBox(imgEl, s.from);
-    gsap.set(imgEl, { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 });
-
     if (s.phase === 'entering' && !s.to) {
       // Gallery click landed; the zoom page hasn't reported its frame rect
-      // yet — hold at the gallery rect. Safety timeout in case it never
-      // arrives (e.g. a failed navigation), so the clone can't get stuck.
+      // yet — hold at the gallery rect (rendered at its real size, so crisp).
+      // Safety timeout in case it never arrives (e.g. a failed navigation),
+      // so the clone can't get stuck.
+      setBox(imgEl, s.from);
+      gsap.set(imgEl, { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 });
       holdTimeout = setTimeout(resetFlight, 900);
       return;
     }
@@ -90,8 +88,21 @@
       return;
     }
 
+    // FLIP: lay the clone out at the LARGER of the two rects, then animate the
+    // transform from "appears at `from`" to "appears at `to`". Because the
+    // element's real box is the larger size, the bitmap is only ever scaled
+    // DOWN (or to 1:1) — never magnified — so it stays full-resolution every
+    // frame. (The old approach sized the box at the small `from` rect and
+    // scaled it UP toward `to`, which bitmap-upscaled the image and read as a
+    // low-res photo that only "sharpened" at the hand-off.) `from` and `to`
+    // carry the same full-res src as the destination frame, so the cross-fade
+    // at the end is between two identical images — no visible quality switch.
+    const base = s.from.width * s.from.height >= s.to.width * s.to.height ? s.from : s.to;
+    setBox(imgEl, base);
+    gsap.set(imgEl, { ...transformFor(base, s.from), opacity: 1 });
+
     gsap.to(imgEl, {
-      ...transformFor(s.from, s.to),
+      ...transformFor(base, s.to),
       duration: FLIGHT_DURATION_MS / 1000,
       ease: EASE,
       onComplete: () => {
