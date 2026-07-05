@@ -597,11 +597,9 @@
     <!-- "SCOPRI DI PIÙ" → navigate to full profile page -->
     <div
       class="expand-btn-container"
-      onpointerdown={handleExpandButtonPointerDown}
       onclick={handleExpandButtonClick}
-    >
-      <ScopriDiPiuButton onclick={goToProfile} />
-    </div>
+      onpointerdown={handleExpandButtonPointerDown}
+    />
 
   </div>
 
@@ -710,9 +708,10 @@
       top: 24px;
       right: 24px;
     }
+    :global(.photo-frame--portrait .expand-btn-container) {
+      top: 18px;
+    }
   }
-
-  /* ── Navigation arrows ──────────────────────────────────────────── */
   .arrow-container {
     position: fixed;
     top: 50%;
@@ -787,7 +786,7 @@
     aspect-ratio: 9 / 16;
   }
 
-  .photo-frame--portrait .expand-btn-container {
+  :global(.photo-frame--portrait .expand-btn-container) {
     bottom: auto;
     top: 18px;
   }

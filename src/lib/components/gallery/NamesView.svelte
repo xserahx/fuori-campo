@@ -350,7 +350,7 @@
     pointer-events: auto;
   }
 
-  .letter-label { //impostazioni per lettera verde su desktop
+  .letter-label { /* impostazioni per lettera verde su desktop */
       font-family: var(--font-display);
       font-size: 84px;
       color: var(--color-content-accent, #bdff5d);

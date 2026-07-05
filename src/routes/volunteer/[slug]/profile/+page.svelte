@@ -772,8 +772,8 @@
     }
 
     .vedi-foto-wrapper {
-      position: static !important;
-      margin: 32px var(--spacing-5, 24px) 0;
+      left: var(--profile-side-offset, var(--spacing-5, 24px));
+      bottom: 32px;
     }
   }
 

@@ -7,6 +7,8 @@
     let {
         href,
         onclick,
+        onpointerdown,
+        class: className = '',
         ariaLabel,
         target,
         rel,
@@ -15,6 +17,8 @@
     } = $props<{
         href?: string;
         onclick?: (event: MouseEvent) => void;
+        onpointerdown?: (event: PointerEvent) => void;
+        class?: string;
         ariaLabel?: string;
         target?: '_blank' | '_self' | '_parent' | '_top' | (string & {});
         rel?: string;
@@ -31,10 +35,11 @@
 
 {#if href}
     <a
-        class="scopri-button"
+        class={`scopri-button ${className}`}
         class:scopri-button--dark={dark}
         href={href}
         aria-label={computedAriaLabel}
+        onpointerdown={onpointerdown}
         onclick={onclick}
         target={target}
         rel={rel}
@@ -43,10 +48,11 @@
     </a>
 {:else}
     <button
-        class="scopri-button"
+        class={`scopri-button ${className}`}
         class:scopri-button--dark={dark}
         type={type}
         aria-label={computedAriaLabel}
+        onpointerdown={onpointerdown}
         onclick={onclick}
     >
         {@render content()}
