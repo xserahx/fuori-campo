@@ -56,7 +56,7 @@
     overscroll-behavior-y: contain;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     /* top: below navbar; bottom: above toggle bar (56px track + 36px pad + 16px margin) */
     padding-top: 96px;
     padding-bottom: 116px;

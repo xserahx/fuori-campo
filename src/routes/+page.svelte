@@ -16,7 +16,6 @@
   import { scrollReveal } from "../lib/actions/scrollReveal";
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
-  import { fetchAllVolunteers, getCachedVolunteers, getOptimizedImageUrl } from '$lib/data/volunteers';
   import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
@@ -30,70 +29,6 @@
   let heroSection: HTMLElement | null = null;
   let galleryGate: HTMLElement | null = null;
 
-  /* ── Gallery anticipation preview ───────────────────────────────── */
-  const PREVIEW_WIDTH = 420;
-
-  const previewLayout = [
-    { left: '7%',  top: '6%',  w: '250px', dx: -64, dy: 28, b: 22, ar: '4 / 3',  rot: -1.4 },
-    { left: '68%', top: '3%',  w: '300px', dx:  72, dy: 22, b: 26, ar: '16 / 9', rot:  0.9 },
-    { left: '52%', top: '42%', w: '220px', dx:  44, dy: 52, b: 20, ar: '3 / 4',  rot:  1.2 },
-    { left: '16%', top: '45%', w: '280px', dx: -52, dy: 46, b: 24, ar: '3 / 2',  rot: -0.8 },
-    { left: '37%', top: '22%', w: '320px', dx:   0, dy: 60, b: 18, ar: '16 / 9', rot:  0.4 },
-    { left: '81%', top: '47%', w: '210px', dx:  84, dy: 38, b: 28, ar: '4 / 3',  rot:  1.6 },
-  ];
-
-  // Desktop widths (210–320px) overflow a phone screen — most cards land off
-  // the right edge and get clipped, so the anticipation looks empty on mobile.
-  // Widths are in vw so the scatter scales to ANY phone (≈320–430px): the cards
-  // stay proportionally on-screen everywhere, not just at 375px. left/top are
-  // already percentages, so they adapt too.
-  const previewLayoutMobile = [
-    { left: '2%',  top: '8%',  w: '40vw', dx: -34, dy: 22, b: 16, ar: '4 / 3',  rot: -1.4 },
-    { left: '49%', top: '5%',  w: '45vw', dx:  40, dy: 18, b: 18, ar: '16 / 9', rot:  0.9 },
-    { left: '47%', top: '41%', w: '37vw', dx:  28, dy: 38, b: 15, ar: '3 / 4',  rot:  1.2 },
-    { left: '3%',  top: '44%', w: '42vw', dx: -30, dy: 34, b: 17, ar: '3 / 2',  rot: -0.8 },
-    { left: '22%', top: '23%', w: '47vw', dx:   0, dy: 40, b: 14, ar: '16 / 9', rot:  0.4 },
-    { left: '54%', top: '60%', w: '40vw', dx:  44, dy: 28, b: 20, ar: '4 / 3',  rot:  1.6 },
-  ];
-
-  function buildPreviewPhotos(vols: ReturnType<typeof getCachedVolunteers>): string[] {
-    return vols
-      .filter(v => v.ha_immagini)
-      .flatMap(v =>
-        v.image_paths && v.image_paths.length > 0
-          ? v.image_paths.slice(0, 1)
-          : v.image_path ? [v.image_path] : []
-      )
-      .slice(0, previewLayout.length)
-      .map(p => getOptimizedImageUrl(p, { width: PREVIEW_WIDTH, resize: 'contain' }))
-      .filter((u): u is string => !!u);
-  }
-
-  let previewPhotos = $state<string[]>(buildPreviewPhotos(getCachedVolunteers()));
-
-  // Swap the anticipation layout to the phone-sized one below 600px (matches
-  // the CSS mobile breakpoint) so the cards stay on-screen.
-  let previewIsMobile = $state(false);
-  $effect(() => {
-    if (typeof window === 'undefined') return;
-    const mq = window.matchMedia('(max-width: 600px)');
-    const update = () => (previewIsMobile = mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  });
-
-  const activePreviewLayout = $derived(previewIsMobile ? previewLayoutMobile : previewLayout);
-
-  $effect(() => {
-    if (typeof window === 'undefined') return;
-    for (const src of previewPhotos) {
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = src;
-    }
-  });
-
   let galleryTransitionPending = false;
 
   function navigateToGallery() {
@@ -106,7 +41,6 @@
     galleryTransitionPending = false;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
-    document.documentElement.style.setProperty('--gate-p', '0');
     // --hero-scroll-p lives on <html>, which survives SPA navigation — if the
     // hero was scrolled past before leaving, it's left stuck near/at 1, which
     // zeroes out BlurTitle's opacity (calc(1 - p * 1.6)) on the next visit.
@@ -232,28 +166,18 @@
       onLeaveBack: () => navbarInverted.set(false)
     });
 
-    // ── GALLERY GATE — ANTICIPAZIONE ──
-    // Prima viewport del gate: le foto emergono dal blur mentre entrano.
+    // ── GALLERY GATE — TRANSIZIONE (per-frame, robusta su mobile) ──
+    // Scrollando dentro il gate la transizione parte a ~0.9 di progresso.
+    // Trigger per-frame: non può essere mancato come un onEnter agganciato
+    // all'ultimo pixel scrollabile sotto l'easing di Lenis + toolbar dinamica.
     ScrollTrigger.create({
       trigger: galleryGate,
       start: 'top bottom',
       end: 'top top',
       onUpdate: (self) => {
-        const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-        const ss = (t: number) => t * t * (3 - 2 * t);
-        // No dead zone at the start: the photos begin emerging the instant the
-        // gate crests the viewport bottom (immediately after the last sentence),
-        // reaching full reveal slightly before the gate fills the screen.
-        const gp = ss(clamp(self.progress / 0.88, 0, 1));
-        document.documentElement.style.setProperty('--gate-p', gp.toFixed(3));
-
-        // Fire the page transition from this onUpdate too — the photos are fully
-        // revealed by progress ~0.88 (gp hits 1), so at 0.9 we hand off to the
-        // gallery. This is the robust trigger on mobile: it rides the same
-        // per-frame scroll callback that's already animating the reveal, so it
-        // can't be missed the way an onEnter pinned to the last scrollable pixel
-        // can be under Lenis easing + a dynamic mobile toolbar.
-        if (self.progress >= 0.9) navigateToGallery();
+        // Abbastanza tardi da leggere bene l'ultima frase, ma prima della fine
+        // del gate così non c'è una lunga fascia nera vuota.
+        if (self.progress >= 0.6) navigateToGallery();
       },
     });
 
@@ -270,8 +194,6 @@
       start: 'top top',
       onEnter: () => navigateToGallery(),
     });
-
-    fetchAllVolunteers().then(vols => { previewPhotos = buildPreviewPhotos(vols); });
 
     return () => {
       navbarInverted.set(false);
@@ -365,21 +287,9 @@
       </p>
     </section>
 
-    <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true">
-      <div class="gallery-anticipation">
-        {#each previewPhotos as src, i}
-          <img
-            class="anticip-img"
-            src={src}
-            alt=""
-            loading="eager"
-            decoding="async"
-            draggable="false"
-            style={`left:${activePreviewLayout[i].left}; top:${activePreviewLayout[i].top}; width:${activePreviewLayout[i].w}; aspect-ratio:${activePreviewLayout[i].ar}; --dx:${activePreviewLayout[i].dx}px; --dy:${activePreviewLayout[i].dy}px; --b:${activePreviewLayout[i].b}px; --rot:${activePreviewLayout[i].rot}deg;`}
-          />
-        {/each}
-      </div>
-    </div>
+    <!-- Regione di scroll che innesca la transizione verso la galleria
+         (nessuna anticipazione di immagini). -->
+    <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true"></div>
 
   </main>
 </div>
@@ -405,7 +315,7 @@
      incollata alla galleria, ma senza vuoto — le foto iniziano a emergere
      appena si scorre oltre la frase, come continuazione del racconto. */
   .story--summary {
-    padding-bottom: var(--spacing-13);
+    padding-bottom: var(--spacing-8);
   }
 
   .gallery-gate {
@@ -418,36 +328,6 @@
        scatta sempre. Diviso per lo zoom globale di <html> come i .layered-panel
        così il primo viewport copre ESATTAMENTE lo schermo visivo. */
     height: calc((100dvh + 50dvh) / var(--page-zoom, 1));
-  }
-
-  .gallery-anticipation {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    width: 100%;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .anticip-img {
-    position: absolute;
-    display: block;
-    border-radius: 6px;
-    height: auto;
-    object-fit: cover;
-    box-shadow: 0 10px 44px rgba(0, 0, 0, 0.55);
-    opacity: calc(var(--gate-p, 0) * 0.42);
-    filter: blur(calc(var(--b, 18px) + (1 - var(--gate-p, 0)) * 16px));
-    transform:
-      translate3d(
-        calc(var(--dx, 0px) * (1 - var(--gate-p, 0))),
-        calc(var(--dy, 0px) * (1 - var(--gate-p, 0))),
-        0
-      )
-      scale(calc(0.90 + var(--gate-p, 0) * 0.10))
-      rotate(calc(var(--rot, 0deg) * (1 - var(--gate-p, 0))));
-    will-change: transform, opacity, filter;
-    backface-visibility: hidden;
   }
 
   .archivio-link:hover {
@@ -554,8 +434,8 @@
     .story--summary.safe-area {
       padding-top: var(--spacing-15);
       padding-right: 0;
-      /* Tight gap so the photo section follows the last sentence directly. */
-      padding-bottom: var(--spacing-9);
+      /* Tight gap so the transition follows the last sentence directly. */
+      padding-bottom: var(--spacing-6);
       padding-left: var(--spacing-5, 24px);
     }
 
