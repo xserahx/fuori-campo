@@ -210,14 +210,14 @@
     .edge-fade--top {
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 30vh;
+    height: 40vh;
     z-index: 5;
     pointer-events: none;
 
     /* 1. BACKGROUND: Easing morbido del colore scuro */
     background: linear-gradient(
       to bottom,
-      rgba(14, 14, 14, 0.85) 0%,
+      rgba(14, 14, 14, 1) 0%,
       rgba(14, 14, 14, 0.73) 20%,
       rgba(14, 14, 14, 0.45) 45%,
       rgba(14, 14, 14, 0.18) 70%,
@@ -225,8 +225,8 @@
     );
 
     /* 2. BACKDROP FILTER: Ridotto a 8px (su mobile 12px con easing lineare impasta troppo) */
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    /* backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px); */
 
     /* 3. MASK IMAGE: Dissolve il blur in modo fotografico e impercettibile */
     mask-image: linear-gradient(
@@ -250,14 +250,14 @@
   .edge-fade--bottom {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    height: 30vh;
+    height: 40vh;
     z-index: 5;
     pointer-events: none;
 
     /* 1. BACKGROUND: Speculare per il fondo */
     background: linear-gradient(
       to top,
-      rgba(14, 14, 14, 0.85) 0%,
+      rgba(14, 14, 14, 1) 0%,
       rgba(14, 14, 14, 0.73) 20%,
       rgba(14, 14, 14, 0.45) 45%,
       rgba(14, 14, 14, 0.18) 70%,
@@ -265,8 +265,8 @@
     );
 
     /* 2. BACKDROP FILTER */
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    /* backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px); */
 
     /* 3. MASK IMAGE Speculare */
     mask-image: linear-gradient(
