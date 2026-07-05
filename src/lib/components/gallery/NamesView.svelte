@@ -194,14 +194,12 @@
         
         <!-- Il distanziatore viene stampato sempre per garantire l'ingombro fisico -->
         {#if person.letterBreakBefore}
-          <div
-            id={`letter-${normalizeFirstLetter(person.cognome)}`}
-            class="letter-spacer"
+          <div 
+            id={`letter-${normalizeFirstLetter(person.cognome)}`} 
+            class="letter-spacer" 
             aria-hidden="true"
           >
-            {#if isMobile}
               <span class="letter-label">{normalizeFirstLetter(person.cognome)}</span>
-            {/if}
           </div>
         {/if}
 
@@ -270,16 +268,15 @@
     height: 0;
   }
 
-  /* Distanziatore gruppi di lettere (100px su desktop) — the extra 40px on
-     top of the original ~60px gap is reserved for the capital letter, so
-     the pre-existing spacing between groups stays intact above it. */
+  /* Distanziatore gruppi di lettere (100px su desktop) */
   .letter-spacer {
     display: flex;
     flex-shrink: 0;
     pointer-events: none;
     align-items: flex-end;
-    height: 100px;
-  }
+    height: var(--spacing-14);
+    padding-top: 80px;
+    }
 
   .names-interaction__item {
     position: relative;
@@ -335,22 +332,30 @@
     /* Distribute the letters across the full available height so the whole
        A–Z list is always visible — never scrolled out of view / cut off. */
     justify-content: space-between;
-    align: right;
     gap: 8px;
 
-    /* Definite height = the vertical space between navbar and bottom margin.
-       Both the box and the letter size derive from this, so they scale
-       together and the full alphabet always fits at any viewport height.
-       The bottom reserve clears the "Filtra per categoria" button (≈108px:
-       spacing-8 padding + spacing-9 button height) so the last letters (V/Z)
-       are never covered by it. */
-    height: calc(100dvh - var(--navbar-height, 125px) - (var(--spacing-4, 48px) + var(--spacing-4, 60px) + var(--spacing-4, 40px)));
+    /* Anchor the box with both top and bottom instead of a 100dvh-derived
+       height. The page is scaled with root `zoom` (app.html), and `dvh`
+       resolves against the *unzoomed* viewport on a fresh reload before the
+       zoom relayout settles — that mis-sized the box and bunched the letters
+       on reload (esp. at 16"/zoom:1). Top/bottom offsets scale uniformly with
+       zoom, so the box is always correct. The bottom reserve clears the
+       "Filtra per categoria" button (--spacing-8 offset + --spacing-9 height
+       + --spacing-5 gap) so the last letters (V/Z) are never covered. */
+    bottom: calc(var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-5, 24px));
     overflow-y: auto;
 
     padding: 0;
     margin: 0;
     pointer-events: auto;
   }
+
+  .letter-label { //impostazioni per lettera verde su desktop
+      font-family: var(--font-display);
+      font-size: 84px;
+      color: var(--color-content-accent, #bdff5d);
+      font-weight: 500;
+    }
 
   .alpha-sidebar__btn {
     border: 0;
@@ -393,9 +398,9 @@
 
     .names-interaction__item {
       min-height: 28px;
-      font-size: 40px;
-      line-height: 42px;
-      padding: 0 0 10px 0;
+      font-size: 45px;
+      line-height: 45px;
+      padding: 0 0 8px 0;
       white-space: normal;
       appearance: none;
       -webkit-appearance: none;
@@ -409,7 +414,7 @@
     
     .letter-label {
       font-family: var(--font-display);
-      font-size: 40px;
+      font-size: 45px;
       color: var(--color-content-accent, #bdff5d);
       font-weight: 500;
     }
@@ -417,10 +422,13 @@
     /* Sidebar alfabetica su mobile */
     .alpha-sidebar {
       top: 96px;
-      right: var(--spacing-4, 24px);
+      right: 20px;
       width: 28px;
       gap: 0;
-      height: calc(100dvh - 90px);
+      /* Anchor with top+bottom (not a 100dvh height, which overran the
+         viewport and hid Z behind the round filter button). The bottom
+         reserve clears the FOTO/NOMI toggle + filter button at the bottom. */
+      bottom: 96px;
       flex-wrap: nowrap;
     }
 

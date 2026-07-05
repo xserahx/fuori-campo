@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import { onMount } from 'svelte';
-  import { beforeNavigate } from '$app/navigation';
+  import { beforeNavigate, replaceState } from '$app/navigation';
   import '../../lib/styles/tokens.css';
   import PhotosView from '$lib/components/gallery/PhotosView.svelte';
   import MobilePhotosView from '$lib/components/gallery/MobilePhotosView.svelte';
@@ -41,6 +41,17 @@
   let activeToggle = $state<'photos' | 'names'>(initialContext.view);
   let activeFilters = $state<string[]>(initialContext.filters);
   let isMobile = $state(false);
+
+  // Persist the active view in the URL so a reload restores the same tab
+  // (NOMI stays on NOMI) instead of falling back to the photos default.
+  $effect(() => {
+    const url = new URL(page.url);
+    const current = url.searchParams.get('view') === 'names' ? 'names' : 'photos';
+    if (current === activeToggle) return;
+    if (activeToggle === 'names') url.searchParams.set('view', 'names');
+    else url.searchParams.delete('view');
+    replaceState(url, page.state);
+  });
 
   $effect(() => {
     const check = () => { isMobile = window.innerWidth < 600; };
