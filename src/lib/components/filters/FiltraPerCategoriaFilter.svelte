@@ -375,10 +375,12 @@
 
         /* Same optical-centering trick as ButtonLabel / .filtra-button-label:
            trim the line box to the cap height so the glyphs sit dead-centre. */
-        text-box-trim: both;
-        text-box-edge: cap alphabetic;
+        display: inline-flex;
+        align-items: center;
+        text-align: center;
+        text-box: trim-both cap alphabetic;
         line-height: 1;
-        transform: translateY(0.3px);
+        transform: translateY(-1.6px);
     }
 
     /* Keep the × from being squeezed when the label ellipsises. */
@@ -388,16 +390,16 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 24px;
         line-height: 1;
     }
 
-    @media (hover: hover) {
+    /* @media (hover: hover) {
         .filter-chip:hover {
             background-color: var(--color-content-accent);
             color: var(--color-content-body-black);
         }
-    }
+    } */
 
     .filter-chip:active {
         opacity: 0.85;
