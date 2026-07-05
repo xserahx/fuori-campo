@@ -38,11 +38,11 @@
         draggable="false"
         loading="lazy"
       />
-      {#if img.name}
+      <!-- {#if img.name}
         <div class="feed-overlay" aria-hidden="true">
           <span class="feed-name">{img.name.toUpperCase()}</span>
         </div>
-      {/if}
+      {/if} -->
     </button>
   {/each}
 </div>
@@ -87,16 +87,16 @@
   }
 
   /* Gradient + name — mirrors the Figma overlay */
-  .feed-overlay {
+  /* .feed-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     padding: 48px 16px 16px;
     background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, transparent 100%);
-  }
+  } */
 
-  .feed-name {
+  /* .feed-name {
     display: block;
     font-family: var(--font-display);
     font-size: 24px;
@@ -105,5 +105,5 @@
     color: var(--color-content-accent, #bdff5d);
     letter-spacing: 0;
     text-align: left;
-  }
+  } */
 </style>
