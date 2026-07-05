@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
+  import { gsap } from 'gsap';
   import { onDestroy, onMount } from 'svelte';
   import { page } from '$app/state';
   import { browser } from '$app/environment';
@@ -308,6 +309,47 @@
 
     return volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.';
   }
+
+  /* ── Rivelazione risposta all'apertura dell'accordion ─────────────
+     Comparsa morbida: la risposta si mette a fuoco (blur → nitido) e sfuma in
+     opacità, senza spostamenti (niente translate → nessuno scatto di 1px alla
+     fine). Il <p> viene rimontato a ogni apertura
+     ({#if openQ === i}), quindi l'action riparte a ogni click. */
+  function revealAnswer(node: HTMLElement) {
+    const reduce = typeof matchMedia !== 'undefined'
+      && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    const tween = gsap.fromTo(
+      node,
+      { opacity: 0, filter: 'blur(12px)' },
+      {
+        opacity: 1,
+        filter: 'blur(0px)',
+        duration: 1,
+        ease: 'power3.out',
+        clearProps: 'filter,opacity'
+      }
+    );
+    return { destroy() { tween.kill(); } };
+  }
+
+  /* ── Apertura del pannello lime (.qa-sep) ─────────────────────────
+     Il pannello cresce dolcemente dalla riga sottile all'altezza piena
+     invece di comparire di scatto. .qa-sep ha overflow:hidden che maschera
+     il contenuto durante la crescita. clearProps riporta a height:auto. */
+  function expandPanel(node: HTMLElement) {
+    const reduce = typeof matchMedia !== 'undefined'
+      && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    const tween = gsap.fromTo(
+      node,
+      { height: 0 },
+      { height: 'auto', duration: 0.5, ease: 'power3.out', clearProps: 'height' }
+    );
+    return { destroy() { tween.kill(); } };
+  }
 </script>
 
 <svelte:head>
@@ -384,8 +426,8 @@
 
             <div class="qa-sep" class:qa-sep--open={openQ === i}>
               {#if openQ === i}
-                <div class="qa-answer" role="region" aria-live="polite">
-                  <p>{answerFor(i)}</p>
+                <div class="qa-answer" role="region" aria-live="polite" use:expandPanel>
+                  <p use:revealAnswer>{answerFor(i)}</p>
                 </div>
               {/if}
             </div>
