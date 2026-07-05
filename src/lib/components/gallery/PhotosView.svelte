@@ -35,7 +35,7 @@
     if (ready) return;
     const imgs = rawImages;
     if (imgs.length === 0) return;
-    if (hasAllAspects(imgs)) { ready = true; return; }   // cached → build now, no wait
+    if (hasAllAspects(imgs)) { ready = true; return; }
 
     const uniq = new Map<string, string>();
     for (const im of imgs) uniq.set(im.path ?? im.src, im.src);
@@ -93,6 +93,7 @@
   let velX = 0;
   let velY = 0;
   let isDragging = false;
+  let draggedDuringPointer = false;
   let lastX = 0;
   let lastY = 0;
   let lastTime = 0;
@@ -148,6 +149,7 @@
       const snap = Math.round(targetX / designWidth) * designWidth;
       targetX -= snap; currentX -= snap;
     }
+
     // Vertical period equals the layout height.
     const th = designHeight;
     if (th > 0 && Math.abs(targetY) > th * 6) {
@@ -184,7 +186,8 @@
     // frame makes GSAP re-run its origin compensation, which fights the x/y we
     // write and makes the gallery tremble while scaling.
     if (innerRef) gsap.set(innerRef, {
-      x: currentX, y: currentY,
+      x: currentX,
+      y: currentY,
       scale: currentScale,
       force3D: true,
     });
@@ -202,29 +205,88 @@
 
   function pointerDown(e: PointerEvent) {
     isDragging = true;
+    draggedDuringPointer = false;
+
     lastX = e.clientX;
     lastY = e.clientY;
     lastTime = performance.now();
-    velX = 0; velY = 0;
-    collageRef?.setPointerCapture(e.pointerId);
+
+    velX = 0;
+    velY = 0;
+
+    try {
+      collageRef?.setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture can fail on some touch/browser combinations.
+      // The window-level pointermove listener still keeps drag functional.
+    }
   }
 
   function pointerMove(e: PointerEvent) {
     if (!isDragging) return;
+
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      draggedDuringPointer = true;
+    }
+
     const dt = Math.max(performance.now() - lastTime, 1);
+
     // 1:1 drag tracking (content follows the cursor) with a gentle fling so a
     // release drifts a little and settles — never a fast throw.
-    targetX += (e.clientX - lastX) * 1.0;
-    targetY += (e.clientY - lastY) * 1.0;
-    velX = ((e.clientX - lastX) / dt) * 5;
-    velY = ((e.clientY - lastY) / dt) * 5;
+    targetX += dx * 1.0;
+    targetY += dy * 1.0;
+
+    velX = (dx / dt) * 5;
+    velY = (dy / dt) * 5;
+
     // No clamping — infinite scroll.
     lastX = e.clientX;
     lastY = e.clientY;
     lastTime = performance.now();
   }
 
-  function pointerUp() { isDragging = false; }
+  function pointerUp(e?: PointerEvent) {
+    isDragging = false;
+
+    if (!e) return;
+
+    try {
+      if (collageRef?.hasPointerCapture(e.pointerId)) {
+        collageRef.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Safe fallback: the next pointerdown will reset capture state.
+    }
+  }
+
+  function tilePointerDown(e: PointerEvent) {
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      pointerDown(e);
+      e.stopPropagation();
+      return;
+    }
+
+    e.stopPropagation();
+  }
+
+  function handleTileClick(e: MouseEvent, image: GalleryImage, tileEl: HTMLElement) {
+    if (draggedDuringPointer) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    if (!image.noClick) {
+      openVolunteer(image, tileEl);
+    }
+  }
+
+  function isCoarsePointer() {
+    return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+  }
 
   // Wheel / trackpad scrolls the gallery VERTICALLY; the ← / → arrow keys move
   // horizontally (drag still moves in every direction). Feeding the target lets
@@ -233,7 +295,8 @@
     if (isDragging) return;
     e.preventDefault();
     targetY -= e.deltaY * WHEEL_SPEED;
-    velX = 0; velY = 0; // wheel drives the target directly — no leftover fling
+    velX = 0;
+    velY = 0;
   }
 
   // Keyboard: ← / → pan horizontally, ↑ / ↓ vertically. Auto-repeat while a key
@@ -242,18 +305,36 @@
   function onKeyDown(e: KeyboardEvent) {
     const el = e.target as HTMLElement | null;
     if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+
     let handled = true;
+
     switch (e.key) {
-      case 'ArrowLeft':  targetX += KEY_STEP; break;
-      case 'ArrowRight': targetX -= KEY_STEP; break;
-      case 'ArrowUp':    targetY += KEY_STEP; break;
-      case 'ArrowDown':  targetY -= KEY_STEP; break;
-      default: handled = false;
+      case 'ArrowLeft':
+        targetX += KEY_STEP;
+        break;
+      case 'ArrowRight':
+        targetX -= KEY_STEP;
+        break;
+      case 'ArrowUp':
+        targetY += KEY_STEP;
+        break;
+      case 'ArrowDown':
+        targetY -= KEY_STEP;
+        break;
+      default:
+        handled = false;
     }
-    if (handled) { e.preventDefault(); velX = 0; velY = 0; }
+
+    if (handled) {
+      e.preventDefault();
+      velX = 0;
+      velY = 0;
+    }
   }
 
-  function updateScale() { resizeCount++; }
+  function updateScale() {
+    resizeCount++;
+  }
 
   function openVolunteer(image: GalleryImage, tileEl: HTMLElement) {
     const slug = image.slug ?? slugify(image.name, 0);
@@ -282,6 +363,7 @@
         d: Math.hypot((img.left + img.width / 2) - cx, (img.top + img.height / 2) - cy),
       }))
       .sort((a, b) => a.d - b.d);
+
     for (const { slug: s } of byDist) {
       if (seen.has(s)) continue;
       seen.add(s);
@@ -309,8 +391,11 @@
         }))
         .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))
         .slice(0, 48);
+
       sessionStorage.setItem('bgField', JSON.stringify({ cw: image.width * currentScale, tiles: field }));
-    } catch { /* storage unavailable — zoom page falls back to its decorative field */ }
+    } catch {
+      // storage unavailable — zoom page falls back to its decorative field
+    }
 
     const params = new URLSearchParams(buildGallerySearchParams({
       view: 'photos',
@@ -318,8 +403,10 @@
       photoX: currentX,
       photoY: currentY,
     }));
+
     if (image.path) params.set('img', image.path);
     if (neighborSlugs.length > 0) params.set('neighbors', neighborSlugs.join(','));
+
     goto(`/volunteer/${slug}?${params.toString()}`);
   }
 
@@ -330,6 +417,7 @@
   const rawImages = $derived(
     dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : []
   );
+
   // Built once, only after orientations are known (`ready`), so the very first
   // render is already the correct layout — no placeholder pass, no reflow.
   const photoLayout      = $derived(
@@ -343,15 +431,20 @@
   // These differ — using a single square period would misplace the canvas horizontally
   // when naturalH >> designWidth (e.g. 30 000 px with the full volunteer dataset).
   const visibleImages = $derived.by((): GalleryImage[] => {
-    void windowX; void windowY; void zoomWindow; void resizeCount; void designHeight;
+    void windowX;
+    void windowY;
+    void zoomWindow;
+    void resizeCount;
+    void designHeight;
+
     if (typeof window === 'undefined') return positionedImages;
 
     const vw   = document.documentElement.clientWidth  || window.innerWidth;
     const vh   = document.documentElement.clientHeight || window.innerHeight;
     const M    = VIRT_MARGIN;
-    const tileW = designWidth;   // horizontal repeat period
-    const tileH = designHeight;  // vertical repeat period
-    const s     = zoomWindow;    // live magnification — scales canvas px → screen px
+    const tileW = designWidth;
+    const tileH = designHeight;
+    const s     = zoomWindow;
 
     // Screen position of canvas local-x = 0 (top-left). With the centre
     // transform-origin, screen = ox + s · localX, so all extents below are
@@ -366,53 +459,72 @@
     const tyMax = Math.ceil((vh + M - oy) / (s * tileH));
 
     const result: GalleryImage[] = [];
+
     for (let tx = txMin; tx <= txMax; tx++) {
       for (let ty = tyMin; ty <= tyMax; ty++) {
         const dx = tx * tileW;
         const dy = ty * tileH;
+
         for (const img of positionedImages) {
           const sx = ox + s * (img.left + dx);
           const sy = oy + s * (img.top  + dy);
-          if (sx + img.width  * s > -M && sx < vw + M &&
-              sy + img.height * s > -M && sy < vh + M) {
+
+          if (
+            sx + img.width  * s > -M &&
+            sx < vw + M &&
+            sy + img.height * s > -M &&
+            sy < vh + M
+          ) {
             result.push(dx === 0 && dy === 0 ? img : { ...img, left: img.left + dx, top: img.top + dy });
           }
         }
       }
     }
+
     return result;
   });
 
   onMount(() => {
     if (!hasSavedPosition) {
       // Spawn in the CENTER HALF of the tile (±25 % of width) so the user
-      // always lands on dense middle columns.  The tile boundary sits at
+      // always lands on dense middle columns. The tile boundary sits at
       // ±designWidth/2 (≈ ±1920 px); staying within ±960 avoids the seam
       // where only edge columns from each tile repeat are visible, creating
       // a large empty strip in the middle of the viewport.
       const rx = Math.round((Math.random() - 0.5) * designWidth * 0.5);
       const ry = Math.round((Math.random() - 0.5) * 1000);
-      currentX = rx; currentY = ry;
-      targetX  = rx; targetY  = ry;
-      windowX  = rx; windowY  = ry;
+
+      currentX = rx;
+      currentY = ry;
+      targetX  = rx;
+      targetY  = ry;
+      windowX  = rx;
+      windowY  = ry;
     }
+
     // Set the transform origin to the element centre ONCE here (it equals the
     // viewport centre at translate 0). The per-frame loop only updates x/y/scale,
     // so GSAP never re-compensates the origin → rock-steady zoom.
     if (innerRef) gsap.set(innerRef, {
-      x: currentX, y: currentY,
+      x: currentX,
+      y: currentY,
       scale: currentScale,
       transformOrigin: '50% 50%',
       force3D: true,
     });
+
     animate();
+
     window.addEventListener('resize', updateScale);
     window.addEventListener('pointerup', pointerUp);
+    window.addEventListener('pointercancel', pointerUp);
     collageRef?.addEventListener('wheel', onWheel, { passive: false });
     window.addEventListener('keydown', onKeyDown);
+
     return () => {
       window.removeEventListener('resize', updateScale);
       window.removeEventListener('pointerup', pointerUp);
+      window.removeEventListener('pointercancel', pointerUp);
       collageRef?.removeEventListener('wheel', onWheel);
       window.removeEventListener('keydown', onKeyDown);
       cancelAnimationFrame(rafId);
@@ -426,7 +538,7 @@
   <div
     bind:this={innerRef}
     class="collage-inner"
-    style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth/2}px);top:calc(50vh - {designHeight/2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
+    style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth / 2}px);top:calc(50vh - {designHeight / 2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
   >
     {#each visibleImages as img (`${Math.round(img.left)}|${Math.round(img.top)}`)}
       {@const isUnmatched = activeFilters.length > 0 && !activeFilters.some((f) => img.tags?.includes(f))}
@@ -436,9 +548,9 @@
         class:img-no-click={img.noClick}
         type="button"
         style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
-        onpointerdown={(e) => e.stopPropagation()}
+        onpointerdown={tilePointerDown}
         onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
-        onclick={(e) => { if (!img.noClick) openVolunteer(img, e.currentTarget); }}
+        onclick={(e) => handleTileClick(e, img, e.currentTarget)}
         use:tilt={{
           max: 14,
           tiltXFactor: 0.85,
@@ -446,7 +558,7 @@
           scale: 1.05,
           lift: 10,
           shadow: tiltShadow,
-          disabled: () => isDragging,
+          disabled: () => isDragging || isCoarsePointer(),
         }}
       >
         <div class="img-bw-layer">
@@ -469,8 +581,16 @@
     z-index: var(--gallery-shell-z);
     cursor: grab;
     pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
   }
-  .collage:active { cursor: grabbing; }
+
+  .collage:active {
+    cursor: grabbing;
+  }
 
   .collage-inner {
     position: absolute;
@@ -483,7 +603,6 @@
     overflow: hidden;
     border-radius: var(--radius-s, 4px);
     box-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
-    /* box-shadow is animated by GSAP on hover; opacity handled here */
     transition: opacity 0.45s ease, filter 0.5s ease;
     cursor: pointer;
     pointer-events: auto;
@@ -492,11 +611,11 @@
     background: transparent;
     will-change: transform;
     transform-style: preserve-3d;
+    touch-action: none;
   }
 
   .collage-item:hover {
     z-index: 50;
-    /* box-shadow intentionally omitted — GSAP drives it with tilt direction */
   }
 
   /* ── Image layers ─────────────────────────────────────────────── */
@@ -535,10 +654,13 @@
     filter: grayscale(100%) contrast(1.05) brightness(0.82);
   }
 
-  .collage-item:hover .img-bw-layer { opacity: 0; }
+  .collage-item:hover .img-bw-layer {
+    opacity: 0;
+  }
 
-  .collage-item:hover .collage-img { transform: scale(1.04); }
-
+  .collage-item:hover .collage-img {
+    transform: scale(1.04);
+  }
 
   .collage-item:hover .img-color-layer .collage-img {
     filter: brightness(1.06) saturate(1.08) contrast(1.02);
@@ -548,15 +670,16 @@
   .img-no-click {
     cursor: default;
   }
-  .img-no-click:hover .img-color-layer::after { opacity: 0; }
-  .img-no-click:hover .collage-img { transform: scale(1); }
+
+  .img-no-click:hover .img-color-layer::after {
+    opacity: 0;
+  }
+
+  .img-no-click:hover .collage-img {
+    transform: scale(1);
+  }
 
   /* ── Filter state ─────────────────────────────────────────────── */
-  /* Unselected photos get the zoom page's background treatment — a soft
-     blur(12px) saturate(0.85) at low opacity — applied to the WHOLE tile so
-     its rectangular edge/border feathers out too (not just the image), and the
-     crisp elevation shadow is dropped. They recede into a dreamy field behind
-     the sharp matches; eases in via .collage-item's filter transition. */
   .img-unmatched {
     opacity: 0.4;
     pointer-events: none;
@@ -585,5 +708,8 @@
     opacity: 0;
     transition: opacity 0.4s ease;
   }
-  .collage-item:hover .img-vignette { opacity: 1; }
+
+  .collage-item:hover .img-vignette {
+    opacity: 1;
+  }
 </style>
