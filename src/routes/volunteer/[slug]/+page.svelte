@@ -595,7 +595,7 @@
     </div>
 
     <!-- "SCOPRI DI PIÙ" → navigate to full profile page -->
-    <div
+    <ScopriDiPiuButton
       class="expand-btn-container"
       onclick={handleExpandButtonClick}
       onpointerdown={handleExpandButtonPointerDown}
