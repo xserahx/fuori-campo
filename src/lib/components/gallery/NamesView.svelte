@@ -393,9 +393,9 @@
 
     .names-interaction__item {
       min-height: 28px;
-      font-size: 45px;
-      line-height: 45px;
-      padding: 0 0 8px 0;
+      font-size: 40px;
+      line-height: 42px;
+      padding: 0 0 10px 0;
       white-space: normal;
       appearance: none;
       -webkit-appearance: none;
@@ -409,7 +409,7 @@
     
     .letter-label {
       font-family: var(--font-display);
-      font-size: 45px;
+      font-size: 40px;
       color: var(--color-content-accent, #bdff5d);
       font-weight: 500;
     }
@@ -417,7 +417,7 @@
     /* Sidebar alfabetica su mobile */
     .alpha-sidebar {
       top: 96px;
-      right: 20px;
+      right: var(--spacing-4, 24px);
       width: 28px;
       gap: 0;
       height: calc(100dvh - 90px);
