@@ -208,21 +208,84 @@
     }
 
     .edge-fade--top {
-      height: 44vh;
-      background: linear-gradient(to bottom, rgba(14, 14, 14, 0.85) 0%, transparent 100%);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
-      -webkit-mask-image: linear-gradient(to bottom, black 25%, transparent 100%);
-    }
-    .edge-fade--bottom {
-      height: 44vh;
-      background: linear-gradient(to top, rgba(14, 14, 14, 0.85) 0%, transparent 100%);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      mask-image: linear-gradient(to top, black 25%, transparent 100%);
-      -webkit-mask-image: linear-gradient(to top, black 25%, transparent 100%);
-    }
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 30vh;
+    z-index: 5;
+    pointer-events: none;
+
+    /* 1. BACKGROUND: Easing morbido del colore scuro */
+    background: linear-gradient(
+      to bottom,
+      rgba(14, 14, 14, 0.85) 0%,
+      rgba(14, 14, 14, 0.73) 20%,
+      rgba(14, 14, 14, 0.45) 45%,
+      rgba(14, 14, 14, 0.18) 70%,
+      transparent 100%
+    );
+
+    /* 2. BACKDROP FILTER: Ridotto a 8px (su mobile 12px con easing lineare impasta troppo) */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    /* 3. MASK IMAGE: Dissolve il blur in modo fotografico e impercettibile */
+    mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 15%,
+      rgba(0, 0, 0, 0.75) 35%,
+      rgba(0, 0, 0, 0.3) 65%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      #000 0%,
+      #000 15%,
+      rgba(0, 0, 0, 0.75) 35%,
+      rgba(0, 0, 0, 0.3) 65%,
+      transparent 100%
+    );
+  }
+
+  .edge-fade--bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 30vh;
+    z-index: 5;
+    pointer-events: none;
+
+    /* 1. BACKGROUND: Speculare per il fondo */
+    background: linear-gradient(
+      to top,
+      rgba(14, 14, 14, 0.85) 0%,
+      rgba(14, 14, 14, 0.73) 20%,
+      rgba(14, 14, 14, 0.45) 45%,
+      rgba(14, 14, 14, 0.18) 70%,
+      transparent 100%
+    );
+
+    /* 2. BACKDROP FILTER */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+
+    /* 3. MASK IMAGE Speculare */
+    mask-image: linear-gradient(
+      to top,
+      #000 0%,
+      #000 15%,
+      rgba(0, 0, 0, 0.75) 35%,
+      rgba(0, 0, 0, 0.3) 65%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to top,
+      #000 0%,
+      #000 15%,
+      rgba(0, 0, 0, 0.75) 35%,
+      rgba(0, 0, 0, 0.3) 65%,
+      transparent 100%
+    );
+  }
     .edge-fade--left,
     .edge-fade--right { display: none; }
   }
