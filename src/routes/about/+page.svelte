@@ -566,7 +566,6 @@
   .intro {
     display: flex;
     flex-direction: column;
-    /* 170px tra il logo (in alto) e il primo titolo */
     padding-top: 170px;
     padding-bottom: clamp(24px, 4vh, 48px);
     overflow-x: hidden;
@@ -585,6 +584,7 @@
 
   .intro-body {
     margin: 0;
+    padding-top: 47px;
     font-family: var(--font-display);
     font-size: clamp(28px, 3.9vw, 56px);
     font-weight: 500;
