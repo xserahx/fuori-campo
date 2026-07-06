@@ -521,36 +521,36 @@
 
 {#if cat}
   <main class="category-page" id="main-content" class:category-sport={cat?.slug === 'sport'}>
-    <div class="category-shell">
-      <div class="back-btn-wrapper">
-        <BackButton onclick={() => history.back()} ariaLabel="Indietro" />
+    
+    <div class="back-btn-wrapper">
+      <BackButton onclick={() => history.back()} ariaLabel="Indietro" />
+    </div>
+
+    <section class="hero" aria-labelledby="category-title">
+      <div
+        class="hero-title"
+        id="category-title"
+        bind:this={heroTitleEl}
+        style={cat.mobileTitleSize ? `--mobile-title-size: ${cat.mobileTitleSize}px` : undefined}
+      >
+        {#each lines as line, i}
+          {#if i === 0}
+            <span class="title-fill">{line}</span>
+          {:else}
+            <span class="title-outline">{line}</span>
+          {/if}
+        {/each}
       </div>
 
-      <section class="hero" aria-labelledby="category-title">
-        <div
-          class="hero-title"
-          id="category-title"
-          bind:this={heroTitleEl}
-          style={cat.mobileTitleSize ? `--mobile-title-size: ${cat.mobileTitleSize}px` : undefined}
-        >
-          {#each lines as line, i}
-            {#if i === 0}
-              <span class="title-fill">{line}</span>
-            {:else}
-              <span class="title-outline">{line}</span>
-            {/if}
-          {/each}
-        </div>
+      <p class="hero-copy" bind:this={heroCopyEl}>{activeSummary.subtitle}</p>
+    </section>
 
-        <p class="hero-copy" bind:this={heroCopyEl}>{activeSummary.subtitle}</p>
-      </section>
-
-      <section
-        class="summary-card"
-        aria-label="Categoria e sottocategoria"
-        bind:this={summaryEl}
-        style={`--summary-max-text-height: ${summaryMaxTextHeight}px`}
-      >
+    <section
+      class="summary-card"
+      aria-label="Categoria e sottocategoria"
+      bind:this={summaryEl}
+      style={`--summary-max-text-height: ${summaryMaxTextHeight}px`}
+    >
         <div class="summary-top-wrap">
           {#key activeRoleIndex}
             <div class="summary-top" in:blurFade={{ duration: 900 }} out:blurFade={{ duration: 360 }}>
@@ -616,7 +616,7 @@
           </div>
         </div>
       </section>
-    </div>
+
   </main>
 {:else}
   <div class="not-found">Categoria non trovata</div>
@@ -632,48 +632,44 @@
     background: var(--color-background-primary);
   }
 
+  /* 1. IL CONTENITORE: Grande esattamente quanto lo schermo, ma relativo. */
   .category-page {
-    position: relative;
-    width: 100%;
-    min-height: 100dvh;
+    position: relative; /* Nessun fixed! Così non si rompe mai. */
+    width: 100%; /* Si prende la larghezza disponibile senza creare scroll orizzontali */
+    height: 100dvh; /* Altezza bloccata allo schermo */
     background: var(--color-background-primary);
     color: var(--color-content-body);
-    overflow-x: hidden;
-    overflow-y: visible;
-  }
-
-  .category-shell {
-    position: relative;
-    width: 100%;
-    min-height: 100dvh;
-    padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) 0 var(--spacing-7);
-    overflow: visible;
-    background: var(--color-background-primary);
+    overflow: hidden; /* Niente scroll su desktop */
+    padding-top: calc(var(--navbar-height, 125px) + var(--spacing-5));
     box-sizing: border-box;
-
     display: flex;
     flex-direction: column;
   }
 
+ 
+/* 2. PULSANTE INDIETRO: In alto a sinistra */
   .back-btn-wrapper {
+    margin-left: var(--spacing-11);
     position: relative;
     z-index: 30;
-    margin-left: var(--spacing-11);
-    margin-top: 0;
-    flex-shrink: 0;
   }
 
+  
+
+  /* 3. HERO: Contenitore flessibile che prende lo spazio al centro */
   .hero {
+    width: 100%; 
     position: relative;
     z-index: 5;
-    width: 100%;
-    height: auto;
     margin: 0;
     padding: var(--spacing-5) 0 0;
     display: flex;
     flex-direction: column;
-    overflow: visible;
-    flex-shrink: 0;
+    pointer-events: none; /* Lascia passare i click alla card sotto */
+  }
+
+  .hero-title, .hero-copy {
+    pointer-events: auto; /* Riattiva i click sui testi */
   }
 
   .hero-title {
@@ -730,47 +726,46 @@
     max-width: calc(100% - clamp(0px, 24.5vw, 268px) - var(--spacing-11));
   }
 
+  /* 4. LA DESCRIZIONE BIANCA: Spinta matematicamente a destra */
   .hero-copy {
-    margin: var(--unit-36) var(--spacing-11) 0 auto;
+    margin-top: var(--unit-36);
+    margin-left: auto; /* MAGIA: Questo spinge automaticamente il blocco tutto a destra */
+    margin-right: var(--spacing-11); /* Questo fissa il margine destro esatto */
     padding: 0;
-    width: 1318px;
-    max-width: calc(100% - var(--spacing-11) - var(--spacing-4));
-    min-width: 0;
+    max-width: 45vw; /* Limite per non scontrarsi mai con le card a sinistra */
     text-align: right;
+    
     font-family: var(--font-display);
     font-size: clamp(34px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 45px);
     font-weight: 500;
     line-height: 0.952;
-    letter-spacing: 0;
-    white-space: pre-line;
     color: var(--color-content-body);
   }
-
+  
+  /* 4. La Card delle Sottocategorie viene Ancorata (Position Absolute) */
   .summary-card {
     --summary-arrows-size: 60px;
     --summary-controls-gap: 40px;
     --summary-dots-lift: 9px;
-    --summary-side-offset: var(--spacing-11);
-    --summary-column-width: calc(50vw - var(--summary-side-offset));
     --summary-bottom-reserve: calc(var(--summary-arrows-size) + var(--summary-controls-gap));
-    --summary-card-max-height: calc(var(--summary-max-text-height, 0px) + var(--summary-bottom-reserve));
 
-    position: relative;
+    /* Usa FIXED invece di absolute */
+    position: fixed; 
+    bottom: var(--spacing-8);
+    left: var(--spacing-11);
     z-index: 20;
 
-    width: var(--summary-column-width);
-    max-width: var(--summary-column-width);
-    min-height: var(--summary-card-max-height);
+    width: calc(50vw - var(--spacing-8)); 
+    max-width: 600px; 
+    
     padding: 0 0 var(--summary-bottom-reserve);
-    margin: auto 0 0 var(--summary-side-offset);
+    margin: 0; 
 
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-
     pointer-events: auto;
   }
-
   .summary-top-wrap {
     position: relative;
     width: 100%;
@@ -850,26 +845,31 @@
     color: rgba(250, 250, 250, 0.96);
   }
 
+  /* 1. Il contenitore generale: li spinge agli estremi (sinistra/destra) e li incolla in basso */
   .dot-frecce {
-    position: absolute;
+    position: absolute; /* O relative, se su mobile lo vuoi nel flusso */
     left: 0;
     right: 0;
     bottom: 0;
+    width: 100%;
 
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    width: 100%;
-    min-height: var(--summary-arrows-size);
-
+    justify-content: space-between; /* Pallini a sx, frecce a dx */
+    align-items: flex-end; /* LA MAGIA: Allinea entrambi gli elementi in basso */
+    
     pointer-events: auto;
   }
 
+  /* 2. I pallini */
   .dot-nav {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: var(--spacing-2);
-    margin-bottom: calc(var(--summary-arrows-size) + var(--summary-dots-lift));
+    
+    /* RIMUOVI IL MARGIN-BOTTOM CHE C'ERA PRIMA!
+       Era questo: margin-bottom: calc(...); a spingerli in alto.
+       Se vuoi staccarli un pochino dal bordo, metti un piccolo margin fisso uguale per entrambi. */
+    margin-bottom: 0; 
   }
 
   .dot {
@@ -906,10 +906,12 @@
     background: var(--color-content-accent);
   }
 
+  /* 3. Le frecce */
   .frecce {
     display: flex;
     align-items: center;
     gap: var(--unit-20);
+    margin-bottom: 0; /* Assicurati che non ci siano margini strani neanche qui */
   }
 
   .not-found {
@@ -922,7 +924,7 @@
     color: rgba(250, 250, 250, 0.38);
   }
 
-  @media (max-width: 1100px) {
+  /* @media (max-width: 1100px) {
     .category-shell {
       padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) var(--spacing-5) var(--spacing-5);
     }
@@ -990,9 +992,19 @@
       font-size: clamp(18px, 2.8vw, var(--unit-24));
       line-height: 1.15;
     }
-  }
+  } */
 
   @media (max-width: 700px) {
+
+    /* AGGIUNGI QUESTO BLOCCO: Riattiva lo scroll della pagina su mobile */
+    .category-page {
+      position: relative;
+      height: auto;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto; 
+    } 
+
     .category-shell {
       padding: calc(var(--navbar-height, 125px) + var(--spacing-4)) var(--spacing-5) var(--spacing-4);
     }
