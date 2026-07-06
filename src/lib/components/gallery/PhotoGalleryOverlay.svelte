@@ -217,7 +217,9 @@
     .gallery-stage { height: 60dvh; }
     .g-slide-img { max-width: 82vw; max-height: 60dvh; }
     .g-slide:not(.g-slide--active) { opacity: 0 !important; }
-    .gallery-close-container { top: var(--spacing-4, 16px); right: var(--spacing-4, 16px); }
+    .gallery-close-container { top: 27px; right: var(--spacing-5, 24px); }
+    .gallery-arrow-container--prev { left:  var(--spacing-5, 24px); }
+    .gallery-arrow-container--next { right: var(--spacing-5, 24px); }
   }
 
   @media (prefers-reduced-motion: reduce) {
