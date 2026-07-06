@@ -136,7 +136,16 @@
   justify-content: center;
   align-items: center;
   gap: 10px;
-  min-height: 100dvh;
+  /* Compensated for the root `zoom` (see app.html): plain 100dvh would render
+     at 100dvh × zoom real px (viewport units resolve against the true
+     viewport, then the whole box is shrunk again by zoom), leaving
+     hero-outer visibly SHORTER than the real viewport at zoom < 1 — which
+     then desyncs it from BlurTitle's `position: fixed; top: 50%` (centered
+     on the true, un-shrunk viewport), causing the title to visually sit
+     lower than hero-outer's own box and bleed into the next section.
+     (100dvh / zoom) * zoom = 100dvh, matching the same fix already used for
+     the sticky question panels in routes/+page.svelte. */
+  min-height: calc(100dvh / var(--page-zoom, 1));
   box-sizing: border-box;
   overflow: hidden;
   background: var(--color-background-primary);
@@ -485,11 +494,13 @@
     margin-top: 40px;
   }
 
+  /* Even, coherent vertical rhythm between the four mobile story blocks:
+     the same gap above each one (intro/summary reset to 0 below). */
   .story--right {
     max-width:   100%;
     margin-left: auto;
     text-align:  right;
-    margin-top:  100px;
+    margin-top:  300px;
   }
 
   .story--intro {
@@ -504,14 +515,14 @@
   .story--quote-left {
     max-width:    100%;
     margin-left:  0;
-    margin-top:   353px;
+    margin-top:   300px;
     text-align:   left;
   }
 
   .story--quote-right {
     max-width:   100%;
     margin-left: 0;
-    margin-top:  100px;
+    margin-top:  300px;
     text-align:  left;
   }
 

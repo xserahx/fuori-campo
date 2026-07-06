@@ -15,6 +15,16 @@
   // The --page-zoom-compensated font grows as the window narrows and would
   // otherwise overflow the fixed 1083px wrap (and the real viewport in the
   // 601–700px zoom-1 band) — clipping the last letters.
+  //
+  // .title-wrap is `position: fixed`, centered on the viewport (top: 50%) —
+  // it must stay that way (the design is "centered on the viewport height"),
+  // so .hero-outer's `min-height: 100dvh` is zoom-compensated to actually
+  // MATCH the real viewport height (see base.css) rather than moving the
+  // title's anchor to chase a mismatched box. --page-zoom only reacts to
+  // viewport WIDTH though, so on a wide-but-SHORT window the font can still
+  // stay large enough that the two-line stack is taller than the viewport
+  // itself — fit height too, so it never bleeds past top/bottom regardless
+  // of the window's aspect ratio.
   let wrapEl = $state<HTMLElement | undefined>(undefined);
 
   function fitTitle() {
@@ -25,10 +35,16 @@
     const avail = wrapEl.clientWidth;                // respects width / max-width:100vw
     let widest = 0;
     for (const w of words) widest = Math.max(widest, w.scrollWidth);
+    const widthScale = avail > 0 && widest > avail ? avail / widest : 1;
 
-    if (avail > 0 && widest > avail) {
-      wrapEl.style.setProperty('--title-fit', String((avail / widest) * 0.99));
-    }
+    // 90% of the viewport height for the two-line stack, leaving breathing
+    // room top/bottom regardless of how tall/short the window is.
+    const naturalHeight = wrapEl.scrollHeight;
+    const availHeight = window.innerHeight * 0.9;
+    const heightScale = naturalHeight > 0 && naturalHeight > availHeight ? availHeight / naturalHeight : 1;
+
+    const scale = Math.min(widthScale, heightScale);
+    wrapEl.style.setProperty('--title-fit', scale < 1 ? String(scale * 0.99) : '1');
   }
 
   $effect(() => {

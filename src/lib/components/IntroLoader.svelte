@@ -76,11 +76,11 @@
 
       <div class="loading-section">
         <h1 class="title-row">
-          <span class="title">CTRL</span>
+          <span class="title">FUORI</span>
           <span class="bracket">(</span>
           <span class="loader">{pct}%</span>
           <span class="bracket">)</span>
-          <span class="title">+ Z</span>
+          <span class="title">CAMPO</span>
         </h1>
       </div>
 

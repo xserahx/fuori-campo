@@ -16,8 +16,14 @@
 		     never fire on actual phones — only in DevTools emulation. Keeping
 		     zoom = 1 on mobile lets the mobile CSS render at natural device
 		     scale, matching what the inspector shows.
-		     --page-zoom mirrors the zoom value for CSS touch-target compensation. -->
-		<script>try{var _mobile=window.matchMedia('(max-width: 700px)').matches;var _z=_mobile?1:window.innerWidth/1728;document.documentElement.style.zoom=String(_z);document.documentElement.style.setProperty('--page-zoom',String(_z))}catch(e){}</script>
+		     --page-zoom mirrors the zoom value for CSS touch-target compensation.
+
+		     Recomputed on resize (rAF-throttled), not just once at load: without
+		     this, shrinking/growing the window (or rotating, or dragging the
+		     DevTools responsive-mode frame) without a full reload leaves the OLD
+		     zoom in place — content sized for the previous, larger viewport then
+		     overflows/clips in the new, smaller one. -->
+		<script>(function(){function z(){try{var m=window.matchMedia('(max-width: 700px)').matches;var v=m?1:window.innerWidth/1728;document.documentElement.style.zoom=String(v);document.documentElement.style.setProperty('--page-zoom',String(v))}catch(e){}}z();var r=0;window.addEventListener('resize',function(){if(r)return;r=requestAnimationFrame(function(){r=0;z()})})})();</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
