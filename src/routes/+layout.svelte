@@ -260,6 +260,16 @@
 
 		const { overlay, path } = els;
 
+		// Mobile crops the landscape transition path (viewBox 1316×664, slice)
+		// into a short on-screen sweep, so the same timing reads as rushed. Run
+		// the mobile transition noticeably slower so the draw stays smooth and
+		// readable; desktop keeps its original, well-tuned timing.
+		const ptMobile =
+			typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches;
+		const PT = ptMobile
+			? { overlayIn: 0.55, cover: 2.6, reveal: 2.6, overlayOut: 0.8, overlayOutAt: 2.1 }
+			: { overlayIn: 0.4, cover: 1.8, reveal: 1.8, overlayOut: 0.6, overlayOutAt: 1.4 };
+
 		gsap.killTweensOf([overlay, path]);
 
 		gsap.set(overlay, {
@@ -300,17 +310,17 @@
 									})
 									.to(e.path, {
 										drawSVG: '100% 100%',
-										duration: 1.8,
+										duration: PT.reveal,
 										ease: 'power2.inOut'
 									})
 									.to(
 										e.overlay,
 										{
 											opacity: 0,
-											duration: 0.6,
+											duration: PT.overlayOut,
 											ease: 'power2.inOut'
 										},
-										1.4
+										PT.overlayOutAt
 									);
 							})
 							.catch(() => {
@@ -330,14 +340,14 @@
 				})
 				.to(overlay, {
 					opacity: 1,
-					duration: 0.4,
+					duration: PT.overlayIn,
 					ease: 'power2.inOut'
 				})
 				.to(
 					path,
 					{
 						drawSVG: '100%',
-						duration: 1.8,
+						duration: PT.cover,
 						ease: 'power2.inOut'
 					},
 					0
