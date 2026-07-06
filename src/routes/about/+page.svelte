@@ -117,6 +117,7 @@
   let isMobile  = $state(false);
   let targetPos = $state(0);
   let isReady   = $state(false);
+  let carouselEl: HTMLElement | null = $state(null);
 
   const N = () => volunteers.length;
   function mod(n: number, m: number) { return ((n % m) + m) % m; }
@@ -124,8 +125,6 @@
   const CARD_ANGLE = () => 360 / N();
 
   let currentIndex = $derived(mod(targetPos, N()));
-  let prevIndex = $derived(mod(currentIndex - 1, N()));
-  let nextIndex = $derived(mod(currentIndex + 1, N()));
   let ringRotation = $derived(targetPos * CARD_ANGLE());
   let currentVolunteer = $derived(volunteers[currentIndex]);
   // Nome su massimo due righe: cognome sopra, nomi sotto (es. SOLIDORO / CLAUDIA IRENE).
@@ -327,6 +326,45 @@
     if (!root) return;
     riseIn(root.querySelectorAll('.rise'));
   });
+
+  // ── Aggancio del riquadro info alla card centrale 3D ──────────────
+  // La prospettiva ingrandisce la card centrale di un fattore che dipende da
+  // camera/raggio (~3,26×). Invece di fidarci del solo valore analitico
+  // (--card-projection), misuriamo la card attiva già proiettata a schermo
+  // (getBoundingClientRect tiene conto delle trasformazioni 3D) e portiamo
+  // esattamente quelle dimensioni in --center-w/--center-h, così il testo resta
+  // agganciato all'angolo in basso a sinistra dell'immagine a ogni larghezza.
+  function measureCenterCard() {
+    if (typeof document === 'undefined' || !carouselEl) return;
+    const active = carouselEl.querySelector<HTMLElement>('.card-3d.active');
+    if (!active) return;
+    const rect = active.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      carouselEl.style.setProperty('--center-w', `${rect.width}px`);
+      carouselEl.style.setProperty('--center-h', `${rect.height}px`);
+    }
+  }
+
+  $effect(() => {
+    // Ri-misura quando il carosello è montato (desktop) e a ogni resize.
+    // currentIndex non cambia la geometria (la card finisce sempre centrata),
+    // ma lo teniamo come dipendenza per ri-misurare dopo eventuali re-render.
+    const _trigger = currentIndex;
+    if (isMobile || !carouselEl) return;
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measureCenterCard);
+    };
+    schedule();
+    window.addEventListener('resize', schedule, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', schedule);
+    };
+  });
 </script>
 
 <svelte:head>
@@ -441,6 +479,7 @@
     <section
       class="carousel"
       id="main-content"
+      bind:this={carouselEl}
       onpointerdown={onPointerDown}
       onpointermove={onPointerMove}
       onpointerup={onPointerUp}
@@ -448,29 +487,29 @@
       aria-label="Volunteer carousel"
     >
       <div class="stage">
-        <div class="flat-track">
-          <div
-            class="side-panel side-panel--left"
-            style="background-image: url('{volunteers[prevIndex]?.image}');"
-            aria-hidden="true"
-          ></div>
-
-          <div
-            class="center-panel"
-            style="background-image: url('{volunteers[currentIndex]?.image}');"
-            role="button"
-            tabindex="0"
-            onclick={handleTitleClick}
-            onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
-          ></div>
-
-          <div
-            class="side-panel side-panel--right"
-            style="background-image: url('{volunteers[nextIndex]?.image}');"
-            aria-hidden="true"
-          ></div>
+        <div class="container-3d">
+          <div class="ring" class:ready={isReady} style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);">
+            {#each volunteers as vol, i}
+              {@const isActive = currentIndex === i}
+              <div
+                class="card-3d"
+                class:active={isActive}
+                style="transform: rotateY({i * -CARD_ANGLE()}deg) translateZ(var(--card-radius));"
+                role="button"
+                tabindex={isActive ? 0 : -1}
+                aria-current={isActive ? 'true' : undefined}
+                onclick={() => { if (isActive) handleTitleClick(); }}
+                onkeydown={(e) => { if (e.key === 'Enter' && isActive) handleTitleClick(); }}
+              >
+                <div class="card-image" class:loaded={decoded[vol.image]} style="background-image: url('{vol.image}');"></div>
+                <div class="card-overlay"></div>
+              </div>
+            {/each}
+          </div>
         </div>
       </div>
+
+      <div class="progressive-blur-overlay" aria-hidden="true"></div>
 
       <div class="arrow-left" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
         <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
@@ -693,13 +732,26 @@
     user-select: none;
     touch-action: none;
 
-     /* Proporzioni aderenti al frame Figma 1728x1027. */
-    --center-w: clamp(300px, 38.4vw, 664px);
-    --center-h: var(--side-h);
-     --side-h: clamp(380px, 79vh, 811px);
-     --left-w: clamp(330px, 44.5vw, 768px);
-     --right-w: clamp(300px, 38.4vw, 664px);
-     --panel-gap: clamp(0px, 0.2vw, 4px);
+    /* ── Anello CSS-3D (stesso motore di /category), card ~foto team ──
+       La card centrale ha le proporzioni delle foto (558×583) ed è molto più
+       piccola di quella categoria: nel Figura /about occupa ~30% della
+       larghezza, non a piena grandezza. --card-width è l'UNICA leva della
+       dimensione: la prospettiva ingrandisce la card ~3,26×, quindi la card
+       visibile ≈ --card-width × 3,26. Telecamera, raggio, blur laterale e
+       riquadro info scalano tutti da qui — nudge solo questa riga per la size.
+       (Categoria usa clamp(240px, 26vw, 420px) ≈ card grande a piena altezza.) */
+    --card-width: clamp(115px, 9.9vw, 195px);
+    --ss: 2;
+    --card-radius: calc(var(--card-width) * var(--ss) * -0.86);
+    --camera-z: calc(var(--card-width) * var(--ss) * 2.8);
+
+    /* Dimensione proiettata a schermo della card centrale: la prospettiva la
+       ingrandisce ~3,26× rispetto alla sua dimensione CSS. Serve a dimensionare
+       il riquadro delle info (.vol-card) così che il testo resti agganciato
+       all'angolo in basso a sinistra dell'immagine. */
+    --card-projection: 3.256;
+    --center-w: calc(var(--card-width) * var(--card-projection));
+    --center-h: calc(var(--center-w) * 583 / 558);
   }
   .carousel:active { cursor: grabbing; }
 
@@ -728,71 +780,113 @@
     z-index: 1;
   }
 
-  .flat-track {
-    position: relative;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: var(--panel-gap);
-    height: var(--side-h);
-    width: min(100%, 1728px);
-    pointer-events: none;
+  /* ── Anello CSS-3D (stesso motore di /category) ── */
+  .container-3d {
+    perspective: var(--camera-z);
+    /* Scena costruita a --ss× e riportata alla dimensione visiva con scale(1/ss):
+       la card viene rasterizzata al doppio della risoluzione prima che la
+       prospettiva la ingrandisca → resta nitida. */
+    width: calc(var(--card-width) * var(--ss));
+    transform: scale(calc(1 / var(--ss)));
+    transform-origin: center center;
+    /* Rapporto identico alle foto team (558×583): la card ha le stesse
+       proporzioni dell'immagine, così `cover` la riempie senza ritagliarla. */
+    aspect-ratio: 558 / 583;
   }
 
-  .side-panel,
-  .center-panel {
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    flex-shrink: 0;
-    will-change: filter, transform;
+  .ring {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: none;
   }
 
-  .side-panel {
-    height: var(--side-h);
-    position: relative;
-    filter: blur(16px) saturate(0.84);
-    transform: scale(1.04);
-    opacity: 0.96;
+  .ring.ready {
+    transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .side-panel::after {
-    content: '';
+  .card-3d {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.28) 100%);
-  }
-
-  /* Tuck each neighbor's inner edge under the (opaque, higher z-index) center
-     card so its blur-to-black fade — the dark vertical seam beside the card —
-     stays hidden behind it. */
-  .side-panel--left {
-    width: var(--left-w);
-    transform-origin: right bottom;
-    margin-right: -32px;
-  }
-
-  .side-panel--right {
-    width: var(--right-w);
-    transform-origin: left bottom;
-    margin-left: -32px;
-  }
-
-  .center-panel {
-    width: var(--center-w);
-    height: var(--center-h);
-    pointer-events: auto;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.85s ease, box-shadow 0.85s ease;
+    pointer-events: none;
     cursor: pointer;
-    position: relative;
-    z-index: 2;
   }
 
-  .center-panel::after {
-    content: '';
+  .card-image {
+    width: 100%;
+    height: 100%;
+    /* `contain` (non `cover`): la foto è mostrata intera, mai ritagliata. La
+       card ha già le proporzioni dell'immagine (558/583), quindi non compaiono
+       bande — ma `contain` garantisce l'assenza di crop anche con arrotondamenti. */
+    background-size: contain;
+    background-position: center;
+    background-color: var(--color-background-primary, #0e0e0e);
+    /* Nascosta finché la sorgente non è decodificata (vedi preloadImages):
+       la card compare già a piena qualità. */
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .card-image.loaded {
+    opacity: 1;
+  }
+
+  .card-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0) 42%);
+    background: rgba(0, 0, 0, 0.5); /* Scurisce le laterali */
+    transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card-3d.active {
+    pointer-events: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+  }
+
+  .card-3d.active .card-overlay {
+    background: rgba(0, 0, 0, 0);
+  }
+
+  /* ── Lente di sfocatura progressiva ai lati ── */
+  .progressive-blur-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
     pointer-events: none;
+
+    backdrop-filter: blur(15px) saturate(0.85);
+    -webkit-backdrop-filter: blur(15px) saturate(0.85);
+
+    mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.8),
+      transparent calc(50% + var(--card-width) * 0.8),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.8),
+      transparent calc(50% + var(--card-width) * 0.8),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
   }
 
   /* ── Frecce laterali ── */
@@ -862,23 +956,27 @@
     height: var(--center-h);
   }
 
-  /* Bottone "SCOPRI DI PIÙ" — in alto a destra della card (Figma) */
+  /* ── Overlay fedele al Figura (frame card 558×561) ─────────────────
+     Ogni misura è una frazione della card proiettata (--center-w /
+     --center-h), così testo, gradiente e bottone scalano con la card. */
+
+  /* Bottone "SCOPRI DI PIÙ" — Figma 6447:7869: top 0, ~20px dal bordo dx (20/558) */
   .vol-scopri {
     position: absolute;
-    font-size: clamp(24px, 1.2vw, 26px);
-    top: clamp(12px, 2vw, 24px);
-    right: clamp(-25px, 4vw, -25px);
+    top: 0;
+    right: calc(var(--center-w) * 0.0358);
+    font-size: calc(var(--center-w) * 0.043); /* 24/558 */
     pointer-events: auto;
     z-index: 2;
   }
 
-  /* Sfumatura nera in basso, dietro il testo */
+  /* Gradiente — Figma 6447:7867: ancorato in basso, altezza 326/561, to-top 0.91→0 */
   .vol-card-fade {
     position: absolute;
-    left: 52px;
-    right: -53px;
-    bottom: -10px;
-    height: 48%;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--center-h) * 0.5811); /* 326 / 561 */
     background: linear-gradient(
       0deg,
       rgba(14, 14, 14, 0.91) 0%,
@@ -888,12 +986,12 @@
     z-index: 1;
   }
 
-  /* Testo in basso a sinistra della card */
+  /* Testo — Figma 6447:7868: left 20/558, ancorato in basso, width 346/558 */
   .vol-info-block {
     position: absolute;
-    left: clamp(16px, 4.8vw, 90px);
-    right: clamp(16px, 1.8vw, 28px);
-    bottom: clamp(18px, 2.2vw, 32px);
+    left: calc(var(--center-w) * 0.0358); /* 20 / 558 */
+    bottom: 0;
+    width: calc(var(--center-w) * 0.62);  /* 346 / 558 */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -902,45 +1000,46 @@
     z-index: 2;
   }
 
+  /* Le altezze di riga (line-height) del Figura creano la spaziatura verticale
+     tra sottotitolo, ruolo e nome — niente margini extra. */
   .vol-subtitle {
     display: block;
     font-family: var(--font-display, sans-serif);
-    font-size: clamp(11px, 0.65vw, 10px);
-    font-weight: 400;
-    letter-spacing: 0.07em;
+    font-size: calc(var(--center-w) * 0.0197);  /* 11.015 / 558 */
+    line-height: calc(var(--center-w) * 0.0812); /* 45.311 / 558 */
+    font-weight: 500;
+    letter-spacing: 0;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.85);
-    margin-bottom: clamp(3px, 0.4vh, 6px);
+    color: var(--color-content-body, #fafafa);
     white-space: nowrap;
   }
 
   .vol-role-lines {
     display: flex;
     flex-direction: column;
-    margin-bottom: clamp(4px, 0.6vh, 10px);
   }
 
   .vol-role {
     display: block;
     font-family: var(--font-display, sans-serif);
-    font-size: clamp(26px, 1.25vw, 18px);
+    font-size: calc(var(--center-w) * 0.0474);  /* 26.436 / 558 */
+    line-height: calc(var(--center-w) * 0.0513); /* 28.639 / 558 */
     font-weight: 500;
     text-transform: uppercase;
-    color: #ffffff;
-    line-height: 1.15;
+    color: var(--color-content-body, #fafafa);
     white-space: nowrap;
   }
 
   .vol-name-lines {
     display: flex;
     flex-direction: column;
-    line-height: 0.9;
   }
 
   .vol-name-word {
     display: block;
     font-family: var(--font-display, sans-serif);
-    font-size: clamp(44px, 3.4vw, 56px);
+    font-size: calc(var(--center-w) * 0.079);   /* 44.06 / 558 */
+    line-height: calc(var(--center-w) * 0.0812); /* 45.311 / 558 */
     font-weight: 700;
     text-transform: uppercase;
     color: var(--color-content-accent, #bdff5d);
@@ -1015,8 +1114,11 @@
     z-index: 3;
   }
 
+  /* Mobile: valori fissi (--center-w non è definito qui) — line-height
+     esplicite per non ereditare quelle desktop, ormai in calc(). */
   .mobile-info .vol-subtitle {
     font-size: 9px;
+    line-height: normal;
     margin-bottom: 4px;
   }
 
@@ -1026,6 +1128,7 @@
 
   .mobile-info .vol-role {
     font-size: 14px;
+    line-height: 1.15;
   }
 
   .mobile-info .vol-name-lines {
@@ -1056,7 +1159,8 @@
 
   /* ── Reduced motion ───────────────────────────────────────────── */
   @media (prefers-reduced-motion: reduce) {
-    .side-panel,
-    .center-panel { transition: none; }
+    .ring.ready,
+    .card-3d,
+    .card-overlay { transition: none; }
   }
 </style>
