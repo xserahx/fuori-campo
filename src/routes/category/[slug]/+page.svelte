@@ -459,6 +459,53 @@
     return () => { cancelled = true; };
   });
 
+  // Shrink the one-line (nowrap) desktop title so the longest line always
+  // fits its container — no clipping at any width. Mobile (≤700px) wraps the
+  // title instead, so it opts out and stays at --title-fit: 1.
+  function fitTitle() {
+    const el = heroTitleEl;
+    if (!el || typeof window === 'undefined') return;
+
+    if (window.innerWidth <= 700) {
+      el.style.setProperty('--title-fit', '1');
+      return;
+    }
+
+    // Measure at natural size first, then compute the shrink factor.
+    el.style.setProperty('--title-fit', '1');
+    const lines = Array.from(el.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
+    let scale = 1;
+    for (const line of lines) {
+      const avail = line.clientWidth;    // container box (bounded by max-width)
+      const natural = line.scrollWidth;  // full one-line text width
+      if (avail > 0 && natural > avail) scale = Math.min(scale, avail / natural);
+    }
+    // Tiny safety margin so glyph edges / the outline stroke never touch the clip.
+    el.style.setProperty('--title-fit', scale < 1 ? String(scale * 0.99) : '1');
+  }
+
+  $effect(() => {
+    const _ = slug;                       // refit when the category (title) changes
+    if (typeof window === 'undefined') return;
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fitTitle);
+    };
+
+    let cancelled = false;
+    schedule();                                   // fit with whatever font is ready now
+    displayFontReady().then(() => { if (!cancelled) schedule(); }); // refit once the web font loads
+    window.addEventListener('resize', schedule, { passive: true });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', schedule);
+    };
+  });
+
   function blurFade(_node: HTMLElement, { duration = 700 }: { duration?: number } = {}) {
     return {
       duration: prefersReduced() ? 0 : duration,
@@ -642,11 +689,16 @@
   .title-fill,
   .title-outline {
     font-family: var(--font-display);
-    font-size: clamp(
+    /* --title-fit (default 1) is set by fitTitle() in JS to shrink the
+       one-line (nowrap) title just enough that the longest line fits its
+       container at any desktop width — otherwise the --page-zoom-compensated
+       size overflows and gets clipped by `overflow: hidden` (e.g. "GESTIONE
+       OPERATIVA" at ~995px). */
+    font-size: calc(clamp(
       var(--unit-56),
       calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
       var(--unit-200)
-    );
+    ) * var(--title-fit, 1));
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0;
