@@ -729,17 +729,32 @@
   /* 4. LA DESCRIZIONE BIANCA: Spinta matematicamente a destra */
   .hero-copy {
     margin-top: var(--unit-36);
-    margin-left: auto; /* MAGIA: Questo spinge automaticamente il blocco tutto a destra */
+    margin-left: auto; /* Questo spinge automaticamente il blocco tutto a destra */
     margin-right: var(--spacing-11); /* Questo fissa il margine destro esatto */
     padding: 0;
-    width: 55dvw;
-    /*max-width: 55dvw; /* Limite per non scontrarsi mai con le card a sinistra */
+    
+    /* 1. LARGHEZZA CONTROLLATA: Occupa al massimo il 45% dello schermo, 
+          ma si ferma categoricamente a 700px sui grandi monitor. 
+          Essendo < 50vw, è matematicamente impossibile che tocchi la card a sinistra. */
+    width: 100%;
+    max-width: min(45vw, 1000px); 
+      
     text-align: right;
     
+    /* 2. ESTETICA DEL TESTO: Il browser calcola matematicamente le lunghezze 
+          delle righe per renderle tutte simili, eliminando le parole singole 
+          a fine paragrafo e le forme a zig-zag. */
+    text-wrap: balance;
+    
     font-family: var(--font-display);
-    font-size: 45px;
+    
+    /* 3. FONT RESPONSIVO: Non fisso a 45px. Parte da 26px sui portatili piccoli 
+          e cresce gradualmente fino a un massimo di 45px sui grandi schermi. */
+    font-size: clamp(26px, 2.5vw, 45px);
     font-weight: 500;
-    line-height: 0.952;
+    
+    /* Leggermente aumentato da 0.952 a 1.05 per dare respiro alle righe bilanciate */
+    line-height: 1.05; 
     color: var(--color-content-body);
   }
   
@@ -759,7 +774,7 @@
     width: calc(50vw - var(--spacing-8)); 
     max-width: 600px; 
     
-    padding: 0 0 var(--summary-bottom-reserve);
+    padding: 0 0 var(--spacing-12, 80px);
     margin: 0; 
 
     display: flex;
@@ -994,7 +1009,33 @@
       line-height: 1.15;
     }
   } */
+  @media (max-width: 700px) {
+    /* Ridiamo lo scroll alla pagina */
+    .category-page {
+      height: auto;
+      min-height: 100dvh;
+      overflow-y: auto; 
+      padding-bottom: var(--spacing-11);
+    }
 
+    /* La descrizione si riprende tutto lo spazio a destra */
+    .hero-copy {
+      margin-left: auto;
+      margin-right: var(--spacing-5);
+      margin-top: var(--spacing-5);
+      max-width: 100%;
+    }
+
+    /* La card torna nel flusso normale della pagina (perde l'absolute) */
+    .summary-card {
+      position: relative;
+      bottom: auto;
+      left: auto;
+      width: calc(100% - var(--spacing-5) * 2);
+      max-width: 100%;
+      margin: var(--spacing-11) var(--spacing-5) 0 var(--spacing-5);
+    }
+  }
 
   @media (max-width: 599px) {
     .summary-card {
