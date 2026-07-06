@@ -558,11 +558,13 @@
         style={cat.mobileTitleSize ? `--mobile-title-size: ${cat.mobileTitleSize}px` : undefined}
       >
         {#each lines as line, i}
-          {#if i === 0}
-            <span class="title-fill">{line}</span>
-          {:else}
-            <span class="title-outline">{line}</span>
-          {/if}
+          <span class="title-mask">
+            {#if i === 0}
+              <span class="title-fill">{line}</span>
+            {:else}
+              <span class="title-outline">{line}</span>
+            {/if}
+          </span>
         {/each}
       </div>
 
@@ -709,6 +711,10 @@
     padding: 0;
     overflow: hidden;
   }
+
+  .title-mask {
+    display: block;
+  } 
 
   .title-fill,
   .title-outline {
@@ -972,55 +978,98 @@
   } 
 
   @media (max-width: 700px) {
-    /* Ridiamo lo scroll alla pagina */
+    /* 1. SBLOCCO DELLA PAGINA: Torna a scorrere come la pagina del volontario */
     .category-page {
+      position: relative; /* Resetta il fixed del desktop */
       height: auto;
       min-height: 100dvh;
+      overflow-x: hidden;
       overflow-y: auto; 
-      padding-bottom: var(--spacing-11);
+      /* Padding per distanziare i contenuti dai bordi dello schermo */
+      padding: var(--spacing-5, 24px); 
+      padding-top: calc(var(--navbar-height, 125px) + var(--spacing-4));
+      padding-bottom: 0; 
+      box-sizing: border-box;
     }
 
-    /* La descrizione si riprende tutto lo spazio a destra */
+    /* 2. BOTTONE INDIETRO: Fluisce naturalmente in alto a sinistra (Stile Volontario) */
+    .back-btn-wrapper {
+      position: relative; /* Perde ogni ancoraggio fisso */
+      margin-left: 0;     /* Resetta il margine desktop per allinearsi al titolo */
+      margin-top: 0;
+      margin-bottom: var(--spacing-4); /* Spinge giù il titolo sotto di sé */
+      z-index: 30;
+    }
+
+    /* 3. HERO (Contenitore del Titolo) */
+    .hero {
+      padding: 0; 
+    }
+
+    .hero-title {
+      overflow: visible; /* Sblocca il contenitore generale */
+    }
+
+    /* 4. STRUTTURA DEL TITOLO */
+    .title-mask {
+      display: block;
+      overflow: hidden; /* Serve per l'animazione dal basso di Svelte/GSAP */
+      
+      /* Creiamo lo spazio invisibile per non far tagliare la maschera */
+      padding-bottom: 12px; 
+      margin-bottom: -12px;
+    }
+
+    .title-fill,
+    .title-outline {
+      display: block;
+      white-space: normal;
+      font-size: var(--mobile-title-size, 43px); 
+      line-height: 36px; /* Invariato, corretto! */
+      width: 100%;
+      max-width: 100%;
+      margin: 0; 
+      
+      /* LA VERA SOLUZIONE: Sblocca il taglio ereditato dal Desktop! */
+      overflow: visible; 
+    }
+
+    .title-outline {
+      -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
+      padding-left: 2px; /* Margine di sicurezza ottico */
+    }
+
+    /* Resetta l'allineamento speciale dello sport su desktop */
+    .category-sport .title-outline {
+      margin-left: 0;
+      max-width: 100%;
+    }
+
+    /* 5. DESCRIZIONE BIANCA DELLA CATEGORIA (Mobile) */
     .hero-copy {
-      margin-left: auto;
-      margin-right: var(--spacing-5);
-      margin-top: var(--spacing-5);
-      max-width: 100%;
+      /* 1. Posizionamento: si prende tutto lo spazio sotto al titolo */
+      margin-top: var(--spacing-8, 48px); /* Distanza dal titolo sopra */
+      margin-left: 0;
+      margin-right: 0; /* Su mobile non serve il margine destro esagerato del desktop */
+      width: 100%;
+      max-width: 100%; 
+      
+      text-align: right; /* Mantiene l'allineamento a destra come da desktop */
+      
+      /* 2. TIPOGRAFIA FLUIDA (La Best Practice) */
+      /* Parte da 22px (telefoni piccoli), cresce col 7% dello schermo, si ferma a 30px (Figma) */
+      font-size: clamp(22px, 7vw, 30px); 
+      
+      /* Rispetta la proporzione di Figma (28px su 30px), ma in modo elastico */
+      line-height: 0.95; 
+      
+      font-weight: 500;
+      
+      /* 3. ESTETICA: Bilancia le righe per evitare parole singole a fine paragrafo */
+      text-wrap: balance; 
     }
+}
 
-    /* La card torna nel flusso normale della pagina (perde l'absolute) */
-    .summary-card {
-      position: relative;
-      bottom: auto;
-      left: auto;
-      width: calc(100% - var(--spacing-5) * 2);
-      max-width: 100%;
-      margin: var(--spacing-11) var(--spacing-5) 0 var(--spacing-5);
-    }
-  }
-
-  @media (max-width: 599px) {
-    .summary-card {
-      --summary-arrows-size: 50px;
-    }
-
-    .dot-nav {
-      margin-bottom: calc(var(--summary-arrows-size) + var(--summary-dots-lift));
-    }
-  }
-
-  @media (pointer: coarse) {
-    .dot {
-      padding: var(--spacing-0);
-      box-sizing: content-box;
-    }
-  }
-
-  .dot:focus-visible {
-    outline: var(--stroke-1) solid var(--color-content-accent);
-    outline-offset: 4px;
-    border-radius: 50%;
-  }
 
   @media (prefers-reduced-motion: reduce) {
     .dot::before {
