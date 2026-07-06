@@ -636,17 +636,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
     transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .qa-icon svg {
     width: 100%;
     height: 100%;
-  }
-
-  .qa-row:hover .qa-icon {
-    opacity: 1;
   }
 
   .qa-icon--open {
