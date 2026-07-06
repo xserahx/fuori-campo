@@ -128,7 +128,19 @@
   let nextIndex = $derived(mod(currentIndex + 1, N()));
   let ringRotation = $derived(targetPos * CARD_ANGLE());
   let currentVolunteer = $derived(volunteers[currentIndex]);
-  let nameWords = $derived(currentVolunteer?.name?.split(' ') ?? []);
+  // Nome su massimo due righe: cognome sopra, nomi sotto (es. SOLIDORO / CLAUDIA IRENE).
+  let nameLines = $derived.by(() => {
+    const words = currentVolunteer?.name?.split(' ').filter(Boolean) ?? [];
+    if (words.length <= 1) return words;
+    return [words[0], words.slice(1).join(' ')];
+  });
+  // Ruolo su due righe: spezza sulla congiunzione " E " (es. UX – UI DESIGNER / E CODE REVIEWER).
+  let roleLines = $derived.by(() => {
+    const role = currentVolunteer?.role ?? '';
+    const idx = role.indexOf(' E ');
+    if (idx === -1) return role ? [role] : [];
+    return [role.slice(0, idx), role.slice(idx + 1)];
+  });
 
   // ── Preload immagini a piena qualità (come categoria) ─────────────
   let decoded = $state<Record<string, boolean>>({});
@@ -398,11 +410,16 @@
 
       <div class="mobile-info" bind:this={mobileInfoEl}>
         <span class="rise-mask"><span class="vol-subtitle rise">{currentVolunteer?.subtitle}</span></span>
-        <span class="rise-mask"><span class="vol-role rise">{currentVolunteer?.role}</span></span>
+
+        <div class="vol-role-lines">
+          {#each roleLines as rline}
+            <span class="rise-mask"><span class="vol-role rise">{rline}</span></span>
+          {/each}
+        </div>
 
         <div class="vol-name-lines">
-          {#each nameWords as word}
-            <span class="rise-mask"><span class="vol-name-word rise">{word}</span></span>
+          {#each nameLines as line}
+            <span class="rise-mask"><span class="vol-name-word rise">{line}</span></span>
           {/each}
         </div>
       </div>
@@ -493,11 +510,16 @@
             onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
           >
             <span class="rise-mask"><span class="vol-subtitle rise">{currentVolunteer?.subtitle}</span></span>
-            <span class="rise-mask"><span class="vol-role rise">{currentVolunteer?.role}</span></span>
+
+            <div class="vol-role-lines">
+              {#each roleLines as rline}
+                <span class="rise-mask"><span class="vol-role rise">{rline}</span></span>
+              {/each}
+            </div>
 
             <div class="vol-name-lines">
-              {#each nameWords as word}
-                <span class="rise-mask"><span class="vol-name-word rise">{word}</span></span>
+              {#each nameLines as line}
+                <span class="rise-mask"><span class="vol-name-word rise">{line}</span></span>
               {/each}
             </div>
           </div>
@@ -734,16 +756,6 @@
     opacity: 0.96;
   }
 
-  .side-panel--left {
-    width: var(--left-w);
-    transform-origin: right bottom;
-  }
-
-  .side-panel--right {
-    width: var(--right-w);
-    transform-origin: left bottom;
-  }
-
   .side-panel::after {
     content: '';
     position: absolute;
@@ -751,10 +763,24 @@
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.28) 100%);
   }
 
+  /* Tuck each neighbor's inner edge under the (opaque, higher z-index) center
+     card so its blur-to-black fade — the dark vertical seam beside the card —
+     stays hidden behind it. */
+  .side-panel--left {
+    width: var(--left-w);
+    transform-origin: right bottom;
+    margin-right: -32px;
+  }
+
+  .side-panel--right {
+    width: var(--right-w);
+    transform-origin: left bottom;
+    margin-left: -32px;
+  }
+
   .center-panel {
     width: var(--center-w);
     height: var(--center-h);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
     pointer-events: auto;
     cursor: pointer;
     position: relative;
@@ -851,15 +877,12 @@
     position: absolute;
     left: 52px;
     right: -53px;
-    bottom: -1px;
+    bottom: -10px;
     height: 48%;
     background: linear-gradient(
       0deg,
-      rgba(0, 0, 0, 0.95) 0%,
-      rgba(0, 0, 0, 0.86) 32%,
-      rgba(0, 0, 0, 0.52) 62%,
-      rgba(0, 0, 0, 0.08) 88%,
-      rgba(0, 0, 0, 0) 100%
+      rgba(14, 14, 14, 0.91) 0%,
+      rgba(14, 14, 14, 0) 100%
     );
     pointer-events: none;
     z-index: 1;
@@ -891,15 +914,21 @@
     white-space: nowrap;
   }
 
+  .vol-role-lines {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: clamp(4px, 0.6vh, 10px);
+  }
+
   .vol-role {
     display: block;
     font-family: var(--font-display, sans-serif);
-    font-size: clamp(27px, 1.25vw, 18px);
-    font-weight: 700;
+    font-size: clamp(26px, 1.25vw, 18px);
+    font-weight: 500;
     text-transform: uppercase;
     color: #ffffff;
     line-height: 1.15;
-    margin-bottom: clamp(4px, 0.6vh, 10px);
+    white-space: nowrap;
   }
 
   .vol-name-lines {
@@ -912,7 +941,7 @@
     display: block;
     font-family: var(--font-display, sans-serif);
     font-size: clamp(44px, 3.4vw, 56px);
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
     color: var(--color-content-accent, #bdff5d);
     white-space: nowrap;
@@ -991,9 +1020,12 @@
     margin-bottom: 4px;
   }
 
+  .mobile-info .vol-role-lines {
+    margin-bottom: 6px;
+  }
+
   .mobile-info .vol-role {
     font-size: 14px;
-    margin-bottom: 6px;
   }
 
   .mobile-info .vol-name-lines {
