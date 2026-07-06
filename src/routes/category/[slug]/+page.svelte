@@ -2,7 +2,7 @@
   import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
   import { beforeNavigate } from '$app/navigation';
-  import { cubicOut } from 'svelte/easing';
+  import { cubicOut, sineInOut, quartOut } from 'svelte/easing';
   import { gsap } from 'gsap';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
@@ -422,33 +422,49 @@
 
     const lines = Array.from(titleEl.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
     if (!lines.length) return;
+    
     const copy = heroCopyEl;
-    // Solo i controlli (dots + frecce) sono statici: eyebrow e testo del
-    // sommario entrano già col loro `in:blurFade`, quindi non li tocchiamo qui.
     const controls = summaryEl
       ? Array.from(summaryEl.querySelectorAll<HTMLElement>('.dot-frecce'))
+      : [];
+
+    // 1. NUOVO: Selezioniamo anche il blocco del testo delle sottocategorie (solo quello visibile, non quello di misurazione)
+    const summaryText = summaryEl
+      ? Array.from(summaryEl.querySelectorAll<HTMLElement>('.summary-top-wrap .summary-top'))
       : [];
 
     // Stato iniziale nascosto applicato dentro l'effect (prima del paint) → niente flash.
     gsap.set(lines, { yPercent: 60, opacity: 0, filter: 'blur(12px)' });
     if (copy) gsap.set(copy, { y: 16, opacity: 0, filter: 'blur(10px)' });
     if (controls.length) gsap.set(controls, { y: 18, opacity: 0, filter: 'blur(9px)' });
+    
+    // 2. NUOVO: Nascondiamo e sfochiamo il testo delle sottocategorie all'inizio
+    if (summaryText.length) gsap.set(summaryText, { y: 14, opacity: 0, filter: 'blur(10px)' });
 
     let cancelled = false;
     displayFontReady().then(() => {
       if (cancelled) return;
       const tl = gsap.timeline();
+      
       // Titolo: le righe risalgono a fuoco, in cascata.
       tl.to(lines, {
         yPercent: 0, opacity: 1, filter: 'blur(0px)',
         duration: 1.0, ease: 'power4.out', force3D: false,
         stagger: 0.09
       }, 0);
+      
       // Copy della hero: blur-in con leggera risalita.
       if (copy) tl.to(copy, {
         y: 0, opacity: 1, filter: 'blur(0px)',
         duration: 0.9, ease: 'power2.out'
       }, 0.22);
+      
+      // 3. NUOVO: Inseriamo l'entrata del testo delle sottocategorie nella sequenza (a 0.32s)
+      if (summaryText.length) tl.to(summaryText, {
+        y: 0, opacity: 1, filter: 'blur(0px)',
+        duration: 0.9, ease: 'power2.out'
+      }, 0.32);
+
       // Controlli del sommario: blur-in sotto, a chiudere la cascata.
       if (controls.length) tl.to(controls, {
         y: 0, opacity: 1, filter: 'blur(0px)',
@@ -506,11 +522,19 @@
     };
   });
 
-  function blurFade(_node: HTMLElement, { duration = 700 }: { duration?: number } = {}) {
+  function blurFade(
+    _node: HTMLElement, 
+    { duration = 700, blur = 5, y = 10, easing = quartOut } = {}
+  ) {
     return {
       duration: prefersReduced() ? 0 : duration,
-      easing: cubicOut,
-      css: (t: number) => `opacity: ${t}; filter: blur(${(1 - t) * 10}px);`
+      easing,
+      // t va da 0 a 1 (entrata), u è l'inverso da 1 a 0
+      css: (t: number, u: number) => `
+        opacity: ${t};
+        filter: blur(${u * blur}px);
+        transform: translateY(${u * y}px);
+      `
     };
   }
 </script>
@@ -553,7 +577,11 @@
     >
         <div class="summary-top-wrap">
           {#key activeRoleIndex}
-            <div class="summary-top" in:blurFade={{ duration: 900 }} out:blurFade={{ duration: 360 }}>
+            <div 
+              class="summary-top" 
+              in:blurFade={{ duration: 800, blur: 8, easing: quartOut }} 
+              out:blurFade={{ duration: 350, blur: 5, easing: sineInOut }}
+            >
               <div class="summary-meta">
                 <p class="summary-eyebrow">{activeRole.title}</p>
               </div>
