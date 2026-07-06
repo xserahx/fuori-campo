@@ -90,13 +90,15 @@
   aria-label="Galleria foto"
   onscroll={onScroll}
 >
-  {#each images as img (img.slug)}
+  {#each images as img (img.slug!)}
     <button
       class="feed-card"
       class:selected={selectedSlug === img.slug}
-      data-slug={img.slug}
+      data-slug={img.slug!}
       type="button"
-      style="aspect-ratio: {ratios[img.slug] ?? img.width / img.height};"
+      
+      style="--ratio: {ratios[img.slug!] ?? (img.width / img.height)};"
+      
       onclick={() => open(img)}
     >
       <img
@@ -105,7 +107,7 @@
         alt={img.name ?? ''}
         draggable="false"
         loading="lazy"
-        onload={(e) => measure(e, img.slug)}
+        onload={(e) => measure(e, img.slug!)}
       />
     </button>
   {/each}
@@ -121,37 +123,68 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    /* top: below navbar; bottom: above toggle bar (56px track + 36px pad + 16px margin) */
-    padding-top: 96px;
-    padding-bottom: 116px;
+    
+    /* Ho aumentato un po' il gap per dare respiro tra una foto e l'altra */
+    gap: 32px; 
+    
+    /* 1. IL TRUCCO DEL PADDING FANTASMA */
+    /* 50dvh = esattamente metà schermo. Questo permette alla prima 
+       e all'ultima foto di arrivare perfettamente al centro. */
+    padding-top: 50dvh;
+    padding-bottom: 50dvh;
+    
     scrollbar-width: none;
+    
+    /* 2. IL MAGNETE (Nativo del Browser) */
+    /* Obbliga lo scroll a fermarsi in punti matematici precisi */
+    scroll-snap-type: y mandatory; 
   }
-  .mobile-feed::-webkit-scrollbar { display: none; }
 
-  /* Non-selected: 72vw, centred, black margins on the sides. The card keeps
-     each photo's natural (gallery) aspect ratio — set inline — so the black
-     border adapts to the photo's frame and nothing is cropped. */
+  .mobile-feed::-webkit-scrollbar { 
+    display: none; 
+  }
+
   .feed-card {
     position: relative;
     flex-shrink: 0;
+    
+    /* 1. LARGHEZZA FLUTTUANTE, MA ALTEZZA BLOCCATA */
     width: 72vw;
+    /* L'altezza è calcolata sul 100vw, così quando la card si allarga non spinge giù le altre foto */
+    height: calc(100vw / var(--ratio)); 
+    
     border: 0;
     padding: 0;
     margin: 0;
     background: #0e0e0e;
+    border-radius: var(--radius-s, 4px);
     cursor: pointer;
     overflow: hidden;
-    display: block;
-    transition: opacity 0.15s ease;
-  }
-  .feed-card:active { opacity: 0.88; }
+    
+    /* Per centrare l'immagine a riposo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  /* Selected (centred): full width — normal, like before. */
+    /* 2. MAGNETE RIGOROSO */
+    scroll-snap-align: center;
+    scroll-snap-stop: always; /* Forza lo stop obbligatorio a ogni singola foto */
+    
+    /* 3. TRANSIZIONE OTTIMIZZATA */
+    transition: width 0.35s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.2s ease;
+    will-change: width;
+  }
+
   .feed-card.selected {
     width: 100vw;
+  
+  }
+  
+  .feed-card:active { 
+    opacity: 0.88; 
   }
 
+  
   .feed-img {
     width: 100%;
     height: 100%;
