@@ -364,9 +364,9 @@
     {#each mobileTitleLines as line, i}
       <span class="title-mask">
         {#if i === 0}
-          <span class="title-fill title-anim" style="line-height: {mobileFillLh}px">{line}</span>
+          <span class="title-fill title-anim">{line}</span>
         {:else}
-          <span class="title-outline title-anim" style="line-height: {mobileOutlineLh}px">{line}</span>
+          <span class="title-outline title-anim">{line}</span>
         {/if}
       </span>
     {/each}
@@ -848,7 +848,15 @@
      the sharp image — while long multi-line titles (e.g. "GESTIONE OPERATIVA
      E FAN EXPERIENCE") still clear the button instead of landing on its
      border. Uppercase text has no descenders, so no extra gap is needed. */
-  .mobile-title {
+  .title-mask {
+    display: block;
+    overflow: hidden;
+    /* Crea lo spazio vitale per l'outline inferiore e compensa lo stacco */
+    padding-bottom: 8px;
+    margin-bottom: -8px;
+  }
+
+     .mobile-title {
     position: absolute;
     left: 0;
     right: 0;
@@ -861,8 +869,8 @@
     z-index: 3;
   }
 
-  /* Figma: Forma DJR Display ExtraBold · 43px · line-height 36px · w 352 */
   .mobile-title .title-fill {
+    display: block; /* Obbligatorio per rispettare il line-height su elementi span */
     font-family: var(--font-display);
     font-size: 43px;
     font-style: normal;
@@ -879,8 +887,8 @@
     margin: 0;
   }
 
-  /* Figma: -webkit-text-stroke 2px #bdff5d */
   .mobile-title .title-outline {
+    display: block; /* Obbligatorio per rispettare il line-height su elementi span */
     font-family: var(--font-display);
     font-size: 43px;
     font-style: normal;
