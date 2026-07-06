@@ -1003,7 +1003,8 @@
 
     /* 3. HERO (Contenitore del Titolo) */
     .hero {
-      padding: 0; 
+      padding: 0;
+      flex-grow: 0; 
     }
 
     .hero-title {
@@ -1050,6 +1051,7 @@
       /* 1. Posizionamento: si prende tutto lo spazio sotto al titolo */
       margin-top: var(--spacing-8, 48px); /* Distanza dal titolo sopra */
       margin-left: 0;
+      margin-bottom: 0;
       margin-right: 0; /* Su mobile non serve il margine destro esagerato del desktop */
       width: 100%;
       max-width: 100%; 
@@ -1067,6 +1069,67 @@
       
       /* 3. ESTETICA: Bilancia le righe per evitare parole singole a fine paragrafo */
       text-wrap: balance; 
+    }
+
+    
+
+    /* 2. IL BLOCCO DELLE SOTTOCATEGORIE (Summary Card) */
+    .summary-card {
+      position: fixed; /* Sganciato, scorre normalmente col documento */
+      bottom: var(--spacing-6-2, 36px);
+      left: var(--spacing-5, 24px);
+      
+      /* Larga tutto lo schermo meno i 2 padding laterali */
+      width: calc(100% - var(--spacing-5) * 2);
+      max-width: 100%;
+      
+    }
+
+    .summary-top {
+      width: 100%;
+    }
+
+    /* 3. TITOLETTO GIALLO SOTTOCATEGORIA (Figma: 20px) */
+    .summary-eyebrow {
+      /* Scala morbidamente dai 16px (su schermi mini) al tuo target Figma (20px) */
+      font-size: clamp(18px, 7vw, 20px); 
+      
+      /* In Figma 11.77px su 20px è troppo stretto (rischio taglio).
+         Con "1" l'interlinea è esattamente uguale al font (20px). È compatto e sicuro. */
+      line-height: 1; 
+      letter-spacing: 0; /* Resetta eventuali spaziature del desktop */
+    }
+
+    /* 4. DESCRIZIONE BIANCA SOTTOCATEGORIA E FOOTER (Figma: 15px) */
+    .summary-copy,
+    .summary-footer {
+      /* Scala dai 13px al target di Figma (15px) */
+      font-size: clamp(15px, 5vw, 18px); 
+      
+      /* Su un paragrafo, un line-height a 15px (uguale al font) risulta un po'
+         schiacciato e faticoso da leggere su telefono. 1.15 è la media aurea. */
+      line-height: 1.15; 
+    }
+
+    /* 6. DOT NAVIGATION (Mobile) */
+    .dot-nav {
+      /* Limite invalicabile: si prende tutta la larghezza tranne 110px, 
+         che vengono lasciati categoricamente liberi per le frecce */
+      max-width: calc(100% - 110px); 
+      
+      /* Gap fisso e immutabile: non si deformerà mai */
+      gap: 6px; 
+      
+      /* Rete di sicurezza: se in futuro avrai 20 categorie e non ci staranno, 
+         andranno su una seconda riga ordinata senza rompere il layout o invadere le frecce */
+      flex-wrap: wrap; 
+    }
+
+    /* Riduciamo le dimensioni del touch target e del cerchio visibile */
+    .dot, 
+    .dot::before {
+      width: 12px;
+      height: 12px;
     }
 }
 
