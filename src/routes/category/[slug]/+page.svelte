@@ -728,34 +728,23 @@
 
   /* 4. LA DESCRIZIONE BIANCA: Spinta matematicamente a destra */
   .hero-copy {
-    margin-top: var(--unit-36);
-    margin-left: auto; /* Questo spinge automaticamente il blocco tutto a destra */
-    margin-right: var(--spacing-11); /* Questo fissa il margine destro esatto */
+    /* 1. Il margine superiore non è più fisso, ma si schiaccia se lo schermo è basso */
+    margin-top: clamp(10px, 4vh, var(--unit-36)); 
+    margin-left: auto; 
+    margin-right: var(--spacing-11); 
     padding: 0;
-    
-    /* 1. LARGHEZZA CONTROLLATA: Occupa al massimo il 45% dello schermo, 
-          ma si ferma categoricamente a 700px sui grandi monitor. 
-          Essendo < 50vw, è matematicamente impossibile che tocchi la card a sinistra. */
     width: 100%;
-    max-width: min(45vw, 1000px); 
-      
+    max-width: min(45vw, 700px); 
     text-align: right;
-    
-    /* 2. ESTETICA DEL TESTO: Il browser calcola matematicamente le lunghezze 
-          delle righe per renderle tutte simili, eliminando le parole singole 
-          a fine paragrafo e le forme a zig-zag. */
     text-wrap: balance;
-    
     font-family: var(--font-display);
-    
-    /* 3. FONT RESPONSIVO: Non fisso a 45px. Parte da 26px sui portatili piccoli 
-          e cresce gradualmente fino a un massimo di 45px sui grandi schermi. */
-    font-size: clamp(26px, 2.5vw, 45px);
     font-weight: 500;
-    
-    /* Leggermente aumentato da 0.952 a 1.05 per dare respiro alle righe bilanciate */
     line-height: 1.05; 
     color: var(--color-content-body);
+    
+    /* 2. LA MAGIA: Il testo ora guarda l'altezza (vh), non solo la larghezza (vw) */
+    /* Parte da un minimo di 20px e si ferma a 45px. Nel mezzo, usa il 4% dell'altezza dello schermo */
+    font-size: clamp(20px, 4vh, 45px); 
   }
   
   /* 4. La Card delle Sottocategorie viene Ancorata (Position Absolute) */
@@ -842,6 +831,7 @@
     font-family: var(--font-display);
     font-size: var(--unit-24);
     line-height: 26px;
+    text-wrap: balance;
     color: var(--color-content-body);
   }
 
@@ -940,75 +930,19 @@
     color: rgba(250, 250, 250, 0.38);
   }
 
-  /* @media (max-width: 1100px) {
-    .category-shell {
-      padding: calc(var(--navbar-height, 125px) + var(--spacing-5)) var(--spacing-5) var(--spacing-5);
-    }
 
-    .back-btn-wrapper {
-      margin-left: 0;
+  /* ── SALVAGENTE PER SCHERMI BASSI (SENZA SCROLL) ── */
+  @media (max-height: 850px) {
+    .category-page {
+      /* Riduciamo drasticamente il padding superiore per guadagnare spazio prezioso */
+      padding-top: calc(var(--navbar-height, 80px) + var(--spacing-2));
     }
-
+    
     .hero {
-      padding: var(--spacing-5) 0 0;
+      padding-top: 0; /* Togliamo ulteriore spazio vuoto inutile */
     }
+  } 
 
-    .hero-copy {
-      justify-self: start;
-      text-align: right;
-      padding: 0;
-      max-width: 100%;
-      width: auto;
-      margin-left: var(--spacing-10);
-      margin-top: var(--unit-40);
-      margin-right: var(--spacing-5);
-      font-size: clamp(30px, 7vw, var(--unit-56));
-      line-height: 0.98;
-    }
-
-    .hero-title {
-      padding: var(--spacing-4-2) 0 0;
-      max-width: 100%;
-    }
-
-    .title-fill {
-      margin-left: 0;
-      max-width: 100%;
-    }
-
-    .title-outline {
-      margin-left: clamp(0px, 17vw, 196px);
-      max-width: calc(100% - clamp(0px, 17vw, 196px));
-    }
-
-    .summary-card {
-      --summary-side-offset: 0px;
-      --summary-column-width: min(780px, calc(100vw - var(--spacing-5) * 2));
-
-      width: var(--summary-column-width);
-      max-width: var(--summary-column-width);
-      margin: auto 0 0 0;
-    }
-
-    .summary-top,
-    .summary-meta,
-    .summary-copy {
-      width: 100%;
-      max-width: 100%;
-    }
-
-    .summary-eyebrow {
-      font-size: clamp(var(--unit-24), 4.4vw, var(--unit-32));
-      line-height: 1;
-      letter-spacing: 0.02em;
-    }
-
-    .summary-copy,
-    .summary-footer {
-      font-size: clamp(18px, 2.8vw, var(--unit-24));
-      line-height: 1.15;
-    }
-  } */
   @media (max-width: 700px) {
     /* Ridiamo lo scroll alla pagina */
     .category-page {
