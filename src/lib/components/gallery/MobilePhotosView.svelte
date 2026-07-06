@@ -169,21 +169,34 @@
     /* 2. MAGNETE RIGOROSO */
     scroll-snap-align: center;
     scroll-snap-stop: always; /* Forza lo stop obbligatorio a ogni singola foto */
+
+    filter: blur(7px) brightness(0.7);
+    opacity: 0.7;
+    transition:
+      width     0.35s cubic-bezier(0.2, 1, 0.4, 1),
+      filter    0.3s ease,
+      opacity   0.3s ease;
     
-    /* 3. TRANSIZIONE OTTIMIZZATA */
-    transition: width 0.35s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.2s ease;
-    will-change: width;
+    will-change: width, filter, opacity;
+    
+    /* Diciamo alla GPU di prepararsi ad animare anche il blur */
+    will-change: width, filter;
+    
+
   }
 
   .feed-card.selected {
-    width: 100vw;
-  
-  }
-  
-  .feed-card:active { 
-    opacity: 0.88; 
-  }
+    width: 100dvw;
+    filter: blur(0px) brightness(1);
+    opacity: 1;
 
+    transition:
+      width     0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
+      filter    0.5s ease 0.1s,
+      opacity   0.5s ease 0.1s;
+  
+  }
+  
   
   .feed-img {
     width: 100%;
