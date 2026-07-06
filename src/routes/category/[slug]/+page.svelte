@@ -732,11 +732,12 @@
     margin-left: auto; /* MAGIA: Questo spinge automaticamente il blocco tutto a destra */
     margin-right: var(--spacing-11); /* Questo fissa il margine destro esatto */
     padding: 0;
-    max-width: 45vw; /* Limite per non scontrarsi mai con le card a sinistra */
+    width: 55dvw;
+    /*max-width: 55dvw; /* Limite per non scontrarsi mai con le card a sinistra */
     text-align: right;
     
     font-family: var(--font-display);
-    font-size: clamp(34px, calc(var(--unit-84) / max(var(--page-zoom, 1), 0.65)), 45px);
+    font-size: 45px;
     font-weight: 500;
     line-height: 0.952;
     color: var(--color-content-body);
@@ -994,100 +995,6 @@
     }
   } */
 
-  @media (max-width: 700px) {
-
-    /* AGGIUNGI QUESTO BLOCCO: Riattiva lo scroll della pagina su mobile */
-    .category-page {
-      position: relative;
-      height: auto;
-      min-height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: auto; 
-    } 
-
-    .category-shell {
-      padding: calc(var(--navbar-height, 125px) + var(--spacing-4)) var(--spacing-5) var(--spacing-4);
-    }
-
-    .back-btn-wrapper {
-      margin-left: 0;
-      margin-top: 0;
-    }
-
-    .hero {
-      padding: var(--spacing-4) 0 0;
-    }
-
-    .hero-title {
-      overflow: visible;
-    }
-
-    .title-outline {
-      overflow: visible;
-    }
-
-    .dot-nav {
-      flex-wrap: wrap;
-      max-width: calc(100% - 130px);
-    }
-
-    .title-fill,
-    .title-outline {
-      white-space: normal;
-      font-size: var(--mobile-title-size, 43px);
-      line-height: var(--unit-36);
-    }
-
-    .title-fill {
-      margin-left: 0;
-      margin-bottom: 0;
-      max-width: 100%;
-    }
-
-    .title-outline {
-      -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
-      margin-left: 0;
-      margin-top: 0;
-      max-width: 100%;
-    }
-
-    .category-sport .title-outline {
-      margin-left: 0;
-      max-width: 100%;
-    }
-
-    .hero-copy {
-      font-size: 26px;
-      line-height: 1.02;
-      margin: var(--spacing-5) 0 0;
-      width: auto;
-      max-width: 100%;
-      text-align: right;
-    }
-
-    .summary-card {
-      --summary-column-width: 100%;
-
-      position: relative;
-      width: auto;
-      max-width: 100%;
-      margin: auto 0 0;
-    }
-
-    .summary-top {
-      width: 100%;
-    }
-
-    .summary-eyebrow {
-      font-size: var(--unit-20);
-    }
-
-    .summary-copy,
-    .summary-footer {
-      font-size: var(--unit-16);
-      line-height: var(--unit-20);
-    }
-  }
 
   @media (max-width: 599px) {
     .summary-card {
