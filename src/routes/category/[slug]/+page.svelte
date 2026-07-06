@@ -734,7 +734,7 @@
     margin-right: var(--spacing-11); 
     padding: 0;
     width: 100%;
-    max-width: min(45vw, 700px); 
+    max-width: min(70dvw, 1100px); 
     text-align: right;
     text-wrap: balance;
     font-family: var(--font-display);
@@ -744,7 +744,7 @@
     
     /* 2. LA MAGIA: Il testo ora guarda l'altezza (vh), non solo la larghezza (vw) */
     /* Parte da un minimo di 20px e si ferma a 45px. Nel mezzo, usa il 4% dell'altezza dello schermo */
-    font-size: clamp(20px, 4vh, 45px); 
+    font-size: clamp(25px, 6vh, 45px); 
   }
   
   /* 4. La Card delle Sottocategorie viene Ancorata (Position Absolute) */
