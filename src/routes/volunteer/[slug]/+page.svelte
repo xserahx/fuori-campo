@@ -90,7 +90,6 @@
   let entryRect      = $state<FlightRect | null>(null);
   let flightEntry    = $state(false);
   let suppressEntranceAnim = $state(false);
-  let arrivalReported = false;
 
   onMount(() => {
     const s = get(photoFlight);
@@ -101,10 +100,19 @@
       suppressEntranceAnim = true;
       parkCaption();
 
-      setTimeout(() => {
-        flightEntry = false;
-        revealCaption();
-      }, FLIGHT_DURATION_MS + 400);
+      // Report the destination rect NOW, not on image load. The frame is already
+      // sized from the `ar` param, so measuring it after layout gives the exact
+      // final box — the flight starts from the true thumbnail and lands on the
+      // true frame with no dependence on network/decode timing (no teleport, no
+      // mid-flight resize). Two rAFs = frame laid out + painted before measuring.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (frameEl) arriveEntry(restingRectOf(frameEl));
+
+        setTimeout(() => {
+          flightEntry = false;
+          revealCaption();
+        }, FLIGHT_DURATION_MS);
+      }));
     } else {
       setTimeout(() => {
         suppressEntranceAnim = true;
@@ -193,8 +201,16 @@
     }
   });
 
+  type FrameRatio = '16-9' | '4-3' | '3-4' | '9-16';
+  const ratioFromParam = (v: string | null): FrameRatio | null =>
+    v === '16-9' || v === '4-3' || v === '3-4' || v === '9-16' ? v : null;
+
   let imgError      = $state(false);
-  let detectedRatio = $state<'16-9' | '4-3' | '3-4' | '9-16'>('16-9');
+  // Seed the frame shape from the `ar` handed over by the gallery click so the
+  // frame is already at its final size on the first render. The entry flight can
+  // then report an accurate landing rect immediately — no wait for the photo to
+  // decode — and the zoom lands perfectly aligned.
+  let detectedRatio = $state<FrameRatio>(ratioFromParam(page.url.searchParams.get('ar')) ?? '16-9');
   const isPortrait  = $derived(detectedRatio === '3-4' || detectedRatio === '9-16');
 
   $effect(() => {
@@ -241,6 +257,18 @@
     gsap.set('.cap-line', { y: CAP_PARK_Y });
   }
 
+  // Il testo della caption usa il font display di Adobe Fonts (async, pesi 500 e
+  // 800). Se il reveal parte prima che il font sia caricato, quando il web-font
+  // subentra le glifi si riposizionano e la caption "sobbalza" di qualche px a
+  // fine animazione. Aspettiamo il font (solo a cache fredda: a caldo check() è
+  // già true → reveal immediato) così l'entrata usa già le metriche finali.
+  const CAPTION_FONTS = ['500 1em "forma-djr-display"', '800 1em "forma-djr-display"'];
+
+  function captionFontsReady() {
+    if (typeof document === 'undefined' || !document.fonts) return true;
+    return CAPTION_FONTS.every((f) => document.fonts.check(f));
+  }
+
   function revealCaption(delay = 0) {
     gsap.killTweensOf('.cap-line');
 
@@ -249,13 +277,26 @@
       return;
     }
 
-    gsap.to('.cap-line', {
-      y: 0,
-      duration: 0.9,
-      ease: 'power2.out',
-      force3D: false,
-      delay
-    });
+    const play = () =>
+      gsap.to('.cap-line', {
+        y: 0,
+        duration: 0.9,
+        ease: 'power2.out',
+        force3D: false,
+        delay
+      });
+
+    if (captionFontsReady()) {
+      play();
+      return;
+    }
+
+    // Cache fredda: le righe restano parcheggiate (parkCaption le ha già messe a
+    // y = CAP_PARK_Y) finché il font non è pronto, poi entrano con le metriche
+    // definitive → nessuno spostamento dopo l'animazione.
+    Promise.all(CAPTION_FONTS.map((f) => document.fonts.load(f)))
+      .catch(() => {})
+      .then(play);
   }
 
   async function crossfadePhoto() {
@@ -333,28 +374,19 @@
   async function handleImageLoad(e: Event) {
     const img = e.currentTarget as HTMLImageElement;
     const snapped = snapToStdFrame(img.naturalWidth / img.naturalHeight);
-
-    detectedRatio = snapped > 1.5 ? '16-9'
+    const ratio: FrameRatio = snapped > 1.5 ? '16-9'
       : snapped > 1.0 ? '4-3'
       : snapped > 0.66 ? '3-4'
       : '9-16';
 
-    if (flightEntry && !arrivalReported && frameEl) {
-      arrivalReported = true;
+    // Never resize the frame while the entry flight is in the air — the clone is
+    // already flying to the rect measured from the `ar`-sized frame, so a resize
+    // here would leave it landing on a shifted box. The `ar` shape already
+    // matches the photo's snapped ratio; correct it only on non-flight opens
+    // (direct URL / arrow navigation).
+    if (!flightEntry) detectedRatio = ratio;
 
-      await tick();
-
-      requestAnimationFrame(() => {
-        if (frameEl) {
-          arriveEntry(restingRectOf(frameEl));
-        }
-
-        setTimeout(() => {
-          flightEntry = false;
-          revealCaption();
-        }, FLIGHT_DURATION_MS);
-      });
-    } else if (pendingFrameFrom) {
+    if (pendingFrameFrom) {
       const from = pendingFrameFrom;
       pendingFrameFrom = null;
 

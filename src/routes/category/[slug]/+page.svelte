@@ -2,7 +2,8 @@
   import { onMount, tick } from 'svelte';
   import { page } from '$app/state';
   import { beforeNavigate } from '$app/navigation';
-  import { fade } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
+  import { gsap } from 'gsap';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import BackButton from '$lib/components/buttons/BackButton.svelte';
   import '$lib/styles/tokens.css';
@@ -390,6 +391,81 @@
       unlockCategoryScroll();
     };
   });
+
+  const prefersReduced = () =>
+    typeof matchMedia !== 'undefined'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Entrata cinematografica ───────────────────────────────────────
+  // Coerente con about / carosello: le righe del titolo risalgono passando da
+  // sfocate a nitide, la copy e il sommario entrano in blur a cascata. Stesso
+  // linguaggio di riseIn/blurRevealIn (yPercent + blur, power4/power2.out).
+  let heroTitleEl: HTMLElement | null = $state(null);
+  let heroCopyEl: HTMLElement | null = $state(null);
+  let summaryEl: HTMLElement | null = $state(null);
+
+  // Il font display arriva da Adobe Fonts (async): giochiamo il reveal solo
+  // quando è pronto, così il testo non "sobbalza" di qualche px quando il
+  // web-font subentra a fine animazione (stesso accorgimento di carosello/zoom).
+  const DISPLAY_FONT = '800 1em "forma-djr-display"';
+  function displayFontReady(): Promise<unknown> {
+    if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
+    if (document.fonts.check(DISPLAY_FONT)) return Promise.resolve();
+    return document.fonts.load(DISPLAY_FONT).catch(() => {});
+  }
+
+  $effect(() => {
+    const _ = slug;                       // ri-esegui a ogni cambio categoria
+    const titleEl = heroTitleEl;
+    if (!titleEl) return;
+    if (prefersReduced()) return;         // niente moto → il contenuto resta visibile
+
+    const lines = Array.from(titleEl.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
+    if (!lines.length) return;
+    const copy = heroCopyEl;
+    // Solo i controlli (dots + frecce) sono statici: eyebrow e testo del
+    // sommario entrano già col loro `in:blurFade`, quindi non li tocchiamo qui.
+    const controls = summaryEl
+      ? Array.from(summaryEl.querySelectorAll<HTMLElement>('.dot-frecce'))
+      : [];
+
+    // Stato iniziale nascosto applicato dentro l'effect (prima del paint) → niente flash.
+    gsap.set(lines, { yPercent: 60, opacity: 0, filter: 'blur(12px)' });
+    if (copy) gsap.set(copy, { y: 16, opacity: 0, filter: 'blur(10px)' });
+    if (controls.length) gsap.set(controls, { y: 18, opacity: 0, filter: 'blur(9px)' });
+
+    let cancelled = false;
+    displayFontReady().then(() => {
+      if (cancelled) return;
+      const tl = gsap.timeline();
+      // Titolo: le righe risalgono a fuoco, in cascata.
+      tl.to(lines, {
+        yPercent: 0, opacity: 1, filter: 'blur(0px)',
+        duration: 1.0, ease: 'power4.out', force3D: false,
+        stagger: 0.09
+      }, 0);
+      // Copy della hero: blur-in con leggera risalita.
+      if (copy) tl.to(copy, {
+        y: 0, opacity: 1, filter: 'blur(0px)',
+        duration: 0.9, ease: 'power2.out'
+      }, 0.22);
+      // Controlli del sommario: blur-in sotto, a chiudere la cascata.
+      if (controls.length) tl.to(controls, {
+        y: 0, opacity: 1, filter: 'blur(0px)',
+        duration: 0.85, ease: 'power2.out'
+      }, 0.4);
+    });
+
+    return () => { cancelled = true; };
+  });
+
+  function blurFade(_node: HTMLElement, { duration = 700 }: { duration?: number } = {}) {
+    return {
+      duration: prefersReduced() ? 0 : duration,
+      easing: cubicOut,
+      css: (t: number) => `opacity: ${t}; filter: blur(${(1 - t) * 10}px);`
+    };
+  }
 </script>
 
 <svelte:head>
@@ -407,6 +483,7 @@
         <div
           class="hero-title"
           id="category-title"
+          bind:this={heroTitleEl}
           style={cat.mobileTitleSize ? `--mobile-title-size: ${cat.mobileTitleSize}px` : undefined}
         >
           {#each lines as line, i}
@@ -418,17 +495,18 @@
           {/each}
         </div>
 
-        <p class="hero-copy">{activeSummary.subtitle}</p>
+        <p class="hero-copy" bind:this={heroCopyEl}>{activeSummary.subtitle}</p>
       </section>
 
       <section
         class="summary-card"
         aria-label="Categoria e sottocategoria"
+        bind:this={summaryEl}
         style={`--summary-max-text-height: ${summaryMaxTextHeight}px`}
       >
         <div class="summary-top-wrap">
           {#key activeRoleIndex}
-            <div class="summary-top" in:fade={{ duration: 300, delay: 120 }} out:fade={{ duration: 180 }}>
+            <div class="summary-top" in:blurFade={{ duration: 900 }} out:blurFade={{ duration: 360 }}>
               <div class="summary-meta">
                 <p class="summary-eyebrow">{activeRole.title}</p>
               </div>

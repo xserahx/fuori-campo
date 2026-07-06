@@ -205,12 +205,13 @@
   let desktopTitleEl = $state<HTMLElement | null>(null);
   let mobileTitleEl  = $state<HTMLElement | null>(null);
 
-  $effect(() => {
-    const _ = currentIndex;                       // ri-esegui a ogni cambio card
-    const el = isMobile ? mobileTitleEl : desktopTitleEl;
-    if (!el) return;
-    const lines = el.querySelectorAll<HTMLElement>('.title-anim');
-    if (!lines.length) return;
+  // Il font display arriva da Adobe Fonts (async). Se il reveal parte con il
+  // fallback di sistema e il web-font si carica DOPO, le glifi (larghezza +
+  // baseline) si riposizionano e il titolo "sobbalza" di qualche px a fine
+  // animazione. Peso 800 = quello usato da fill e outline, desktop e mobile.
+  const DISPLAY_FONT = '800 1em "forma-djr-display"';
+
+  function playTitleReveal(lines: NodeListOf<HTMLElement>) {
     gsap.fromTo(
       lines,
       { yPercent: 120 },
@@ -223,6 +224,29 @@
         stagger: { each: 0.08, from: 'start' }
       }
     );
+  }
+
+  $effect(() => {
+    const _ = currentIndex;                       // ri-esegui a ogni cambio card
+    const el = isMobile ? mobileTitleEl : desktopTitleEl;
+    if (!el) return;
+    const lines = el.querySelectorAll<HTMLElement>('.title-anim');
+    if (!lines.length) return;
+
+    // Font già pronto (cambio card, o cache calda) → reveal immediato, identico
+    // a prima. Solo al primissimo ingresso a cache fredda aspettiamo il font,
+    // così il reveal usa già le metriche finali e il testo non si sposta dopo.
+    if (typeof document === 'undefined' || !document.fonts || document.fonts.check(DISPLAY_FONT)) {
+      playTitleReveal(lines);
+      return;
+    }
+
+    gsap.set(lines, { yPercent: 120 });           // tieni nascosto finché è pronto
+    let cancelled = false;
+    document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => {
+      if (!cancelled) playTitleReveal(lines);
+    });
+    return () => { cancelled = true; };
   });
 
   // ─── CICLO DI VITA SVELTE ───

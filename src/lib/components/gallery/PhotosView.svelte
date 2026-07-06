@@ -421,6 +421,15 @@
     if (image.path) params.set('img', image.path);
     if (neighborSlugs.length > 0) params.set('neighbors', neighborSlugs.join(','));
 
+    // Hand over the clicked tile's snapped aspect ratio so the zoom page can
+    // size its frame to the FINAL shape on the very first render — before the
+    // photo decodes. This lets the flight report an accurate landing rect
+    // immediately (no wait for image load) and, because the thumbnail and the
+    // frame then share the same aspect, the FLIP scales uniformly (no skew).
+    const arRatio = image.height > 0 ? image.width / image.height : 1;
+    const arBucket = arRatio > 1.5 ? '16-9' : arRatio > 1.0 ? '4-3' : arRatio > 0.66 ? '3-4' : '9-16';
+    params.set('ar', arBucket);
+
     goto(`/volunteer/${slug}?${params.toString()}`);
   }
 

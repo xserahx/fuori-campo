@@ -73,17 +73,31 @@
     clearTimeout(holdTimeout);
     visible = true;
 
-    if (s.phase === 'entering' && !s.to) {
+    // The clone lives inside <html>, which may carry a CSS `zoom` (the app's
+    // page-fit / accessibility scale). The from/to rects were captured with
+    // getBoundingClientRect, which already returns zoom-applied screen px — but
+    // the clone's own left/top/width/height are CSS px that the browser then
+    // multiplies by the SAME zoom again. That double application shrinks the
+    // flight and drags it toward the top-left (a "wrong origin" that only shows
+    // when zoom ≠ 1). Convert the rects back to CSS px by dividing out the zoom
+    // so the clone renders exactly over the real thumbnail and frame.
+    const z = parseFloat(getComputedStyle(document.documentElement).zoom || '1') || 1;
+    const unzoom = (r: FlightRect): FlightRect =>
+      z === 1 ? r : { left: r.left / z, top: r.top / z, width: r.width / z, height: r.height / z };
+    const from = unzoom(s.from);
+    const to = s.to ? unzoom(s.to) : null;
+
+    if (s.phase === 'entering' && !to) {
       // Gallery click landed; the zoom page hasn't reported its frame rect
       // yet — hold at the gallery rect (rendered at its real size, so crisp).
       // Safety timeout in case it never arrives (e.g. a failed navigation),
       // so the clone can't get stuck.
-      setBox(imgEl, s.from);
+      setBox(imgEl, from);
       gsap.set(imgEl, { x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 });
       holdTimeout = setTimeout(resetFlight, 900);
       return;
     }
-    if (!s.to) {
+    if (!to) {
       resetFlight();
       return;
     }
@@ -97,12 +111,12 @@
     // low-res photo that only "sharpened" at the hand-off.) `from` and `to`
     // carry the same full-res src as the destination frame, so the cross-fade
     // at the end is between two identical images — no visible quality switch.
-    const base = s.from.width * s.from.height >= s.to.width * s.to.height ? s.from : s.to;
+    const base = from.width * from.height >= to.width * to.height ? from : to;
     setBox(imgEl, base);
-    gsap.set(imgEl, { ...transformFor(base, s.from), opacity: 1 });
+    gsap.set(imgEl, { ...transformFor(base, from), opacity: 1 });
 
     gsap.to(imgEl, {
-      ...transformFor(base, s.to),
+      ...transformFor(base, to),
       duration: FLIGHT_DURATION_MS / 1000,
       ease: EASE,
       onComplete: () => {
