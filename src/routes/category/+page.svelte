@@ -249,6 +249,53 @@
     return () => { cancelled = true; };
   });
 
+  // Shrink the one-line (nowrap) desktop carousel title so the current title
+  // always fits its width — no clipping off the right edge. Below 700px the
+  // title wraps (see the max-width:700px rule), so it opts out.
+  function fitCarouselTitle() {
+    const el = desktopTitleEl;
+    if (!el || typeof window === 'undefined') return;
+
+    if (window.innerWidth <= 700) {
+      el.style.setProperty('--title-fit', '1');
+      return;
+    }
+
+    el.style.setProperty('--title-fit', '1');   // measure at natural size
+    const lines = Array.from(el.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
+    let scale = 1;
+    for (const line of lines) {
+      const avail = Math.max(0, line.clientWidth - 24);  // keep a small right gutter
+      const natural = line.scrollWidth;
+      if (avail > 0 && natural > avail) scale = Math.min(scale, avail / natural);
+    }
+    el.style.setProperty('--title-fit', scale < 1 ? String(scale * 0.99) : '1');
+  }
+
+  $effect(() => {
+    const _ = currentIndex;                       // refit when the card (title) changes
+    if (typeof window === 'undefined') return;
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fitCarouselTitle);
+    };
+
+    let cancelled = false;
+    schedule();                                   // fit with whatever font is ready now
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => { if (!cancelled) schedule(); });
+    }
+    window.addEventListener('resize', schedule, { passive: true });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', schedule);
+    };
+  });
+
   // ─── CICLO DI VITA SVELTE ───
   beforeNavigate(() => {
     document.body.style.overflow = '';
@@ -644,7 +691,12 @@
 
   .title {
     font-family: 'Forma DJR Display', sans-serif;
-    font-size: clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px);
+    /* --title-fit (default 1) is set by fitCarouselTitle() in JS so the
+       one-line (nowrap) title shrinks just enough to fit its width at any
+       desktop size — otherwise the --page-zoom-compensated font overflows
+       the card and gets clipped off the right edge (e.g. "GESTIONE
+       OPERATIVA" at ~806px). */
+    font-size: calc(clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px) * var(--title-fit, 1));
     font-weight: 800;
     font-style: normal;
     text-transform: uppercase;
@@ -790,12 +842,17 @@
             mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
   }
 
-  /* ── Title — Figma "Title Container": bottom 87, py 32, px 24 ──── */
+  /* ── Title — Figma "Title Container": bottom 87, py 32, px 24 ────
+     Anchored just above the "SCOPRI DI PIÙ" button (bottom --unit-36, ≈60px
+     tall) so the title sits low on the dark gradient — not floating high in
+     the sharp image — while long multi-line titles (e.g. "GESTIONE OPERATIVA
+     E FAN EXPERIENCE") still clear the button instead of landing on its
+     border. Uppercase text has no descenders, so no extra gap is needed. */
   .mobile-title {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 87px;
+    bottom: calc(var(--unit-36) + var(--spacing-9));
     padding: var(--spacing-6) var(--spacing-5);
     display: flex;
     flex-direction: column;
