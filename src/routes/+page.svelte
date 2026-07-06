@@ -29,6 +29,40 @@
   let heroSection: HTMLElement | null = null;
   let galleryGate: HTMLElement | null = null;
 
+  /* ── Fit the desktop question titles so they never overflow their panel ──
+     The 116px headings are nowrap (br-controlled lines); the widest line/word
+     (e.g. "CONCRETAMENTE") can exceed the panel width and clip. fitQuestions()
+     scales each heading down via --qfit so its widest line fits. Mobile (≤700)
+     wraps at 36px and opts out. */
+  let questionsEl = $state<HTMLElement | undefined>(undefined);
+
+  function fitQuestions() {
+    if (!questionsEl || typeof window === 'undefined') return;
+    const mobile = window.innerWidth <= 700;
+    const heads = Array.from(questionsEl.querySelectorAll<HTMLElement>('.layered-panel h2'));
+
+    for (const h of heads) {
+      if (mobile) { h.style.setProperty('--qfit', '1'); continue; }
+      h.style.setProperty('--qfit', '1');            // measure at natural size
+      const avail = h.clientWidth;
+      const natural = h.scrollWidth;
+      h.style.setProperty('--qfit', avail > 0 && natural > avail ? String((avail / natural) * 0.99) : '1');
+    }
+  }
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+
+    let raf = 0;
+    const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fitQuestions); };
+
+    schedule();
+    if (typeof document !== 'undefined' && document.fonts) document.fonts.ready.then(() => schedule());
+    window.addEventListener('resize', schedule, { passive: true });
+
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', schedule); };
+  });
+
   let galleryTransitionPending = false;
 
   function navigateToGallery() {
@@ -239,12 +273,12 @@
 
     <section class="story story--quote story--quote-right safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Nella narrazione ufficiale erano spesso <span class="accent">dati per scontati</span>
+        Nella narrazione ufficiale<br class="q-break" /> erano spesso <span class="accent">dati per scontati</span>
       </p>
     </section>
 
     <!-- ── NUOVA SEZIONE DOMANDE (Layered Pinning) ── -->
-    <div class="questions-container">
+    <div class="questions-container" bind:this={questionsEl}>
       
       <section class="layered-panel panel--lime question">
         <h2 use:scrollReveal>
@@ -410,12 +444,17 @@
   /* Ripristiniamo il testo gigante */
   .layered-panel h2 {
     font-family: var(--font-display);
-    font-size: 116px;
+    /* --qfit (default 1) is set by fitQuestions() so each question shrinks to
+       fit its panel — the fixed 116px overflows once a line (or long word like
+       "CONCRETAMENTE") is wider than the panel. nowrap keeps the <br>-defined
+       line structure; the fit scales the widest line down to fit. */
+    font-size: calc(116px * var(--qfit, 1));
     font-weight: 800;
-    line-height: 100px;
+    line-height: calc(100px * var(--qfit, 1));
     letter-spacing: var(--ts-h2-letter-spacing, 0em);
     margin: 0;
     width: 100%;
+    white-space: nowrap;
   }
   .ghost-lime { 
     -webkit-text-stroke-color: var(--q-fg, var(--color-content-accent));
@@ -453,7 +492,13 @@
     .story-summary-copy br {
       display: none;
     }
+  }
 
+  /* The questions panel switches to its mobile stacked layout at ≤700px, to
+     match app.html's zoom:1 boundary. Between 601–700px the page renders at
+     zoom 1 in the real (narrow) window, so the desktop 116px sticky panels
+     overflow; the fluid mobile column (353px / 36px) fits instead. */
+  @media (max-width: 700px) {
     .questions-container {
       min-height: 2352px;
       background: var(--color-content-accent, #bdff5d);
@@ -482,6 +527,8 @@
       line-height: 32px;
       letter-spacing: 1.08px;
       color: var(--color-content-body-black, #0e0e0e);
+      /* Undo the desktop nowrap: the mobile column wraps naturally at 36px. */
+      white-space: normal;
     }
 
     .layered-panel h2 br.br-desktop {

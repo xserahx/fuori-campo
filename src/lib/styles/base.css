@@ -237,6 +237,26 @@
   color: var(--color-content-body);
 }
 
+/* "Nella narrazione ufficiale / erano spesso dati per scontati": keep it to
+   exactly two lines on the scaled desktop layout. The hard <br class="q-break">
+   splits the two lines and `white-space: nowrap` stops either half from wrapping
+   to a third line; the wider max-width gives the longer second line room. Mobile
+   (≤600px) drops both and wraps naturally — see the media query below. */
+.story--quote-right,
+.story--quote-right .quote {
+  max-width: 1120px;
+}
+
+/* Lock to two lines ONLY where the page renders in its full 1728px design
+   frame — i.e. window > 700px, where app.html scales the layout with `zoom`.
+   At 601–700px the page is at zoom 1 in a narrow real window, so nowrap would
+   run off the right edge; there (and on mobile ≤600px) the phrase wraps. */
+@media (min-width: 701px) {
+  .story--quote-right .quote {
+    white-space: nowrap;
+  }
+}
+
 /* ================================================================
  * QUESTION SECTION  (sticky horizontal scroll)
  * ================================================================ */
@@ -442,6 +462,18 @@
     font-weight:    500;
     letter-spacing: 0.96px;
     max-width: 100%;
+  }
+
+  /* Undo the desktop two-line lock (see .story--quote-right above): on mobile
+     the phrase wraps naturally at the small size, and the forced break is hidden. */
+  .story--quote-right,
+  .story--quote-right .quote {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .q-break {
+    display: none;
   }
 
   .lead-paragraph {

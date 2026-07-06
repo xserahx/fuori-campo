@@ -10,9 +10,50 @@
      block reveal.                                                            */
   const fuoriChars = ['F', 'U', 'O', 'R', 'I'];
   const campoChars = ['C', 'A', 'M', 'P', 'O'];
+
+  // Shrink the title so the widest word ("CAMPO") always fits its container.
+  // The --page-zoom-compensated font grows as the window narrows and would
+  // otherwise overflow the fixed 1083px wrap (and the real viewport in the
+  // 601–700px zoom-1 band) — clipping the last letters.
+  let wrapEl = $state<HTMLElement | undefined>(undefined);
+
+  function fitTitle() {
+    if (!wrapEl || typeof window === 'undefined') return;
+
+    wrapEl.style.setProperty('--title-fit', '1');   // measure at natural size
+    const words = Array.from(wrapEl.querySelectorAll<HTMLElement>('.fuori, .campo'));
+    const avail = wrapEl.clientWidth;                // respects width / max-width:100vw
+    let widest = 0;
+    for (const w of words) widest = Math.max(widest, w.scrollWidth);
+
+    if (avail > 0 && widest > avail) {
+      wrapEl.style.setProperty('--title-fit', String((avail / widest) * 0.99));
+    }
+  }
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+
+    let raf = 0;
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fitTitle);
+    };
+
+    schedule();                                      // fit with whatever font is ready now
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.ready.then(() => schedule());   // refit once the display font loads
+    }
+    window.addEventListener('resize', schedule, { passive: true });
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', schedule);
+    };
+  });
 </script>
 
-<div class="title-wrap" class:title-wrap--quick={quick} aria-label="FUORI CAMPO">
+<div bind:this={wrapEl} class="title-wrap" class:title-wrap--quick={quick} aria-label="FUORI CAMPO">
   <span class="fuori" aria-hidden="true">{#each fuoriChars as char, i}<span class="char" style="--i:{i}">{char}</span>{/each}</span>
   <span class="campo" aria-hidden="true">{#each campoChars as char, i}<span class="char" style="--i:{i}">{char}</span>{/each}</span>
 </div>
@@ -97,8 +138,10 @@
   .char {
     display: inline-block;
     font-family: var(--font-display);
-    font-size:   clamp(180px, calc(300px / max(var(--page-zoom, 1), 0.65)), 520px);
-    line-height: clamp(150px, calc(250px / max(var(--page-zoom, 1), 0.65)), 430px);
+    /* --title-fit (default 1) is set by fitTitle() to shrink the title so the
+       widest word fits the container at any width — see the script. */
+    font-size:   calc(clamp(180px, calc(300px / max(var(--page-zoom, 1), 0.65)), 520px) * var(--title-fit, 1));
+    line-height: calc(clamp(150px, calc(250px / max(var(--page-zoom, 1), 0.65)), 430px) * var(--title-fit, 1));
     font-weight: 800;
     letter-spacing: -0.02em;
     text-transform: uppercase;
