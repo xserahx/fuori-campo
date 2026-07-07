@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
-  import { goto, beforeNavigate } from '$app/navigation';
-  import { fade } from 'svelte/transition';
-  import { gsap } from 'gsap';
+  import { onDestroy, onMount } from "svelte";
+  import { goto, beforeNavigate } from "$app/navigation";
+  import { fade } from "svelte/transition";
+  import { gsap } from "gsap";
   import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
-  import '$lib/styles/tokens.css';
+  import "$lib/styles/tokens.css";
 
   type Category = {
     id: number;
@@ -14,33 +14,68 @@
     mobileOutlineLh?: number;
   };
 
-  const IMG_RELAZIONI = '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.webp';
-  const IMG_CERIMONIE = '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.webp';
-  const IMG_SPORT = '/volunteer_images/carosello_categorie/Sport.webp';
-  const IMG_AREAORGANIZZATIVA = '/volunteer_images/carosello_categorie/Area_organizzativa.webp';
-  const IMG_LOGISTICA = '/volunteer_images/carosello_categorie/Logistica_e_territorio.webp';
-  const IMG_GESTIONE = '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.webp';
-  
+  const IMG_RELAZIONI =
+    "/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.webp";
+  const IMG_CERIMONIE =
+    "/volunteer_images/carosello_categorie/Cerimonia_e_revenue.webp";
+  const IMG_SPORT = "/volunteer_images/carosello_categorie/Sport.webp";
+  const IMG_AREAORGANIZZATIVA =
+    "/volunteer_images/carosello_categorie/Area_organizzativa.webp";
+  const IMG_LOGISTICA =
+    "/volunteer_images/carosello_categorie/Logistica_e_territorio.webp";
+  const IMG_GESTIONE =
+    "/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.webp";
+
   const defaultCategories: Category[] = [
-    { id: 1, label: 'RELAZIONI E COMUNICAZIONE',             image: IMG_RELAZIONI },
-    { id: 2, label: 'CERIMONIE E REVENUE',                   image: IMG_CERIMONIE },
-    { id: 3, label: 'SPORT E DISCIPLINE',                    image: IMG_SPORT },
-    { id: 4, label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: IMG_AREAORGANIZZATIVA, mobileFillLh: 40 },
-    { id: 5, label: 'LOGISTICA E TERRITORIO',                image: IMG_LOGISTICA,  mobileFillLh: 40, mobileOutlineLh: 40 },
-    { id: 6, label: 'GESTIONE OPERATIVA E FAN EXPERIENCE',   image: IMG_GESTIONE },
+    { id: 1, label: "RELAZIONI E COMUNICAZIONE", image: IMG_RELAZIONI },
+    { id: 2, label: "CERIMONIE E REVENUE", image: IMG_CERIMONIE },
+    { id: 3, label: "SPORT E DISCIPLINE", image: IMG_SPORT },
+
+    {
+      id: 4,
+      label: "AREA ORGANIZZATIVA E SERVIZI GENERALI",
+      image: IMG_AREAORGANIZZATIVA,
+      mobileFillLh: 40,
+    },
+    {
+      id: 5,
+      label: "LOGISTICA E TERRITORIO",
+      image: IMG_LOGISTICA,
+      mobileFillLh: 40,
+      mobileOutlineLh: 40,
+    },
+    {
+      id: 6,
+      label: "GESTIONE OPERATIVA E FAN EXPERIENCE",
+      image: IMG_GESTIONE,
+    },
   ];
 
-  let { categories = defaultCategories }: { categories?: Category[] } = $props();
+  let { categories = defaultCategories }: { categories?: Category[] } =
+    $props();
 
-  // ─── STATI GLOBALI E CAROSELLO ───
-  let isMobile  = $state(false);
+  // ═══════════════════════════════════════════════════════════
+  // 1. STATI GLOBALI E CAROSELLO
+  // ═══════════════════════════════════════════════════════════
+
+  let isMobile = $state(false);
+
+  // targetPos non è limitato da 0 a 5, ma può crescere/decrescere all'infinito
+  // (es. 6, 7, -1, -2). Questo permette all'anello CSS 3D di ruotare sempre
+  // in avanti o indietro senza fare "scatti" per tornare alla posizione 0.
   let targetPos = $state(0);
-  let isReady   = $state(false);
 
-  // ─── PRELOAD IMMAGINI (qualità piena al primo paint) ───
-  // Usiamo l'immagine originale come sul mobile (che è già nitido): il mobile
-  // la mostra come sfondo 2D piatto, senza layer 3D. Le decodifichiamo del
-  // tutto PRIMA di mostrarle, così la card appare già nitida senza swap.
+  // isReady controlla l'applicazione della transizione CSS: viene impostato a true
+  // solo dopo che il componente è stato montato, così la posizione iniziale
+  // viene assegnata immediatamente, senza animazioni iniziali indesiderate.
+  let isReady = $state(false);
+
+  // ═══════════════════════════════════════════════════════════
+  // 2. PRELOAD IMMAGINI
+  // ═══════════════════════════════════════════════════════════
+  // Per evitare il fastidioso effetto in cui l'immagine viene mostrata a bassa
+  // qualità e poi "ricaricata" a scatti quando il browser la decodifica,
+  // le decodifichiamo forzatamente in background prima che appaiano.
   let decoded = $state<Record<string, boolean>>({});
 
   function preloadImages() {
@@ -48,21 +83,32 @@
       if (decoded[cat.image]) continue;
       const img = new Image();
       img.src = cat.image;
-      const done = () => { decoded[cat.image] = true; };
+      const done = () => {
+        decoded[cat.image] = true;
+      };
+      // `img.decode()` obbliga il browser a processare la rasterizzazione off-thread
       (img.decode ? img.decode() : Promise.reject()).then(done).catch(done);
     }
   }
 
   const N = () => categories.length;
-  function mod(n: number, m: number) { return ((n % m) + m) % m; }
 
-  // Calcola l'indice reale (0-5) basato sulla rotazione infinita
+  // Funzione modulo sicura per array: a differenza del `%` standard di JS,
+  // gestisce correttamente i numeri negativi (es. mod(-1, 6) = 5)
+  function mod(n: number, m: number) {
+    return ((n % m) + m) % m;
+  }
+
+  // currentIndex mappa la posizione infinita (targetPos) all'indice reale dell'array (0-5)
   let currentIndex = $derived(mod(targetPos, N()));
 
-  // L'angolo di rotazione dell'intero anello CSS 3D (6 elementi = 60 gradi ciascuno)
+  // L'angolo di rotazione assoluto della scena 3D. Essendo 6 elementi, ogni step = 60 gradi
   let ringRotation = $derived(targetPos * 60);
 
-  // ─── NAVIGAZIONE ───
+  // ═══════════════════════════════════════════════════════════
+  // 3. EVENTI E NAVIGAZIONE (DRAG, TOUCH, WHEEL)
+  // ═══════════════════════════════════════════════════════════
+
   function navigate(dir: number) {
     targetPos += dir;
   }
@@ -72,110 +118,166 @@
     navigate(dir);
   }
 
-  // ─── DRAG "MAGNETICO" (CSS 3D) ───
+  // ── Drag "Magnetico" del Mouse ──
+  // Utilizziamo Pointer Events per tracciare il trascinamento col cursore.
   let isDragging = false;
   let dragStartX = 0;
 
   function onPointerDown(e: PointerEvent) {
     isDragging = true;
     dragStartX = e.clientX;
+    // Catturiamo il cursore in modo da non perdere l'evento se usciamo dall'elemento
     (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
   }
 
   function onPointerMove(e: PointerEvent) {
-    // Vuoto di proposito per l'effetto magnetico
+    // Lasciato volutamente vuoto: il carosello non segue pixel-per-pixel il mouse.
+    // L'effetto finale è una rotazione "a scatto magnetico" solo al rilascio (onPointerUp).
   }
 
   function onPointerUp(e: PointerEvent) {
     if (!isDragging) return;
     isDragging = false;
-    
+
     const diff = dragStartX - e.clientX;
-    if (Math.abs(diff) > 50) { 
-      // Soglia superata: scatta la card successiva/precedente
+    if (Math.abs(diff) > 50) {
+      // Se lo spostamento supera la soglia di 50px, scatta la card successiva/precedente
       navigate(diff > 0 ? 1 : -1);
     } else if (Math.abs(diff) < 10) {
-      // Movimento minimo: è un click, apri la pagina
+      // Se lo spostamento è minimo (<10px), consideralo un click intenzionale e apri la pagina
       handleTitleClick();
     }
   }
 
-  // ─── TOUCH E WHEEL (Mobile e Mouse) ───
+  // ── Gestione Touch (Mobile) ──
   let touchStartY = 0;
 
   function onTouchStart(e: TouchEvent) {
+    // Salviamo la posizione Y al momento del tocco
     touchStartY = e.touches[0].clientY;
   }
 
   function onTouchEnd(e: TouchEvent) {
+    // Calcoliamo la direzione di trascinamento verticale (Swipes su/giù)
     const dy = touchStartY - e.changedTouches[0].clientY;
+    // Se lo swipe è maggiore di 40px, eseguiamo la rotazione
     if (Math.abs(dy) > 40) navigate(dy > 0 ? 1 : -1);
   }
 
+  // ── Gestione Rotellina (Wheel) ──
   let wheelAccum = 0;
   let wheelLocked = false;
   let wheelStepTimer: ReturnType<typeof setTimeout> | undefined;
   let wheelIdleTimer: ReturnType<typeof setTimeout> | undefined;
-  const WHEEL_STEP    = 30;   
-  const WHEEL_LOCK_MS = 1000;  
+  const WHEEL_STEP = 30; // Sensibilità: quanto scroll serve prima di far scattare la rotazione
+  const WHEEL_LOCK_MS = 1000; // Tempo morto (cooldown) tra un salto e l'altro
 
   function onWheel(e: WheelEvent) {
-    e.preventDefault(); 
-    if (wheelLocked) return;
+    e.preventDefault();
+    if (wheelLocked) return; // Impedisce rotazioni multiple in rapida successione
 
+    // Accumula il movimento dello scroll
     wheelAccum += e.deltaX;
-    clearTimeout(wheelIdleTimer);
-    wheelIdleTimer = setTimeout(() => { wheelAccum = 0; }, 140);
 
+    // Se non muovo la rotella per 140ms, azzero l'accumulatore
+    clearTimeout(wheelIdleTimer);
+    wheelIdleTimer = setTimeout(() => {
+      wheelAccum = 0;
+    }, 140);
+
+    // Se supero la soglia di step, scatta la navigazione
     if (Math.abs(wheelAccum) >= WHEEL_STEP) {
       navigate(wheelAccum > 0 ? 1 : -1);
-      wheelAccum  = 0;
+      wheelAccum = 0;
       wheelLocked = true;
+
+      // Imposta il blocco per impedire altre rotazioni per il tempo stabilito (WHEEL_LOCK_MS)
       clearTimeout(wheelStepTimer);
-      wheelStepTimer = setTimeout(() => { wheelLocked = false; wheelAccum = 0; }, WHEEL_LOCK_MS);
+      wheelStepTimer = setTimeout(() => {
+        wheelLocked = false;
+        wheelAccum = 0;
+      }, WHEEL_LOCK_MS);
     }
   }
 
-  // ─── GESTIONE DATI E TITOLI ───
+  // ═══════════════════════════════════════════════════════════
+  // 4. ROUTING E GENERAZIONE SLUG
+  // ═══════════════════════════════════════════════════════════
+
   function slugifyLabel(label: string) {
-    return label.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+    return label
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-");
   }
 
   function categorySlug(label: string) {
+    // Sovrascrittura manuale per generare gli URL esatti richiesti
     switch (slugifyLabel(label)) {
-      case 'relazioni-e-comunicazione': return 'relazioni';
-      case 'cerimonie-e-revenue':       return 'cerimonie';
-      case 'sport-e-discipline':        return 'sport';
-      case 'area-organizzativa-e-servizi-generali': return 'organizzativa';
-      case 'logistica-e-territorio':    return 'logistica';
-      case 'gestione-operativa-e-fan-experience':   return 'gestione';
-      default: return slugifyLabel(label);
+      case "relazioni-e-comunicazione":
+        return "relazioni";
+      case "cerimonie-e-revenue":
+        return "cerimonie";
+      case "sport-e-discipline":
+        return "sport";
+      case "area-organizzativa-e-servizi-generali":
+        return "organizzativa";
+      case "logistica-e-territorio":
+        return "logistica";
+      case "gestione-operativa-e-fan-experience":
+        return "gestione";
+      default:
+        return slugifyLabel(label);
     }
   }
 
   async function handleTitleClick() {
-    const label = categories?.[currentIndex]?.label ?? '';
+    const label = categories?.[currentIndex]?.label ?? "";
     const slug = categorySlug(label);
     if (slug) await goto(`/category/${slug}`);
   }
 
-  // ─── LOGICA TESTO REATTIVO ───
-  let currentLabel = $derived(categories[currentIndex]?.label ?? '');
-  
-  let titleLines = $derived((() => {
-    const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
-    if (match) return [match[1].trim(), `E ${match[2].trim()}`].filter(Boolean);
-    const words = currentLabel.split(/\s+/).filter(Boolean);
-    if (words.length <= 2) return [currentLabel];
-    const splitAt = Math.max(1, Math.ceil(words.length / 2));
-    return [words.slice(0, splitAt).join(' '), words.slice(splitAt).join(' ')].filter(Boolean);
-  })());
+  // ═══════════════════════════════════════════════════════════
+  // 5. FORMATTAZIONE TITOLI E SILLABAZIONE
+  // ═══════════════════════════════════════════════════════════
 
-  const HARD_BREAK: Record<string, string> = { COMUNICAZIONE: 'COMUNICA-\nZIONE' };
-  const SHY = '­';
-  const SOFT_HYPHENATE: Record<string, string> = { DISCIPLINE: 'DISCI' + SHY + 'PLINE', TERRITORIO: 'TERRI' + SHY + 'TORIO' };
+  let currentLabel = $derived(categories[currentIndex]?.label ?? "");
 
-  function processFill(text: string) { return text.replace(/[\p{L}]+/gu, (w) => SOFT_HYPHENATE[w.toUpperCase()] ?? w); }
+  // Suddivide il titolo in due righe (fill e outline). Se c'è una "E" in mezzo,
+  // spezza in corrispondenza. Altrimenti calcola metà delle parole.
+  let titleLines = $derived(
+    (() => {
+      const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
+      if (match)
+        return [match[1].trim(), `E ${match[2].trim()}`].filter(Boolean);
+      const words = currentLabel.split(/\s+/).filter(Boolean);
+      if (words.length <= 2) return [currentLabel];
+      const splitAt = Math.max(1, Math.ceil(words.length / 2));
+      return [
+        words.slice(0, splitAt).join(" "),
+        words.slice(splitAt).join(" "),
+      ].filter(Boolean);
+    })(),
+  );
+
+  // Regole manuali per spezzare parole molto lunghe su mobile,
+  // per evitare che sforino dai margini.
+  const HARD_BREAK: Record<string, string> = {
+    COMUNICAZIONE: "COMUNICA-\nZIONE",
+  };
+  const SHY = "­"; // Soft hyphen (trattino invisibile, appare solo se va a capo)
+  const SOFT_HYPHENATE: Record<string, string> = {
+    DISCIPLINE: "DISCI" + SHY + "PLINE",
+    TERRITORIO: "TERRI" + SHY + "TORIO",
+  };
+
+  function processFill(text: string) {
+    return text.replace(
+      /[\p{L}]+/gu,
+      (w) => SOFT_HYPHENATE[w.toUpperCase()] ?? w,
+    );
+  }
   function processOutline(text: string) {
     return text.replace(/[\p{L}]+/gu, (w) => {
       const u = w.toUpperCase();
@@ -183,12 +285,13 @@
     });
   }
 
+  // Processo di formattazione extra per il Mobile
   let mobileTitleLines = $derived.by(() => {
     const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
     if (!match) return titleLines.map(processFill).filter(Boolean);
     const beforeE = match[1].trim();
-    const afterE  = match[2].trim();
-    const isSingleLongWord = !afterE.includes(' ') && afterE.length > 12;
+    const afterE = match[2].trim();
+    const isSingleLongWord = !afterE.includes(" ") && afterE.length > 12;
     return isSingleLongWord
       ? [processFill(`${beforeE} E`), processOutline(afterE)]
       : [processFill(beforeE), processOutline(`E ${afterE}`)];
@@ -198,142 +301,188 @@
   let mobileFillLh = $derived(currentCat?.mobileFillLh ?? 36);
   let mobileOutlineLh = $derived(currentCat?.mobileOutlineLh ?? 36);
 
-  // ─── ANIMAZIONE TITOLI (come i filtri) ───
-  // Ogni riga del titolo emerge da sotto la sua maschera (overflow:hidden),
-  // in cascata, con la stessa curva power4.out dei label di FiltraPerCategoria.
-  // Si ri-gioca a ogni cambio categoria (e al primo ingresso).
-  let desktopTitleEl = $state<HTMLElement | null>(null);
-  let mobileTitleEl  = $state<HTMLElement | null>(null);
+  // ═══════════════════════════════════════════════════════════
+  // 6. ANIMAZIONI GSAP (TITOLI) E CARICAMENTO FONT
+  // ═══════════════════════════════════════════════════════════
 
-  // Il font display arriva da Adobe Fonts (async). Se il reveal parte con il
-  // fallback di sistema e il web-font si carica DOPO, le glifi (larghezza +
-  // baseline) si riposizionano e il titolo "sobbalza" di qualche px a fine
-  // animazione. Peso 800 = quello usato da fill e outline, desktop e mobile.
+  let desktopTitleEl = $state<HTMLElement | null>(null);
+  let mobileTitleEl = $state<HTMLElement | null>(null);
+
   const DISPLAY_FONT = '800 1em "forma-djr-display"';
 
   function playTitleReveal(lines: NodeListOf<HTMLElement>) {
+    // Applica un'animazione 'stagger' (a cascata) in cui ogni elemento
+    // sale dal basso (yPercent: 120 -> 0)
     gsap.fromTo(
       lines,
       { yPercent: 120 },
       {
         yPercent: 0,
         duration: 0.9,
-        ease: 'power4.out',
+        ease: "power4.out",
         force3D: false,
         overwrite: true,
-        stagger: { each: 0.08, from: 'start' }
-      }
+        stagger: { each: 0.08, from: "start" },
+      },
     );
   }
 
   $effect(() => {
-    const _ = currentIndex;                       // ri-esegui a ogni cambio card
+    // Si riattiva quando currentIndex cambia (cambio card)
+    const _ = currentIndex;
     const el = isMobile ? mobileTitleEl : desktopTitleEl;
     if (!el) return;
-    const lines = el.querySelectorAll<HTMLElement>('.title-anim');
+    const lines = el.querySelectorAll<HTMLElement>(".title-anim");
     if (!lines.length) return;
 
-    // Font già pronto (cambio card, o cache calda) → reveal immediato, identico
-    // a prima. Solo al primissimo ingresso a cache fredda aspettiamo il font,
-    // così il reveal usa già le metriche finali e il testo non si sposta dopo.
-    if (typeof document === 'undefined' || !document.fonts || document.fonts.check(DISPLAY_FONT)) {
+    // Controllo sicurezza font: per evitare che il testo faccia uno scatto a metà animazione
+    // (quando il font web viene scaricato dopo il font di sistema), verifichiamo
+    // prima se il font 'forma-djr-display' è già nella cache del browser.
+    if (
+      typeof document === "undefined" ||
+      !document.fonts ||
+      document.fonts.check(DISPLAY_FONT)
+    ) {
       playTitleReveal(lines);
       return;
     }
 
-    gsap.set(lines, { yPercent: 120 });           // tieni nascosto finché è pronto
+    gsap.set(lines, { yPercent: 120 }); // tieni nascosto il titolo finché il font non è pronto
     let cancelled = false;
-    document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => {
-      if (!cancelled) playTitleReveal(lines);
-    });
-    return () => { cancelled = true; };
+    // Aspetta il load completo del font, poi lancia l'animazione GSAP
+    document.fonts
+      .load(DISPLAY_FONT)
+      .catch(() => {})
+      .then(() => {
+        if (!cancelled) playTitleReveal(lines);
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 
-  // Shrink the one-line (nowrap) desktop carousel title so the current title
-  // always fits its width — no clipping off the right edge. Below 700px the
-  // title wraps (see the max-width:700px rule), so it opts out.
+  // ═══════════════════════════════════════════════════════════
+  // 7. CALCOLI RESPONSIVE DESKTOP (FIT)
+  // ═══════════════════════════════════════════════════════════
+
   function fitCarouselTitle() {
     const el = desktopTitleEl;
-    if (!el || typeof window === 'undefined') return;
+    if (!el || typeof window === "undefined") return;
 
+    // Su schermi <= 700px il CSS gestisce già il wrap del testo su più righe,
+    // quindi disattiviamo il ridimensionamento basato su scala matematica.
     if (window.innerWidth <= 700) {
-      el.style.setProperty('--title-fit', '1');
+      el.style.setProperty("--title-fit", "1");
       return;
     }
 
-    el.style.setProperty('--title-fit', '1');   // measure at natural size
-    const lines = Array.from(el.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
+    el.style.setProperty("--title-fit", "1");
+    const lines = Array.from(
+      el.querySelectorAll<HTMLElement>(".title-fill, .title-outline"),
+    );
     let scale = 1;
+
+    // Calcoliamo la larghezza naturale del testo e se eccede la larghezza
+    // dello schermo, applichiamo un fattore di scala inferiore a 1 per restringerlo
+    // e farlo rientrare (es. per il lunghissimo titolo "GESTIONE OPERATIVA")
     for (const line of lines) {
-      const avail = Math.max(0, line.clientWidth - 24);  // keep a small right gutter
+      const avail = Math.max(0, line.clientWidth - 24);
       const natural = line.scrollWidth;
-      if (avail > 0 && natural > avail) scale = Math.min(scale, avail / natural);
+      if (avail > 0 && natural > avail)
+        scale = Math.min(scale, avail / natural);
     }
-    el.style.setProperty('--title-fit', scale < 1 ? String(scale * 0.99) : '1');
+    // Setto la variabile CSS personalizzata che restringerà il font-size
+    el.style.setProperty("--title-fit", scale < 1 ? String(scale * 0.99) : "1");
   }
 
   $effect(() => {
-    const _ = currentIndex;                       // refit when the card (title) changes
-    if (typeof window === 'undefined') return;
+    const _ = currentIndex;
+    if (typeof window === "undefined") return;
 
     let raf = 0;
+    // Usa RequestAnimationFrame per debouncing ottimale su Resize
     const schedule = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(fitCarouselTitle);
     };
 
     let cancelled = false;
-    schedule();                                   // fit with whatever font is ready now
-    if (typeof document !== 'undefined' && document.fonts) {
-      document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => { if (!cancelled) schedule(); });
+    schedule();
+
+    // Rivaluta le dimensioni se il font personalizzato finisce di caricare
+    if (typeof document !== "undefined" && document.fonts) {
+      document.fonts
+        .load(DISPLAY_FONT)
+        .catch(() => {})
+        .then(() => {
+          if (!cancelled) schedule();
+        });
     }
-    window.addEventListener('resize', schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      window.removeEventListener('resize', schedule);
+
+      window.removeEventListener("resize", schedule);
     };
   });
 
-  // ─── CICLO DI VITA SVELTE ───
+  // ═══════════════════════════════════════════════════════════
+  // 8. LIFECYCLE HOOKS (ONMOUNT, BEFORENAVIGATE)
+  // ═══════════════════════════════════════════════════════════
+
   beforeNavigate(() => {
-    document.body.style.overflow = '';
-    document.body.style.paddingTop = '';
-    sessionStorage.setItem('category-pos', String(targetPos));
+    // Puliamo gli stili inline che abbiamo imposto al body per bloccare lo scroll
+    // (altrimenti le altre pagine si ritroverebbero la pagina bloccata!)
+    document.body.style.overflow = "";
+    document.body.style.paddingTop = "";
+
+    // Salviamo la posizione in session per ricordarla quando si clicca "Indietro"
+    sessionStorage.setItem("category-pos", String(targetPos));
   });
 
   onMount(() => {
     preloadImages();
 
-    const saved = sessionStorage.getItem('category-pos');
+    // Ripristiniamo la posizione salvata se l'utente è tornato su questa pagina
+    const saved = sessionStorage.getItem("category-pos");
     if (saved !== null) {
-     targetPos = Number(saved);
-     sessionStorage.removeItem('category-pos');
+      targetPos = Number(saved);
+      sessionStorage.removeItem("category-pos");
     }
 
-    // Riattiva l'animazione CSS solo dopo aver forzato la posizione statica iniziale
+    // Un timeout microscopico per sbloccare la transizione (isReady)
+    // Permette alle card di porsi nella posizione di partenza senza animarsi dal centro.
     setTimeout(() => {
       isReady = true;
     }, 50);
 
-    const checkMobile = () => { isMobile = window.innerWidth < 600; };
+    const checkMobile = () => {
+      isMobile = window.innerWidth < 600;
+    };
     checkMobile();
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
-    const prev = { pt: document.body.style.paddingTop, ov: document.body.style.overflow };
-    document.body.style.paddingTop = '0';
-    document.body.style.overflow   = 'hidden';
+    // Blocchiamo lo scroll globale per tutto il tempo in cui stiamo esplorando il carosello
+    const prev = {
+      pt: document.body.style.paddingTop,
+      ov: document.body.style.overflow,
+    };
+    document.body.style.paddingTop = "0";
+    document.body.style.overflow = "hidden";
 
+    // Disabilitiamo l'ascolto della rotella sul mobile, si fa a mano
     if (!isMobile) {
-      window.addEventListener('wheel', onWheel, { passive: false });
+      window.addEventListener("wheel", onWheel, { passive: false });
     }
 
+    // Funzione di cleanup allo smontaggio del componente
     return () => {
       document.body.style.paddingTop = prev.pt;
-      document.body.style.overflow   = prev.ov;
-      window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('wheel', onWheel);
+      document.body.style.overflow = prev.ov;
+      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("wheel", onWheel);
       clearTimeout(wheelStepTimer);
       clearTimeout(wheelIdleTimer);
     };
@@ -341,105 +490,36 @@
 </script>
 
 {#if isMobile}
-<section class="mobile-carousel" id="main-content"
-  ontouchstart={onTouchStart}
-  ontouchend={onTouchEnd}
-  aria-label="Category carousel"
->
-  {#key currentIndex}
+  <section
+    class="mobile-carousel"
+    id="main-content"
+    ontouchstart={onTouchStart}
+    ontouchend={onTouchEnd}
+    aria-label="Category carousel"
+  >
+    {#key currentIndex}
+      <div
+        class="mobile-bg"
+        style="background-image: {decoded[categories[currentIndex]?.image]
+          ? `url('${categories[currentIndex]?.image}')`
+          : 'none'}"
+        in:fade={{ duration: 500, delay: 80 }}
+        out:fade={{ duration: 400 }}
+      ></div>
+    {/key}
+
+    <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
+    <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
+
     <div
-      class="mobile-bg"
-      style="background-image: {decoded[categories[currentIndex]?.image] ? `url('${categories[currentIndex]?.image}')` : 'none'}"
-      in:fade={{ duration: 500, delay: 80 }}
-      out:fade={{ duration: 400 }}
-    ></div>
-  {/key}
-
-  <!-- Figma "BLUR EFFECT" — 6px backdrop blur + dark gradient, top & bottom -->
-  <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
-  <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
-
-  <!-- Title (full width, above the controls) -->
-  <div class="mobile-title" bind:this={mobileTitleEl} aria-live="polite" lang="it">
-    {#each mobileTitleLines as line, i}
-      <span class="title-mask">
-        {#if i === 0}
-          <span class="title-fill title-anim">{line}</span>
-        {:else}
-          <span class="title-outline title-anim">{line}</span>
-        {/if}
-      </span>
-    {/each}
-  </div>
-
-  <!-- Scopri di più (bottom-left) -->
-  <a class="scopri-btn" href="/category/{categorySlug(currentLabel)}">SCOPRI DI PIÙ</a>
-
-  <!-- Vertical arrows (bottom-right) -->
-  <div class="mobile-nav-circles">
-    <ArrowButton direction="up" onclick={() => navigate(-1)} />
-    <ArrowButton direction="down" onclick={() => navigate(1)} />
-  </div>
-</section>
-
-{:else}
-<section class="carousel" id="main-content"
-  onpointerdown={onPointerDown}
-  onpointermove={onPointerMove}
-  onpointerup={onPointerUp}
-  onpointerleave={onPointerUp}
-  aria-label="Category carousel"
->
-  <div class="stage">
-    <div class="container-3d">
-      <div class="ring" class:ready={isReady} style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);">
-        {#each categories as cat, i}
-          {@const isActive = currentIndex === i}
-          <div 
-            class="card-3d" 
-            class:active={isActive}
-            style="transform: rotateY({i * -60}deg) translateZ(var(--card-radius));"
-            role="button"
-            tabindex={isActive ? 0 : -1}
-            aria-current={isActive ? 'true' : undefined}
-            onclick={() => { if(isActive) handleTitleClick() }}
-            onkeydown={(e) => { if (e.key === 'Enter' && isActive) handleTitleClick(); }}
-          >
-            <div class="card-image" class:loaded={decoded[cat.image]} style="background-image: url('{cat.image}');"></div>
-            <div class="card-overlay"></div>
-          </div>
-        {/each}
-      </div>
-    </div>
-  </div>
-
-<div class="progressive-blur-overlay" aria-hidden="true"></div>
-
-<div class="arrow-left" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
-    <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
-  </div>
-
-  <div class="arrow-right" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
-    <ArrowButton direction="right" onclick={(e) => onArrowClick(1, e)} />
-  </div>
-
-  <div class="curve-frame" aria-hidden="true">
-    <svg class="curve curve-top" viewBox="0 0 1000 260" preserveAspectRatio="none">
-      <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
-    </svg>
-    <svg class="curve curve-bottom" viewBox="0 0 1000 260" preserveAspectRatio="none">
-      <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
-    </svg>
-  </div>
-
-  <div class="bottom-bar">
-    <div class="title" bind:this={desktopTitleEl} aria-live="polite" role="button" tabindex="0"
-      class:category-sport={categorySlug(currentLabel) === 'sport'}
-      onclick={handleTitleClick}
-      onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}>
-      {#each titleLines as line, index}
+      class="mobile-title"
+      bind:this={mobileTitleEl}
+      aria-live="polite"
+      lang="it"
+    >
+      {#each mobileTitleLines as line, i}
         <span class="title-mask">
-          {#if index === 0}
+          {#if i === 0}
             <span class="title-fill title-anim">{line}</span>
           {:else}
             <span class="title-outline title-anim">{line}</span>
@@ -447,18 +527,136 @@
         </span>
       {/each}
     </div>
-  </div>
-</section>
+
+    <a class="scopri-btn" href="/category/{categorySlug(currentLabel)}"
+      >SCOPRI DI PIÙ</a
+    >
+
+    <div class="mobile-nav-circles">
+      <ArrowButton direction="up" onclick={() => navigate(-1)} />
+      <ArrowButton direction="down" onclick={() => navigate(1)} />
+    </div>
+  </section>
+{:else}
+  <section
+    class="carousel"
+    id="main-content"
+    onpointerdown={onPointerDown}
+    onpointermove={onPointerMove}
+    onpointerup={onPointerUp}
+    onpointerleave={onPointerUp}
+    aria-label="Category carousel"
+  >
+    <div class="stage">
+      <div class="container-3d">
+        <div
+          class="ring"
+          class:ready={isReady}
+          style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);"
+        >
+          {#each categories as cat, i}
+            {@const isActive = currentIndex === i}
+            <div
+              class="card-3d"
+              class:active={isActive}
+              style="transform: rotateY({i *
+                -60}deg) translateZ(var(--card-radius));"
+              role="button"
+              tabindex={isActive ? 0 : -1}
+              aria-current={isActive ? "true" : undefined}
+              onclick={() => {
+                if (isActive) handleTitleClick();
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" && isActive) handleTitleClick();
+              }}
+            >
+              <div
+                class="card-image"
+                class:loaded={decoded[cat.image]}
+                style="background-image: url('{cat.image}');"
+              ></div>
+              <div class="card-overlay"></div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+
+    <div class="progressive-blur-overlay" aria-hidden="true"></div>
+
+    <div
+      class="arrow-left"
+      role="presentation"
+      onpointerdown={(e) => e.stopPropagation()}
+    >
+      <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
+    </div>
+
+    <div
+      class="arrow-right"
+      role="presentation"
+      onpointerdown={(e) => e.stopPropagation()}
+    >
+      <ArrowButton direction="right" onclick={(e) => onArrowClick(1, e)} />
+    </div>
+
+    <div class="curve-frame" aria-hidden="true">
+      <svg
+        class="curve curve-top"
+        viewBox="0 0 1000 260"
+        preserveAspectRatio="none"
+      >
+        <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
+      </svg>
+      <svg
+        class="curve curve-bottom"
+        viewBox="0 0 1000 260"
+        preserveAspectRatio="none"
+      >
+        <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
+      </svg>
+    </div>
+
+    <div class="bottom-bar">
+      <div
+        class="title"
+        bind:this={desktopTitleEl}
+        aria-live="polite"
+        role="button"
+        tabindex="0"
+        class:category-sport={categorySlug(currentLabel) === "sport"}
+        onclick={handleTitleClick}
+        onkeydown={(e) => {
+          if (e.key === "Enter") handleTitleClick();
+        }}
+      >
+        {#each titleLines as line, index}
+          <span class="title-mask">
+            {#if index === 0}
+              <span class="title-fill title-anim">{line}</span>
+            {:else}
+              <span class="title-outline title-anim">{line}</span>
+            {/if}
+          </span>
+        {/each}
+      </div>
+    </div>
+  </section>
 {/if}
 
 <style>
+  /* ================================================================
+   * STILI GLOBALI
+   * ================================================================ */
   :global(body) {
     margin: 0;
     background: var(--color-background-primary);
   }
-  /*NUOVI STILI GEMINI */
-  /* ─── CSS 3D CAROUSEL ─── */
-  /* ─── CSS 3D CAROUSEL ─── */
+
+  /* ═══════════════════════════════════════════════════════════
+     STILI DESKTOP (CSS 3D CAROUSEL)
+     ═══════════════════════════════════════════════════════════ */
   .stage {
     position: absolute;
     inset: 0;
@@ -466,54 +664,53 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1; 
-    /* Variabili rimosse da qui */
+    z-index: 1;
   }
 
   .container-3d {
     perspective: var(--camera-z);
-    /* Scena costruita a --ss× e riportata alla dimensione visiva con scale(1/ss):
-       la proiezione è identica (similitudine), ma la rasterizzazione avviene a
-       --ss× → card nitide. La maschera del blur usa --card-width (visivo) e non
-       è dentro questo container, quindi resta invariata. */
+
+    /* Scena costruita a --ss× (supersampling) e riportata alla dimensione 
+       visiva con scale(1/ss). Questo trucco fa sì che la rasterizzazione
+       avvenga al doppio (o più) della risoluzione originaria, bypassando i limiti di rendering GPU e mantenendo le card nitidissime. */
     width: calc(var(--card-width) * var(--ss));
     transform: scale(calc(1 / var(--ss)));
     transform-origin: center center;
 
     aspect-ratio: 1 / 1;
   }
+
   .ring {
     width: 100%;
     height: 100%;
-    transform-style: preserve-3d;
-    transition: none; /* Animazione disattivata di base al momento del mount */
+    transform-style: preserve-3d; /* Imprescindibile per mantenere il volume in 3D */
+    transition: none;
   }
 
   .ring.ready {
-    /* La transizione si attiva solo quando la pagina è caricata, per i successivi click */
-    /* 0.85s e una curva ease-out-cubic per una decelerazione prolungata */
+    /* La transizione si attiva solo DOPO il mount della pagina,
+       curva custom per frenata prolungata "friction-like" */
     transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
-    /* NIENTE will-change: transform qui. Promuovere il ring lo blocca in una
-       texture compositor rasterizzata a bassa risoluzione, che il browser
-       ri-rasterizza nitida solo quando il ring è fermo → l'immagine "si
-       ricarica" nitida dopo un istante (più visibile ad alta densità). Senza
-       promozione permanente le card si rasterizzano nitide come lo sfondo 2D
-       del mobile. */
-  }
 
+    /* NOTA IMPORTANTE SULLE PRESTAZIONI GPU:
+       Assenza di 'will-change: transform'. Se lo mettessimo, il browser
+       salverebbe una texture in cache bloccandola a bassa risoluzione, rendendo le card visibilmente "pixelate" in rotazione. Senza,
+       le rasterizza sempre calcolandone i contorni nitidi. */
+  }
 
   .card-3d {
     position: absolute;
     inset: 0;
-    border-radius: 4px; /* Il raggio che volevi */
+    border-radius: 4px;
     overflow: hidden;
-    /* Nessun filtro CSS qui: le laterali sono scurite dal .card-overlay.
-       Un `filter` (anche grayscale(0%), che è un no-op) forzerebbe la card
-       in un buffer offscreen rasterizzato a pixel CSS invece che a pixel
-       device → immagini sfocate su schermi ad alta densità. */
-    transition: transform 0.85s ease, box-shadow 0.85s ease;
 
-    pointer-events: none; /* Disabilita il click sulle card laterali */
+    /* Nessun filtro CSS qui per non incrinare la resa GPU (no blur/grayscale).
+       La card laterale non selezionata viene scurita da div.card-overlay */
+    transition:
+      transform 0.85s ease,
+      box-shadow 0.85s ease;
+
+    pointer-events: none;
     cursor: pointer;
   }
 
@@ -521,9 +718,10 @@
     width: 100%;
     height: 100%;
     background-size: cover;
-    /* Hidden until the (huge) source webp is fully decoded — see preloadImages().
-       Prevents the low-quality first paint that then "reloads" sharper: the card
-       fades in already at full quality. */
+
+    /* Nascosto (opacity 0) finché il JS (preloadImages) non decreta
+       che la decode() asincrona in memoria è completata, in questo modo 
+       la prima transizione fadeIn è a piena qualità senza l'effetto sgranato "a blocchi". */
     opacity: 0;
     transition: opacity 0.5s ease;
   }
@@ -539,28 +737,28 @@
 
   /* ─── STATO ATTIVO (Card Centrale) ─── */
   .card-3d.active {
-    pointer-events: auto; /* Rende cliccabile solo quella al centro */
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    pointer-events: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     z-index: 10;
   }
 
   .card-3d.active .card-overlay {
-    background: rgba(0, 0, 0, 0); /* Rimuove l'oscuramento */
+    background: rgba(0, 0, 0, 0);
   }
 
-
-  /* ─── LENTE DI SFOCATURA PROGRESSIVA ─── */
+  /* ─── MASCHERA E SFOCATURA LATERALE (LENTE OPACO) ─── */
   .progressive-blur-overlay {
     position: absolute;
     inset: 0;
-    z-index: 5; 
-    pointer-events: none; 
-    
+    z-index: 5;
+    pointer-events: none;
+
     backdrop-filter: blur(15px) saturate(0.85);
     -webkit-backdrop-filter: blur(15px) saturate(0.85);
 
-    /* Area centrale trasparente allargata (da 0.55 a 0.8) 
-       e gradiente riadattato proporzionalmente verso l'esterno */
+    /* Applica una maschera lineare orizzontale in cui solo i bordi sono 100% 
+       sfocati mentre il centro (che coincide con la card .active) 
+       si dissolve dolcemente in trasparenza totale. */
     mask-image: linear-gradient(
       to right,
       #000 0%,
@@ -589,7 +787,6 @@
     );
   }
 
-
   /*------------------*/
 
   .carousel {
@@ -599,41 +796,44 @@
     overflow: hidden;
     cursor: grab;
     user-select: none;
-    touch-action: none;
-    
+    touch-action: none; /* Previene scroll nativo accidentale del browser durante i tap&drag */
+
     /* ── MATEMATICA RESPONSIVA GLOBALE ── */
-    /* Card più stretta: 26vw invece di 35vw, tetto massimo a 420px */
+    /* La grandezza base su cui tutto poggia. Varia dinamicamente con tetto massimo */
     --card-width: clamp(240px, 26vw, 420px);
 
-    /* ── SUPERSAMPLING ANTI-SFOCATURA ──
-       La prospettiva 3D ingrandisce la card centrale ~3,3× rispetto alla sua
-       dimensione CSS: il browser rasterizza lo sfondo alla dimensione di layout
-       e poi la GPU lo INGRANDISCE 3,3× → immagine morbida (più visibile sui
-       portatili < 16", dove 26vw dà una card CSS più piccola = meno pixel reali
-       da ingrandire). Costruiamo quindi la scena a --ss× e la rimpiccioliamo di
-       1/--ss su .container-3d: ogni card viene rasterizzata al doppio della
-       risoluzione PRIMA che la prospettiva la ingrandisca → resta nitida. */
+    /* --ss = Supersampling. Renderizzare al 2x per sfuggire al clipping gpu-rasterizing */
     --ss: 2;
 
-    /* Il raggio si adatta automaticamente (in scala di scena) */
+    /* Il raggio 3D (offset traslazione Z rispetto al centro della pista CSS) */
     --card-radius: calc(var(--card-width) * var(--ss) * -0.86);
 
-    /* Telecamera leggermente più lontana (* 2.8) per vedere meglio i lati */
+    /* Telecamera arretrata per avere profondità di campo estesa verso l'anello */
     --camera-z: calc(var(--card-width) * var(--ss) * 2.8);
   }
-  .carousel:active { cursor: grabbing; }
 
+  .carousel:active {
+    cursor: grabbing;
+  }
+
+  /* Overlay globale che dona una leggerissima vignettatura all'intero stage */
   .carousel::before {
-    content: '';
+    content: "";
+
     position: absolute;
     inset: 0;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 5%, rgba(0, 0, 0, 0) 18%, rgba(0, 0, 0, 0.18) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.01) 5%,
+      rgba(0, 0, 0, 0) 18%,
+      rgba(0, 0, 0, 0.18) 100%
+    );
     pointer-events: none;
     z-index: 1;
   }
 
-   .arrow-left {
+  .arrow-left {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -648,12 +848,11 @@
     z-index: 12;
   }
 
-  
-
+  /* ── BANDE CURVE ── */
   .curve-frame {
     position: absolute;
     inset: 0;
-    pointer-events: none;
+    pointer-events: none; /* Le curve sono elementi grafici intoccabili che lasciano passare i click */
     z-index: 3;
   }
 
@@ -674,48 +873,47 @@
     height: clamp(110px, 28vh, 240px);
   }
 
-  /* ── bottom UI ───────────────────────────────────────── */
+  /* ── BOTTOM UI E TITOLI ───────────────────────────────────────── */
   .bottom-bar {
     position: absolute;
-    bottom: 0; left: 0; right: 0;
-    /* py-[spacing/4-2, 20px] from Figma — no horizontal padding, rows handle their own indent */
+    bottom: 0;
+    left: 0;
+    right: 0;
     padding: var(--spacing-4-2) 0;
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
     z-index: 10;
-    pointer-events: none;
+    pointer-events: none; /* Il contenitore non assorbe click */
   }
 
   .title {
-    font-family: 'Forma DJR Display', sans-serif;
-    /* --title-fit (default 1) is set by fitCarouselTitle() in JS so the
-       one-line (nowrap) title shrinks just enough to fit its width at any
-       desktop size — otherwise the --page-zoom-compensated font overflows
-       the card and gets clipped off the right edge (e.g. "GESTIONE
-       OPERATIVA" at ~806px). */
-    font-size: calc(clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px) * var(--title-fit, 1));
+    font-family: "Forma DJR Display", sans-serif;
+
+    /* Il font base usa un range calcolato su pagina zoom. Poi * var(--title-fit) 
+       si assicura che un JS (fitCarouselTitle) possa rimpicciolirlo se la stringa
+       fa sbordare la larghezza (ora solo per desktop con width < testolungo) */
+    font-size: calc(
+      clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px) *
+        var(--title-fit, 1)
+    );
     font-weight: 800;
     font-style: normal;
     text-transform: uppercase;
-    /* Figma h1 style: letterSpacing: 0 */
     letter-spacing: 0;
-    /* Figma: leading-[unit/116] = 1:1 with font size */
-    line-height: 1;
+    line-height: 1; /* Il blocco testuale è stretto perfettamente senza margini vuoti sopra/sotto */
     margin: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 0;
-    pointer-events: auto;
+    pointer-events: auto; /* Riattiva i click sul testo vero e proprio */
     cursor: pointer;
     overflow: visible;
   }
 
-  /* Clip mask per l'entrata dei titoli: ogni riga scorre su da sotto la
-     maschera (come i label di FiltraPerCategoria). overflow:hidden nasconde
-     la riga finché non emerge; vale sia desktop (.title) che mobile
-     (.mobile-title). */
+  /* Le maschere ritagliano la riga inferiore/superiore così che durante
+     l'animazione 'yPercent' il testo sembri sparire nel nulla invece che sormontare. */
   .title-mask {
     display: block;
     overflow: hidden;
@@ -725,9 +923,10 @@
     color: var(--color-content-accent);
     display: block;
     white-space: nowrap;
-    /* Figma: Filled row px-[spacing/11, 72px] */
     margin-left: var(--spacing-11);
-    /* Figma: mb-[-8px] on filled row creates overlap with outline */
+
+    /* Margine negativo che spinge la parola 'outline' un po' sopra per dare
+       compattezza al blocco testuale (risolto da Figma) */
     margin-bottom: -8px;
   }
 
@@ -736,11 +935,14 @@
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     display: block;
     white-space: nowrap;
-    /* Figma: Outline row px-[spacing/17, 340px] — 340px at 1728px viewport */
-    margin-left: clamp(var(--spacing-11), calc(var(--spacing-17) / max(var(--page-zoom, 1), 0.65)), 580px);
+    margin-left: clamp(
+      var(--spacing-11),
+      calc(var(--spacing-17) / max(var(--page-zoom, 1), 0.65)),
+      580px
+    );
   }
 
-  /* SPORT: shorter first word, keep distinct stagger */
+  /* Categoria speciale: la E di "SPORT E" costringe un indent diverso per estetica. */
   .title.category-sport .title-fill {
     margin-left: clamp(var(--spacing-4), 5vw, var(--spacing-11));
   }
@@ -748,7 +950,7 @@
     margin-left: clamp(var(--spacing-8), 24.5vw, 340px);
   }
 
-  /* ── Prevent title text overflow on very narrow viewports ───────── */
+  /* ── ADATTAMENTO TABLET/SCHERMI STRETTI DESKTOP ───────── */
   @media (max-width: 700px) {
     .title-fill,
     .title-outline {
@@ -770,16 +972,23 @@
 
   /* ── Arrow safe-area positioning ───────────────────────────────── */
   @media (min-width: 768px) {
-    .arrow-left  { left:  var(--spacing-8); }
-    .arrow-right { right: var(--spacing-8); }
+    .arrow-left {
+      left: var(--spacing-8);
+    }
+    .arrow-right {
+      right: var(--spacing-8);
+    }
   }
   @media (min-width: 1024px) {
-    .arrow-left  { left:  var(--spacing-11); }
-    .arrow-right { right: var(--spacing-11); }
+    .arrow-left {
+      left: var(--spacing-11);
+    }
+    .arrow-right {
+      right: var(--spacing-11);
+    }
   }
 
-
-  /* ── Reduced motion ─────────────────────────────────────────────── */
+  /* ── ACCESSIBILITA' (Utenti sensibili alle animazioni rapide) ────── */
   @media (prefers-reduced-motion: reduce) {
     .title-fill,
     .title-outline {
@@ -806,15 +1015,15 @@
     background-repeat: no-repeat;
   }
 
-  /* ── Figma "BLUR EFFECT": 6px backdrop blur + dark gradient ──────
-     Top band darkens behind the navbar; bottom band fades the image
-     into solid #0e0e0e so the title/controls stay legible. The mask
-     feathers the blur so it dissolves toward the sharp middle. */
+  /* ── Figma "BLUR EFFECT" MOBILE ──────
+     Due rettangoli gradienti oscuranti agli estremi. La maschera lineare 
+     assicura che il passaggio verso il centro sia invisibile ed esente da 
+     artefatti scalettati. */
   .mobile-blur {
     position: absolute;
     left: 0;
     right: 0;
-    height: 44%;            /* 388 / 874 from Figma */
+    height: 44%;
     pointer-events: none;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -822,30 +1031,36 @@
 
   .mobile-blur--top {
     top: 0;
-    background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
+    background: linear-gradient(
+      180deg,
+      rgba(14, 14, 14, 0.35) 0%,
+      rgba(14, 14, 14, 0) 100%
+    );
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
-            mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
   }
 
   .mobile-blur--bottom {
     bottom: 0;
     background: linear-gradient(
       0deg,
-      rgba(14, 14, 14, 1)    0%,
-      rgba(14, 14, 14, 1)    28%,
+      rgba(14, 14, 14, 1) 0%,
+      rgba(14, 14, 14, 1) 28%,
       rgba(14, 14, 14, 0.7) 50%,
-      rgba(14, 14, 14, 0)    100%
+      rgba(14, 14, 14, 0) 100%
     );
-    -webkit-mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
-            mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(
+      0deg,
+      #000 0%,
+      #000 32%,
+      rgba(0, 0, 0, 0) 100%
+    );
+    mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
   }
 
-  /* ── Title — Figma "Title Container": bottom 87, py 32, px 24 ────
-     Anchored just above the "SCOPRI DI PIÙ" button (bottom --unit-36, ≈60px
-     tall) so the title sits low on the dark gradient — not floating high in
-     the sharp image — while long multi-line titles (e.g. "GESTIONE OPERATIVA
-     E FAN EXPERIENCE") still clear the button instead of landing on its
-     border. Uppercase text has no descenders, so no extra gap is needed. */
+  /* ── SPAZIATURA E GEOMETRIA TITOLO MOBILE ────
+     Il padding e il margin incrociato creano un "tunnel" di spazio per far scivolare
+     l'outline che sennò verrebbe decapitato dalla ghigliottina di `overflow:hidden`. */
   .title-mask {
     display: block;
     overflow: hidden;
@@ -854,7 +1069,7 @@
     margin-bottom: -8px;
   }
 
-     .mobile-title {
+  .mobile-title {
     position: absolute;
     left: 0;
     right: 0;
@@ -868,7 +1083,8 @@
   }
 
   .mobile-title .title-fill {
-    display: block; /* Obbligatorio per rispettare il line-height su elementi span */
+    display: block;
+    /* Obbligatorio per rispettare il line-height su elementi span su iOS safari */
     font-family: var(--font-display);
     font-size: 43px;
     font-style: normal;
@@ -886,7 +1102,8 @@
   }
 
   .mobile-title .title-outline {
-    display: block; /* Obbligatorio per rispettare il line-height su elementi span */
+    display: block;
+    /* Obbligatorio per rispettare il line-height su elementi span su iOS safari */
     font-family: var(--font-display);
     font-size: 43px;
     font-style: normal;
@@ -905,7 +1122,7 @@
     margin: 0;
   }
 
-  /* ── Scopri di più — Figma: bottom 36, left 24, width 238 ─────── */
+  /* ── BOTTONI MOBILE ─────── */
   .scopri-btn {
     position: absolute;
     left: var(--spacing-5);
@@ -929,7 +1146,9 @@
     white-space: nowrap;
     cursor: pointer;
     z-index: 4;
-    transition: background 220ms ease, box-shadow 220ms ease;
+    transition:
+      background 220ms ease,
+      box-shadow 220ms ease;
   }
 
   .scopri-btn:hover,
@@ -937,7 +1156,6 @@
     background: rgba(189, 255, 93, 0.08);
   }
 
-  /* ── Vertical arrows — Figma: bottom 36, right 24, gap 24 ──────── */
   .mobile-nav-circles {
     position: absolute;
     right: var(--spacing-5);
@@ -947,6 +1165,4 @@
     gap: var(--spacing-5);
     z-index: 4;
   }
-
-
 </style>

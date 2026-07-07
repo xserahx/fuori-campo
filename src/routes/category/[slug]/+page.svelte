@@ -1,12 +1,14 @@
+<!--Pagina delle categorie di volontari (dal carosello si acceda alla pagina di descrizione della categoria)-->
+
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
-  import { page } from '$app/state';
-  import { beforeNavigate } from '$app/navigation';
-  import { cubicOut, sineInOut, quartOut } from 'svelte/easing';
-  import { gsap } from 'gsap';
-  import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
-  import BackButton from '$lib/components/buttons/BackButton.svelte';
-  import '$lib/styles/tokens.css';
+  import { onMount, tick } from "svelte";
+  import { page } from "$app/state";
+  import { beforeNavigate } from "$app/navigation";
+  import { cubicOut, sineInOut, quartOut } from "svelte/easing";
+  import { gsap } from "gsap";
+  import ArrowButton from "$lib/components/buttons/ArrowButton.svelte";
+  import BackButton from "$lib/components/buttons/BackButton.svelte";
+  import "$lib/styles/tokens.css";
 
   type CategoryInfo = {
     label: string;
@@ -18,16 +20,55 @@
   };
 
   const CATEGORIES: CategoryInfo[] = [
-    { label: 'RELAZIONI E COMUNICAZIONE', titleLines: ['RELAZIONI E', 'COMUNICAZIONE'], image: '/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png', tag: 'relazioni', slug: 'relazioni' },
-    { label: 'CERIMONIE E REVENUE', image: '/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png', tag: 'cerimonie', slug: 'cerimonie' },
-    { label: 'SPORT E DISCIPLINE', titleLines: ['SPORT', 'E DISCIPLINE'], mobileTitleSize: 40, image: '/volunteer_images/carosello_categorie/Sport.png', tag: 'sport', slug: 'sport' },
-    { label: 'AREA ORGANIZZATIVA E SERVIZI GENERALI', image: '/volunteer_images/carosello_categorie/Area_organizzativa.png', tag: 'organizzativa', slug: 'organizzativa' },
-    { label: 'LOGISTICA E TERRITORIO', image: '/volunteer_images/carosello_categorie/Logistica_e_territorio.png', tag: 'logistica', slug: 'logistica' },
-    { label: 'GESTIONE OPERATIVA E FAN EXPERIENCE', image: '/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png', tag: 'gestione', slug: 'gestione' }
+    {
+      label: "RELAZIONI E COMUNICAZIONE",
+      titleLines: ["RELAZIONI E", "COMUNICAZIONE"],
+      image:
+        "/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png",
+      tag: "relazioni",
+      slug: "relazioni",
+    },
+    {
+      label: "CERIMONIE E REVENUE",
+      image: "/volunteer_images/carosello_categorie/Cerimonia_e_revenue.png",
+      tag: "cerimonie",
+      slug: "cerimonie",
+    },
+    {
+      label: "SPORT E DISCIPLINE",
+      titleLines: ["SPORT", "E DISCIPLINE"],
+      mobileTitleSize: 40,
+      image: "/volunteer_images/carosello_categorie/Sport.png",
+      tag: "sport",
+      slug: "sport",
+    },
+    {
+      label: "AREA ORGANIZZATIVA E SERVIZI GENERALI",
+      image: "/volunteer_images/carosello_categorie/Area_organizzativa.png",
+      tag: "organizzativa",
+      slug: "organizzativa",
+    },
+    {
+      label: "LOGISTICA E TERRITORIO",
+      image: "/volunteer_images/carosello_categorie/Logistica_e_territorio.png",
+      tag: "logistica",
+      slug: "logistica",
+    },
+    {
+      label: "GESTIONE OPERATIVA E FAN EXPERIENCE",
+      image:
+        "/volunteer_images/carosello_categorie/Gestione_operativa_e_fan_experience.png",
+      tag: "gestione",
+      slug: "gestione",
+    },
   ];
 
   function legacySlugify(label: string) {
-    return label.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+    return label
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-");
   }
 
   function splitTitle(label: string): string[] {
@@ -38,11 +79,15 @@
     if (words.length <= 2) return [label];
 
     const mid = Math.max(1, Math.ceil(words.length / 2));
-    return [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+    return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
   }
 
-  const slug = $derived((page.params as Record<string, string>).slug ?? '');
-  const catIdx = $derived(CATEGORIES.findIndex(c => c.slug === slug || legacySlugify(c.label) === slug));
+  const slug = $derived((page.params as Record<string, string>).slug ?? "");
+  const catIdx = $derived(
+    CATEGORIES.findIndex(
+      (c) => c.slug === slug || legacySlugify(c.label) === slug,
+    ),
+  );
   const cat = $derived(catIdx >= 0 ? CATEGORIES[catIdx] : null);
   const lines = $derived(cat ? (cat.titleLines ?? splitTitle(cat.label)) : []);
 
@@ -52,216 +97,259 @@
     role: string;
   };
 
-  const categorySummaries: Record<string, { eyebrow: string; subtitle: string; roles: SubRole[] }> = {
+  const categorySummaries: Record<
+    string,
+    { eyebrow: string; subtitle: string; roles: SubRole[] }
+  > = {
     relazioni: {
-      eyebrow: 'COM = Communication',
-      subtitle: 'Punto di contatto con i giornalisti, Comitati Olimpici e delegazioni, pronti a guidare la comunicazione e permettere a la corretta diffusione delle notizie con la stampa.',
+      eyebrow: "COM = Communication",
+      subtitle:
+        "Punto di contatto con i giornalisti, Comitati Olimpici e delegazioni, pronti a guidare la comunicazione e permettere a la corretta diffusione delle notizie con la stampa.",
       roles: [
         {
-          title: 'PRS = Press',
-          description: 'Gestisce i rapporti con la stampa e la diffusione delle informazioni ufficiali, supportando comunicati, accrediti e richieste media.',
-          role: 'Press Volunteer'
+          title: "PRS = Press",
+          description:
+            "Gestisce i rapporti con la stampa e la diffusione delle informazioni ufficiali, supportando comunicati, accrediti e richieste media.",
+          role: "Press Volunteer",
         },
         {
-          title: 'INT = Interactions / Protocol',
-          description: 'Gestisce l\'accoglienza della "Olympic Family" (membri CIO, autorità e VIP), occupandosi di cerimoniale e standard di ospitalità di alto livello.',
-          role: 'Interaction / Protocol Volunteer'
+          title: "INT = Interactions / Protocol",
+          description:
+            'Gestisce l\'accoglienza della "Olympic Family" (membri CIO, autorità e VIP), occupandosi di cerimoniale e standard di ospitalità di alto livello.',
+          role: "Interaction / Protocol Volunteer",
         },
         {
-          title: 'LAN = Language Services',
-          description: 'Supporta la comunicazione multilingua tra staff, ospiti e delegazioni, facilitando traduzioni, mediazione e comprensione reciproca.',
-          role: 'Language Services Volunteer'
+          title: "LAN = Language Services",
+          description:
+            "Supporta la comunicazione multilingua tra staff, ospiti e delegazioni, facilitando traduzioni, mediazione e comprensione reciproca.",
+          role: "Language Services Volunteer",
         },
         {
-          title: 'NCS = NOC Service (Comitati Olimpici Nazionali)',
-          description: 'Il punto di contatto unico per i Comitati Olimpici Nazionali; li assiste in ogni necessità logistica o burocratica durante la loro permanenza.',
-          role: 'NOC Assistant'
-        }
-      ]
+          title: "NCS = NOC Service (Comitati Olimpici Nazionali)",
+          description:
+            "Il punto di contatto unico per i Comitati Olimpici Nazionali; li assiste in ogni necessità logistica o burocratica durante la loro permanenza.",
+          role: "NOC Assistant",
+        },
+      ],
     },
     cerimonie: {
-      eyebrow: 'CER = Cerimonie',
-      subtitle: 'Hanno condiviso le medaglie e il palco con gli atleti, permettendo loro di splendere nel giorno più bello delle loro vite, non dimenticandosi mai di dare spazio agli ospiti speciali e gli sponsor ufficiali.',
+      eyebrow: "CER = Cerimonie",
+      subtitle:
+        "Hanno condiviso le medaglie e il palco con gli atleti, permettendo loro di splendere nel giorno più bello delle loro vite, non dimenticandosi mai di dare spazio agli ospiti speciali e gli sponsor ufficiali.",
       roles: [
         {
-          title: 'CER = Cerimonie',
-          description: 'Coordina momenti solenni, protocolli e premiazioni con precisione e ritmo scenico durante le cerimonie ufficiali di apertura, chiusura e medaglie.',
-          role: 'Ceremonies Volunteer'
+          title: "CER = Cerimonie",
+          description:
+            "Coordina momenti solenni, protocolli e premiazioni con precisione e ritmo scenico durante le cerimonie ufficiali di apertura, chiusura e medaglie.",
+          role: "Ceremonies Volunteer",
         },
         {
-          title: 'REV = Revenue',
-          description: 'Supporta le attività commerciali e di partnership durante i Giochi, garantendo un\'esperienza premium agli ospiti degli sponsor ufficiali.',
-          role: 'Revenue Volunteer'
+          title: "REV = Revenue",
+          description:
+            "Supporta le attività commerciali e di partnership durante i Giochi, garantendo un'esperienza premium agli ospiti degli sponsor ufficiali.",
+          role: "Revenue Volunteer",
         },
         {
-          title: 'RTC = Rate Card',
-          description: 'Gestisce il catalogo degli ospiti istituzionali e degli sponsor nelle aree riservate, curando ogni dettaglio dell\'esperienza VIP.Gestisce il catalogo di servizi e attrezzature extra che i partner e i media possono noleggiare per le loro operazioni specifiche durante i Giochi.',
-          role: 'Rate Card Volunteer'
+          title: "RTC = Rate Card",
+          description:
+            "Gestisce il catalogo degli ospiti istituzionali e degli sponsor nelle aree riservate, curando ogni dettaglio dell'esperienza VIP.Gestisce il catalogo di servizi e attrezzature extra che i partner e i media possono noleggiare per le loro operazioni specifiche durante i Giochi.",
+          role: "Rate Card Volunteer",
         },
         {
-          title: 'IKL = I-Knowledge',
-          description: 'Si occupa del monitoraggio e della raccolta dati per il programma di "Legacy" e trasferimento della conoscenza richiesto dal CIO.',
-          role: 'I-Knowledge Volunteer'
-        }
-      ]
+          title: "IKL = I-Knowledge",
+          description:
+            'Si occupa del monitoraggio e della raccolta dati per il programma di "Legacy" e trasferimento della conoscenza richiesto dal CIO.',
+          role: "I-Knowledge Volunteer",
+        },
+      ],
     },
     sport: {
-      eyebrow: 'SPT = Sport',
-      subtitle: 'Addetti ad ognuno dei 51 sport specifici, dal Palazzo del Ghiaccio a Santa Giulia fino alle vette Valtellinesi, a stretto contatto con atleti e pubblico, per far si che ogni competizione non avesse intoppi.',
+      eyebrow: "SPT = Sport",
+      subtitle:
+        "Addetti ad ognuno dei 51 sport specifici, dal Palazzo del Ghiaccio a Santa Giulia fino alle vette Valtellinesi, a stretto contatto con atleti e pubblico, per far si che ogni competizione non avesse intoppi.",
       roles: [
         {
-          title: 'XALP = Alpine Skiing',
-          description: 'Lo sci alpino, che comprende le prove di velocità (Discesa e Super-G) e quelle tecniche (Slalom e Gigante) su pista battuta.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+          title: "XALP = Alpine Skiing",
+          description:
+            "Lo sci alpino, che comprende le prove di velocità (Discesa e Super-G) e quelle tecniche (Slalom e Gigante) su pista battuta.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer",
         },
         {
-          title: 'XBOB = Bobsleigh',
-          description: 'Il bob, disciplina di discesa su pista ghiacciata con equipaggi da due o quattro componenti.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
+          title: "XBOB = Bobsleigh",
+          description:
+            "Il bob, disciplina di discesa su pista ghiacciata con equipaggi da due o quattro componenti.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer",
         },
         {
-          title: 'XBTH = Biathlon',
-          description: 'Sport che combina lo sci di fondo (resistenza) con il tiro a segno con carabina (precisione) in diverse sessioni.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
+          title: "XBTH = Biathlon",
+          description:
+            "Sport che combina lo sci di fondo (resistenza) con il tiro a segno con carabina (precisione) in diverse sessioni.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer",
         },
         {
-          title: 'XCSS = Cross-Country',
-          description: 'Lo sci di fondo.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+          title: "XCSS = Cross-Country",
+          description: "Lo sci di fondo.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer",
         },
         {
-          title: 'XCUR = Curling',
-          description: 'Sport di strategia su ghiaccio dove si fanno scivolare pesanti pietre di granito verso un bersaglio (house).',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+          title: "XCUR = Curling",
+          description:
+            "Sport di strategia su ghiaccio dove si fanno scivolare pesanti pietre di granito verso un bersaglio (house).",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Sport Information Volunteer, Sport Liaison Volunteer",
         },
         {
-          title: 'XFRS = Freestyle Skiing',
-          description: 'Sci acrobatico che include specialità come Moguls, Aerials, Halfpipe, Slopestyle e lo Ski Cross.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+          title: "XFRS = Freestyle Skiing",
+          description:
+            "Sci acrobatico che include specialità come Moguls, Aerials, Halfpipe, Slopestyle e lo Ski Cross.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer",
         },
         {
-          title: 'XFSK = Figure Skating',
-          description: 'Il pattinaggio di figura, dove singoli, coppie o gruppi eseguono elementi tecnici e coreografici su musica.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, FOP Operations Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+          title: "XFSK = Figure Skating",
+          description:
+            "Il pattinaggio di figura, dove singoli, coppie o gruppi eseguono elementi tecnici e coreografici su musica.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, FOP Operations Volunteer, Sport Information Volunteer, Sport Liaison Volunteer",
         },
         {
-          title: 'XIHO = Ice Hockey',
-          description: 'Torneo di hockey su ghiaccio, sport di squadra ad alta velocità giocato in tre tempi da 20 minuti.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+          title: "XIHO = Ice Hockey",
+          description:
+            "Torneo di hockey su ghiaccio, sport di squadra ad alta velocità giocato in tre tempi da 20 minuti.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Sport Information Volunteer, Sport Liaison Volunteer",
         },
         {
-          title: 'XSJP = Ski Jumping',
-          description: 'Il salto con gli sci dai trampolini (Normal Hill e Large Hill), valutato per distanza e stile del volo.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Hill Support Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer'
+          title: "XSJP = Ski Jumping",
+          description:
+            "Il salto con gli sci dai trampolini (Normal Hill e Large Hill), valutato per distanza e stile del volo.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Hill Support Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer, Timing Volunteer",
         },
         {
-          title: 'XSMT = Ski Mountaineering',
-          description: 'Lo sci alpinismo. Debutta nel 2026 e prevede salite con pelli di foca, tratti a piedi e discese fuori pista.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer'
+          title: "XSMT = Ski Mountaineering",
+          description:
+            "Lo sci alpinismo. Debutta nel 2026 e prevede salite con pelli di foca, tratti a piedi e discese fuori pista.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Information Volunteer, Timing Volunteer",
         },
         {
-          title: 'XSSK = Speed Skating',
-          description: 'Pattinaggio di velocità su pista lunga (400m), dove gli atleti competono contro il tempo in corsie separate.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
+          title: "XSSK = Speed Skating",
+          description:
+            "Pattinaggio di velocità su pista lunga (400m), dove gli atleti competono contro il tempo in corsie separate.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, Results Volunteer, Sport Equipment Volunteer, Sport Information Volunteer, Sport Liaison Volunteer",
         },
         {
-          title: 'XSTK = Short Track Speed Skating',
-          description: 'Pattinaggio di velocità su pista corta (111m), caratterizzato da partenze in linea e sorpassi spettacolari.',
-          role: 'Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, FOP Operations Volunteer, Sport Information Volunteer, Sport Liaison Volunteer'
-        }
-      ]
+          title: "XSTK = Short Track Speed Skating",
+          description:
+            "Pattinaggio di velocità su pista corta (111m), caratterizzato da partenze in linea e sorpassi spettacolari.",
+          role: "Access Control Volunteer, Athlete Services Volunteer, Competition Support Volunteer, Field of Play Volunteer, FOP Operations Volunteer, Sport Information Volunteer, Sport Liaison Volunteer",
+        },
+      ],
     },
     organizzativa: {
-      eyebrow: 'ORG = Organizzazione',
-      subtitle: 'Hanno permesso la corretta organizzazione e gestione dei volontari e dell’infrastruttura tecnologica dei giochi, dal distribuire gli accrediti, ai buoni pasto fino al corretto funzionamento del WIFI.',
+      eyebrow: "ORG = Organizzazione",
+      subtitle:
+        "Hanno permesso la corretta organizzazione e gestione dei volontari e dell’infrastruttura tecnologica dei giochi, dal distribuire gli accrediti, ai buoni pasto fino al corretto funzionamento del WIFI.",
       roles: [
         {
-          title: 'PEM = People Management',
-          description: 'Si occupa della strategia delle risorse umane "intangibile": pianificazione dei turni, gestione dei check-in/out dei volontari presso i centri dedicati, coordinamento della formazione e attività di riconoscimento/rewarding.',
-          role: 'Workforce Village Volunteer, Athlete 365 Volunteer, Mind Zone Volunteer, Olympic Club Volunteer, Workforce Volunteer '
+          title: "PEM = People Management",
+          description:
+            'Si occupa della strategia delle risorse umane "intangibile": pianificazione dei turni, gestione dei check-in/out dei volontari presso i centri dedicati, coordinamento della formazione e attività di riconoscimento/rewarding.',
+          role: "Workforce Village Volunteer, Athlete 365 Volunteer, Mind Zone Volunteer, Olympic Club Volunteer, Workforce Volunteer ",
         },
         {
-          title: 'ACR = Accreditations',
-          description: 'Gestisce l\'intero ciclo di vita dell\'accreditamento. Questo include la verifica delle identità, il rilascio dei pass e la gestione degli UAC (Uniform and Accreditation Centres), dove avviene fisicamente la consegna del kit ufficiale (divisa Salomon) a volontari e staff.',
-          role: 'Accreditation Volunteer, Uniform Volunteer '
+          title: "ACR = Accreditations",
+          description:
+            "Gestisce l'intero ciclo di vita dell'accreditamento. Questo include la verifica delle identità, il rilascio dei pass e la gestione degli UAC (Uniform and Accreditation Centres), dove avviene fisicamente la consegna del kit ufficiale (divisa Salomon) a volontari e staff.",
+          role: "Accreditation Volunteer, Uniform Volunteer ",
         },
         {
-          title: 'TEC = Technology',
-          description: 'Assicura il funzionamento di tutta l\'infrastruttura IT: dai sistemi di cronometraggio e punteggio (Timing & Scoring) alla connettività Wi-Fi e al supporto tecnico nei siti (Venue Technology).',
-          role: 'Results Volunteer, Timing Volunteer, Venue Technology Volunteer'
-        }
-      ]
+          title: "TEC = Technology",
+          description:
+            "Assicura il funzionamento di tutta l'infrastruttura IT: dai sistemi di cronometraggio e punteggio (Timing & Scoring) alla connettività Wi-Fi e al supporto tecnico nei siti (Venue Technology).",
+          role: "Results Volunteer, Timing Volunteer, Venue Technology Volunteer",
+        },
+      ],
     },
     logistica: {
-      eyebrow: 'LOG = Logistica',
-      subtitle: 'A servizio della flotta dei veicoli, per permettere agli atleti e alla famiglia olimpica di orientarsi tra le vie di Milano e le stradine delle Valli e gli Aeroporti.',
+      eyebrow: "LOG = Logistica",
+      subtitle:
+        "A servizio della flotta dei veicoli, per permettere agli atleti e alla famiglia olimpica di orientarsi tra le vie di Milano e le stradine delle Valli e gli Aeroporti.",
       roles: [
         {
-          title: 'AND = Arrivals & Departures',
-          description: 'Opera nei "Port of Entry" (aeroporti di Malpensa, Linate, Venezia e stazioni ferroviarie). Accoglie le delegazioni e coordina il flusso verso le destinazioni finali.',
-          role: 'Arrivals & Departures Volunteer'
+          title: "AND = Arrivals & Departures",
+          description:
+            'Opera nei "Port of Entry" (aeroporti di Malpensa, Linate, Venezia e stazioni ferroviarie). Accoglie le delegazioni e coordina il flusso verso le destinazioni finali.',
+          role: "Arrivals & Departures Volunteer",
         },
         {
-          title: 'LOG = Logistics',
-          description: 'Responsabile della pianificazione, stoccaggio e distribuzione di materiali pesanti, arredi e attrezzature sportive tra i vari cluster (Milano, Valtellina, Cortina, Val di Fiemme e Anterselva).',
-          role: 'Logistics Volunteer'
+          title: "LOG = Logistics",
+          description:
+            "Responsabile della pianificazione, stoccaggio e distribuzione di materiali pesanti, arredi e attrezzature sportive tra i vari cluster (Milano, Valtellina, Cortina, Val di Fiemme e Anterselva).",
+          role: "Logistics Volunteer",
         },
         {
-          title: 'TRA = Transport',
-          description: 'Gestisce il sistema di navette e la flotta di veicoli ufficiali per garantire spostamenti puntuali e sicuri a tutti gli stakeholder accreditati.',
-          role: 'Transport Volunteer'
+          title: "TRA = Transport",
+          description:
+            "Gestisce il sistema di navette e la flotta di veicoli ufficiali per garantire spostamenti puntuali e sicuri a tutti gli stakeholder accreditati.",
+          role: "Transport Volunteer",
         },
         {
-          title: 'VIL = Village',
-          description: 'Gestisce le operazioni nei Villaggi Olimpici e Paralimpici, assicurando i servizi residenziali e l\'accoglienza quotidiana per gli atleti.',
-          role: 'Village Volunteer'
-        }
-      ]
+          title: "VIL = Village",
+          description:
+            "Gestisce le operazioni nei Villaggi Olimpici e Paralimpici, assicurando i servizi residenziali e l'accoglienza quotidiana per gli atleti.",
+          role: "Village Volunteer",
+        },
+      ],
     },
     gestione: {
-      eyebrow: 'FEX = Fan Experience',
-      subtitle: 'Coloro con cui sicuramente hai parlato o hai sentito negli stadi, hanno fatto sì che non ti annoiassi mai e ti hanno indicato l’entrata, ma non solo hanno permesso pure che tutto fosse sempre coordinato.',
+      eyebrow: "FEX = Fan Experience",
+      subtitle:
+        "Coloro con cui sicuramente hai parlato o hai sentito negli stadi, hanno fatto sì che non ti annoiassi mai e ti hanno indicato l’entrata, ma non solo hanno permesso pure che tutto fosse sempre coordinato.",
       roles: [
         {
-          title: 'EVM = Event Management',
-          description: 'Coordinamento operativo della Venue. È l\'area che fa da "collante" tra tutte le altre FA per assicurare che il sito di gara funzioni secondo i piani.',
-          role: 'Event Management Volunteer'
+          title: "EVM = Event Management",
+          description:
+            'Coordinamento operativo della Venue. È l\'area che fa da "collante" tra tutte le altre FA per assicurare che il sito di gara funzioni secondo i piani.',
+          role: "Event Management Volunteer",
         },
         {
-          title: 'EVS = Event Services',
-          description: 'Gestisce l\'esperienza e la sicurezza dello spettatore all\'interno del sito di gara. Si occupa della gestione dei flussi (code e ingressi), del controllo dei titoli di accesso, dell\'assistenza alle persone con disabilità e delle procedure di primo intervento o smarrimento oggetti.',
-          role: 'Event Services Volunteer'
+          title: "EVS = Event Services",
+          description:
+            "Gestisce l'esperienza e la sicurezza dello spettatore all'interno del sito di gara. Si occupa della gestione dei flussi (code e ingressi), del controllo dei titoli di accesso, dell'assistenza alle persone con disabilità e delle procedure di primo intervento o smarrimento oggetti.",
+          role: "Event Services Volunteer",
         },
         {
-          title: 'SPP = Sport Presentation',
-          description: 'Gestisce lo spettacolo "live" negli stadi: annunci dello speaker, musica, contenuti sui maxischermi e coordinamento dei momenti di intrattenimento per il pubblico.',
-          role: 'Sport Presentation Volunteer'
+          title: "SPP = Sport Presentation",
+          description:
+            'Gestisce lo spettacolo "live" negli stadi: annunci dello speaker, musica, contenuti sui maxischermi e coordinamento dei momenti di intrattenimento per il pubblico.',
+          role: "Sport Presentation Volunteer",
         },
         {
-          title: 'SPS = Spectator Services',
-          description: 'Gestisce l\'esperienza dello spettatore dal momento in cui entra nel perimetro olimpico: orientamento, assistenza, gestione delle code e dei flussi alle tribune.',
-          role: 'Spectator Services Volunteer'
+          title: "SPS = Spectator Services",
+          description:
+            "Gestisce l'esperienza dello spettatore dal momento in cui entra nel perimetro olimpico: orientamento, assistenza, gestione delle code e dei flussi alle tribune.",
+          role: "Spectator Services Volunteer",
         },
         {
-          title: 'DOP = Doping Control',
-          description: 'Fornisce supporto logistico ai medici antidoping. Il ruolo principale è quello di Chaperone: notificare agli atleti il controllo e scortarli fino alla stazione medica ufficiale.',
-          role: 'Doping Control Volunteer'
-        }
-      ]
-    }
+          title: "DOP = Doping Control",
+          description:
+            "Fornisce supporto logistico ai medici antidoping. Il ruolo principale è quello di Chaperone: notificare agli atleti il controllo e scortarli fino alla stazione medica ufficiale.",
+          role: "Doping Control Volunteer",
+        },
+      ],
+    },
   };
 
-  const activeSummary = $derived(categorySummaries[cat?.tag ?? ''] ?? {
-    eyebrow: cat ? `${cat.label.split(' ')[0]} = Category` : 'CATEGORY',
-    subtitle: 'Un ruolo che connette persone, spazi e contenuti.',
-    roles: [
-      {
-        title: cat?.label ?? 'CATEGORY',
-        description: 'Lavora in modo coordinato tra persone, spazi e contenuti per supportare il funzionamento dell\'evento.',
-        role: 'Volunteer'
-      }
-    ]
-  });
+  const activeSummary = $derived(
+    categorySummaries[cat?.tag ?? ""] ?? {
+      eyebrow: cat ? `${cat.label.split(" ")[0]} = Category` : "CATEGORY",
+      subtitle: "Un ruolo che connette persone, spazi e contenuti.",
+      roles: [
+        {
+          title: cat?.label ?? "CATEGORY",
+          description:
+            "Lavora in modo coordinato tra persone, spazi e contenuti per supportare il funzionamento dell'evento.",
+          role: "Volunteer",
+        },
+      ],
+    },
+  );
 
   let activeRoleIndex = $state(0);
 
@@ -270,7 +358,11 @@
     cat?.tag;
   });
 
-  const activeRole = $derived(activeSummary.roles[Math.min(activeRoleIndex, activeSummary.roles.length - 1)]);
+  const activeRole = $derived(
+    activeSummary.roles[
+      Math.min(activeRoleIndex, activeSummary.roles.length - 1)
+    ],
+  );
   const roleCount = $derived(activeSummary.roles.length);
 
   let summaryMeasureEl: HTMLDivElement | null = $state(null);
@@ -293,7 +385,7 @@
   }
 
   function queueSummaryMeasurement() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     if (summaryMeasureRaf) return;
 
     summaryMeasureRaf = requestAnimationFrame(async () => {
@@ -305,7 +397,7 @@
   }
 
   function setupSummaryMeasureObserver() {
-    if (typeof ResizeObserver === 'undefined' || !summaryMeasureEl) return;
+    if (typeof ResizeObserver === "undefined" || !summaryMeasureEl) return;
 
     summaryMeasureObserver?.disconnect();
 
@@ -323,31 +415,31 @@
   $effect(() => {
     activeSummary.roles;
 
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     queueSummaryMeasurement();
   });
 
   function unlockCategoryScroll() {
-    if (typeof document === 'undefined') return;
+    if (typeof document === "undefined") return;
 
     const root = document.documentElement;
     const body = document.body;
 
-    root.style.removeProperty('overflow');
-    root.style.removeProperty('overflow-y');
-    root.style.removeProperty('height');
-    root.style.removeProperty('position');
+    root.style.removeProperty("overflow");
+    root.style.removeProperty("overflow-y");
+    root.style.removeProperty("height");
+    root.style.removeProperty("position");
 
-    body.style.removeProperty('overflow');
-    body.style.removeProperty('overflow-y');
-    body.style.removeProperty('height');
-    body.style.removeProperty('position');
-    body.style.removeProperty('padding-top');
-    body.style.removeProperty('margin');
+    body.style.removeProperty("overflow");
+    body.style.removeProperty("overflow-y");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("padding-top");
+    body.style.removeProperty("margin");
 
-    root.classList.remove('lenis-stopped');
-    body.classList.remove('lenis-stopped');
+    root.classList.remove("lenis-stopped");
+    body.classList.remove("lenis-stopped");
   }
 
   beforeNavigate(() => {
@@ -373,12 +465,12 @@
       queueSummaryMeasurement();
     }, 120);
 
-    window.addEventListener('resize', queueSummaryMeasurement);
+    window.addEventListener("resize", queueSummaryMeasurement);
 
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
-      window.removeEventListener('resize', queueSummaryMeasurement);
+      window.removeEventListener("resize", queueSummaryMeasurement);
 
       if (summaryMeasureRaf) {
         cancelAnimationFrame(summaryMeasureRaf);
@@ -393,8 +485,8 @@
   });
 
   const prefersReduced = () =>
-    typeof matchMedia !== 'undefined'
-    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // ── Entrata cinematografica ───────────────────────────────────────
   // Coerente con about / carosello: le righe del titolo risalgono passando da
@@ -409,70 +501,112 @@
   // web-font subentra a fine animazione (stesso accorgimento di carosello/zoom).
   const DISPLAY_FONT = '800 1em "forma-djr-display"';
   function displayFontReady(): Promise<unknown> {
-    if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
+    if (typeof document === "undefined" || !document.fonts)
+      return Promise.resolve();
     if (document.fonts.check(DISPLAY_FONT)) return Promise.resolve();
     return document.fonts.load(DISPLAY_FONT).catch(() => {});
   }
 
   $effect(() => {
-    const _ = slug;                       // ri-esegui a ogni cambio categoria
+    const _ = slug; // ri-esegui a ogni cambio categoria
     const titleEl = heroTitleEl;
     if (!titleEl) return;
-    if (prefersReduced()) return;         // niente moto → il contenuto resta visibile
+    if (prefersReduced()) return; // niente moto → il contenuto resta visibile
 
-    const lines = Array.from(titleEl.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
+    const lines = Array.from(
+      titleEl.querySelectorAll<HTMLElement>(".title-fill, .title-outline"),
+    );
     if (!lines.length) return;
-    
+
     const copy = heroCopyEl;
     const controls = summaryEl
-      ? Array.from(summaryEl.querySelectorAll<HTMLElement>('.dot-frecce'))
+      ? Array.from(summaryEl.querySelectorAll<HTMLElement>(".dot-frecce"))
       : [];
 
-    // 1. NUOVO: Selezioniamo anche il blocco del testo delle sottocategorie (solo quello visibile, non quello di misurazione)
     const summaryText = summaryEl
-      ? Array.from(summaryEl.querySelectorAll<HTMLElement>('.summary-top-wrap .summary-top'))
+      ? Array.from(
+          summaryEl.querySelectorAll<HTMLElement>(
+            ".summary-top-wrap .summary-top",
+          ),
+        )
       : [];
 
     // Stato iniziale nascosto applicato dentro l'effect (prima del paint) → niente flash.
-    gsap.set(lines, { yPercent: 60, opacity: 0, filter: 'blur(12px)' });
-    if (copy) gsap.set(copy, { y: 16, opacity: 0, filter: 'blur(10px)' });
-    if (controls.length) gsap.set(controls, { y: 18, opacity: 0, filter: 'blur(9px)' });
-    
-    // 2. NUOVO: Nascondiamo e sfochiamo il testo delle sottocategorie all'inizio
-    if (summaryText.length) gsap.set(summaryText, { y: 14, opacity: 0, filter: 'blur(10px)' });
+    gsap.set(lines, { yPercent: 60, opacity: 0, filter: "blur(12px)" });
+    if (copy) gsap.set(copy, { y: 16, opacity: 0, filter: "blur(10px)" });
+    if (controls.length)
+      gsap.set(controls, { y: 18, opacity: 0, filter: "blur(9px)" });
+
+    // Nascondiamo e sfochiamo il testo delle sottocategorie all'inizio
+    if (summaryText.length)
+      gsap.set(summaryText, { y: 14, opacity: 0, filter: "blur(10px)" });
 
     let cancelled = false;
     displayFontReady().then(() => {
       if (cancelled) return;
       const tl = gsap.timeline();
-      
-      // Titolo: le righe risalgono a fuoco, in cascata.
-      tl.to(lines, {
-        yPercent: 0, opacity: 1, filter: 'blur(0px)',
-        duration: 1.0, ease: 'power4.out', force3D: false,
-        stagger: 0.09
-      }, 0);
-      
+
+      // Titolo: le righe risalgono in cascata.
+      tl.to(
+        lines,
+        {
+          yPercent: 0,
+          opacity: 1,
+          filter: "blur(0px)",
+          duration: 1.0,
+          ease: "power4.out",
+          force3D: false,
+          stagger: 0.09,
+        },
+        0,
+      );
+
       // Copy della hero: blur-in con leggera risalita.
-      if (copy) tl.to(copy, {
-        y: 0, opacity: 1, filter: 'blur(0px)',
-        duration: 0.9, ease: 'power2.out'
-      }, 0.22);
-      
-      // 3. NUOVO: Inseriamo l'entrata del testo delle sottocategorie nella sequenza (a 0.32s)
-      if (summaryText.length) tl.to(summaryText, {
-        y: 0, opacity: 1, filter: 'blur(0px)',
-        duration: 0.9, ease: 'power2.out'
-      }, 0.32);
+      if (copy)
+        tl.to(
+          copy,
+          {
+            y: 0,
+            opacity: 1,
+            filter: "blur(0px)",
+            duration: 0.9,
+            ease: "power2.out",
+          },
+          0.22,
+        );
+
+      // entrata del testo delle sottocategorie nella sequenza cascata, dopo la copy della hero
+      if (summaryText.length)
+        tl.to(
+          summaryText,
+          {
+            y: 0,
+            opacity: 1,
+            filter: "blur(0px)",
+            duration: 0.9,
+            ease: "power2.out",
+          },
+          0.32,
+        );
 
       // Controlli del sommario: blur-in sotto, a chiudere la cascata.
-      if (controls.length) tl.to(controls, {
-        y: 0, opacity: 1, filter: 'blur(0px)',
-        duration: 0.85, ease: 'power2.out'
-      }, 0.4);
+      if (controls.length)
+        tl.to(
+          controls,
+          {
+            y: 0,
+            opacity: 1,
+            filter: "blur(0px)",
+            duration: 0.85,
+            ease: "power2.out",
+          },
+          0.4,
+        );
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   });
 
   // Shrink the one-line (nowrap) desktop title so the longest line always
@@ -480,29 +614,32 @@
   // title instead, so it opts out and stays at --title-fit: 1.
   function fitTitle() {
     const el = heroTitleEl;
-    if (!el || typeof window === 'undefined') return;
+    if (!el || typeof window === "undefined") return;
 
     if (window.innerWidth <= 700) {
-      el.style.setProperty('--title-fit', '1');
+      el.style.setProperty("--title-fit", "1");
       return;
     }
 
     // Measure at natural size first, then compute the shrink factor.
-    el.style.setProperty('--title-fit', '1');
-    const lines = Array.from(el.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
+    el.style.setProperty("--title-fit", "1");
+    const lines = Array.from(
+      el.querySelectorAll<HTMLElement>(".title-fill, .title-outline"),
+    );
     let scale = 1;
     for (const line of lines) {
-      const avail = line.clientWidth;    // container box (bounded by max-width)
-      const natural = line.scrollWidth;  // full one-line text width
-      if (avail > 0 && natural > avail) scale = Math.min(scale, avail / natural);
+      const avail = line.clientWidth; // container box (bounded by max-width)
+      const natural = line.scrollWidth; // full one-line text width
+      if (avail > 0 && natural > avail)
+        scale = Math.min(scale, avail / natural);
     }
     // Tiny safety margin so glyph edges / the outline stroke never touch the clip.
-    el.style.setProperty('--title-fit', scale < 1 ? String(scale * 0.99) : '1');
+    el.style.setProperty("--title-fit", scale < 1 ? String(scale * 0.99) : "1");
   }
 
   $effect(() => {
-    const _ = slug;                       // refit when the category (title) changes
-    if (typeof window === 'undefined') return;
+    const _ = slug; // refit when the category (title) changes
+    if (typeof window === "undefined") return;
 
     let raf = 0;
     const schedule = () => {
@@ -511,20 +648,22 @@
     };
 
     let cancelled = false;
-    schedule();                                   // fit with whatever font is ready now
-    displayFontReady().then(() => { if (!cancelled) schedule(); }); // refit once the web font loads
-    window.addEventListener('resize', schedule, { passive: true });
+    schedule(); // fit with whatever font is ready now
+    displayFontReady().then(() => {
+      if (!cancelled) schedule();
+    }); // refit once the web font loads
+    window.addEventListener("resize", schedule, { passive: true });
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      window.removeEventListener('resize', schedule);
+      window.removeEventListener("resize", schedule);
     };
   });
 
   function blurFade(
-    _node: HTMLElement, 
-    { duration = 700, blur = 5, y = 10, easing = quartOut } = {}
+    _node: HTMLElement,
+    { duration = 700, blur = 5, y = 10, easing = quartOut } = {},
   ) {
     return {
       duration: prefersReduced() ? 0 : duration,
@@ -534,18 +673,21 @@
         opacity: ${t};
         filter: blur(${u * blur}px);
         transform: translateY(${u * y}px);
-      `
+      `,
     };
   }
 </script>
 
 <svelte:head>
-  <title>{cat?.label ?? 'Categoria'} — Fuori Campo</title>
+  <title>{cat?.label ?? "Categoria"} — Fuori Campo</title>
 </svelte:head>
 
 {#if cat}
-  <main class="category-page" id="main-content" class:category-sport={cat?.slug === 'sport'}>
-    
+  <main
+    class="category-page"
+    id="main-content"
+    class:category-sport={cat?.slug === "sport"}
+  >
     <div class="back-btn-wrapper">
       <BackButton onclick={() => history.back()} ariaLabel="Indietro" />
     </div>
@@ -555,7 +697,9 @@
         class="hero-title"
         id="category-title"
         bind:this={heroTitleEl}
-        style={cat.mobileTitleSize ? `--mobile-title-size: ${cat.mobileTitleSize}px` : undefined}
+        style={cat.mobileTitleSize
+          ? `--mobile-title-size: ${cat.mobileTitleSize}px`
+          : undefined}
       >
         {#each lines as line, i}
           <span class="title-mask">
@@ -577,76 +721,79 @@
       bind:this={summaryEl}
       style={`--summary-max-text-height: ${summaryMaxTextHeight}px`}
     >
-        <div class="summary-top-wrap">
-          {#key activeRoleIndex}
-            <div 
-              class="summary-top" 
-              in:blurFade={{ duration: 800, blur: 8, easing: quartOut }} 
-              out:blurFade={{ duration: 350, blur: 5, easing: sineInOut }}
-            >
-              <div class="summary-meta">
-                <p class="summary-eyebrow">{activeRole.title}</p>
-              </div>
-
-              <div class="summary-copy">
-                <p>{activeRole.description}</p>
-                <p class="summary-footer">{activeRole.role}</p>
-              </div>
+      <div class="summary-top-wrap">
+        {#key activeRoleIndex}
+          <div
+            class="summary-top"
+            in:blurFade={{ duration: 800, blur: 8, easing: quartOut }}
+            out:blurFade={{ duration: 350, blur: 5, easing: sineInOut }}
+          >
+            <div class="summary-meta">
+              <p class="summary-eyebrow">{activeRole.title}</p>
             </div>
-          {/key}
-        </div>
 
-        <div class="summary-measure" bind:this={summaryMeasureEl} aria-hidden="true">
-          {#each activeSummary.roles as measuredRole}
-            <div class="summary-top summary-top--measure">
-              <div class="summary-meta">
-                <p class="summary-eyebrow">{measuredRole.title}</p>
-              </div>
-
-              <div class="summary-copy">
-                <p>{measuredRole.description}</p>
-                <p class="summary-footer">{measuredRole.role}</p>
-              </div>
+            <div class="summary-copy">
+              <p>{activeRole.description}</p>
+              <p class="summary-footer">{activeRole.role}</p>
             </div>
+          </div>
+        {/key}
+      </div>
+
+      <div
+        class="summary-measure"
+        bind:this={summaryMeasureEl}
+        aria-hidden="true"
+      >
+        {#each activeSummary.roles as measuredRole}
+          <div class="summary-top summary-top--measure">
+            <div class="summary-meta">
+              <p class="summary-eyebrow">{measuredRole.title}</p>
+            </div>
+
+            <div class="summary-copy">
+              <p>{measuredRole.description}</p>
+              <p class="summary-footer">{measuredRole.role}</p>
+            </div>
+          </div>
+        {/each}
+      </div>
+
+      <div class="dot-frecce">
+        <div class="dot-nav" aria-label="Sub-roles">
+          {#each Array.from({ length: roleCount }) as _, index}
+            <button
+              type="button"
+              class="dot"
+              class:dot--active={index === activeRoleIndex}
+              aria-label={`Mostra sub-ruolo ${index + 1}`}
+              aria-pressed={index === activeRoleIndex}
+              onclick={() => {
+                activeRoleIndex = index;
+              }}
+            ></button>
           {/each}
         </div>
 
-        <div class="dot-frecce">
-          <div class="dot-nav" aria-label="Sub-roles">
-            {#each Array.from({ length: roleCount }) as _, index}
-              <button
-                type="button"
-                class="dot"
-                class:dot--active={index === activeRoleIndex}
-                aria-label={`Mostra sub-ruolo ${index + 1}`}
-                aria-pressed={index === activeRoleIndex}
-                onclick={() => {
-                  activeRoleIndex = index;
-                }}
-              ></button>
-            {/each}
-          </div>
+        <div class="frecce" aria-label="Navigazione sotto-ruoli">
+          <ArrowButton
+            direction="left"
+            ariaLabel="Sotto-ruolo precedente"
+            onclick={() => {
+              activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount;
+            }}
+          />
 
-          <div class="frecce" aria-label="Navigazione sotto-ruoli">
-            <ArrowButton
-              direction="left"
-              ariaLabel="Sotto-ruolo precedente"
-              onclick={() => {
-                activeRoleIndex = (activeRoleIndex - 1 + roleCount) % roleCount;
-              }}
-            />
-
-            <ArrowButton
-              direction="right"
-              ariaLabel="Sotto-ruolo successivo"
-              onclick={() => {
-                activeRoleIndex = (activeRoleIndex + 1) % roleCount;
-              }}
-            />
-          </div>
+          <ArrowButton
+            direction="right"
+            ariaLabel="Sotto-ruolo successivo"
+            onclick={() => {
+              activeRoleIndex = (activeRoleIndex + 1) % roleCount;
+            }}
+          />
         </div>
-      </section>
-
+      </div>
+    </section>
   </main>
 {:else}
   <div class="not-found">Categoria non trovata</div>
@@ -662,9 +809,9 @@
     background: var(--color-background-primary);
   }
 
-  /* 1. IL CONTENITORE: Grande esattamente quanto lo schermo, ma relativo. */
+  /* contenitore carosello. */
   .category-page {
-    position: relative; /* Nessun fixed! Così non si rompe mai. */
+    position: relative;
     width: 100%; /* Si prende la larghezza disponibile senza creare scroll orizzontali */
     height: 100dvh; /* Altezza bloccata allo schermo */
     background: var(--color-background-primary);
@@ -676,19 +823,16 @@
     flex-direction: column;
   }
 
- 
-/* 2. PULSANTE INDIETRO: In alto a sinistra */
+  /* Bottoni indietro */
   .back-btn-wrapper {
     margin-left: var(--spacing-11);
     position: relative;
     z-index: 30;
   }
 
-  
-
-  /* 3. HERO: Contenitore flessibile che prende lo spazio al centro */
+  /* hero descrizione contenitore flessibile */
   .hero {
-    width: 100%; 
+    width: 100%;
     position: relative;
     z-index: 5;
     margin: 0;
@@ -698,7 +842,8 @@
     pointer-events: none; /* Lascia passare i click alla card sotto */
   }
 
-  .hero-title, .hero-copy {
+  .hero-title,
+  .hero-copy {
     pointer-events: auto; /* Riattiva i click sui testi */
   }
 
@@ -714,7 +859,7 @@
 
   .title-mask {
     display: block;
-  } 
+  }
 
   .title-fill,
   .title-outline {
@@ -724,11 +869,13 @@
        container at any desktop width — otherwise the --page-zoom-compensated
        size overflows and gets clipped by `overflow: hidden` (e.g. "GESTIONE
        OPERATIVA" at ~995px). */
-    font-size: calc(clamp(
-      var(--unit-56),
-      calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
-      var(--unit-200)
-    ) * var(--title-fit, 1));
+    font-size: calc(
+      clamp(
+          var(--unit-56),
+          calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
+          var(--unit-200)
+        ) * var(--title-fit, 1)
+    );
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0;
@@ -760,45 +907,45 @@
     max-width: calc(100% - clamp(0px, 24.5vw, 268px) - var(--spacing-11));
   }
 
-  /* 4. LA DESCRIZIONE BIANCA: Spinta matematicamente a destra */
+  /* descrizione/spigazione categoria  */
   .hero-copy {
-    /* 1. Il margine superiore non è più fisso, ma si schiaccia se lo schermo è basso */
-    margin-top: clamp(10px, 4vh, var(--unit-36)); 
-    margin-left: auto; 
-    margin-right: var(--spacing-11); 
+    margin-top: clamp(10px, 4vh, var(--unit-36));
+    margin-left: auto;
+    margin-right: var(--spacing-11);
     padding: 0;
     width: 100%;
-    max-width: min(70dvw, 1100px); 
+    max-width: min(70dvw, 1100px);
     text-align: right;
     text-wrap: balance;
     font-family: var(--font-display);
     font-weight: 500;
-    line-height: 1.05; 
+    line-height: 1.05;
     color: var(--color-content-body);
-    
-    /* 2. LA MAGIA: Il testo ora guarda l'altezza (vh), non solo la larghezza (vw) */
+
+    /* Il testo guarda l'altezza (vh), non solo la larghezza (vw) */
     /* Parte da un minimo di 20px e si ferma a 45px. Nel mezzo, usa il 4% dell'altezza dello schermo */
-    font-size: clamp(25px, 6vh, 45px); 
+    font-size: clamp(25px, 6vh, 45px);
   }
-  
-  /* 4. La Card delle Sottocategorie viene Ancorata (Position Absolute) */
+
+  /* 4. la card delle sottocategorie è ancorata nello stesso punto */
   .summary-card {
     --summary-arrows-size: 60px;
     --summary-controls-gap: 40px;
     --summary-dots-lift: 9px;
-    --summary-bottom-reserve: calc(var(--summary-arrows-size) + var(--summary-controls-gap));
+    --summary-bottom-reserve: calc(
+      var(--summary-arrows-size) + var(--summary-controls-gap)
+    );
 
-    /* Usa FIXED invece di absolute */
-    position: fixed; 
+    position: fixed;
     bottom: var(--spacing-8);
     left: var(--spacing-11);
     z-index: 20;
 
-    width: calc(50vw - var(--spacing-8)); 
-    max-width: 600px; 
-    
+    width: calc(50vw - var(--spacing-8));
+    max-width: 600px;
+
     padding: 0 0 var(--spacing-12, 80px);
-    margin: 0; 
+    margin: 0;
 
     display: flex;
     flex-direction: column;
@@ -885,9 +1032,9 @@
     color: rgba(250, 250, 250, 0.96);
   }
 
-  /* 1. Il contenitore generale: li spinge agli estremi (sinistra/destra) e li incolla in basso */
+  /* contenitore dot+frecce */
   .dot-frecce {
-    position: absolute; /* O relative, se su mobile lo vuoi nel flusso */
+    position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
@@ -895,21 +1042,18 @@
 
     display: flex;
     justify-content: space-between; /* Pallini a sx, frecce a dx */
-    align-items: flex-end; /* LA MAGIA: Allinea entrambi gli elementi in basso */
-    
+    align-items: flex-end; /* entrambi gli elementi allineati in basso */
+
     pointer-events: auto;
   }
 
-  /* 2. I pallini */
+  /* dot nav */
   .dot-nav {
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
-    
-    /* RIMUOVI IL MARGIN-BOTTOM CHE C'ERA PRIMA!
-       Era questo: margin-bottom: calc(...); a spingerli in alto.
-       Se vuoi staccarli un pochino dal bordo, metti un piccolo margin fisso uguale per entrambi. */
-    margin-bottom: 0; 
+
+    margin-bottom: 0;
   }
 
   .dot {
@@ -927,7 +1071,7 @@
   }
 
   .dot::before {
-    content: '';
+    content: "";
     display: block;
     width: var(--unit-16);
     height: var(--unit-16);
@@ -946,12 +1090,12 @@
     background: var(--color-content-accent);
   }
 
-  /* 3. Le frecce */
+  /* frecce */
   .frecce {
     display: flex;
     align-items: center;
     gap: var(--unit-20);
-    margin-bottom: 0; /* Assicurati che non ci siano margini strani neanche qui */
+    margin-bottom: 0;
   }
 
   .not-found {
@@ -964,60 +1108,58 @@
     color: rgba(250, 250, 250, 0.38);
   }
 
-
-  /* ── SALVAGENTE PER SCHERMI BASSI (SENZA SCROLL) ── */
+  /* ── shcermi bassi queries ── */
   @media (max-height: 850px) {
     .category-page {
-      /* Riduciamo drasticamente il padding superiore per guadagnare spazio prezioso */
+      /* ridotto il padding superiore per guadagnare spazio */
       padding-top: calc(var(--navbar-height, 80px) + var(--spacing-2));
     }
-    
+
     .hero {
-      padding-top: 0; /* Togliamo ulteriore spazio vuoto inutile */
+      padding-top: 0; /* Togliamo ulteriore spazio vuoto */
     }
-  } 
+  }
 
   @media (max-width: 700px) {
-    /* 1. SBLOCCO DELLA PAGINA: Torna a scorrere come la pagina del volontario */
+    /* Pagina torna a scorrere */
     .category-page {
       position: relative; /* Resetta il fixed del desktop */
       height: auto;
       min-height: 100dvh;
       overflow-x: hidden;
-      overflow-y: auto; 
+      overflow-y: auto;
       /* Padding per distanziare i contenuti dai bordi dello schermo */
-      padding: var(--spacing-5, 24px); 
+      padding: var(--spacing-5, 24px);
       padding-top: calc(var(--navbar-height, 125px) + var(--spacing-4));
-      padding-bottom: 0; 
+      padding-bottom: 0;
       box-sizing: border-box;
     }
 
-    /* 2. BOTTONE INDIETRO: Fluisce naturalmente in alto a sinistra (Stile Volontario) */
     .back-btn-wrapper {
       position: relative; /* Perde ogni ancoraggio fisso */
-      margin-left: 0;     /* Resetta il margine desktop per allinearsi al titolo */
+      margin-left: 0; /* Resetta il margine desktop per allinearsi al titolo */
       margin-top: 0;
-      margin-bottom: var(--spacing-4); /* Spinge giù il titolo sotto di sé */
+      margin-bottom: var(--spacing-4); /* Spinge il titolo sotto di sé */
       z-index: 30;
     }
 
-    /* 3. HERO (Contenitore del Titolo) */
+    /* hero titolo */
     .hero {
       padding: 0;
-      flex-grow: 0; 
+      flex-grow: 0;
     }
 
     .hero-title {
       overflow: visible; /* Sblocca il contenitore generale */
     }
 
-    /* 4. STRUTTURA DEL TITOLO */
+    /* struttura titolo */
     .title-mask {
       display: block;
       overflow: hidden; /* Serve per l'animazione dal basso di Svelte/GSAP */
-      
+
       /* Creiamo lo spazio invisibile per non far tagliare la maschera */
-      padding-bottom: 12px; 
+      padding-bottom: 12px;
       margin-bottom: -12px;
     }
 
@@ -1025,14 +1167,13 @@
     .title-outline {
       display: block;
       white-space: normal;
-      font-size: var(--mobile-title-size, 43px); 
-      line-height: 36px; /* Invariato, corretto! */
+      font-size: var(--mobile-title-size, 43px);
+      line-height: 36px;
       width: 100%;
       max-width: 100%;
-      margin: 0; 
-      
-      /* LA VERA SOLUZIONE: Sblocca il taglio ereditato dal Desktop! */
-      overflow: visible; 
+      margin: 0;
+
+      overflow: visible;
     }
 
     .title-outline {
@@ -1046,93 +1187,85 @@
       max-width: 100%;
     }
 
-    /* 5. DESCRIZIONE BIANCA DELLA CATEGORIA (Mobile) */
+    /* descrizione categorie mobile */
     .hero-copy {
-      /* 1. Posizionamento: si prende tutto lo spazio sotto al titolo */
       margin-top: var(--spacing-8, 48px); /* Distanza dal titolo sopra */
       margin-left: 0;
       margin-bottom: 0;
-      margin-right: 0; /* Su mobile non serve il margine destro esagerato del desktop */
+      margin-right: 0; /* Su mobile non serve il margine destro del desktop */
       width: 100%;
-      max-width: 100%; 
-      
-      text-align: right; /* Mantiene l'allineamento a destra come da desktop */
-      
-      /* 2. TIPOGRAFIA FLUIDA (La Best Practice) */
-      /* Parte da 22px (telefoni piccoli), cresce col 7% dello schermo, si ferma a 30px (Figma) */
-      font-size: clamp(22px, 7vw, 30px); 
-      
-      /* Rispetta la proporzione di Figma (28px su 30px), ma in modo elastico */
-      line-height: 0.95; 
-      
+      max-width: 100%;
+
+      text-align: right; /* Mantiene l'allineamento a destra */
+
+      /* tipografia fluida */
+      /* Parte da 22px (telefoni piccoli), cresce col 7% dello schermo, si ferma a 30px */
+      font-size: clamp(22px, 7vw, 30px);
+
+      line-height: 0.95;
+
       font-weight: 500;
-      
-      /* 3. ESTETICA: Bilancia le righe per evitare parole singole a fine paragrafo */
-      text-wrap: balance; 
+
+      /* Bilancia le righe per evitare parole singole a fine paragrafo */
+      text-wrap: balance;
     }
 
-    
-
-    /* 2. IL BLOCCO DELLE SOTTOCATEGORIE (Summary Card) */
+    /* summary card ferme */
     .summary-card {
       position: fixed; /* Sganciato, scorre normalmente col documento */
       bottom: var(--spacing-6-2, 36px);
       left: var(--spacing-5, 24px);
-      
+
       /* Larga tutto lo schermo meno i 2 padding laterali */
       width: calc(100% - var(--spacing-5) * 2);
       max-width: 100%;
-      
     }
 
     .summary-top {
       width: 100%;
     }
 
-    /* 3. TITOLETTO GIALLO SOTTOCATEGORIA (Figma: 20px) */
+    /* titolo sottocategoria  */
     .summary-eyebrow {
       /* Scala morbidamente dai 16px (su schermi mini) al tuo target Figma (20px) */
-      font-size: clamp(18px, 7vw, 20px); 
-      
+      font-size: clamp(18px, 7vw, 20px);
+
       /* In Figma 11.77px su 20px è troppo stretto (rischio taglio).
-         Con "1" l'interlinea è esattamente uguale al font (20px). È compatto e sicuro. */
-      line-height: 1; 
+         Con "1" l'interlinea è esattamente uguale al font (20px). */
+      line-height: 1;
       letter-spacing: 0; /* Resetta eventuali spaziature del desktop */
     }
 
-    /* 4. DESCRIZIONE BIANCA SOTTOCATEGORIA E FOOTER (Figma: 15px) */
     .summary-copy,
     .summary-footer {
       /* Scala dai 13px al target di Figma (15px) */
-      font-size: clamp(15px, 5vw, 18px); 
-      
+      font-size: clamp(15px, 5vw, 18px);
+
       /* Su un paragrafo, un line-height a 15px (uguale al font) risulta un po'
          schiacciato e faticoso da leggere su telefono. 1.15 è la media aurea. */
-      line-height: 1.15; 
+      line-height: 1.15;
     }
 
-    /* 6. DOT NAVIGATION (Mobile) */
+    /* dot mobile ridotto */
     .dot-nav {
       /* Limite invalicabile: si prende tutta la larghezza tranne 110px, 
          che vengono lasciati categoricamente liberi per le frecce */
-      max-width: calc(100% - 110px); 
-      
+      max-width: calc(100% - 110px);
+
       /* Gap fisso e immutabile: non si deformerà mai */
-      gap: 6px; 
-      
+      gap: 6px;
+
       /* Rete di sicurezza: se in futuro avrai 20 categorie e non ci staranno, 
          andranno su una seconda riga ordinata senza rompere il layout o invadere le frecce */
-      flex-wrap: wrap; 
+      flex-wrap: wrap;
     }
 
-    /* Riduciamo le dimensioni del touch target e del cerchio visibile */
-    .dot, 
+    .dot,
     .dot::before {
       width: 12px;
       height: 12px;
     }
-}
-
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .dot::before {
