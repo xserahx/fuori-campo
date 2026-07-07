@@ -1,13 +1,13 @@
 <script lang="ts">
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
+  import { gsap } from 'gsap';
 
   import '$lib/styles/reset.css';
   import '$lib/styles/tokens.css';
   import '$lib/styles/base.css';
   import '$lib/styles/utilities.css';
 
-  // ── Contenuti Oggettivi e Fattuali ──────────────
   const introSlides = [
     {
       titleTop: 'COS’È',
@@ -27,6 +27,7 @@
   ];
 
   let activeIndex = $state(0);
+  let introSlideEl = $state<HTMLElement | null>(null);
 
   function next() {
     activeIndex = (activeIndex + 1) % introSlides.length;
@@ -35,18 +36,54 @@
   function prev() {
     activeIndex = (activeIndex - 1 + introSlides.length) % introSlides.length;
   }
+
+  // ── ANIMAZIONE TITOLO DAL CAROSELLO ──
+  function playTitleReveal(lines: NodeListOf<HTMLElement>) {
+    gsap.fromTo(
+      lines,
+      { yPercent: 120 },
+      {
+        yPercent: 0,
+        duration: 0.9,
+        ease: 'power4.out',
+        force3D: false,
+        overwrite: true,
+        stagger: { each: 0.08, from: 'start' }
+      }
+    );
+  }
+
+  // Eseguiamo l'animazione ESATTAMENTE come nel carosello ad ogni cambio slide
+  $effect(() => {
+    const _trigger = activeIndex; 
+    
+    if (!introSlideEl) return;
+    
+    const activeSlide = introSlideEl.querySelector('.slide-content.active');
+    if (!activeSlide) return;
+
+    // Selezioniamo solo i frammenti del titolo
+    const lines = activeSlide.querySelectorAll<HTMLElement>('.title-anim');
+    if (!lines.length) return;
+
+    // Se non siamo al primo render globale (dove la pagina ha già la sua animazione d'ingresso), facciamo salire il titolo.
+    // Usiamo gsap.set per azzerare prima, così evitiamo sfarfallii
+    gsap.set(lines, { yPercent: 120 });
+    playTitleReveal(lines);
+  });
+
 </script>
 
 <main class="about-page">
   <section class="intro safe-area">
     
-    <div class="ghost-grid">
+    <div class="ghost-grid" bind:this={introSlideEl}>
       {#each introSlides as slide, i}
         <div class="slide-content" class:active={i === activeIndex} aria-hidden={i !== activeIndex}>
           
           <h1 class="title-mask">
-            <span class="rise-mask"><span class="title-fill">{slide.titleTop}</span></span>
-            <span class="rise-mask"><span class="title-outline">{slide.titleBottom}</span></span>
+            <span class="rise-mask"><span class="title-fill title-anim">{slide.titleTop}</span></span>
+            <span class="rise-mask"><span class="title-outline title-anim">{slide.titleBottom}</span></span>
           </h1>
 
           <div class="hero-mask">
@@ -94,7 +131,6 @@
     background: var(--color-background-primary, #0e0e0e);
   }
 
-  /* ── Page shell ─────────────────────────────────────────────── */
   .about-page {
     background: var(--color-background-primary, #0e0e0e);
     color: var(--color-content-body, #fafafa);
@@ -103,7 +139,6 @@
     overflow-x: hidden;
   }
 
-  /* ── Sezione Intro ────────────────────────────────────────────── */
   .intro {
     display: flex;
     flex-direction: column;
@@ -112,7 +147,7 @@
     overflow-x: hidden;
   }
 
-  /* ── Il trucco della Ghost Grid ───────────────────────────────── */
+  /* ── Il trucco della Ghost Grid SENZA le transition di opacity iniziali ── */
   .ghost-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -125,18 +160,17 @@
     display: flex;
     flex-direction: column;
     visibility: hidden;
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
+    /* Rimosso l'effetto di transizione CSS. Tutto avviene istantaneamente,
+       il titolo si anima tramite GSAP, il testo laterale scatta di netto (come le sottocategorie). */
   }
 
   .slide-content.active {
     visibility: visible;
-    opacity: 1;
     pointer-events: auto;
   }
 
-  /* ── Titoli */
+  /* ── Titoli ── */
   .title-mask {
     margin: 0;
     display: flex;
@@ -147,11 +181,6 @@
   .title-fill,
   .title-outline {
     font-family: var(--font-display);
-    /* --title-fit (default 1) is set by fitTitle() in JS to shrink the
-       one-line (nowrap) title just enough that the longest line fits its
-       container at any desktop width — otherwise the --page-zoom-compensated
-       size overflows and gets clipped by `overflow: hidden` (e.g. "GESTIONE
-       OPERATIVA" at ~995px). */
     font-size: calc(clamp(
       var(--unit-56),
       calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
@@ -162,6 +191,9 @@
     letter-spacing: 0;
     line-height: 1;
     white-space: nowrap;
+    
+    /* FIX GSAP: Serve block per l'animazione yPercent */
+    display: block; 
   }
 
   .title-outline {
@@ -170,7 +202,6 @@
     margin-left: var(--spacing-14);
     margin-top: 0;
     max-width: calc(100% - var(--spacing-17) - var(--spacing-11));
-    overflow: hidden;
     min-width: 0;
   }
 
@@ -179,15 +210,16 @@
     margin-top: -0.05em;
   }
 
+  /* La maschera essenziale per il taglio GSAP */
   .rise-mask {
     display: block;
     overflow: hidden;
     padding-top: 0.06em;
-    padding-bottom: 0.1em; /* Questo è il salvavita per le code delle lettere */
-    margin-bottom: -0.1em; /* Questo annulla l'ingombro del padding per non spingere giù la riga successiva */
+    padding-bottom: 0.1em; 
+    margin-bottom: -0.1em; 
   }
 
-  /* ── Paragrafo descrittivo  ─────────────── */
+  /* ── Paragrafo descrittivo ── */
   .hero-mask {
     width: 100%; 
     position: relative;
@@ -195,7 +227,7 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    pointer-events: none; /* Lascia passare i click alla card sotto */
+    pointer-events: none; 
   }
 
   .hero-copy {
@@ -210,13 +242,10 @@
     font-weight: 500;
     line-height: 1.05; 
     color: var(--color-content-body);
-    
-    /* 2. LA MAGIA: Il testo ora guarda l'altezza (vh), non solo la larghezza (vw) */
-    /* Parte da un minimo di 20px e si ferma a 45px. Nel mezzo, usa il 4% dell'altezza dello schermo */
     font-size: clamp(25px, 6vh, 45px); 
   }
 
-  /* ── Dot e Frecce (ESTRATTI ESATTAMENTE) ──────────────────────── */
+  /* ── Dot e Frecce ── */
   .dot-frecce {
     display: flex;
     align-items: flex-end;
@@ -269,7 +298,6 @@
     gap: var(--unit-20);
   }
 
-  /* ── Area Test Scroll ─────────────────────────────────────────── */
   .test-scroll {
     min-height: 100vh; 
     background: #111;
@@ -288,36 +316,23 @@
       flex-grow: 0; 
     }
 
-    /* 5. DESCRIZIONE BIANCA DELLA CATEGORIA (Mobile) */
     .hero-copy {
-      /* 1. Posizionamento: si prende tutto lo spazio sotto al titolo */
-      margin-top: var(--spacing-8, 48px); /* Distanza dal titolo sopra */
+      margin-top: var(--spacing-8, 48px); 
       margin-left: 0;
       margin-bottom: 0;
-      margin-right: 0; /* Su mobile non serve il margine destro esagerato del desktop */
+      margin-right: 0; 
       width: 100%;
       max-width: 100%; 
-      
-      text-align: right; /* Mantiene l'allineamento a destra come da desktop */
-      
-      /* 2. TIPOGRAFIA FLUIDA (La Best Practice) */
-      /* Parte da 22px (telefoni piccoli), cresce col 7% dello schermo, si ferma a 30px (Figma) */
+      text-align: right; 
       font-size: clamp(22px, 7vw, 30px); 
-      
-      /* Rispetta la proporzione di Figma (28px su 30px), ma in modo elastico */
       line-height: 0.95; 
-      
       font-weight: 500;
-      
-      /* 3. ESTETICA: Bilancia le righe per evitare parole singole a fine paragrafo */
       text-wrap: balance; 
     }
-    /* 4. STRUTTURA DEL TITOLO */
+
     .title-mask {
       display: block;
-      overflow: hidden; /* Serve per l'animazione dal basso di Svelte/GSAP */
-      
-      /* Creiamo lo spazio invisibile per non far tagliare la maschera */
+      overflow: hidden; 
       padding-bottom: 12px; 
       margin-bottom: -12px;
     }
@@ -327,40 +342,29 @@
       display: block;
       white-space: normal;
       font-size: var(--mobile-title-size, 43px); 
-      line-height: 36px; /* Invariato, corretto! */
+      line-height: 36px; 
       width: 100%;
       max-width: 100%;
       margin: 0; 
-      
-      /* LA VERA SOLUZIONE: Sblocca il taglio ereditato dal Desktop! */
       overflow: visible; 
     }
 
     .title-outline {
       -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
-      padding-left: 2px; /* Margine di sicurezza ottico */
+      padding-left: 2px; 
     }
 
     .dot-frecce {
-    width: 100%;
-    margin-top: clamp(72px, 30dvh, 350px);
-  }
+      width: 100%;
+      margin-top: clamp(72px, 30dvh, 350px);
+    }
 
-    /* 6. DOT NAVIGATION (Mobile) */
     .dot-nav {
-      /* Limite invalicabile: si prende tutta la larghezza tranne 110px, 
-         che vengono lasciati categoricamente liberi per le frecce */
       max-width: calc(100% - 110px); 
-      
-      /* Gap fisso e immutabile: non si deformerà mai */
       gap: 6px; 
-      
-      /* Rete di sicurezza: se in futuro avrai 20 categorie e non ci staranno, 
-         andranno su una seconda riga ordinata senza rompere il layout o invadere le frecce */
       flex-wrap: wrap; 
     }
 
-    /* Riduciamo le dimensioni del touch target e del cerchio visibile */
     .dot, 
     .dot::before {
       width: 12px;
