@@ -803,6 +803,18 @@
       left: var(--profile-side-offset, var(--spacing-5, 24px));
       bottom: 32px;
     }
+
+    /* INTERCETTAZIONE: Se la navbar ha la classe .menu-open, 
+       spegniamo istantaneamente il rendering del wrapper del bottone foto */
+    :global(.navbar.menu-open) ~ main .vedi-foto-wrapper {
+      display: none !important;
+    }
+
+    /* Sicurezza per iOS/Android: se il body ha l'overflow bloccato dal menu,
+       il bottone sparisce all'istante */
+    :global(body[style*="overflow: hidden"]) .vedi-foto-wrapper {
+      display: none !important;
+    }
   }
 
   @media (pointer: coarse) {
