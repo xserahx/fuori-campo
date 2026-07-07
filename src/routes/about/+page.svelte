@@ -44,13 +44,13 @@
       {#each introSlides as slide, i}
         <div class="slide-content" class:active={i === activeIndex} aria-hidden={i !== activeIndex}>
           
-          <h1 class="section-title">
+          <h1 class="title-mask">
             <span class="rise-mask"><span class="title-fill">{slide.titleTop}</span></span>
             <span class="rise-mask"><span class="title-outline">{slide.titleBottom}</span></span>
           </h1>
 
-          <div class="intro-body-mask">
-            <p class="intro-body">{slide.body}</p>
+          <div class="hero-mask">
+            <p class="hero-copy">{slide.body}</p>
           </div>
 
         </div>
@@ -136,8 +136,8 @@
     pointer-events: auto;
   }
 
-  /* ── Titoli (ESTRATTI ESATTAMENTE DAL RIFERIMENTO) ────────────── */
-  .section-title {
+  /* ── Titoli */
+  .title-mask {
     margin: 0;
     display: flex;
     flex-direction: column;
@@ -183,10 +183,12 @@
     display: block;
     overflow: hidden;
     padding-top: 0.06em;
+    padding-bottom: 0.1em; /* Questo è il salvavita per le code delle lettere */
+    margin-bottom: -0.1em; /* Questo annulla l'ingombro del padding per non spingere giù la riga successiva */
   }
 
-  /* ── Paragrafo descrittivo (ESTRATTO ESATTAMENTE) ─────────────── */
-  .intro-body-mask {
+  /* ── Paragrafo descrittivo  ─────────────── */
+  .hero-mask {
     width: 100%; 
     position: relative;
     z-index: 5;
@@ -196,7 +198,7 @@
     pointer-events: none; /* Lascia passare i click alla card sotto */
   }
 
-  .intro-body {
+  .hero-copy {
     margin-top: clamp(10px, 4vh, var(--unit-36)); 
     margin-left: auto; 
     padding: 0;
@@ -217,7 +219,7 @@
   /* ── Dot e Frecce (ESTRATTI ESATTAMENTE) ──────────────────────── */
   .dot-frecce {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     width: min(40dvw, 600px);
     margin-top: clamp(32px, 30dvh, 80px);
@@ -277,5 +279,92 @@
     justify-content: center;
     border-top: 1px solid #333;
     padding: 40px;
+  }
+
+  @media (max-width: 700px) {
+
+    .hero-mask {
+      padding: 0;
+      flex-grow: 0; 
+    }
+
+    /* 5. DESCRIZIONE BIANCA DELLA CATEGORIA (Mobile) */
+    .hero-copy {
+      /* 1. Posizionamento: si prende tutto lo spazio sotto al titolo */
+      margin-top: var(--spacing-8, 48px); /* Distanza dal titolo sopra */
+      margin-left: 0;
+      margin-bottom: 0;
+      margin-right: 0; /* Su mobile non serve il margine destro esagerato del desktop */
+      width: 100%;
+      max-width: 100%; 
+      
+      text-align: right; /* Mantiene l'allineamento a destra come da desktop */
+      
+      /* 2. TIPOGRAFIA FLUIDA (La Best Practice) */
+      /* Parte da 22px (telefoni piccoli), cresce col 7% dello schermo, si ferma a 30px (Figma) */
+      font-size: clamp(22px, 7vw, 30px); 
+      
+      /* Rispetta la proporzione di Figma (28px su 30px), ma in modo elastico */
+      line-height: 0.95; 
+      
+      font-weight: 500;
+      
+      /* 3. ESTETICA: Bilancia le righe per evitare parole singole a fine paragrafo */
+      text-wrap: balance; 
+    }
+    /* 4. STRUTTURA DEL TITOLO */
+    .title-mask {
+      display: block;
+      overflow: hidden; /* Serve per l'animazione dal basso di Svelte/GSAP */
+      
+      /* Creiamo lo spazio invisibile per non far tagliare la maschera */
+      padding-bottom: 12px; 
+      margin-bottom: -12px;
+    }
+
+    .title-fill,
+    .title-outline {
+      display: block;
+      white-space: normal;
+      font-size: var(--mobile-title-size, 43px); 
+      line-height: 36px; /* Invariato, corretto! */
+      width: 100%;
+      max-width: 100%;
+      margin: 0; 
+      
+      /* LA VERA SOLUZIONE: Sblocca il taglio ereditato dal Desktop! */
+      overflow: visible; 
+    }
+
+    .title-outline {
+      -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
+      padding-left: 2px; /* Margine di sicurezza ottico */
+    }
+
+    .dot-frecce {
+    width: 100%;
+    margin-top: clamp(72px, 30dvh, 350px);
+  }
+
+    /* 6. DOT NAVIGATION (Mobile) */
+    .dot-nav {
+      /* Limite invalicabile: si prende tutta la larghezza tranne 110px, 
+         che vengono lasciati categoricamente liberi per le frecce */
+      max-width: calc(100% - 110px); 
+      
+      /* Gap fisso e immutabile: non si deformerà mai */
+      gap: 6px; 
+      
+      /* Rete di sicurezza: se in futuro avrai 20 categorie e non ci staranno, 
+         andranno su una seconda riga ordinata senza rompere il layout o invadere le frecce */
+      flex-wrap: wrap; 
+    }
+
+    /* Riduciamo le dimensioni del touch target e del cerchio visibile */
+    .dot, 
+    .dot::before {
+      width: 12px;
+      height: 12px;
+    }
   }
 </style>
