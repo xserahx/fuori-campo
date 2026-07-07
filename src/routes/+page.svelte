@@ -1,8 +1,9 @@
 <script module lang="ts">
-  // Module-scope (not component-scope): survives every SPA remount of this
-  // page within the same browser session — e.g. clicking the logo to come
-  // back home — but resets to false on an actual full page load (first
-  // visit or hard reload), since that re-evaluates the whole module fresh.
+ // Scope del modulo (non del componente): questo valore sopravvive a ogni
+// remount della pagina dentro la stessa sessione SPA — ad esempio quando
+// si clicca il logo per tornare alla home.  
+// Si resetta invece a false su un vero full page load (prima visita o
+// hard reload), perché in quel caso l’intero modulo viene rivalutato da zero.
   let introPlayed = false;
 </script>
 
@@ -19,50 +20,109 @@
   import { navbarInverted, navbarHidden } from '$lib/stores/navbar';
   import IntroLoader from "../lib/components/IntroLoader.svelte";
 
-  /* ── Intro loader ───────────────────────────────────────────────── */
+  /* ── Costanti di tuning ─────────────────────────────────────────────
+   Tutti i timing e le variabili che regolano la loading page sono qui.
+   L’idea è semplice: ogni valore ha una propria variabile, così
+   eventuali ritocchi futuri richiedono di cambiare una sola riga di codice
+   invece di inseguire valori sparsi nel file */
+
+  // Timeline del caricamento iniziale (intro loader)
+  const INTRO_DURATION_MS = 4800; // durata del riempimento della progress bar
+  const INTRO_HOLD_MS = 560;      // breve pausa al 100% prima della dissolvenza
+  const INTRO_EXIT_MS = 2100;     // tempo di fade-out dell’overlay del loader
+
+  // Parallasse dell’hero
+  const HERO_PARALLAX_SCROLL_VH = 0.7; // distanza di scroll (in frazione della viewport) su cui --hero-scroll-p va da 0 → 1
+
+  // Visibilità della navbar durante lo scrollytelling
+  const NAVBAR_MIDPOINT_FACTOR = 0.5;  // punto medio dello schermo usato per capire se un “beat” è in vista
+  const NAVBAR_PEEK_THRESHOLD_PX = 64; // distanza dal bordo superiore per far riapparire la navbar con un “peek”
+
+  // Gate della gallery
+  const GALLERY_GATE_TRIGGER_PROGRESS = 0.6; // progress di scroll attraverso il gate che attiva il passaggio alla /gallery
+
+  // Auto-fit dei titoli delle domande
+  const MOBILE_BREAKPOINT_PX = 700; // sotto questa larghezza i titoli vanno a capo invece di ridursi (vedi fitQuestions)
+  const FIT_SAFETY_MARGIN = 0.99;   // margine di sicurezza per evitare che il testo tocchi i bordi del pannello
+
+  /* ── Intro loader ──────────────────────────────────────────────── */
   const introSeen = browser && introPlayed;
   let showIntro = $state(!introSeen);
   let introExiting = $state(false);
   let loaderProgress = $state(0);
 
-  /* ── DOM refs essenziali ────────────────────────────────────────── */
+  /* ── DOM refs essenziali ───────────────────────────────────────── */
   let heroSection: HTMLElement | null = null;
   let galleryGate: HTMLElement | null = null;
 
-  /* ── Fit the desktop question titles so they never overflow their panel ──
-     The 116px headings are nowrap (br-controlled lines); the widest line/word
-     (e.g. "CONCRETAMENTE") can exceed the panel width and clip. fitQuestions()
-     scales each heading down via --qfit so its widest line fits. Mobile (≤700)
-     wraps at 36px and opts out. */
+  // Le heading delle domande su desktop usano `nowrap` per mantenere intatti
+  // i ritorni a capo inseriti a mano con <br>. Questo però significa che la
+  // riga più lunga (tipo una parola estesa come “CONCRETAMENTE”) può superare
+  // la larghezza del pannello e venire tagliata.
+  //
+  // fitQuestions() misura la larghezza naturale di ogni heading rispetto allo
+  // spazio disponibile e scrive un fattore di scala --qfit che il CSS applica
+  // alla font-size. In questo modo ogni titolo rientra perfettamente nel
+  // pannello senza mai toccare i line break manuali.
+  //
+  // Su mobile invece il testo va a capo normalmente (vedi media query ≤700px),
+  // quindi questa logica viene disattivata.
   let questionsEl = $state<HTMLElement | undefined>(undefined);
 
   function fitQuestions() {
     if (!questionsEl || typeof window === 'undefined') return;
-    const mobile = window.innerWidth <= 700;
-    const heads = Array.from(questionsEl.querySelectorAll<HTMLElement>('.layered-panel h2'));
 
-    for (const h of heads) {
-      if (mobile) { h.style.setProperty('--qfit', '1'); continue; }
-      h.style.setProperty('--qfit', '1');            // measure at natural size
-      const avail = h.clientWidth;
-      const natural = h.scrollWidth;
-      h.style.setProperty('--qfit', avail > 0 && natural > avail ? String((avail / natural) * 0.99) : '1');
+    const isMobile = window.innerWidth <= MOBILE_BREAKPOINT_PX;
+    const headings = Array.from(questionsEl.querySelectorAll<HTMLElement>('.layered-panel h2'));
+
+    for (const heading of headings) {
+      if (isMobile) {
+        heading.style.setProperty('--qfit', '1');
+        continue;
+      }
+  // Prima riportiamo il titolo alla sua dimensione naturale, così
+  // clientWidth/scrollWidth misurano l’eventuale overflow reale e non
+  // una larghezza alterata da una riduzione precedente.
+      heading.style.setProperty('--qfit', '1');
+
+      const availableWidth = heading.clientWidth;
+      const naturalWidth = heading.scrollWidth;
+      const overflows = availableWidth > 0 && naturalWidth > availableWidth;
+
+      heading.style.setProperty(
+        '--qfit',
+        overflows ? String((availableWidth / naturalWidth) * FIT_SAFETY_MARGIN) : '1'
+      );
     }
   }
 
   $effect(() => {
     if (typeof window === 'undefined') return;
 
-    let raf = 0;
-    const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fitQuestions); };
+  // Il caricamento tardivo dei font (classico caso di FOUT) o un resize della
+  // finestra possono modificare la larghezza effettiva delle heading. Per questo
+  // rifacciamo il fit in entrambi gli scenari. Il debounce via rAF serve a
+  // comprimere una raffica di eventi di resize in una singola misurazione pulita..
+    let rafId = 0;
+    const scheduleFit = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(fitQuestions);
+    };
 
-    schedule();
-    if (typeof document !== 'undefined' && document.fonts) document.fonts.ready.then(() => schedule());
-    window.addEventListener('resize', schedule, { passive: true });
+    scheduleFit();
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.ready.then(scheduleFit);
+    }
+    window.addEventListener('resize', scheduleFit, { passive: true });
 
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', schedule); };
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', scheduleFit);
+    };
   });
 
+  // I due ScrollTrigger qui sotto possono decidere, in momenti diversi, che “adesso” è il momento di passare alla /gallery. Questo flag serve
+  // a garantire che la navigazione avvenga una sola volta, evitando doppi trigger o transizioni duplicate.
   let galleryTransitionPending = false;
 
   function navigateToGallery() {
@@ -75,9 +135,7 @@
     galleryTransitionPending = false;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
-    // --hero-scroll-p lives on <html>, which survives SPA navigation — if the
-    // hero was scrolled past before leaving, it's left stuck near/at 1, which
-    // zeroes out BlurTitle's opacity (calc(1 - p * 1.6)) on the next visit.
+
     document.documentElement.style.setProperty('--hero-scroll-p', '0');
 
     const landing = document.querySelector<HTMLElement>('.landing');
@@ -88,30 +146,35 @@
   let exitTimeout: ReturnType<typeof setTimeout> | undefined;
 
   onMount(() => {
+  // Se abbiamo già visto l’intro (ritorno “soft” alla home), saltiamo completamente il loader: niente barra di avanzamento, niente fade,
+  // si entra direttamente nella pagina.
     if (introSeen) return;
 
-    const DURATION = 4800;
-    const ease = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
-    let startT: number | null = null;
+  // Curva di easing “ease‑in‑out” basata sul coseno: parte e termina in modo morbido, con la massima velocità al centro. Risulta più intenzionale e piacevole rispetto a un riempimento lineare.
+    const easeInOutCosine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
+    let startTime: number | null = null;
 
-    const step = (now: number) => {
-      if (startT === null) startT = now;
-      const t = Math.min(1, (now - startT) / DURATION);
-      loaderProgress = ease(t) * 100;
+    const tick = (now: number) => {
+      if (startTime === null) startTime = now;
+      const progress = Math.min(1, (now - startTime) / INTRO_DURATION_MS);
+      loaderProgress = easeInOutCosine(progress) * 100;
 
-      if (t < 1) {
-        loaderRaf = requestAnimationFrame(step);
+      if (progress < 1) {
+        loaderRaf = requestAnimationFrame(tick);
         return;
       }
+
+    // La barra è ormai arrivata visivamente al 100% — resta ferma per un istante così che l’utente percepisca chiaramente che il caricamento è“completato”, prima di iniziare la dissolvenza del loader.
       loaderProgress = 100;
       introPlayed = true;
 
       exitTimeout = setTimeout(() => {
         introExiting = true;
-        exitTimeout = setTimeout(() => { showIntro = false; }, 2100);
-      }, 560);
+        exitTimeout = setTimeout(() => { showIntro = false; }, INTRO_EXIT_MS);
+      }, INTRO_HOLD_MS);
     };
-    loaderRaf = requestAnimationFrame(step);
+
+    loaderRaf = requestAnimationFrame(tick);
 
     return () => {
       if (loaderRaf) cancelAnimationFrame(loaderRaf);
@@ -126,103 +189,115 @@
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // ── PARALLAX HERO (scrive --hero-scroll-p per il titolo) ──
+    /* ── PARALLAX HERO ──*/
     ScrollTrigger.create({
       trigger: heroSection,
       start: 'top top',
-      end: () => '+=' + window.innerHeight * 0.7,
-      onUpdate: (self) => document.documentElement.style.setProperty('--hero-scroll-p', self.progress.toFixed(3)),
+      end: () => '+=' + window.innerHeight * HERO_PARALLAX_SCROLL_VH,
+      onUpdate: (self) => {
+        document.documentElement.style.setProperty('--hero-scroll-p', self.progress.toFixed(3));
+      },
     });
 
-    // ── NAVBAR: nascosta durante lo scrollytelling ──
-    // Visibile nella hero in cima; si nasconde appena inizia il racconto (prima
-    // .story) e riappare solo all'ultimo testo (.story--summary). Chi vuole
-    // navigare la richiama portando il mouse in cima allo schermo ("peek").
-    let scrollHidden = false; // lo scrollytelling vuole la navbar nascosta
-    let peek = false;         // mouse in cima allo schermo → mostrala comunque
-    const applyNavbar = () => navbarHidden.set(scrollHidden && !peek);
+    /* ── NAVBAR: nascosta durante lo scrollytelling ──────────────────
+       La navbar sparisce non appena inizia il racconto (prima .story) e
+       torna visibile solo all'ultimo testo (.story--summary) — durante le
+       domande a schermo intero non deve competere con il testo gigante.
+       Chi vuole comunque navigare la richiama portando il mouse in cima
+       allo schermo ("peek"). */
+    let storytellingHidesNavbar = false;
+    let pointerIsPeeking = false;
+    const applyNavbarVisibility = () => {
+      navbarHidden.set(storytellingHidesNavbar && !pointerIsPeeking);
+    };
 
-    // Ricalcolo self-correcting a ogni frame dalle posizioni live (niente edge
-    // di toggle da mancare): la navbar è nascosta quando il racconto è iniziato
-    // (la prima .story ha superato il centro) e finché l'ultimo testo
-    // (.story--summary) non raggiunge il centro dello schermo → poi riappare.
-    const introEl   = document.querySelector<HTMLElement>('.story--intro');
-    const summaryEl = document.querySelector<HTMLElement>('.story--summary');
+    // Ricalcolato ad ogni frame dalle posizioni live degli elementi, invece
+    // che da eventi onEnter/onLeave puntuali: così non c'è nessun edge case
+    // di toggle che può essere "mancato" da uno scroll molto rapido.
+    const introSection = document.querySelector<HTMLElement>('.story--intro');
+    const summarySection = document.querySelector<HTMLElement>('.story--summary');
+
     ScrollTrigger.create({
       start: 0,
       end: 'max',
       onUpdate: () => {
-        if (!introEl || !summaryEl) return;
-        const mid = window.innerHeight * 0.5;
-        const introTop   = introEl.getBoundingClientRect().top;
-        const summaryTop = summaryEl.getBoundingClientRect().top;
-        scrollHidden = introTop <= mid && summaryTop > mid;
-        applyNavbar();
+        if (!introSection || !summarySection) return;
+
+        const viewportMid = window.innerHeight * NAVBAR_MIDPOINT_FACTOR;
+        const introTop = introSection.getBoundingClientRect().top;
+        const summaryTop = summarySection.getBoundingClientRect().top;
+
+        storytellingHidesNavbar = introTop <= viewportMid && summaryTop > viewportMid;
+        applyNavbarVisibility();
       },
     });
 
-    const onNavPeek = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
-      const next = e.clientY <= 64;
-      if (next !== peek) { peek = next; applyNavbar(); }
+    const handlePointerPeek = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return; // touch has no "hover near the top"
+
+      const isPeeking = event.clientY <= NAVBAR_PEEK_THRESHOLD_PX;
+      if (isPeeking !== pointerIsPeeking) {
+        pointerIsPeeking = isPeeking;
+        applyNavbarVisibility();
+      }
     };
-    window.addEventListener('pointermove', onNavPeek, { passive: true });
+    window.addEventListener('pointermove', handlePointerPeek, { passive: true });
 
-  // ── LAYERED STACKING (CSS sticky) ──
-    // Lo stacking dei pannelli è nativo del browser via `position: sticky`
-    // (vedi .layered-panel nel CSS): ogni domanda resta incollata in cima e la
-    // successiva le scorre sopra. Essendo calcolato dal browser nello stesso
-    // spazio di coordinate dello `zoom` globale su <html>, NON soffre del bug di
-    // misura del pin di ScrollTrigger sotto `zoom` — che, agganciandosi, faceva
-    // partire il pannello successivo un filo in anticipo. Qui GSAP serve solo a
-    // sincronizzare il colore della navbar.
-    const panels = gsap.utils.toArray('.layered-panel');
+    /* ── LAYERED STACKING (CSS sticky) ────────────────────────────────
+       Lo stacking dei pannelli-domanda è nativo del browser (position:
+       sticky, vedi .layered-panel nel CSS): ogni domanda resta incollata
+       in cima mentre la successiva le scorre sopra. Essendo calcolato dal
+       browser nello stesso spazio di coordinate dello zoom globale su
+       <html>, non soffre del bug di misura che affligge il pin di
+       ScrollTrigger sotto zoom (che farebbe partire il pannello successivo
+       un filo in anticipo). GSAP qui serve solo a sincronizzare il colore
+       della navbar con il pannello attivo. */
+    const questionPanels = gsap.utils.toArray<HTMLElement>('.layered-panel');
 
-    panels.forEach((panel: any) => {
+    questionPanels.forEach((panel) => {
       ScrollTrigger.create({
         trigger: panel,
-        start: "top center",
-        end: "bottom center",
+        start: 'top center',
+        end: 'bottom center',
         onToggle: (self) => {
           if (self.isActive) {
             navbarInverted.set(panel.classList.contains('panel--lime'));
           }
-        }
+        },
       });
     });
 
-    // Ripristina la navbar quando si esce dalle domande
+    // Appena si esce dal blocco domande la navbar torna visibile.
     ScrollTrigger.create({
       trigger: '.questions-container',
       start: 'top top',
       end: 'bottom top',
       onLeave: () => navbarInverted.set(false),
-      onLeaveBack: () => navbarInverted.set(false)
+      onLeaveBack: () => navbarInverted.set(false),
     });
 
-    // ── GALLERY GATE — TRANSIZIONE (per-frame, robusta su mobile) ──
-    // Scrollando dentro il gate la transizione parte a ~0.9 di progresso.
-    // Trigger per-frame: non può essere mancato come un onEnter agganciato
-    // all'ultimo pixel scrollabile sotto l'easing di Lenis + toolbar dinamica.
+    /* ── GALLERY GATE: transizione ─────
+       Trigger per-frame (onUpdate), non un onEnter puntuale: su mobile,
+       con l'easing di Lenis e la toolbar dinamica del browser.
+       0.6 di differenza è abbastanza da lasciar leggere bene l'ultima frase dello storytelling, ma
+       abbastanza presto da non lasciare una fascia nera vuota prima della galleria. */
     ScrollTrigger.create({
       trigger: galleryGate,
       start: 'top bottom',
       end: 'top top',
       onUpdate: (self) => {
-        // Abbastanza tardi da leggere bene l'ultima frase, ma prima della fine
-        // del gate così non c'è una lunga fascia nera vuota.
-        if (self.progress >= 0.6) navigateToGallery();
+        if (self.progress >= GALLERY_GATE_TRIGGER_PROGRESS) navigateToGallery();
       },
     });
 
-    // ── GALLERY GATE — INGRESSO GALLERIA ──
-    // La transizione parte a 'top top': l'istante in cui le foto riempiono lo
-    // schermo (fine del reveal). NON a 'bottom bottom' (fondo del documento):
-    // quel punto è l'ultimo pixel scrollabile e su mobile — con l'easing di
-    // Lenis e la toolbar dinamica (dvh) — non viene raggiunto in modo
-    // affidabile, quindi onEnter non scattava e la transizione non partiva.
-    // Il gate ha ~50dvh di margine sotto (vedi height) così 'top top' cade
-    // ben prima del fondo ed è sempre raggiunto scrollando dentro le foto.
+    /* ── GALLERY GATE: ingresso galleria ───────────────────────────────
+       Parte a 'top top' — l'istante in cui le foto riempiono lo schermo,
+       a fine reveal — e non a 'bottom bottom' (il fondo del documento):
+       quel punto, su mobile, spesso non viene mai raggiunto per via
+       dell'easing di Lenis e della toolbar dinamica (dvh), quindi un
+       onEnter agganciato lì non scatterebbe mai. Il gate ha ~50dvh di
+       margine sotto (vedi .gallery-gate nel CSS) proprio per garantire che
+       'top top' cada ben prima del fondo reale del documento. */
     ScrollTrigger.create({
       trigger: galleryGate,
       start: 'top top',
@@ -232,9 +307,9 @@
     return () => {
       navbarInverted.set(false);
       navbarHidden.set(false);
-      window.removeEventListener('pointermove', onNavPeek);
-      // Rimuove tutti gli ScrollTrigger quando si cambia pagina
-      ScrollTrigger.getAll().forEach(t => t.kill());
+      window.removeEventListener('pointermove', handlePointerPeek);
+      // Rimuove tutti gli ScrollTrigger quando si cambia pagina.
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
     };
   });
 </script>
@@ -259,15 +334,15 @@
       </p>
     </section>
 
-    <section class="story story--right story--numbers safe-area ">
+    <section class="story story--right story--numbers safe-area">
       <p use:blurText={{ delay: 65, duration: 800 }}>
-        <span class="accent">18.000</span> alle Olimpiadi e<br> <span class="accent">4.600</span> alle Paralimpiadi
+        <span class="accent">18.000</span> alle Olimpiadi e<br /> <span class="accent">4.600</span> alle Paralimpiadi
       </p>
     </section>
 
     <section class="story story--quote story--quote-left safe-area">
       <p class="quote" use:blurText={{ delay: 55, duration: 850, threshold: 0.15 }}>
-        Mentre le telecamere erano puntate sulle gare, i volontari <br>sono rimasti <span class="accent">invisibili</span>
+        Mentre le telecamere erano puntate sulle gare, i volontari <br />sono rimasti <span class="accent">invisibili</span>
       </p>
     </section>
 
@@ -277,7 +352,7 @@
       </p>
     </section>
 
-    <!-- ── NUOVA SEZIONE DOMANDE (Layered Pinning) ── -->
+    <!-- ── Sequenza domande a scroll (layered pinning, vedi CSS sotto) ── -->
     <div class="questions-container" bind:this={questionsEl}>
 
       <section class="layered-panel panel--lime question">
@@ -321,30 +396,31 @@
       </p>
     </section>
 
-    <!-- Regione di scroll che innesca la transizione verso la galleria
-         (nessuna anticipazione di immagini). -->
+    <!-- Regione di scroll "muta" che innesca la transizione verso la galleria — nessuna anticipazione di immagini, solo spazio. -->
     <div class="gallery-gate" bind:this={galleryGate} aria-hidden="true"></div>
 
   </main>
 </div>
 
 <style>
-  /* ── Aggiunte classi per l'allineamento dei testi ── */
+  /* ── Allineamento testi per sezione ── */
   .story--left {
     text-align: left;
     display: flex;
     justify-content: flex-start;
   }
-  
+
   .story--right {
     text-align: right;
     display: flex;
     justify-content: flex-end;
   }
+
   .story--quote-right {
-    padding-bottom: 50dvh !important; 
+    padding-bottom: 50dvh !important;
     text-align: right;
   }
+
   /* Piccolo respiro dopo l'ultima frase: quel tanto che basta perché non sia
      incollata alla galleria, ma senza vuoto — le foto iniziano a emergere
      appena si scorre oltre la frase, come continuazione del racconto. */
@@ -377,25 +453,24 @@
     display: none;
   }
 
-
   .question {
     width: 100vw;
     height: 100%;
     display: flex;
-    align-items: center; /* Centratura verticale matematica all'interno dello spazio rimanente */
+    align-items: center; /* centro verticale all'interno dello spazio rimanente */
     flex-shrink: 0;
-    box-sizing: border-box; /* Previene che il padding faccia esplodere le misure */
-    font-size:   36px;
+    box-sizing: border-box; 
+    font-size: var(--unit-36, 36px);
   }
 
-  /* Nuova struttura per gli H2 per garantire l'impaginazione */
+  /* Struttura degli H2 pensata per garantire l'impaginazione */
   .question h2 {
     width: 100%;
     margin: 0;
     box-sizing: border-box;
   }
 
- /* ── LAYERED PINNING: CONTENITORE E PANNELLI ── */
+  /* ── LAYERED PINNING: contenitore e pannelli ── */
   .questions-container {
     position: relative;
     width: 100%;
@@ -441,31 +516,32 @@
   .layered-panel:nth-child(3) { z-index: 3; }
   .layered-panel:nth-child(4) { z-index: 4; }
 
-  /* Ripristiniamo il testo gigante */
   .layered-panel h2 {
     font-family: var(--font-display);
-    /* --qfit (default 1) is set by fitQuestions() so each question shrinks to
-       fit its panel — the fixed 116px overflows once a line (or long word like
-       "CONCRETAMENTE") is wider than the panel. nowrap keeps the <br>-defined
-       line structure; the fit scales the widest line down to fit. */
-    font-size: calc(116px * var(--qfit, 1));
-    font-weight: 800;
+    /* --qfit (default 1) è impostato da fitQuestions() così ogni domanda si
+       restringe quanto basta per stare nel pannello — la dimensione fissa
+       trabocca appena una riga (o una parola lunga come "CONCRETAMENTE") è
+       più larga del pannello. nowrap preserva la struttura di riga definita
+       dai <br>; il fit scala solo la riga più larga per farla stare. */
+    font-size: calc(var(--ts-scrollitelling-size, 116px) * var(--qfit, 1));
+    font-weight: var(--ts-scrollitelling-weight, 800);
     /* Figma "Scrollitelling": 116px / line-height 106 / letter-spacing 0. */
-    line-height: calc(106px * var(--qfit, 1));
-    letter-spacing: var(--ts-h2-letter-spacing, 0em);
+    line-height: calc(var(--ts-scrollitelling-line-height, 106px) * var(--qfit, 1));
+    letter-spacing: var(--ts-scrollitelling-letter-spacing, 0em);
     margin: 0;
     width: 100%;
     white-space: nowrap;
   }
-  .ghost-lime { 
+
+  .ghost-lime {
     -webkit-text-stroke-color: var(--q-fg, var(--color-content-accent));
-    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-width: var(--stroke-1, 2px);
     color: transparent;
   }
 
-  .ghost-black  { 
+  .ghost-black {
     -webkit-text-stroke-color: var(--q-fg, var(--color-content-body-black));
-    -webkit-text-stroke-width: 2.5px;
+    -webkit-text-stroke-width: 2.5px; /* leggermente più spesso di --stroke-1: scelta intenzionale per bilanciare il peso ottico su fondo lime */
     color: transparent;
   }
 
@@ -480,7 +556,7 @@
     }
 
     .story-summary-copy {
-      width: min(340px, calc(100vw - 48px));
+      width: min(340px, calc(100vw - var(--spacing-5, 24px) * 2));
       margin: 0;
       color: var(--color-content-body, #fafafa);
       font-family: var(--font-display);
@@ -495,49 +571,72 @@
     }
   }
 
-  /* Mobile (≤700px, matching app.html's zoom:1 cutoff). Per Figma "Home-mobile":
-     each question is one full screen (100dvh), alternating lime/dark, with the
-     question vertically CENTRED and inset 24px on its aligned side. On the 874px
-     design device that centring lands the text 389px from top and 389px from
-     bottom (389 + 96 text + 389 = 874) — exactly the annotated spacing. Text is
-     solid (black on lime, white on dark), not ghost. The panels use the same
-     sticky layered-pinning as desktop (see .layered-panel below). */
+  /* Mobile (≤700px, stesso cutoff di zoom:1 usato in app.html).  
+   Nella Figma “Home‑mobile” ogni domanda occupa un’intera schermata (100dvh),
+   alternando lime e dark. Il testo della domanda è centrato verticalmente e
+   ha un inset di 24px sul lato a cui è allineato.
+
+   Sul device di riferimento da 874px, questo centraggio porta il blocco
+   testuale a 389px dal bordo superiore e 389px da quello inferiore
+   (389 + 96 di testo + 389 = 874), esattamente come annotato in Figma.
+
+   Il testo è pieno (nero su lime, bianco su dark), mai “ghost”.  
+   I pannelli usano lo stesso sistema di sticky layered‑pinning del desktop
+   (vedi .layered-panel più sotto). */
+
   @media (max-width: 700px) {
-    /* Figma mobile (frame "Home-mobile"): four full-screen sections, each 874px
-       = one 100dvh viewport, that simply SCROLL — a question centred in each,
-       alternating lime/dark. This is NOT the desktop sticky "cover" (the next
-       question sliding over the current one read as confusing, and Figma shows a
-       plain scroll). So: position static, one screen tall, no hold margin. */
+   /* Figma mobile (frame “Home‑mobile”): quattro sezioni a schermo pieno,
+   ciascuna alta 874px, equivalenti a un viewport da 100dvh. Qui il
+   comportamento è un semplice SCROLL lineare: ogni domanda è centrata
+   verticalmente nella propria schermata, alternando lime/dark.
+
+   Questo non è il meccanismo “sticky cover” del desktop: il passaggio
+   della domanda successiva sopra quella corrente risulta poco chiaro
+   su mobile, e Figma mostra esplicitamente uno scroll semplice.  
+   Quindi: posizione statica, altezza di una schermata, nessun hold margin. */
+   
     .layered-panel {
-      /* Sticky layered-pinning like desktop: each question pins full-screen and
-         the NEXT one scrolls up and covers it (the covering order is the
-         z-index: nth-child(1)→1 … (4)→4, set for all widths above). The 30dvh
-         margin is the "hold" — the question rests full-screen for that much
-         scroll before the next rises over it. */
+  /* Sticky layered‑pinning come su desktop: ogni domanda viene “pinnata”
+   a schermo intero e la SUCCESSIVA scorre verso l’alto andando a coprirla.
+   L’ordine di copertura segue lo z-index: nth-child(1)→1 … (4)→4, già
+   impostato per tutte le larghezze superiori al breakpoint.
+
+   Il margine di 30dvh è la fase di “hold”: la domanda rimane a schermo
+   pieno per quella porzione di scroll prima che la successiva inizi a
+   salire e sovrapporsi. */
       position: sticky;
       top: 0;
-      /* One full screen per section. Mobile zoom is always 1, so no /page-zoom
-         division (a bad --page-zoom value would make the whole calc() invalid and
-         the height would collapse to content — exactly the "two questions share a
-         screen" bug). The plain 100vh line is a fallback for engines without dvh
-         so it can never fall back to auto height. */
+  /* Una schermata piena per ogni sezione. Su mobile lo zoom è sempre 1, quindi
+   non applichiamo alcuna divisione tramite /page-zoom: un valore errato di
+   --page-zoom renderebbe l’intero calc() invalido e l’altezza collasserebbe
+   al contenuto — esattamente il bug in cui due domande finiscono nella stessa
+   schermata.
+
+   La dichiarazione 100vh è un fallback per coloro che non supportano dvh,
+   così l’altezza non può mai ricadere su “auto”. */
       height: 100vh;
       height: 100dvh;
       min-height: 100dvh;
       margin: 0 0 30dvh !important;
-      /* COLUMN flex so vertical centring is `justify-content: center` (main axis)
-         — unambiguous, and it doesn't depend on the desktop row `align-items`.
-         The question then sits centred: 389px from top and bottom on the 874px
-         design screen. Left/right is `align-items`, set per question below. */
+    /* Layout in colonna così il centro verticale è gestito da
+   `justify-content: center` (asse principale) — chiaro, diretto e
+   indipendente dall’allineamento orizzontale usato su desktop.
+
+   In questo modo la domanda risulta perfettamente centrata: 389px
+   dal bordo superiore e 389px da quello inferiore sul device da 874px,
+   rispettando le misure annotate in Figma.
+
+   L’allineamento sinistra/destra invece è gestito da `align-items`,
+   impostato per ogni domanda più sotto. */
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
 
     .layered-panel h2 {
-      /* Figma column: capped at 353px, with a 24px inset on the aligned side
-         (the far side is naturally left over: 100vw - 24px*2), matching the
-         app's .safe-area convention. */
+     /* Colonna Figma: larghezza massima 353px, con un inset di 24px sul lato
+    dell’allineamento. Il lato opposto rimane naturalmente “libero”
+    (100vw - 24px*2), seguendo la stessa logica della safe-area usata nell’app. */
       width: min(353px, calc(100vw - var(--spacing-5, 24px) * 2));
       margin: 0;
       /* Scaled from the Figma 116px down to a phone-readable size. Text WRAPS
@@ -547,8 +646,8 @@
          116px/nowrap/--qfit rule (fitQuestions() opts out below 700px). */
       font-size: clamp(28px, 9vw, 36px);
       font-weight: 800;
-      line-height: 0.889;      /* Figma: leading 32 / size 36 */
-      letter-spacing: 0.03em;  /* Figma: tracking 1.08 / size 36 */
+      line-height: 0.889;     /* Figma: leading 32 / size 36 */
+      letter-spacing: 0.03em; /* Figma: tracking 1.08 / size 36 */
       white-space: normal;
       overflow-wrap: break-word;
     }
@@ -561,19 +660,25 @@
       display: inline;
     }
 
-    /* Overrides the desktop `.question h2 span { display: inline-block }` rule,
-       which would otherwise make multi-word spans (and the per-word
-       .scroll-reveal-word spans injected by scrollReveal) wrap as rigid atomic
-       units instead of flowing/breaking naturally like text. */
+    /* Override della regola desktop `.question h2 span { display: inline-block }`,
+   che altrimenti farebbe comportare gli span multi‑parola (e gli span per‑parola
+   generati da scrollReveal) come blocchi rigidi: niente flusso naturale, niente
+   spezzatura del testo. Qui forziamo il comportamento testuale normale. */
     .layered-panel h2 span {
       display: inline;
     }
 
-    /* Q1/Q3 sit LEFT, Q2/Q4 RIGHT (per Figma). In the column flex this is the
-       cross axis, so it's `align-items`. Each is inset by --spacing-5 (24px),
-       overriding the desktop 72px side padding (.panel--lime/--dark) at higher
-       specificity. Both paddings are set so the far side never reaches the
-       edge. Vertical centring is the panel's justify-content above. */
+    /* Q1/Q3 a SINISTRA, Q2/Q4 a DESTRA (come in Figma). Nel layout a colonna
+   questo è l’asse trasversale, quindi usiamo `align-items`.  
+   Ogni domanda ha un inset di --spacing-5 (24px), che sovrascrive la
+   padding laterale desktop da 72px (.panel--lime/--dark) grazie alla
+   specificità più alta.
+
+   Entrambe le padding sono impostate in modo che il lato opposto non
+   arrivi mai a toccare il bordo.  
+   La posizione centrale verticale invece è gestita dal `justify-content` del
+   pannello, definito sopra. */
+
     .layered-panel:nth-child(1),
     .layered-panel:nth-child(3) {
       align-items: flex-start;
@@ -604,11 +709,13 @@
       text-align: right;
     }
 
-    /* Figma mobile text is SOLID — no ghost/hollow outline: black on the lime
-       sections, off-white (#fafafa) on the dark ones. This overrides the desktop
-       ghost/accent per-word treatment. !important because the desktop
-       `.panel--dark .accent` rule sits later in the file at equal specificity
-       and would otherwise win. */
+   /* Su mobile il testo in Figma è FILL — niente ghost/outline: nero nelle
+   sezioni lime, off‑white (#fafafa) in quelle dark. Questo override forza
+   il trattamento solido, sostituendo quello ghost/accent per‑parola del desktop.
+
+   L’uso di !important è necessario perché la regola desktop `.panel--dark .accent` compare più avanti nel file con la stessa
+   specificità e altrimenti avrebbe la precedenza. */
+
     .panel--lime :is(.accent, .ghost-lime, .ghost-black) {
       color: var(--color-content-body-black, #0e0e0e) !important;
       -webkit-text-fill-color: var(--color-content-body-black, #0e0e0e) !important;
@@ -622,28 +729,28 @@
     }
   }
 
-  /* ── COLORI (Sfondo e Testo) ── */
+  /* ── Colori (sfondo e testo) ── */
   .panel--lime {
     background-color: var(--color-content-accent, #bdff5d);
-    color: #0e0e0e;
+    color: var(--color-content-body-black, #0e0e0e);
     text-align: left;
     padding: 0;
     padding-left: var(--spacing-11, 72px);
   }
-  
+
   .panel--lime .accent {
-    color: #0e0e0e;
+    color: var(--color-content-body-black, #0e0e0e);
   }
 
   .panel--dark {
-    background-color: var(--color-content-background, #0e0e0e);
+    background-color: var(--color-background-primary, #0e0e0e);
     color: var(--color-content-body, #fafafa);
     text-align: right;
     padding: 0;
     padding-right: var(--spacing-11, 72px);
   }
-  
+
   .panel--dark .accent {
     color: var(--color-content-accent, #bdff5d);
   }
-  </style>
+</style>
