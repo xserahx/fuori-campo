@@ -495,12 +495,13 @@
     padding-left: var(--profile-side-offset);
     margin-bottom: -8px;
     color: var(--color-content-accent, #bdff5d);
+    
   }
 
   .name-firstname {
     padding-left: clamp(48px, 19vw, 340px);
     color: transparent;
-    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent, #bdff5d);
   }
 
   /* ── Quote ─────────────────────────────────────────────────────── */
@@ -532,7 +533,7 @@
     font-weight: 500;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke-width: var(--stroke-1);
+    -webkit-text-stroke-width: var(--stroke-mobile);
     -webkit-text-stroke-color: var(--color-content-body);
     paint-order: stroke fill;
     user-select: none;
@@ -672,7 +673,7 @@
   }
 
   .qa-sep {
-    height: 2.417px;
+    height: var(--stroke-mobile);
     background: #fafafa;
     flex-shrink: 0;
     overflow: hidden;
