@@ -467,10 +467,43 @@
 
     window.addEventListener("resize", queueSummaryMeasurement);
 
+    // ── Zoom locale della pagina ──────────────────────────────────────
+    // app.html rimpicciolisce tutto con `zoom` sopra i 700px. Qui teniamo
+    // zoom = 1 fino a 1000px, così il layout "a colonna" (titolo a capo +
+    // descrizione + card) resta a grandezza piena sui tablet invece di essere
+    // scalato in miniatura. Sopra i 1000px torna il layout desktop scalato.
+    // Il rAF fa vincere questo valore su quello di app.html.
+    const TABLET_MAX = 1000;
+    // Layout "a colonna" (zoom 1) quando è stretto OPPURE in verticale
+    // (portrait/quadrato): lì il layout desktop lascerebbe troppo vuoto.
+    const isColumnLayout = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      return w <= TABLET_MAX || w <= h;
+    };
+    const applyZoom = () => {
+      const w = window.innerWidth;
+      const v = isColumnLayout() ? 1 : w / 1728;
+      document.documentElement.style.zoom = String(v);
+      document.documentElement.style.setProperty("--page-zoom", String(v));
+    };
+    let zoomRaf = 0;
+    const scheduleZoom = () => {
+      if (zoomRaf) return;
+      zoomRaf = requestAnimationFrame(() => {
+        zoomRaf = 0;
+        applyZoom();
+      });
+    };
+    applyZoom();
+    window.addEventListener("resize", scheduleZoom, { passive: true });
+
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       window.removeEventListener("resize", queueSummaryMeasurement);
+      window.removeEventListener("resize", scheduleZoom);
+      cancelAnimationFrame(zoomRaf);
 
       if (summaryMeasureRaf) {
         cancelAnimationFrame(summaryMeasureRaf);
@@ -481,6 +514,12 @@
       summaryMeasureObserver = null;
 
       unlockCategoryScroll();
+
+      // Ripristina lo zoom globale (soglia 700 di app.html) per la pagina dopo.
+      const w = window.innerWidth;
+      const v = w <= 700 ? 1 : w / 1728;
+      document.documentElement.style.zoom = String(v);
+      document.documentElement.style.setProperty("--page-zoom", String(v));
     };
   });
 
@@ -610,13 +649,14 @@
   });
 
   // Shrink the one-line (nowrap) desktop title so the longest line always
-  // fits its container — no clipping at any width. Mobile (≤700px) wraps the
-  // title instead, so it opts out and stays at --title-fit: 1.
+  // fits its container — no clipping at any width. Fino a 1000px si usa il
+  // layout "a colonna" (titolo a capo, zoom di pagina tenuto a 1), quindi qui
+  // si disattiva e resta a --title-fit: 1.
   function fitTitle() {
     const el = heroTitleEl;
     if (!el || typeof window === "undefined") return;
 
-    if (window.innerWidth <= 700) {
+    if (window.innerWidth <= 1000 || window.innerWidth <= window.innerHeight) {
       el.style.setProperty("--title-fit", "1");
       return;
     }
@@ -869,11 +909,18 @@
        container at any desktop width — otherwise the --page-zoom-compensated
        size overflows and gets clipped by `overflow: hidden` (e.g. "GESTIONE
        OPERATIVA" at ~995px). */
+    /* La compensazione /--page-zoom col floor 0.65 gonfiava il titolo (fino a
+       ~178px) sotto i ~1123px, facendolo sbordare dal canvas fisso a 1728px.
+       Con min(--unit-116, ...) lo limito alla dimensione di progetto, che nel
+       canvas 1728 ci sta sempre: niente overflow, senza dipendere dal fit JS. */
     font-size: calc(
-      clamp(
-          var(--unit-56),
-          calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
-          var(--unit-200)
+      min(
+          var(--unit-116),
+          clamp(
+            var(--unit-56),
+            calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
+            var(--unit-200)
+          )
         ) * var(--title-fit, 1)
     );
     font-weight: 800;
@@ -1120,7 +1167,11 @@
     }
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 1000px), (max-aspect-ratio: 1 / 1) {
+    /* Layout "a colonna" a grandezza piena (zoom tenuto a 1 in onMount) quando
+       lo schermo è stretto (≤1000px) OPPURE in verticale/quadrato: lì il
+       desktop lascerebbe troppo vuoto. Scorre, manda il titolo a capo e scala
+       i font in modo fluido. Il desktop resta solo per il landscape largo. */
     /* Pagina torna a scorrere */
     .category-page {
       position: relative; /* Resetta il fixed del desktop */
@@ -1131,7 +1182,7 @@
       /* Padding per distanziare i contenuti dai bordi dello schermo */
       padding: var(--spacing-5, 24px);
       padding-top: calc(var(--navbar-height, 125px) + var(--spacing-4));
-      padding-bottom: 0;
+      padding-bottom: var(--spacing-8); /* aria in fondo, ora che la card scorre nel flusso */
       box-sizing: border-box;
     }
 
@@ -1167,8 +1218,11 @@
     .title-outline {
       display: block;
       white-space: normal;
-      font-size: var(--mobile-title-size, 43px);
-      line-height: 36px;
+      overflow-wrap: break-word; /* parole lunghe vanno a capo invece di sbordare */
+      /* Font fluido: scala con la larghezza (9vw), grande sui tablet e piccolo
+         sui telefoni stretti, senza mai sbordare. */
+      font-size: clamp(28px, 9vw, 84px);
+      line-height: 0.9; /* senza unità: segue il font-size a ogni dimensione */
       width: 100%;
       max-width: 100%;
       margin: 0;
@@ -1210,14 +1264,14 @@
       text-wrap: balance;
     }
 
-    /* summary card ferme */
+    /* La card scorre nel flusso, sotto la descrizione: così non si sovrappone
+       più al testo sugli schermi bassi (era `fixed` e ci finiva sopra). */
     .summary-card {
-      position: fixed; /* Sganciato, scorre normalmente col documento */
-      bottom: var(--spacing-6-2, 36px);
-      left: var(--spacing-5, 24px);
-
-      /* Larga tutto lo schermo meno i 2 padding laterali */
-      width: calc(100% - var(--spacing-5) * 2);
+      position: relative;
+      bottom: auto;
+      left: auto;
+      margin-top: var(--spacing-8); /* stacco dalla descrizione sopra */
+      width: 100%;
       max-width: 100%;
     }
 

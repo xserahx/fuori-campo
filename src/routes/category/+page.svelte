@@ -369,9 +369,9 @@
     const el = desktopTitleEl;
     if (!el || typeof window === "undefined") return;
 
-    // Su schermi <= 700px il CSS gestisce già il wrap del testo su più righe,
-    // quindi disattiviamo il ridimensionamento basato su scala matematica.
-    if (window.innerWidth <= 700) {
+    // Fino a 1024px si usa il carosello mobile (il titolo desktop non è nemmeno
+    // in pagina), quindi disattiviamo il ridimensionamento matematico.
+    if (window.innerWidth <= 1024) {
       el.style.setProperty("--title-fit", "1");
       return;
     }
@@ -459,10 +459,37 @@
     }, 50);
 
     const checkMobile = () => {
-      isMobile = window.innerWidth < 600;
+      // Tablet inclusi: fino a 1024px si usa il carosello mobile a tutto schermo,
+      // il 3D desktop resta solo sopra i 1024px.
+      isMobile = window.innerWidth <= 1024;
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
+
+    // ── Zoom locale della pagina ──────────────────────────────────────
+    // app.html rimpicciolisce tutto con `zoom` sopra i 700px, il che sui
+    // tablet fa diventare minuscolo il titolo del carosello. Qui teniamo
+    // zoom = 1 fino a 1024px (dove mostriamo il layout mobile a tutto schermo),
+    // così il titolo resta grande e coerente. Sopra i 1024px torna il
+    // comportamento globale. Lo scheduling via rAF fa vincere questo valore
+    // su quello di app.html (che gira anch'esso in rAF, ma registrato prima).
+    const TABLET_MAX = 1024;
+    const applyZoom = () => {
+      const w = window.innerWidth;
+      const v = w <= TABLET_MAX ? 1 : w / 1728;
+      document.documentElement.style.zoom = String(v);
+      document.documentElement.style.setProperty("--page-zoom", String(v));
+    };
+    let zoomRaf = 0;
+    const scheduleZoom = () => {
+      if (zoomRaf) return;
+      zoomRaf = requestAnimationFrame(() => {
+        zoomRaf = 0;
+        applyZoom();
+      });
+    };
+    applyZoom();
+    window.addEventListener("resize", scheduleZoom, { passive: true });
 
     // Blocchiamo lo scroll globale per tutto il tempo in cui stiamo esplorando il carosello
     const prev = {
@@ -482,9 +509,16 @@
       document.body.style.paddingTop = prev.pt;
       document.body.style.overflow = prev.ov;
       window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", scheduleZoom);
+      cancelAnimationFrame(zoomRaf);
       window.removeEventListener("wheel", onWheel);
       clearTimeout(wheelStepTimer);
       clearTimeout(wheelIdleTimer);
+      // Ripristina lo zoom globale (soglia 700 di app.html) per la pagina dopo.
+      const w = window.innerWidth;
+      const v = w <= 700 ? 1 : w / 1728;
+      document.documentElement.style.zoom = String(v);
+      document.documentElement.style.setProperty("--page-zoom", String(v));
     };
   });
 </script>
@@ -952,10 +986,17 @@
 
   /* ── ADATTAMENTO TABLET/SCHERMI STRETTI DESKTOP ───────── */
   @media (max-width: 700px) {
+    /* Sotto i 700px il font base (~116px) è troppo grande e spezzava le parole
+       a metà. Qui lo rendo fluido (11vw) così scala con la larghezza e le righe
+       ci stanno; overflow-wrap fa andare a capo le parole lunghe solo se serve,
+       senza più tagliarle a metà. */
+    .title {
+      font-size: clamp(32px, 11vw, 80px);
+    }
     .title-fill,
     .title-outline {
       white-space: normal;
-      word-break: break-word;
+      overflow-wrap: break-word;
     }
     .title-outline {
       margin-left: var(--spacing-11);
@@ -1086,16 +1127,19 @@
     display: block;
     /* Obbligatorio per rispettare il line-height su elementi span su iOS safari */
     font-family: var(--font-display);
-    font-size: 43px;
+    /* Font fluido: scala con la larghezza (11vw) e resta tra 20 e 46px, così
+       tiene su qualsiasi schermo, anche molto stretto, senza sbordare. */
+    font-size: clamp(28px, 7vw, 64px);
     font-style: normal;
     font-weight: 800;
-    line-height: 36px;
+    line-height: 0.85; /* senza unità: segue il font-size a ogni dimensione */
     letter-spacing: 0;
     text-transform: uppercase;
     color: var(--color-content-accent);
     width: 352px;
     max-width: 100%;
     white-space: normal;
+    overflow-wrap: break-word; /* se una parola è più lunga della riga, va a capo invece di sbordare */
     hyphens: manual;
     -webkit-hyphens: manual;
     margin: 0;
@@ -1105,10 +1149,10 @@
     display: block;
     /* Obbligatorio per rispettare il line-height su elementi span su iOS safari */
     font-family: var(--font-display);
-    font-size: 43px;
+    font-size: clamp(28px, 7vw, 64px);
     font-style: normal;
     font-weight: 800;
-    line-height: 36px;
+    line-height: 0.85;
     letter-spacing: 0;
     text-transform: uppercase;
     color: transparent;
@@ -1117,6 +1161,7 @@
     width: 352px;
     max-width: 100%;
     white-space: pre-line;
+    overflow-wrap: break-word;
     hyphens: manual;
     -webkit-hyphens: manual;
     margin: 0;
