@@ -1,29 +1,39 @@
+<!--
+  Componente per la visualizzazione della galleria dei nomi dei volontari.
+  Mostra un elenco di nomi con la possibilità di filtrare e navigare alfabeticamente.
+  Gestisce lo stato di selezione, hover e copia del link del profilo del volontario.
+  Adatta il layout e le dimensioni in base alla larghezza dello schermo (mobile e desktop).  -->
+
 <script lang="ts">
-  import { tick } from 'svelte';
-  import { page } from '$app/state';
-  import type { VolunteerSummary } from '$lib/data/volunteers';
-  import { ruoloToTag } from '$lib/data/volunteers';
-  import { goto } from '$app/navigation';
-  import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
+  import { tick } from "svelte";
+  import { page } from "$app/state";
+  import type { VolunteerSummary } from "$lib/data/volunteers";
+  import { ruoloToTag } from "$lib/data/volunteers";
+  import { goto } from "$app/navigation";
+  import {
+    buildGallerySearchParams,
+    readGalleryContext,
+  } from "$lib/data/gallery-context";
 
   let isMobile = $state(false);
 
   $effect(() => {
-    const check = () => { isMobile = window.innerWidth < 600; };
+    const check = () => {
+      isMobile = window.innerWidth < 600;
+    };
     check();
-    window.addEventListener('resize', check, { passive: true });
-    return () => window.removeEventListener('resize', check);
+    window.addEventListener("resize", check, { passive: true });
+    return () => window.removeEventListener("resize", check);
   });
 
-  // 28px text line + 8px bottom padding su mobile, 120px su desktop
   const ROW_HEIGHT = $derived(isMobile ? 36 : 120);
-  
+
   // 100px di stacco su desktop, 66px su mobile
-  const LETTER_BREAK_HEIGHT = $derived(isMobile ? 66 : 100); 
+  const LETTER_BREAK_HEIGHT = $derived(isMobile ? 66 : 100);
 
   let {
     activeFilters = [],
-    volunteers = []
+    volunteers = [],
   }: {
     activeFilters?: string[];
     volunteers?: VolunteerSummary[];
@@ -31,20 +41,27 @@
 
   const initialContext = readGalleryContext(page.url.searchParams);
 
-  type Person = { slug: string; displayName: string; cognome: string; tags: string[] };
+  type Person = {
+    slug: string;
+    displayName: string;
+    cognome: string;
+    tags: string[];
+  };
 
   const people = $derived<Person[]>(
     volunteers
-      .map(vol => {
+      .map((vol) => {
         const tag = ruoloToTag(vol.ruolo_generale);
         return {
           slug: vol.slug,
           displayName: `${vol.cognome} ${vol.nome}`,
           cognome: vol.cognome,
-          tags: tag ? [tag] : []
+          tags: tag ? [tag] : [],
         };
       })
-      .sort((a, b) => a.cognome.localeCompare(b.cognome, 'it', { sensitivity: 'base' }))
+      .sort((a, b) =>
+        a.cognome.localeCompare(b.cognome, "it", { sensitivity: "base" }),
+      ),
   );
 
   let selectedIndex = $state<number>(-1);
@@ -55,7 +72,7 @@
   let itemHeights = $state<number[]>([]);
 
   function normalizeFirstLetter(s: string): string {
-    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().charAt(0);
+    return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().charAt(0);
   }
 
   function formatDisplayName(person: Person): string {
@@ -63,72 +80,83 @@
   }
 
   /* ── Lista Visibile con calcolo altezze e stacchi ── */
-  type PersonWithOffset = Person & { topOffset: number; letterBreakBefore: boolean };
+  type PersonWithOffset = Person & {
+    topOffset: number;
+    letterBreakBefore: boolean;
+  };
 
   const visibleWithOffsets = $derived.by((): PersonWithOffset[] => {
-    const visible = activeFilters.length > 0
-      ? people.filter(p => activeFilters.some((f) => p.tags.includes(f)))
-      : people;
+    const visible =
+      activeFilters.length > 0
+        ? people.filter((p) => activeFilters.some((f) => p.tags.includes(f)))
+        : people;
     let cumulative = 0;
     return visible.map((p, i) => {
-      const letterBreakBefore = i === 0 ||
-        normalizeFirstLetter(p.cognome) !== normalizeFirstLetter(visible[i - 1].cognome);
-      
+      const letterBreakBefore =
+        i === 0 ||
+        normalizeFirstLetter(p.cognome) !==
+          normalizeFirstLetter(visible[i - 1].cognome);
+
       if (letterBreakBefore) cumulative += LETTER_BREAK_HEIGHT;
       const topOffset = cumulative;
       cumulative += itemHeights[i] ?? ROW_HEIGHT;
-      
+
       return { ...p, topOffset, letterBreakBefore };
     });
   });
 
-  /* ── Sidebar Alfabetica ── */
+  /* ── Sidebar Alfabetica, funzionamento simile alla rubrica del telefono── */
   const availableLetters = $derived.by(() => {
     const seen = new Set<string>();
     const result: string[] = [];
     for (const p of visibleWithOffsets) {
       const l = normalizeFirstLetter(p.cognome);
-      if (l && !seen.has(l)) { seen.add(l); result.push(l); }
+      if (l && !seen.has(l)) {
+        seen.add(l);
+        result.push(l);
+      }
     }
     return result;
   });
 
   const activeLetter = $derived.by(() => {
     const person = visibleWithOffsets[selectedIndex];
-    return person ? normalizeFirstLetter(person.cognome) : '';
+    return person ? normalizeFirstLetter(person.cognome) : "";
   });
 
   function jumpToLetter(letter: string) {
     if (!namesInteractionRef) return;
-    
+
     // Cerchiamo l'elemento del distanziatore corrispondente alla lettera cliccata
-    const targetElement = namesInteractionRef.querySelector(`#letter-${letter}`) as HTMLElement;
+    const targetElement = namesInteractionRef.querySelector(
+      `#letter-${letter}`,
+    ) as HTMLElement;
     if (!targetElement) return;
 
     // Calcoliamo la distanza reale dell'elemento rispetto al contenitore di scroll
     const elementTopRelativeToContainer = targetElement.offsetTop;
 
-    // Vogliamo che l'elemento si fermi a 140px dal top dello schermo.
+    // Vogliamo che l'elemento si fermi a 140px dal top dello schermo, come viene fisualizzato il primo nome quando si apre la pagina
     const targetScrollTop = elementTopRelativeToContainer - 140;
 
-    namesInteractionRef.scrollTo({ 
-      top: Math.max(0, targetScrollTop), 
-      behavior: 'smooth' 
+    namesInteractionRef.scrollTo({
+      top: Math.max(0, targetScrollTop),
+      behavior: "smooth",
     });
   }
 
   function openVolunteer(person: Person) {
     const search = buildGallerySearchParams({
-      view: 'names',
+      view: "names",
       filters: activeFilters,
-      namesScroll: namesInteractionRef?.scrollTop ?? 0
+      namesScroll: namesInteractionRef?.scrollTop ?? 0,
     });
 
     const href = search
       ? `/volunteer/${person.slug}/profile?${search}`
       : `/volunteer/${person.slug}/profile`;
 
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
       navigator.clipboard
         .writeText(window.location.origin + href)
         .then(() => {
@@ -145,18 +173,25 @@
     if (!namesInteractionRef) return;
 
     const visible = visibleWithOffsets;
-    if (!visible.length) { selectedIndex = -1; return; }
+    if (!visible.length) {
+      selectedIndex = -1;
+      return;
+    }
 
     const styles = getComputedStyle(namesInteractionRef);
     const paddingTop = Number.parseFloat(styles.paddingTop) || 0;
-    const viewportCenter = namesInteractionRef.scrollTop + namesInteractionRef.clientHeight / 2;
+    const viewportCenter =
+      namesInteractionRef.scrollTop + namesInteractionRef.clientHeight / 2;
     const targetOffset = viewportCenter - paddingTop - ROW_HEIGHT / 2;
 
     let bestIdx = 0;
     let bestDist = Infinity;
     for (let i = 0; i < visible.length; i++) {
       const dist = Math.abs(visible[i].topOffset - targetOffset);
-      if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
     }
     selectedIndex = bestIdx;
   }
@@ -180,7 +215,6 @@
 
 <div class="names-view">
   <div class="names-stage">
-    
     <div
       bind:this={namesInteractionRef}
       use:restoreScroll
@@ -191,15 +225,16 @@
       onscroll={syncScroll}
     >
       {#each visibleWithOffsets as person, index}
-        
         <!-- Il distanziatore viene stampato sempre per garantire l'ingombro fisico -->
         {#if person.letterBreakBefore}
-          <div 
-            id={`letter-${normalizeFirstLetter(person.cognome)}`} 
-            class="letter-spacer" 
+          <div
+            id={`letter-${normalizeFirstLetter(person.cognome)}`}
+            class="letter-spacer"
             aria-hidden="true"
           >
-              <span class="letter-label">{normalizeFirstLetter(person.cognome)}</span>
+            <span class="letter-label"
+              >{normalizeFirstLetter(person.cognome)}</span
+            >
           </div>
         {/if}
 
@@ -213,7 +248,9 @@
           aria-label={`Open ${formatDisplayName(person)}`}
           type="button"
         >
-          <span class="names-interaction__label">{formatDisplayName(person)}</span>
+          <span class="names-interaction__label"
+            >{formatDisplayName(person)}</span
+          >
         </button>
       {/each}
     </div>
@@ -236,7 +273,10 @@
 
 <style>
   .names-stage {
-    --names-center-padding: calc((100dvh - var(--navbar-height, 0px) - 120px) / 2 + var(--navbar-height, 0px));
+    --names-center-padding: calc(
+      (100dvh - var(--navbar-height, 0px) - 120px) / 2 +
+        var(--navbar-height, 0px)
+    );
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -268,7 +308,7 @@
     height: 0;
   }
 
-  /* Distanziatore gruppi di lettere (100px su desktop) */
+  /* Distanziatore gruppi di lettere */
   .letter-spacer {
     display: flex;
     flex-shrink: 0;
@@ -276,16 +316,16 @@
     align-items: flex-end;
     height: var(--spacing-14);
     padding-top: 80px;
-    }
+  }
 
   .names-interaction__item {
     position: relative;
     border: 0;
     background: transparent;
     color: var(--color-content-body, #fafafa);
-    flex-shrink: 0; 
+    flex-shrink: 0;
 
-    /* Sostituito min-height rigido con padding verticale responsive */
+    /* padding verticale responsive */
     padding-top: var(--spacing-4, 32px);
     padding-bottom: var(--spacing-4, 32px);
 
@@ -299,12 +339,11 @@
 
     cursor: pointer;
     text-align: left;
-    
-    /* RIMOSSO overflow: hidden per evitare il taglio del testo */
+
     display: block;
-    hyphens: manual; /* Mantiene la sillabazione intelligente del tuo script JS */
-    word-break: break-word; /* Sicurezza: se una parola è troppo lunga, va a capo anziché spaccare il layout */
-    
+    hyphens: manual; /* Mantiene la sillabazione */
+    word-break: break-word; /* Sicurezza: se una parola è troppo lunga, va a capo in automatico */
+
     transition: color 200ms ease;
   }
 
@@ -319,7 +358,7 @@
     color: var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Sidebar Alfabetica (Semplificata con GAP Fisso) ── */
+  /* ── Sidebar alfabetica con gap ── */
   .alpha-sidebar {
     position: absolute;
     right: var(--spacing-11, 72px);
@@ -342,7 +381,9 @@
        zoom, so the box is always correct. The bottom reserve clears the
        "Filtra per categoria" button (--spacing-8 offset + --spacing-9 height
        + --spacing-5 gap) so the last letters (V/Z) are never covered. */
-    bottom: calc(var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-5, 24px));
+    bottom: calc(
+      var(--spacing-8, 48px) + var(--spacing-9, 60px) + var(--spacing-5, 24px)
+    );
     overflow-y: auto;
 
     padding: 0;
@@ -350,12 +391,13 @@
     pointer-events: auto;
   }
 
-  .letter-label { /* impostazioni per lettera verde su desktop */
-      font-family: var(--font-display);
-      font-size: 84px;
-      color: var(--color-content-accent, #bdff5d);
-      font-weight: 500;
-    }
+  .letter-label {
+    /* impostazioni per lettera iniziale su desktop */
+    font-family: var(--font-display);
+    font-size: 84px;
+    color: var(--color-content-accent, #bdff5d);
+    font-weight: 500;
+  }
 
   .alpha-sidebar__btn {
     border: 0;
@@ -380,11 +422,12 @@
     transition: color 150ms ease-in-out;
   }
 
-  .alpha-sidebar__btn.active, .alpha-sidebar__btn:hover {
+  .alpha-sidebar__btn.active,
+  .alpha-sidebar__btn:hover {
     color: var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Responsive Mobile (< 700px) ── */
+  /* ── Responsive Mobile ── */
   @media (max-width: 700px) {
     .names-interaction {
       left: 24px;
@@ -410,9 +453,9 @@
     /* Distanziatore per mobile: 66px di altezza totale + visualizzazione testo */
     .letter-spacer {
       height: 86px;
-      padding-top: 46px; 
+      padding-top: 46px;
     }
-    
+
     .letter-label {
       font-family: var(--font-display);
       font-size: 24px;
@@ -420,7 +463,7 @@
       font-weight: 500;
     }
 
-    /* Sidebar alfabetica su mobile */
+    /* Sidebar alfabetica mobile */
     .alpha-sidebar {
       top: 96px;
       right: 20px;

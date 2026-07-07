@@ -1,15 +1,34 @@
-<script lang="ts">
-  import { onMount, untrack } from 'svelte';
-  import { page } from '$app/state';
-  import { goto, preloadData } from '$app/navigation';
-  import gsap from 'gsap';
-  import { tilt } from '$lib/actions/tilt';
-  import { buildScatterLayoutCached, recordImageAspect, hasAllAspects, isLayoutBuilt, slugify, type GalleryImage } from '$lib/data/gallery';
-  import { buildGallerySearchParams, readGalleryContext } from '$lib/data/gallery-context';
-  import { buildGalleryFromVolunteers, type VolunteerSummary } from '$lib/data/volunteers';
-  import { restingRectOf, launchEntry } from '$lib/stores/photoFlight';
+<!--Visualizzazione foto galleria desktop -->
 
-  let { activeFilters = [], dbVolunteers = [], zoom = 1 }: {
+<script lang="ts">
+  import { onMount, untrack } from "svelte";
+  import { page } from "$app/state";
+  import { goto, preloadData } from "$app/navigation";
+  import gsap from "gsap";
+  import { tilt } from "$lib/actions/tilt";
+  import {
+    buildScatterLayoutCached,
+    recordImageAspect,
+    hasAllAspects,
+    isLayoutBuilt,
+    slugify,
+    type GalleryImage,
+  } from "$lib/data/gallery";
+  import {
+    buildGallerySearchParams,
+    readGalleryContext,
+  } from "$lib/data/gallery-context";
+  import {
+    buildGalleryFromVolunteers,
+    type VolunteerSummary,
+  } from "$lib/data/volunteers";
+  import { restingRectOf, launchEntry } from "$lib/stores/photoFlight";
+
+  let {
+    activeFilters = [],
+    dbVolunteers = [],
+    zoom = 1,
+  }: {
     activeFilters?: string[];
     dbVolunteers?: VolunteerSummary[];
     zoom?: number;
@@ -35,21 +54,32 @@
     if (ready) return;
     const imgs = rawImages;
     if (imgs.length === 0) return;
-    if (hasAllAspects(imgs)) { ready = true; return; }
+    if (hasAllAspects(imgs)) {
+      ready = true;
+      return;
+    }
 
     const uniq = new Map<string, string>();
     for (const im of imgs) uniq.set(im.path ?? im.src, im.src);
 
     let remaining = uniq.size;
     let done = false;
-    const settle = () => { if (!done) { done = true; ready = true; } };
-    const finish = () => { if (--remaining <= 0) settle(); };
+    const settle = () => {
+      if (!done) {
+        done = true;
+        ready = true;
+      }
+    };
+    const finish = () => {
+      if (--remaining <= 0) settle();
+    };
 
     for (const [key, src] of uniq) {
       const probe = new Image();
-      probe.decoding = 'async';
+      probe.decoding = "async";
       probe.onload = () => {
-        if (probe.naturalWidth) recordImageAspect(key, probe.naturalWidth / probe.naturalHeight);
+        if (probe.naturalWidth)
+          recordImageAspect(key, probe.naturalWidth / probe.naturalHeight);
         finish();
       };
       probe.onerror = finish;
@@ -59,7 +89,10 @@
     // Never block entry longer than this; any stragglers use a fallback box and
     // correct themselves (from cache) on the next visit.
     const cap = setTimeout(settle, 2500);
-    return () => { done = true; clearTimeout(cap); };
+    return () => {
+      done = true;
+      clearTimeout(cap);
+    };
   });
 
   // ── 3D card tilt — spring-driven (see $lib/actions/tilt, ReactBits feel).
@@ -77,19 +110,19 @@
   // Canvas layout width — scatter algorithm uses this as horizontal extent,
   // and it doubles as the horizontal tiling period. Kept wide so the tile
   // (and any repeated photo) only recurs after a long horizontal pan.
-  const designWidth    = 9600;
+  const designWidth = 9600;
   const initialContext = readGalleryContext(page.url.searchParams);
 
   // Fresh entry (no saved position in URL) → randomise spawn so every visit
   // starts somewhere different. Returns from volunteer pages preserve the URL
   // coords, so the user lands back exactly where they left.
-  const hasSavedPosition = page.url.searchParams.has('photoX');
+  const hasSavedPosition = page.url.searchParams.has("photoX");
 
   // Plain vars — GSAP owns the transform; no Svelte reactivity at 60 fps.
   let currentX = initialContext.photoX;
   let currentY = initialContext.photoY;
-  let targetX  = initialContext.photoX;
-  let targetY  = initialContext.photoY;
+  let targetX = initialContext.photoX;
+  let targetY = initialContext.photoY;
   let velX = 0;
   let velY = 0;
   // Buffered wheel/trackpad delta, drained a fixed fraction per frame (see
@@ -122,23 +155,25 @@
   // Seed from the incoming zoom so the gallery opens at its medium overview
   // level immediately — no zoom-out animation on entry.
   let currentScale = untrack(() => zoom);
-  let targetScale  = untrack(() => zoom);
-  let zoomWindow   = $state(untrack(() => zoom));
+  let targetScale = untrack(() => zoom);
+  let zoomWindow = $state(untrack(() => zoom));
   const SCALE_LERP = 0.14;
   const prefersReduced =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Sync the eased target with the prop; the rAF loop eases toward it
   // (reduced-motion snaps in one frame) and anchors the viewport centre.
-  $effect(() => { targetScale = zoom; });
+  $effect(() => {
+    targetScale = zoom;
+  });
 
   // Momentum tuning — deliberately calm & floaty (not fast): a long, gentle
   // glide that eases to rest, à la the reference infinite-scroll feel.
   // FRICTION closer to 1 = longer, softer decay; a low LERP = the transform
   // trails the target smoothly (weighty, never snappy).
-  const FRICTION    = 0.94;
-  const LERP        = 0.055;
+  const FRICTION = 0.94;
+  const LERP = 0.055;
   // Wheel / trackpad → free 2-D navigation. Kept low so a scroll notch nudges
   // the gallery gently; the eased loop below smooths it into a glide.
   const WHEEL_SPEED = 0.75;
@@ -175,14 +210,16 @@
     // Horizontal period is always designWidth (3840).
     if (Math.abs(targetX) > designWidth * 6) {
       const snap = Math.round(targetX / designWidth) * designWidth;
-      targetX -= snap; currentX -= snap;
+      targetX -= snap;
+      currentX -= snap;
     }
 
     // Vertical period equals the layout height.
     const th = designHeight;
     if (th > 0 && Math.abs(targetY) > th * 6) {
       const snap = Math.round(targetY / th) * th;
-      targetY -= snap; currentY -= snap;
+      targetY -= snap;
+      currentY -= snap;
     }
   }
 
@@ -198,8 +235,14 @@
         wheelBufY -= takeY;
         targetX += takeX;
         targetY += takeY;
-        velX = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velX + takeX * WHEEL_GLIDE));
-        velY = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velY + takeY * WHEEL_GLIDE));
+        velX = Math.max(
+          -WHEEL_MAX_VEL,
+          Math.min(WHEEL_MAX_VEL, velX + takeX * WHEEL_GLIDE),
+        );
+        velY = Math.max(
+          -WHEEL_MAX_VEL,
+          Math.min(WHEEL_MAX_VEL, velY + takeY * WHEEL_GLIDE),
+        );
         // Snap the last crumbs to zero so the buffer doesn't decay forever.
         if (Math.abs(wheelBufX) < 0.01) wheelBufX = 0;
         if (Math.abs(wheelBufY) < 0.01) wheelBufY = 0;
@@ -220,22 +263,26 @@
     // fixed: when the scale changes by ratio r, the pan translate must scale
     // by r too, otherwise the content drifts off-centre while zooming.
     const prevScale = currentScale;
-    currentScale += (targetScale - currentScale) * (prefersReduced ? 1 : SCALE_LERP);
+    currentScale +=
+      (targetScale - currentScale) * (prefersReduced ? 1 : SCALE_LERP);
     if (prevScale !== 0 && currentScale !== prevScale) {
       const r = currentScale / prevScale;
-      currentX *= r; currentY *= r;
-      targetX  *= r; targetY  *= r;
+      currentX *= r;
+      currentY *= r;
+      targetX *= r;
+      targetY *= r;
     }
 
     // NB: transformOrigin is set ONCE in onMount, never here. Passing it every
     // frame makes GSAP re-run its origin compensation, which fights the x/y we
     // write and makes the gallery tremble while scaling.
-    if (innerRef) gsap.set(innerRef, {
-      x: currentX,
-      y: currentY,
-      scale: currentScale,
-      force3D: true,
-    });
+    if (innerRef)
+      gsap.set(innerRef, {
+        x: currentX,
+        y: currentY,
+        scale: currentScale,
+        force3D: true,
+      });
 
     const now = performance.now();
     if (now - lastWindowUpdate > 100) {
@@ -314,7 +361,7 @@
   function tilePointerDown(e: PointerEvent) {
     draggedDuringPointer = false;
 
-    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
       pointerDown(e);
       e.stopPropagation();
       return;
@@ -323,7 +370,11 @@
     e.stopPropagation();
   }
 
-  function handleTileClick(e: MouseEvent, image: GalleryImage, tileEl: HTMLElement) {
+  function handleTileClick(
+    e: MouseEvent,
+    image: GalleryImage,
+    tileEl: HTMLElement,
+  ) {
     if (draggedDuringPointer) {
       e.preventDefault();
       e.stopPropagation();
@@ -337,7 +388,10 @@
   }
 
   function isCoarsePointer() {
-    return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches
+    );
   }
 
   // Wheel / trackpad → free movement in EVERY direction. macOS trackpads emit a
@@ -352,8 +406,7 @@
     e.preventDefault();
 
     const unit =
-      e.deltaMode === 1 ? WHEEL_LINE_PX :
-      e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
+      e.deltaMode === 1 ? WHEEL_LINE_PX : e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
 
     // Buffer the delta; the rAF loop drains a fixed share each frame (see
     // animate). This is what makes the trackpad feel smooth: motion is paced by
@@ -372,16 +425,16 @@
     let handled = true;
 
     switch (e.key) {
-      case 'ArrowLeft':
+      case "ArrowLeft":
         targetX += KEY_STEP;
         break;
-      case 'ArrowRight':
+      case "ArrowRight":
         targetX -= KEY_STEP;
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         targetY += KEY_STEP;
         break;
-      case 'ArrowDown':
+      case "ArrowDown":
         targetY -= KEY_STEP;
         break;
       default:
@@ -413,20 +466,23 @@
 
     // Unwrap tile offset to get base canvas coords for neighbour search.
     // H and V have separate periods (designWidth vs designHeight).
-    const tw    = designWidth;
-    const th    = designHeight;
+    const tw = designWidth;
+    const th = designHeight;
     const baseL = ((image.left % tw) + tw) % tw;
-    const baseT = ((image.top  % th) + th) % th;
-    const cx = baseL + image.width  / 2;
+    const baseT = ((image.top % th) + th) % th;
+    const cx = baseL + image.width / 2;
     const cy = baseT + image.height / 2;
 
     const seen = new Set<string>([slug]);
     const neighborSlugs: string[] = [];
     const byDist = positionedImages
-      .filter(img => img.slug && !img.noClick)
-      .map(img => ({
+      .filter((img) => img.slug && !img.noClick)
+      .map((img) => ({
         slug: img.slug!,
-        d: Math.hypot((img.left + img.width / 2) - cx, (img.top + img.height / 2) - cy),
+        d: Math.hypot(
+          img.left + img.width / 2 - cx,
+          img.top + img.height / 2 - cy,
+        ),
       }))
       .sort((a, b) => a.d - b.d);
 
@@ -449,8 +505,8 @@
       const field = visibleImages
         .filter((t) => t !== image)
         .map((t) => ({
-          dx: ((t.left + t.width / 2) - ccx) * currentScale,
-          dy: ((t.top + t.height / 2) - ccy) * currentScale,
+          dx: (t.left + t.width / 2 - ccx) * currentScale,
+          dy: (t.top + t.height / 2 - ccy) * currentScale,
           w: t.width * currentScale,
           h: t.height * currentScale,
           src: t.src,
@@ -458,20 +514,26 @@
         .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))
         .slice(0, 48);
 
-      sessionStorage.setItem('bgField', JSON.stringify({ cw: image.width * currentScale, tiles: field }));
+      sessionStorage.setItem(
+        "bgField",
+        JSON.stringify({ cw: image.width * currentScale, tiles: field }),
+      );
     } catch {
       // storage unavailable — zoom page falls back to its decorative field
     }
 
-    const params = new URLSearchParams(buildGallerySearchParams({
-      view: 'photos',
-      filters: activeFilters,
-      photoX: currentX,
-      photoY: currentY,
-    }));
+    const params = new URLSearchParams(
+      buildGallerySearchParams({
+        view: "photos",
+        filters: activeFilters,
+        photoX: currentX,
+        photoY: currentY,
+      }),
+    );
 
-    if (image.path) params.set('img', image.path);
-    if (neighborSlugs.length > 0) params.set('neighbors', neighborSlugs.join(','));
+    if (image.path) params.set("img", image.path);
+    if (neighborSlugs.length > 0)
+      params.set("neighbors", neighborSlugs.join(","));
 
     // Hand over the clicked tile's snapped aspect ratio so the zoom page can
     // size its frame to the FINAL shape on the very first render — before the
@@ -479,8 +541,15 @@
     // immediately (no wait for image load) and, because the thumbnail and the
     // frame then share the same aspect, the FLIP scales uniformly (no skew).
     const arRatio = image.height > 0 ? image.width / image.height : 1;
-    const arBucket = arRatio > 1.5 ? '16-9' : arRatio > 1.0 ? '4-3' : arRatio > 0.66 ? '3-4' : '9-16';
-    params.set('ar', arBucket);
+    const arBucket =
+      arRatio > 1.5
+        ? "16-9"
+        : arRatio > 1.0
+          ? "4-3"
+          : arRatio > 0.66
+            ? "3-4"
+            : "9-16";
+    params.set("ar", arBucket);
 
     goto(`/volunteer/${slug}?${params.toString()}`);
   }
@@ -490,16 +559,18 @@
   }
 
   const rawImages = $derived(
-    dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : []
+    dbVolunteers.length > 0 ? buildGalleryFromVolunteers(dbVolunteers) : [],
   );
 
   // Built once, only after orientations are known (`ready`), so the very first
   // render is already the correct layout — no placeholder pass, no reflow.
-  const photoLayout      = $derived(
-    ready ? buildScatterLayoutCached(rawImages, designWidth) : { images: [], canvasHeight: 1080 }
+  const photoLayout = $derived(
+    ready
+      ? buildScatterLayoutCached(rawImages, designWidth)
+      : { images: [], canvasHeight: 1080 },
   );
   const positionedImages = $derived(photoLayout.images);
-  const designHeight     = $derived(photoLayout.canvasHeight);
+  const designHeight = $derived(photoLayout.canvasHeight);
 
   // ── Infinite tiling virtual-DOM culling ───────────────────────────
   // Horizontal period: designWidth (3840). Vertical period: designHeight (naturalH).
@@ -512,20 +583,20 @@
     void resizeCount;
     void designHeight;
 
-    if (typeof window === 'undefined') return positionedImages;
+    if (typeof window === "undefined") return positionedImages;
 
-    const vw   = document.documentElement.clientWidth  || window.innerWidth;
-    const vh   = document.documentElement.clientHeight || window.innerHeight;
-    const M    = VIRT_MARGIN;
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const vh = document.documentElement.clientHeight || window.innerHeight;
+    const M = VIRT_MARGIN;
     const tileW = designWidth;
     const tileH = designHeight;
-    const s     = zoomWindow;
+    const s = zoomWindow;
 
     // Screen position of canvas local-x = 0 (top-left). With the centre
     // transform-origin, screen = ox + s · localX, so all extents below are
     // measured in scaled (screen) px.
-    const ox = vw / 2 + windowX - s * tileW / 2;
-    const oy = vh / 2 + windowY - s * tileH / 2;
+    const ox = vw / 2 + windowX - (s * tileW) / 2;
+    const oy = vh / 2 + windowY - (s * tileH) / 2;
 
     // Tile index ranges that may contribute visible images (with margin).
     const txMin = Math.floor((-M - ox) / (s * tileW));
@@ -542,15 +613,19 @@
 
         for (const img of positionedImages) {
           const sx = ox + s * (img.left + dx);
-          const sy = oy + s * (img.top  + dy);
+          const sy = oy + s * (img.top + dy);
 
           if (
-            sx + img.width  * s > -M &&
+            sx + img.width * s > -M &&
             sx < vw + M &&
             sy + img.height * s > -M &&
             sy < vh + M
           ) {
-            result.push(dx === 0 && dy === 0 ? img : { ...img, left: img.left + dx, top: img.top + dy });
+            result.push(
+              dx === 0 && dy === 0
+                ? img
+                : { ...img, left: img.left + dx, top: img.top + dy },
+            );
           }
         }
       }
@@ -571,37 +646,38 @@
 
       currentX = rx;
       currentY = ry;
-      targetX  = rx;
-      targetY  = ry;
-      windowX  = rx;
-      windowY  = ry;
+      targetX = rx;
+      targetY = ry;
+      windowX = rx;
+      windowY = ry;
     }
 
     // Set the transform origin to the element centre ONCE here (it equals the
     // viewport centre at translate 0). The per-frame loop only updates x/y/scale,
     // so GSAP never re-compensates the origin → rock-steady zoom.
-    if (innerRef) gsap.set(innerRef, {
-      x: currentX,
-      y: currentY,
-      scale: currentScale,
-      transformOrigin: '50% 50%',
-      force3D: true,
-    });
+    if (innerRef)
+      gsap.set(innerRef, {
+        x: currentX,
+        y: currentY,
+        scale: currentScale,
+        transformOrigin: "50% 50%",
+        force3D: true,
+      });
 
     animate();
 
-    window.addEventListener('resize', updateScale);
-    window.addEventListener('pointerup', pointerUp);
-    window.addEventListener('pointercancel', pointerUp);
-    collageRef?.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener("resize", updateScale);
+    window.addEventListener("pointerup", pointerUp);
+    window.addEventListener("pointercancel", pointerUp);
+    collageRef?.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      window.removeEventListener('resize', updateScale);
-      window.removeEventListener('pointerup', pointerUp);
-      window.removeEventListener('pointercancel', pointerUp);
-      collageRef?.removeEventListener('wheel', onWheel);
-      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener("resize", updateScale);
+      window.removeEventListener("pointerup", pointerUp);
+      window.removeEventListener("pointercancel", pointerUp);
+      collageRef?.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKeyDown);
       cancelAnimationFrame(rafId);
     };
   });
@@ -609,14 +685,24 @@
 
 <svelte:window onpointermove={pointerMove} />
 
-<div bind:this={collageRef} class="collage" role="region" aria-label="Image collage" onpointerdown={pointerDown}>
+<div
+  bind:this={collageRef}
+  class="collage"
+  role="region"
+  aria-label="Image collage"
+  onpointerdown={pointerDown}
+>
   <div
     bind:this={innerRef}
     class="collage-inner"
-    style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth / 2}px);top:calc(50vh - {designHeight / 2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
+    style="width:{designWidth}px;height:{designHeight}px;left:calc(50vw - {designWidth /
+      2}px);top:calc(50vh - {designHeight /
+      2}px);transform:translate({initialContext.photoX}px,{initialContext.photoY}px);"
   >
     {#each visibleImages as img (`${Math.round(img.left)}|${Math.round(img.top)}`)}
-      {@const isUnmatched = activeFilters.length > 0 && !activeFilters.some((f) => img.tags?.includes(f))}
+      {@const isUnmatched =
+        activeFilters.length > 0 &&
+        !activeFilters.some((f) => img.tags?.includes(f))}
       <button
         class="collage-item"
         class:img-unmatched={isUnmatched}
@@ -624,7 +710,9 @@
         type="button"
         style="left:{img.left}px;top:{img.top}px;width:{img.width}px;height:{img.height}px;"
         onpointerdown={tilePointerDown}
-        onpointerenter={() => { if (!img.noClick) hoverVolunteer(img); }}
+        onpointerenter={() => {
+          if (!img.noClick) hoverVolunteer(img);
+        }}
         onclick={(e) => handleTileClick(e, img, e.currentTarget)}
         use:tilt={{
           max: 14,
@@ -637,12 +725,22 @@
         }}
       >
         <div class="img-bw-layer">
-          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--bw" draggable="false" />
+          <img
+            src={img.src}
+            alt={img.name ?? "photo"}
+            class="collage-img collage-img--bw"
+            draggable="false"
+          />
         </div>
         <div class="img-color-layer">
-          <img src={img.src} alt={img.name ?? 'photo'} class="collage-img collage-img--color" draggable="false" />
+          <img
+            src={img.src}
+            alt={img.name ?? "photo"}
+            class="collage-img collage-img--color"
+            draggable="false"
+          />
         </div>
-        <div class="img-noise"    aria-hidden="true"></div>
+        <div class="img-noise" aria-hidden="true"></div>
         <div class="img-vignette" aria-hidden="true"></div>
       </button>
     {/each}
@@ -677,8 +775,12 @@
     position: absolute;
     overflow: hidden;
     border-radius: var(--radius-s, 4px);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
-    transition: opacity 0.45s ease, filter 0.5s ease;
+    box-shadow:
+      0 2px 16px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.03);
+    transition:
+      opacity 0.45s ease,
+      filter 0.5s ease;
     cursor: pointer;
     pointer-events: auto;
     border: 0;
@@ -704,12 +806,12 @@
 
   .img-bw-layer {
     z-index: 1;
-    transition: opacity 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    transition: opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .img-color-layer {
     z-index: 2;
-    transition: opacity 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    transition: opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   /* object-fit: cover → no letterboxing; frame is corrected to natural ratio on load */
@@ -721,8 +823,10 @@
     user-select: none;
     -webkit-user-drag: none;
     will-change: transform, filter;
-    transform: scale(1.0);
-    transition: transform 0.65s cubic-bezier(0.25,0.46,0.45,0.94), filter 0.5s ease;
+    transform: scale(1);
+    transition:
+      transform 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      filter 0.5s ease;
   }
 
   .collage-img--bw {
@@ -767,7 +871,10 @@
     position: absolute;
     inset: 0;
     z-index: 3;
-    background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-image: radial-gradient(
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    );
     background-size: 3px 3px;
     mix-blend-mode: overlay;
     opacity: 0.12;
@@ -778,7 +885,11 @@
     position: absolute;
     inset: 0;
     z-index: 4;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%);
+    background: radial-gradient(
+      ellipse at center,
+      transparent 55%,
+      rgba(0, 0, 0, 0.5) 100%
+    );
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.4s ease;

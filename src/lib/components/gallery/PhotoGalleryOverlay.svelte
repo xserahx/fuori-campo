@@ -2,10 +2,13 @@
  VediTutteLeFoto.svelte nella pagina del singolo volontario.
  Sfondo sfocato/scurito (backdrop-filter), coverflow al centro,
  frecce prev/next, chiusura con X / Esc / click sullo sfondo. -->
+
+<!--Visualizzazione delle foto nella galleria al click su una foto/card-->
+
 <script lang="ts">
-  import { untrack } from 'svelte';
-  import ArrowButton from '../buttons/ArrowButton.svelte';
-  import IconButton from '../buttons/IconButton.svelte';
+  import { untrack } from "svelte";
+  import ArrowButton from "../buttons/ArrowButton.svelte";
+  import IconButton from "../buttons/IconButton.svelte";
 
   // Svelte 5 props
   let props = $props<{
@@ -31,7 +34,7 @@
     const n = photoCount;
     if (n <= 1) return 0;
     let d = (i - activeIndex) % n;
-    if (d >  n / 2) d -= n;
+    if (d > n / 2) d -= n;
     if (d < -n / 2) d += n;
     return d;
   }
@@ -55,9 +58,9 @@
 
   /* ── Keyboard navigation ──────────────────────────────────────── */
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') props.onclose();
-    else if (e.key === 'ArrowLeft') stepPhoto(-1);
-    else if (e.key === 'ArrowRight') stepPhoto(1);
+    if (e.key === "Escape") props.onclose();
+    else if (e.key === "ArrowLeft") stepPhoto(-1);
+    else if (e.key === "ArrowRight") stepPhoto(1);
   }
 
   /* Chiude solo se si clicca proprio sullo sfondo, non sulla foto/frecce */
@@ -67,7 +70,7 @@
 
   // Correzione a11y: Handler tastiera speculare per il click sul backdrop
   function onBackdropKeydown(e: KeyboardEvent) {
-    if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
+    if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
       props.onclose();
     }
   }
@@ -113,7 +116,12 @@
         style="--off:{off}; z-index:{20 - Math.abs(off)};"
         aria-hidden={off !== 0}
       >
-        <img class="g-slide-img" src={photoUrl} alt={off === 0 ? (props.altBase ?? '') : ''} draggable="false" />
+        <img
+          class="g-slide-img"
+          src={photoUrl}
+          alt={off === 0 ? (props.altBase ?? "") : ""}
+          draggable="false"
+        />
       </div>
     {/each}
   </div>
@@ -138,20 +146,24 @@
     backdrop-filter: blur(18px);
     animation: gallery-fade-in 0.22s ease both;
   }
-  
+
   .gallery-overlay:focus {
     outline: none;
   }
 
   @keyframes gallery-fade-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .gallery-close-container {
     position: fixed;
-    top: var(--spacing-9, 48px);    
-    right: var(--spacing-11, 72px);  
+    top: var(--spacing-9, 48px);
+    right: var(--spacing-11, 72px);
     z-index: 30;
   }
 
@@ -164,23 +176,26 @@
     align-items: center;
     justify-content: center;
   }
-  .gallery-stage--draggable { cursor: grab; }
-  .gallery-stage--dragging  { cursor: grabbing; user-select: none; }
+  .gallery-stage--draggable {
+    cursor: grab;
+  }
+  .gallery-stage--dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
 
   .g-slide {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform:
-      translate3d(-50%, -50%, 0)
-      translate3d(calc(var(--off) * 56%), 0, 0)
-      scale(0.74);
+    transform: translate3d(-50%, -50%, 0)
+      translate3d(calc(var(--off) * 56%), 0, 0) scale(0.74);
     filter: blur(7px) brightness(0.62);
     opacity: 0.5;
     transition:
       transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-      filter    0.55s ease,
-      opacity   0.55s ease;
+      filter 0.55s ease,
+      opacity 0.55s ease;
     will-change: transform, filter, opacity;
   }
   .g-slide--active {
@@ -188,7 +203,11 @@
     filter: blur(0px) brightness(1);
     opacity: 1;
   }
-  .g-slide--far { opacity: 0 !important; pointer-events: none; transition: none !important; }
+  .g-slide--far {
+    opacity: 0 !important;
+    pointer-events: none;
+    transition: none !important;
+  }
 
   .g-slide-img {
     display: block;
@@ -208,21 +227,42 @@
     transform: translateY(-50%);
     z-index: 30;
   }
-  
-  .gallery-arrow-container--prev { left:  var(--spacing-11, 72px); }
-  .gallery-arrow-container--next { right: var(--spacing-11, 72px); }
 
-  
+  .gallery-arrow-container--prev {
+    left: var(--spacing-11, 72px);
+  }
+  .gallery-arrow-container--next {
+    right: var(--spacing-11, 72px);
+  }
+
   @media (max-width: 700px) {
-    .gallery-stage { height: 60dvh; }
-    .g-slide-img { max-width: 82vw; max-height: 60dvh; }
-    .g-slide:not(.g-slide--active) { opacity: 0 !important; }
-    .gallery-close-container { top: 27px; right: var(--spacing-5, 24px); }
-    .gallery-arrow-container--prev { left:  var(--spacing-5, 24px); }
-    .gallery-arrow-container--next { right: var(--spacing-5, 24px); }
+    .gallery-stage {
+      height: 60dvh;
+    }
+    .g-slide-img {
+      max-width: 82vw;
+      max-height: 60dvh;
+    }
+    .g-slide:not(.g-slide--active) {
+      opacity: 0 !important;
+    }
+    .gallery-close-container {
+      top: 27px;
+      right: var(--spacing-5, 24px);
+    }
+    .gallery-arrow-container--prev {
+      left: var(--spacing-5, 24px);
+    }
+    .gallery-arrow-container--next {
+      right: var(--spacing-5, 24px);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .g-slide, .gallery-overlay { transition: none; animation: none; }
+    .g-slide,
+    .gallery-overlay {
+      transition: none;
+      animation: none;
+    }
   }
 </style>
