@@ -37,6 +37,7 @@
     activeIndex = (activeIndex - 1 + introSlides.length) % introSlides.length;
   }
 
+  // ── ANIMAZIONE TITOLO ──
   function playTitleReveal(lines: NodeListOf<HTMLElement>) {
     gsap.fromTo(
       lines,
@@ -52,6 +53,32 @@
     );
   }
 
+  // ── L'ANIMAZIONE SFUMATA RECUPERATA DALLA REFERENCE ──
+  function blurRevealIn(els: NodeListOf<HTMLElement>, delay = 0.22) {
+    gsap.fromTo(
+      els,
+      { y: 16, opacity: 0, filter: 'blur(10px)' },
+      {
+        y: 0,
+        opacity: 1,
+        filter: 'blur(0px)',
+        duration: 0.9,
+        ease: 'power2.out',
+        overwrite: true,
+        delay
+      }
+    );
+  }
+
+  // ── CONTROLLO CARICAMENTO FONT ──
+  const DISPLAY_FONT = '800 1em "forma-djr-display"';
+  
+  function displayFontReady() {
+    if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
+    if (document.fonts.check(DISPLAY_FONT)) return Promise.resolve();
+    return document.fonts.load(DISPLAY_FONT).catch(() => {});
+  }
+
   $effect(() => {
     const _trigger = activeIndex; 
     
@@ -60,11 +87,24 @@
     const activeSlide = introSlideEl.querySelector('.slide-content.active');
     if (!activeSlide) return;
 
-    const lines = activeSlide.querySelectorAll<HTMLElement>('.title-anim');
-    if (!lines.length) return;
+    const titleLines = activeSlide.querySelectorAll<HTMLElement>('.title-anim');
+    const copyLines = activeSlide.querySelectorAll<HTMLElement>('.blur-reveal');
 
-    gsap.set(lines, { yPercent: 120 });
-    playTitleReveal(lines);
+    // 1. Congeliamo istantaneamente gli elementi nella loro posizione nascosta 
+    // ancor prima che il font sia pronto, evitando flash visivi
+    if (titleLines.length) gsap.set(titleLines, { yPercent: 120 });
+    if (copyLines.length) gsap.set(copyLines, { y: 16, opacity: 0, filter: 'blur(10px)' });
+
+    let cancelled = false;
+
+    // 2. Aspettiamo che il font sia perfettamente renderizzato, poi facciamo partire il motore GSAP
+    displayFontReady().then(() => {
+      if (cancelled) return;
+      if (titleLines.length) playTitleReveal(titleLines);
+      if (copyLines.length) blurRevealIn(copyLines);
+    });
+
+    return () => { cancelled = true; };
   });
 </script>
 
@@ -81,7 +121,8 @@
           </h1>
 
           <div class="hero-mask">
-            <p class="hero-copy">{slide.body}</p>
+            <!-- AGGIUNTA CLASSE .blur-reveal -->
+            <p class="hero-copy blur-reveal">{slide.body}</p>
           </div>
 
         </div>
@@ -199,14 +240,13 @@
     margin-top: -0.05em;
   }
 
-  /* FIX ACCENTI TAGLIATI: Aumentato il margine di manovra sopra e sotto */
   .rise-mask {
     display: block;
     overflow: hidden;
-    padding-top: 0.25em;    /* Crea spazio a sufficienza per gli accenti superiori (È, À) */
-    margin-top: -0.25em;   /* Annulla lo spostamento verticale mantenendo intatta la grafica */
-    padding-bottom: 0.15em; /* Salva le code delle lettere in basso */
-    margin-bottom: -0.15em;/* Annulla lo spostamento inferiore */
+    padding-top: 0.25em;    
+    margin-top: -0.25em;   
+    padding-bottom: 0.15em; 
+    margin-bottom: -0.15em;
   }
 
   /* ── Paragrafo descrittivo */
@@ -322,12 +362,8 @@
     .title-mask {
       display: block;
       overflow: hidden; 
-      
-      
       padding-top: 15px;
       margin-top: -15px;
-      
-      
       padding-bottom: 12px; 
       margin-bottom: -12px;
     }
