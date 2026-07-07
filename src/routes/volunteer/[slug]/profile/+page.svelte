@@ -579,6 +579,11 @@
   .qa-wrap {
     width: 100%;
     margin: 0;
+    /* Compensa il padding-top della prima .qa-row (14px) così la baseline del
+       testo della prima domanda si allinea con la baseline di .info-role,
+       che invece non ha padding-top. Senza questo offset il blocco domande
+       parte visibilmente più in basso della colonna a sinistra. */
+    margin-top: -14px;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -714,6 +719,13 @@
     .hero-grid {
       grid-template-columns: 1fr;
       row-gap: 40px;
+    }
+
+    .qa-wrap {
+      /* Su una sola colonna non c'è più bisogno di compensare l'allineamento
+         con .vol-info: la riga viene azzerata per non "mangiare" spazio sopra
+         la prima domanda. */
+      margin-top: 0;
     }
 
     .qa-row {
