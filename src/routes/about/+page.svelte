@@ -132,15 +132,6 @@
     if (Math.abs(diff) > 50) navigateCarousel(diff > 0 ? 1 : -1);
   }
 
-  let touchStartY = 0;
-  function onTouchStart(e: TouchEvent) {
-    touchStartY = e.touches[0].clientY;
-  }
-  function onTouchEnd(e: TouchEvent) {
-    const dy = touchStartY - e.changedTouches[0].clientY;
-    if (Math.abs(dy) > 40) navigateCarousel(dy > 0 ? 1 : -1);
-  }
-
   let wheelAccum = 0;
   let wheelLocked = false;
   let wheelStepTimer: ReturnType<typeof setTimeout> | undefined;
@@ -560,8 +551,6 @@
   {#if isMobile}
     <section
       class="mobile-carousel"
-      ontouchstart={onTouchStart}
-      ontouchend={onTouchEnd}
       aria-label="Carousel team"
     >
       {#key currentCarouselIndex}
@@ -1310,7 +1299,7 @@
     align-items: center;
     justify-content: center;
     padding: var(--spacing-4) 0;
-    border: 2px solid var(--color-content-accent);
+    border: var(--stroke-mobile) solid var(--color-content-accent);
     border-radius: var(--radius-rounded-pill, 999px);
     background: var(--color-background-primary);
     color: var(--color-link-default);
