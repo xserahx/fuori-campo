@@ -99,7 +99,6 @@
     /* Dark variant — dark fill + green border pill (used on-card in about/carousel) */
     .scopri-button--dark {
         background: var(--color-background-primary, #0e0e0e);
-        height: auto;
         padding: var(--spacing-3, 12px) var(--spacing-5, 20px);
     }
 
