@@ -495,60 +495,60 @@
     }
   }
 
-  /* The questions panel switches to its mobile stacked layout at ≤700px, to
-     match app.html's zoom:1 boundary. Between 601–700px the page renders at
-     zoom 1 in the real (narrow) window, so the desktop 116px sticky panels
-     overflow; the fluid mobile column (353px / 36px) fits instead. */
+  /* Mobile (≤700px, matching app.html's zoom:1 cutoff). Per Figma "Home-mobile":
+     each question is one full screen (100dvh), alternating lime/dark, with the
+     question vertically CENTRED and inset 24px on its aligned side. On the 874px
+     design device that centring lands the text 389px from top and 389px from
+     bottom (389 + 96 text + 389 = 874) — exactly the annotated spacing. Text is
+     solid (black on lime, white on dark), not ghost. The panels use the same
+     sticky layered-pinning as desktop (see .layered-panel below). */
   @media (max-width: 700px) {
-    /* Normal-flow stack so the vertical gaps between the question texts are
-       explicit margins (the exact annotated distances) rather than hand-tuned
-       absolute `top`s. overflow:hidden makes this a BFC so the first panel's
-       margin-top doesn't collapse out of the green container. The bottom
-       padding is the last-text → panel-bottom distance. */
-    .questions-container {
-      min-height: 0;
-      background: var(--color-content-accent, #bdff5d);
-      overflow: hidden;
-      /* Figma: Q4 → container-bottom = 400px, same as every other gap. */
-      padding-bottom: 400px;
-    }
-
+    /* Figma mobile (frame "Home-mobile"): four full-screen sections, each 874px
+       = one 100dvh viewport, that simply SCROLL — a question centred in each,
+       alternating lime/dark. This is NOT the desktop sticky "cover" (the next
+       question sliding over the current one read as confusing, and Figma shows a
+       plain scroll). So: position static, one screen tall, no hold margin. */
     .layered-panel {
-      position: static;
-      width: 100%;
-      height: auto;
-      min-height: 0;
-      overflow: visible;
-      background: transparent;
-      padding: 0;
-      box-sizing: border-box;
+      /* Sticky layered-pinning like desktop: each question pins full-screen and
+         the NEXT one scrolls up and covers it (the covering order is the
+         z-index: nth-child(1)→1 … (4)→4, set for all widths above). The 30dvh
+         margin is the "hold" — the question rests full-screen for that much
+         scroll before the next rises over it. */
+      position: sticky;
+      top: 0;
+      /* One full screen per section. Mobile zoom is always 1, so no /page-zoom
+         division (a bad --page-zoom value would make the whole calc() invalid and
+         the height would collapse to content — exactly the "two questions share a
+         screen" bug). The plain 100vh line is a fallback for engines without dvh
+         so it can never fall back to auto height. */
+      height: 100vh;
+      height: 100dvh;
+      min-height: 100dvh;
+      margin: 0 0 30dvh !important;
+      /* COLUMN flex so vertical centring is `justify-content: center` (main axis)
+         — unambiguous, and it doesn't depend on the desktop row `align-items`.
+         The question then sits centred: 389px from top and bottom on the 874px
+         design screen. Left/right is `align-items`, set per question below. */
       display: flex;
-      align-items: center;
-      /* Override the desktop `margin: 0 0 30dvh !important` (sticky hold) so the
-         explicit per-panel gaps below are the only vertical spacing. */
-      margin: 0 !important;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .layered-panel h2 {
-      /* Figma: --spacing-5 (24px) inset on the aligned side, and the box is
-         capped at 353px so the same 24px is naturally left over on the far
-         side too — 100vw - 24px*2 mirrors that without an explicit far-side
-         padding (matches the app's .safe-area convention, utilities.css). */
+      /* Figma column: capped at 353px, with a 24px inset on the aligned side
+         (the far side is naturally left over: 100vw - 24px*2), matching the
+         app's .safe-area convention. */
       width: min(353px, calc(100vw - var(--spacing-5, 24px) * 2));
       margin: 0;
-      /* Large, readable size scaled from the Figma 116px down to what fits a
-         phone column. Text WRAPS (white-space: normal) so long lines break
-         instead of being shrunk to ~11px to fit on one nowrap line. The br
-         tags still define the primary line breaks; anything longer than the
-         column wraps naturally. Cap keeps the widest word (CONCRETAMENTE?)
-         inside the column; overflow-wrap is a hard safety net against clip. */
+      /* Scaled from the Figma 116px down to a phone-readable size. Text WRAPS
+         (white-space: normal) so long lines/words break instead of shrinking to
+         one nowrap line; the <br>s still define the primary line breaks and
+         overflow-wrap is the safety net. This overrides the desktop
+         116px/nowrap/--qfit rule (fitQuestions() opts out below 700px). */
       font-size: clamp(28px, 9vw, 36px);
       font-weight: 800;
-      /* Figma: leading 32px / font-size 36px = 0.889. */
-      line-height: 0.889;
-      /* Figma: tracking 1.08px / font-size 36px = 0.03em. */
-      letter-spacing: 0.03em;
-      color: var(--color-content-body-black, #0e0e0e);
+      line-height: 0.889;      /* Figma: leading 32 / size 36 */
+      letter-spacing: 0.03em;  /* Figma: tracking 1.08 / size 36 */
       white-space: normal;
       overflow-wrap: break-word;
     }
@@ -561,71 +561,39 @@
       display: inline;
     }
 
-    /* Overrides the desktop `.question h2 span { display: inline-block }`
-       rule, which would otherwise make multi-word spans (and the per-word
-       .scroll-reveal-word spans injected by the scrollReveal action) wrap as
-       rigid atomic units instead of flowing/breaking naturally like text. */
+    /* Overrides the desktop `.question h2 span { display: inline-block }` rule,
+       which would otherwise make multi-word spans (and the per-word
+       .scroll-reveal-word spans injected by scrollReveal) wrap as rigid atomic
+       units instead of flowing/breaking naturally like text. */
     .layered-panel h2 span {
       display: inline;
     }
 
-    .panel--lime,
-    .panel--dark {
-      background-color: var(--color-content-accent, #bdff5d) !important;
-      color: var(--color-content-body-black, #0e0e0e);
-      padding: 0;
-      text-align: left;
-    }
-
-    /* Tutte le parole piene (nero) sul pannello lime — niente outline/hollow
-       su mobile, solo testo pieno (anche ghost-lime/ghost-black, che su
-       desktop sono le parole "cave"). */
-    .panel--lime .accent,
-    .panel--dark .accent,
-    .ghost-lime,
-    .ghost-black {
-      color: var(--color-content-body-black, #0e0e0e) !important;
-      -webkit-text-fill-color: var(--color-content-body-black, #0e0e0e) !important;
-      -webkit-text-stroke-width: 0 !important;
-    }
-
-    /* Gaps between the question texts = explicit margins, verified against the
-       Figma dev-mode positions: container-top→Q1, Q1→Q2, Q2→Q3, Q3→Q4 and
-       Q4→container-bottom (the last one is .questions-container's own
-       padding-bottom, above) are ALL a uniform 400px.
-       Alignment: Q1/Q3 sit on the LEFT, Q2/Q4 on the RIGHT (per Figma), each
-       inset by --spacing-5 (24px) — matching the app's .safe-area margin. */
-    .layered-panel:nth-child(1) {
-      margin-top: 400px !important;
-      padding-left: var(--spacing-5, 24px);
-      justify-content: flex-start;
-    }
-
-    .layered-panel:nth-child(2) {
-      margin-top: 400px !important;
-      padding-right: var(--spacing-5, 24px);
-      justify-content: flex-end;
-    }
-
+    /* Q1/Q3 sit LEFT, Q2/Q4 RIGHT (per Figma). In the column flex this is the
+       cross axis, so it's `align-items`. Each is inset by --spacing-5 (24px),
+       overriding the desktop 72px side padding (.panel--lime/--dark) at higher
+       specificity. Both paddings are set so the far side never reaches the
+       edge. Vertical centring is the panel's justify-content above. */
+    .layered-panel:nth-child(1),
     .layered-panel:nth-child(3) {
-      margin-top: 400px !important;
+      align-items: flex-start;
       padding-left: var(--spacing-5, 24px);
-      justify-content: flex-start;
+      padding-right: var(--spacing-5, 24px);
     }
 
+    .layered-panel:nth-child(2),
     .layered-panel:nth-child(4) {
-      margin-top: 400px !important;
+      align-items: flex-end;
+      padding-left: var(--spacing-5, 24px);
       padding-right: var(--spacing-5, 24px);
-      justify-content: flex-end;
     }
 
     /* Esplicito su ENTRAMBI i lati (non solo "right"): senza una regola diretta
-       sull'h2, il testo eredita da .panel--dark (regola non-mobile fuori da
-       questa media query, stessa specificità di quella qui sotto ma dopo nel
-       file → vince lei), che imposta text-align:right sulla SECTION — quindi
-       anche le domande 1/3 (che dovrebbero essere a sinistra) rischiano di
-       ereditare "right" da lì. Fissare qui entrambi i lati elimina la
-       dipendenza dall'ereditarietà/ordine nel foglio di stile. */
+       sull'h2, il testo eredita da .panel--dark (regola fuori da questa media
+       query, più avanti nel file → vince lei), che imposta text-align:right
+       sulla SECTION — quindi anche le domande 1/3 (a sinistra) rischiano di
+       ereditare "right". Fissare qui entrambi i lati elimina la dipendenza
+       dall'ordine nel foglio di stile. */
     .layered-panel:nth-child(1) h2,
     .layered-panel:nth-child(3) h2 {
       text-align: left;
@@ -634,6 +602,23 @@
     .layered-panel:nth-child(2) h2,
     .layered-panel:nth-child(4) h2 {
       text-align: right;
+    }
+
+    /* Figma mobile text is SOLID — no ghost/hollow outline: black on the lime
+       sections, off-white (#fafafa) on the dark ones. This overrides the desktop
+       ghost/accent per-word treatment. !important because the desktop
+       `.panel--dark .accent` rule sits later in the file at equal specificity
+       and would otherwise win. */
+    .panel--lime :is(.accent, .ghost-lime, .ghost-black) {
+      color: var(--color-content-body-black, #0e0e0e) !important;
+      -webkit-text-fill-color: var(--color-content-body-black, #0e0e0e) !important;
+      -webkit-text-stroke-width: 0 !important;
+    }
+
+    .panel--dark :is(.accent, .ghost-lime, .ghost-black) {
+      color: var(--color-content-body, #fafafa) !important;
+      -webkit-text-fill-color: var(--color-content-body, #fafafa) !important;
+      -webkit-text-stroke-width: 0 !important;
     }
   }
 

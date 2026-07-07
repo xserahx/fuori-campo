@@ -92,6 +92,11 @@
   let targetY  = initialContext.photoY;
   let velX = 0;
   let velY = 0;
+  // Buffered wheel/trackpad delta, drained a fixed fraction per frame (see
+  // animate). Decouples motion from the irregular, bursty timing of trackpad
+  // wheel events → the pan follows a steady stream instead of the jitter.
+  let wheelBufX = 0;
+  let wheelBufY = 0;
   let isDragging = false;
   let draggedDuringPointer = false;
   let pointerStartX = 0;
@@ -142,6 +147,12 @@
   // floaty inertia as a drag release) instead of stopping the instant you lift
   // your fingers — this is what makes the scroll feel smooth, not stepped.
   const WHEEL_GLIDE = 0.18;
+  // Fraction of the buffered wheel delta consumed per animation frame. A wheel
+  // event drops its delta into wheelBuf; the loop eats this share each frame,
+  // so bursty trackpad events (many at once, then a gap) become smooth, evenly
+  // paced motion instead of tracking the raw event jitter. Lower = smoother but
+  // laggier; ~0.2 empties the buffer in ~4-5 frames (~75 ms), a gentle glide.
+  const WHEEL_DRAIN = 0.2;
   // Ceiling on wheel-driven momentum so fast, continuous scrolling can't build
   // up a runaway glide that overshoots.
   const WHEEL_MAX_VEL = 90;
@@ -177,6 +188,23 @@
 
   function animate() {
     if (!isDragging) {
+      // Drain a fixed share of the buffered wheel delta each frame → even,
+      // steady motion regardless of how bursty the trackpad events arrived. The
+      // drained amount also feeds the momentum so a flick coasts to rest.
+      if (wheelBufX !== 0 || wheelBufY !== 0) {
+        const takeX = wheelBufX * WHEEL_DRAIN;
+        const takeY = wheelBufY * WHEEL_DRAIN;
+        wheelBufX -= takeX;
+        wheelBufY -= takeY;
+        targetX += takeX;
+        targetY += takeY;
+        velX = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velX + takeX * WHEEL_GLIDE));
+        velY = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velY + takeY * WHEEL_GLIDE));
+        // Snap the last crumbs to zero so the buffer doesn't decay forever.
+        if (Math.abs(wheelBufX) < 0.01) wheelBufX = 0;
+        if (Math.abs(wheelBufY) < 0.01) wheelBufY = 0;
+      }
+
       velX *= FRICTION;
       velY *= FRICTION;
       targetX += velX;
@@ -327,17 +355,11 @@
       e.deltaMode === 1 ? WHEEL_LINE_PX :
       e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
 
-    const dx = -e.deltaX * unit * WHEEL_SPEED;
-    const dy = -e.deltaY * unit * WHEEL_SPEED;
-
-    // Immediate nudge → the gallery responds the instant you scroll…
-    targetX += dx;
-    targetY += dy;
-
-    // …plus a little momentum so it keeps gliding and eases to rest. Clamped so
-    // a fast continuous swipe can't accumulate a runaway velocity.
-    velX = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velX + dx * WHEEL_GLIDE));
-    velY = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velY + dy * WHEEL_GLIDE));
+    // Buffer the delta; the rAF loop drains a fixed share each frame (see
+    // animate). This is what makes the trackpad feel smooth: motion is paced by
+    // the steady frame clock, not by the irregular burst timing of wheel events.
+    wheelBufX += -e.deltaX * unit * WHEEL_SPEED;
+    wheelBufY += -e.deltaY * unit * WHEEL_SPEED;
   }
 
   // Keyboard: ← / → pan horizontally, ↑ / ↓ vertically. Auto-repeat while a key
