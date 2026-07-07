@@ -122,11 +122,20 @@
   const N = () => volunteers.length;
   function mod(n: number, m: number) { return ((n % m) + m) % m; }
 
-  const CARD_ANGLE = () => 360 / N();
-
   let currentIndex = $derived(mod(targetPos, N()));
-  let ringRotation = $derived(targetPos * CARD_ANGLE());
   let currentVolunteer = $derived(volunteers[currentIndex]);
+
+  // Coverflow: offset con segno della card i rispetto a quella attiva, avvolto
+  // su [-N/2, N/2]. 0 = centrale, ±1 = vicine (che sbucano dai bordi), oltre =
+  // fuori scena. Le card mantengono la STESSA dimensione (nessuno scorcio da
+  // ring): la vicina è la foto piena e sfocata, come da Figma. Il "salto" del
+  // wrap avviene solo sulle card lontane (±3), fuori schermo → invisibile.
+  function relOffset(i: number): number {
+    const n = N();
+    let r = mod(i - currentIndex, n);
+    if (r > n / 2) r -= n;
+    return r;
+  }
   // Nome su massimo due righe: cognome sopra, nomi sotto (es. SOLIDORO / CLAUDIA IRENE).
   let nameLines = $derived.by(() => {
     const words = currentVolunteer?.name?.split(' ').filter(Boolean) ?? [];
@@ -334,29 +343,50 @@
   // (getBoundingClientRect tiene conto delle trasformazioni 3D) e portiamo
   // esattamente quelle dimensioni in --center-w/--center-h, così il testo resta
   // agganciato all'angolo in basso a sinistra dell'immagine a ogni larghezza.
-  function measureCenterCard() {
-    if (typeof document === 'undefined' || !carouselEl) return;
-    const active = carouselEl.querySelector<HTMLElement>('.card-3d.active');
-    if (!active) return;
-    const rect = active.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      carouselEl.style.setProperty('--center-w', `${rect.width}px`);
-      carouselEl.style.setProperty('--center-h', `${rect.height}px`);
-    }
+  // ── Dimensione responsiva delle card (foto MAI tagliata) ──────────
+  // Coverflow con card a dimensione REALE (no scorcio prospettico): la card è
+  // verticale (558×583) → il vincolo stringente è l'ALTEZZA. Calcoliamo la
+  // dimensione VISIVA che entra nel viewport, poi la riportiamo a px CSS
+  // dividendo per lo zoom globale di <html> (=innerWidth/1728). Così a ogni
+  // larghezza la card centrale è intera (gradiente e testo dentro) e le vicine
+  // — stessa dimensione — sbucano dai bordi. --peek è la distanza a cui la card
+  // vicina è traslata: ricalcolata dal viewport, mai fissa su una risoluzione.
+  const CARD_RATIO_HW = 583 / 558;     // altezza/larghezza della foto team
+  function sizeCarousel() {
+    if (typeof window === 'undefined' || !carouselEl || isMobile) return;
+    const zoom = window.matchMedia('(max-width: 700px)').matches ? 1 : window.innerWidth / 1728;
+    // Card centrale a piena altezza (con margine) o limitata in larghezza.
+    let visH = window.innerHeight * 0.82;
+    let visW = visH / CARD_RATIO_HW;
+    const maxVisW = window.innerWidth * 0.44;
+    if (visW > maxVisW) { visW = maxVisW; visH = visW * CARD_RATIO_HW; }
+
+    const cardW = visW / zoom;
+    const cardH = visH / zoom;
+    carouselEl.style.setProperty('--card-w', `${cardW}px`);
+    carouselEl.style.setProperty('--card-h', `${cardH}px`);
+    // L'overlay info (bottone/gradiente/testo) è agganciato a --center-w/h:
+    // qui coincidono con la card, che è piatta (dimensione reale = CSS).
+    carouselEl.style.setProperty('--center-w', `${cardW}px`);
+    carouselEl.style.setProperty('--center-h', `${cardH}px`);
+    // Traslazione della card vicina: il suo bordo interno sbuca ~18% dal bordo
+    // del viewport. centro-vicina (dal centro viewport) = 0.32·vw + visW/2.
+    const peekVis = window.innerWidth * 0.32 + visW * 0.5;
+    carouselEl.style.setProperty('--peek', `${peekVis / zoom}px`);
   }
 
   $effect(() => {
-    // Ri-misura quando il carosello è montato (desktop) e a ogni resize.
-    // currentIndex non cambia la geometria (la card finisce sempre centrata),
-    // ma lo teniamo come dipendenza per ri-misurare dopo eventuali re-render.
-    const _trigger = currentIndex;
+    // Ricalcola le dimensioni al mount (desktop) e a ogni resize. Le card sono
+    // piatte (dimensione reale = CSS), quindi basta sizeCarousel(): niente
+    // misura del getBoundingClientRect proiettato.
     if (isMobile || !carouselEl) return;
 
     let raf = 0;
     const schedule = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(measureCenterCard);
+      raf = requestAnimationFrame(sizeCarousel);
     };
+    sizeCarousel();
     schedule();
     window.addEventListener('resize', schedule, { passive: true });
 
@@ -487,29 +517,26 @@
       aria-label="Volunteer carousel"
     >
       <div class="stage">
-        <div class="container-3d">
-          <div class="ring" class:ready={isReady} style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);">
-            {#each volunteers as vol, i}
-              {@const isActive = currentIndex === i}
-              <div
-                class="card-3d"
-                class:active={isActive}
-                style="transform: rotateY({i * -CARD_ANGLE()}deg) translateZ(var(--card-radius));"
-                role="button"
-                tabindex={isActive ? 0 : -1}
-                aria-current={isActive ? 'true' : undefined}
-                onclick={() => { if (isActive) handleTitleClick(); }}
-                onkeydown={(e) => { if (e.key === 'Enter' && isActive) handleTitleClick(); }}
-              >
-                <div class="card-image" class:loaded={decoded[vol.image]} style="background-image: url('{vol.image}');"></div>
-                <div class="card-overlay"></div>
-              </div>
-            {/each}
-          </div>
+        <div class="coverflow" class:ready={isReady}>
+          {#each volunteers as vol, i}
+            {@const rel = relOffset(i)}
+            {@const isActive = rel === 0}
+            <div
+              class="cover-card"
+              class:active={isActive}
+              class:offscreen={Math.abs(rel) > 1}
+              style="transform: translate(-50%, -50%) translateX(calc({rel} * var(--peek))) rotateY(calc({rel} * var(--cover-tilt) * -1)); z-index: {10 - Math.abs(rel)};"
+              role="button"
+              tabindex={isActive ? 0 : -1}
+              aria-current={isActive ? 'true' : undefined}
+              onclick={() => { if (isActive) handleTitleClick(); }}
+              onkeydown={(e) => { if (e.key === 'Enter' && isActive) handleTitleClick(); }}
+            >
+              <div class="card-image" class:loaded={decoded[vol.image]} style="background-image: url('{vol.image}');"></div>
+            </div>
+          {/each}
         </div>
       </div>
-
-      <div class="progressive-blur-overlay" aria-hidden="true"></div>
 
       <div class="arrow-left" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
         <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
@@ -732,27 +759,21 @@
     user-select: none;
     touch-action: none;
 
-    /* ── Anello CSS-3D (stesso motore di /category), card ~foto team ──
-       La card centrale ha le proporzioni delle foto (558×583) ed è molto più
-       piccola di quella categoria: nel Figura /about occupa ~30% della
-       larghezza, non a piena grandezza. --card-width è l'UNICA leva della
-       dimensione: la prospettiva ingrandisce la card ~3,26×, quindi la card
-       visibile ≈ --card-width × 3,26. Telecamera, raggio, blur laterale e
-       riquadro info scalano tutti da qui — nudge solo questa riga per la size.
-       (Categoria usa clamp(240px, 26vw, 420px) ≈ card grande a piena altezza.) */
-    --card-width: clamp(115px, 9.9vw, 195px);
-    --ss: 2;
-    --card-radius: calc(var(--card-width) * var(--ss) * -0.86);
-    --camera-z: calc(var(--card-width) * var(--ss) * 2.8);
-
-    /* Dimensione proiettata a schermo della card centrale: la prospettiva la
-       ingrandisce ~3,26× rispetto alla sua dimensione CSS. Serve a dimensionare
-       il riquadro delle info (.vol-card) così che il testo resti agganciato
-       all'angolo in basso a sinistra dell'immagine. */
-    --card-projection: 3.256;
-    --center-w: calc(var(--card-width) * var(--card-projection));
-    --center-h: calc(var(--center-w) * 583 / 558);
+    /* ── Coverflow (come da Figma): card a DIMENSIONE REALE, uguale per tutte.
+       La centrale è nitida, le vicine sono le foto piene sfocate che sbucano
+       dai bordi (niente scorcio prospettico che le rimpicciolisce). Dimensioni
+       e --peek sono calcolati in JS (sizeCarousel) da viewport + zoom → sempre
+       responsive, foto mai tagliata. --cover-tilt dà la leggera curva/inclinaz.
+       delle vicine; --center-w/h (= card) ancorano l'overlay info. Valori
+       INIZIALI di fallback prima che il JS subentri: */
+    --card-w: clamp(220px, 44vh, 460px);
+    --card-h: calc(var(--card-w) * 583 / 558);
+    --center-w: var(--card-w);
+    --center-h: var(--card-h);
+    --peek: 42vw;
+    --cover-tilt: 22deg;
   }
+  
   .carousel:active { cursor: grabbing; }
 
   .carousel::before {
@@ -780,113 +801,62 @@
     z-index: 1;
   }
 
-  /* ── Anello CSS-3D (stesso motore di /category) ── */
-  .container-3d {
-    perspective: var(--camera-z);
-    /* Scena costruita a --ss× e riportata alla dimensione visiva con scale(1/ss):
-       la card viene rasterizzata al doppio della risoluzione prima che la
-       prospettiva la ingrandisca → resta nitida. */
-    width: calc(var(--card-width) * var(--ss));
-    transform: scale(calc(1 / var(--ss)));
-    transform-origin: center center;
-    /* Rapporto identico alle foto team (558×583): la card ha le stesse
-       proporzioni dell'immagine, così `cover` la riempie senza ritagliarla. */
-    aspect-ratio: 558 / 583;
-  }
-
-  .ring {
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transition: none;
-  }
-
-  .ring.ready {
-    transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .card-3d {
+  /* ── Coverflow: piano con prospettiva per la leggera inclinazione ── */
+  .coverflow {
     position: absolute;
     inset: 0;
-    border-radius: 4px;
+    perspective: 2400px;      /* prospettiva debole → vicine appena inclinate, non scorciate */
+    transform-style: preserve-3d;
+  }
+
+  .cover-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--card-w);
+    height: var(--card-h);
+    /* barrel distortion: bordi alto/basso curvi (effetto "stondato" pannello) */
+    border-radius: 50% / 4% 4% 3.6% 3.6%;
     overflow: hidden;
-    transition: transform 0.85s ease, box-shadow 0.85s ease;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    /* vicine sfocate; la centrale torna nitida (regola .active) */
+    filter: blur(9px);
+    transition:
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.6s ease;
     pointer-events: none;
     cursor: pointer;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .coverflow:not(.ready) .cover-card {
+    transition: none;      /* nessuna animazione al primo paint statico */
+  }
+
+  .cover-card.active {
+    filter: blur(0px);
+    pointer-events: auto;
+    z-index: 10;
+  }
+
+  .cover-card.offscreen {
+    opacity: 0;            /* card lontane: nascoste (e il wrap avviene qui, invisibile) */
+    pointer-events: none;
   }
 
   .card-image {
     width: 100%;
     height: 100%;
-    /* `contain` (non `cover`): la foto è mostrata intera, mai ritagliata. La
-       card ha già le proporzioni dell'immagine (558/583), quindi non compaiono
-       bande — ma `contain` garantisce l'assenza di crop anche con arrotondamenti. */
-    background-size: contain;
+    background-size: cover;
     background-position: center;
     background-color: var(--color-background-primary, #0e0e0e);
-    /* Nascosta finché la sorgente non è decodificata (vedi preloadImages):
-       la card compare già a piena qualità. */
     opacity: 0;
     transition: opacity 0.5s ease;
   }
 
   .card-image.loaded {
     opacity: 1;
-  }
-
-  .card-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5); /* Scurisce le laterali */
-    transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .card-3d.active {
-    pointer-events: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    z-index: 10;
-  }
-
-  .card-3d.active .card-overlay {
-    background: rgba(0, 0, 0, 0);
-  }
-
-  /* ── Lente di sfocatura progressiva ai lati ── */
-  .progressive-blur-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    pointer-events: none;
-
-    backdrop-filter: blur(15px) saturate(0.85);
-    -webkit-backdrop-filter: blur(15px) saturate(0.85);
-
-    mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(50% - var(--card-width) * 1.6),
-      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
-      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
-      transparent calc(50% - var(--card-width) * 0.8),
-      transparent calc(50% + var(--card-width) * 0.8),
-      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
-      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
-      #000 calc(50% + var(--card-width) * 1.6),
-      #000 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(50% - var(--card-width) * 1.6),
-      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
-      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
-      transparent calc(50% - var(--card-width) * 0.8),
-      transparent calc(50% + var(--card-width) * 0.8),
-      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
-      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
-      #000 calc(50% + var(--card-width) * 1.6),
-      #000 100%
-    );
   }
 
   /* ── Frecce laterali ── */
@@ -929,14 +899,14 @@
     fill: var(--color-background-primary);
   }
 
-  .curve-top {
+ .curve-top {
     top: 0;
-    height: clamp(120px, 30vh, 260px);
+    height: clamp(140px, 35vh, 280px);
   }
 
   .curve-bottom {
     bottom: 0;
-    height: clamp(110px, 28vh, 240px);
+    height: clamp(130px, 32vh, 260px);
   }
 
   /* ── Info volontario sovrapposte alla card centrale ── */
@@ -963,7 +933,7 @@
   /* Bottone "SCOPRI DI PIÙ" — Figma 6447:7869: top 0, ~20px dal bordo dx (20/558) */
   .vol-scopri {
     position: absolute;
-    top: 0;
+    top: 22px;
     right: calc(var(--center-w) * 0.0358);
     font-size: calc(var(--center-w) * 0.043); /* 24/558 */
     pointer-events: auto;
@@ -990,7 +960,7 @@
   .vol-info-block {
     position: absolute;
     left: calc(var(--center-w) * 0.0358); /* 20 / 558 */
-    bottom: 0;
+    bottom: 11px;
     width: calc(var(--center-w) * 0.62);  /* 346 / 558 */
     display: flex;
     flex-direction: column;
