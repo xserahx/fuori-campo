@@ -593,7 +593,7 @@
     
     --ss: 2;
     --card-radius: calc(var(--card-width) * var(--ss) * -0.86);
-    --camera-z: calc(var(--card-width) * var(--ss) * 2.8);
+    --camera-z: calc(var(--card-width) * var(--ss) * 2.5);
 
     /* IL FIX MATEMATICO DEFINITIVO:
        1. Calcoliamo la mezza altezza visiva della card esattamente al bordo (la giuntura),
@@ -601,7 +601,7 @@
     --seam-half-height: calc(var(--card-height) * 0.7);
     
     /* 2. Calcoliamo lo spazio vuoto esatto tra il top dello schermo e la giuntura */
-    --seam-gap: calc(50% - var(--seam-half-height));
+    --seam-gap: calc(50% - var(--seam-half-height)*0.8);
   }
 
   .carousel:active { cursor: grabbing; }
@@ -644,6 +644,7 @@
     height: 100%; 
     background-size: cover; 
     /* Rimosso l'ancoraggio, torna come la volevi tu */
+    top: 0;
     opacity: 0; 
     transition: opacity 0.5s ease;
   }
