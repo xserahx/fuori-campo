@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
+  import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
   import { gsap } from 'gsap';
 
@@ -211,7 +212,7 @@
           observer.disconnect();
         }
       }, { threshold: 0.2 });
-      observer.observe(teamTitleEl);
+      if (teamTitleEl) observer.observe(teamTitleEl);
     });
     return () => { cancelled = true; };
   });
@@ -267,9 +268,51 @@
   });
 
   // ═══════════════════════════════════════════════════════════
-  // 5. ONMOUNT (PULITO E SENZA ERRORI)
+  // ONMOUNT 
   // ═══════════════════════════════════════════════════════════
+
+  /* ── Reset di stato layout su mount ──────────────────────────────────
+     L'ABOUT deve calcolare il proprio offset da uno stato PULITO, a
+     prescindere dalla pagina di provenienza. La pagina di dettaglio
+     Categorie (e la scheda volontario) girano come contenitori FIXED e
+     non scrollabili, e impostano `--page-top-padding: 0px` sul body: se
+     quel valore resta "appiccicato" quando si arriva qui, l'ABOUT perde
+     l'offset della navbar e il contenuto sale troppo (sembra calcolato dal
+     margine superiore invece che dalla navbar). Qui azzeriamo ogni lock
+     ereditato e forziamo il padding-top al valore corretto. */
+  function resetLayoutState() {
+    if (typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const body = document.body;
+
+    // Rimuove ogni stato di fixed-layout / scroll-lock ereditato dalla route
+    // precedente (overflow/position/height/top/transform/margin/padding-top).
+    for (const el of [root, body]) {
+      el.style.removeProperty('overflow');
+      el.style.removeProperty('overflow-y');
+      el.style.removeProperty('height');
+      el.style.removeProperty('position');
+      el.style.removeProperty('top');
+      el.style.removeProperty('left');
+      el.style.removeProperty('right');
+      el.style.removeProperty('transform');
+      el.style.removeProperty('margin');
+      el.style.removeProperty('padding-top');
+      el.classList.remove('lenis-stopped');
+    }
+
+    // L'offset della navbar è di proprietà dell'ABOUT (padding-top di .intro) e
+    // il padding del body è azzerato in CSS mentre l'ABOUT è montato, quindi qui
+    // basta ripartire dall'alto con un contesto di scroll fresco.
+    window.scrollTo(0, 0);
+  }
+
   onMount(() => {
+    resetLayoutState();
+    const resetRaf = requestAnimationFrame(resetLayoutState);
+    const resetTimer = window.setTimeout(resetLayoutState, 160);
+
     preloadImages();
     setTimeout(() => { isReady = true; }, 50);
 
@@ -282,6 +325,8 @@
     }
 
     return () => {
+      cancelAnimationFrame(resetRaf);
+      window.clearTimeout(resetTimer);
       window.removeEventListener('resize', checkMobile);
       if (carouselDesktopEl && !isMobile) {
         carouselDesktopEl.removeEventListener('wheel', onWheel);
@@ -350,6 +395,14 @@
         {/each}
       </div>
 
+      <!-- "Scopri di più" (bottom-left) — solo per i volontari con una pagina
+           dedicata (slug), come nel carosello mobile delle Categorie. Nel team
+           solo Claudia e Viola hanno uno slug, quindi solo loro mostrano il
+           bottone. -->
+      {#if currentVol?.slug}
+        <a class="scopri-btn" href={`/volunteer/${currentVol.slug}/profile`}>SCOPRI DI PIÙ</a>
+      {/if}
+
       <div class="mobile-nav-circles">
         <ArrowButton direction="up" onclick={() => navigateCarousel(-1)} />
         <ArrowButton direction="down" onclick={() => navigateCarousel(1)} />
@@ -404,6 +457,15 @@
           {/each}
         </div>
       </div>
+
+      <!-- "Scopri di più" (desktop) — solo per i volontari con una pagina
+           dedicata (slug): nel team solo Claudia e Viola. Codice bottone ripreso
+           dal commit 7b743d7. -->
+      {#if currentVol?.slug}
+        <div class="desktop-scopri" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
+          <ScopriDiPiuButton dark href="/volunteer/{currentVol.slug}/profile" />
+        </div>
+      {/if}
     </section>
   {/if}
 
@@ -412,7 +474,13 @@
 <SiteFooter />
 
 <style>
-  
+  /* The ABOUT page owns its top offset in `.intro` (navbar height + spacing), so
+     the layout's body padding-top must contribute nothing here — otherwise the
+     offset doubles. Scoped to while ABOUT is mounted; other routes keep the
+     layout's `--page-top-padding` behaviour. */
+  :global(body) {
+    padding-top: 0 !important;
+  }
 
   .about-page {
     background: var(--color-background-primary, #0e0e0e);
@@ -430,7 +498,15 @@
   .intro {
     display: flex;
     flex-direction: column;
-    padding-top: var(--spacing-10, 64px); 
+    /* Self-contained top offset: navbar height + breathing room, computed here
+       from the token (125px desktop / 96px mobile). The ABOUT page no longer
+       relies on the layout's body `--page-top-padding` for the navbar offset —
+       that variable is 0px on the Categories-detail / volunteer fixed routes and
+       could leak in, dropping the offset and pulling the content up under the
+       navbar. Owning it here means the offset is always correct regardless of
+       which page you arrived from. (Body padding is zeroed below to avoid
+       double-counting.) */
+    padding-top: calc(var(--navbar-height, 125px) + var(--spacing-10, 64px));
     padding-bottom: clamp(24px, 4vh, 48px);
     overflow-x: hidden;
   }
@@ -667,6 +743,20 @@
     align-items: flex-end; justify-content: flex-start; z-index: 10; pointer-events: none;
   }
 
+  /* "Scopri di più" desktop — ancorato all'angolo in alto a destra della card
+     frontale. La card è centrata nel carosello e, per la prospettiva 3D, si
+     proietta a ~2.9× --card-width: la sua SEMI-dimensione visibile (card
+     quadrata) è ~1.45× --card-width. Dal centro (50%/50%) risaliamo al bordo
+     alto/destro e insettiamo di 22px / 20px.
+     Knob: 1.45 = fattore di semi-dimensione proiettata; 22px/20px = inset. */
+  .desktop-scopri {
+    position: absolute;
+    top: calc(50% - var(--card-width) * 1.30 + 22px);
+    right: calc(50% - var(--card-width) * 1.42 + 20px);
+    z-index: 11;
+    pointer-events: auto;
+  }
+
   .carousel-title-container {
     font-family: 'Forma DJR Display', sans-serif;
     font-size: calc(clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px) * var(--title-fit, 1));
@@ -721,6 +811,45 @@
   .mobile-nav-circles {
     position: absolute; right: var(--spacing-5); bottom: var(--unit-36); display: flex; flex-direction: column; gap: var(--spacing-5);
     z-index: 4;
+  }
+
+  /* ── Scopri di più — stesso stile del carosello mobile Categorie
+     (Figma: bottom 36, left 24, width 238) ──────────────────────── */
+  .scopri-btn {
+    position: absolute;
+    left: var(--spacing-5);
+    bottom: var(--unit-36);
+    width: 238px;
+    max-width: calc(100% - var(--spacing-5) * 2);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-4) 0;
+    border: 2px solid var(--color-content-accent);
+    border-radius: var(--radius-rounded-pill, 999px);
+    background: var(--color-background-primary);
+    color: var(--color-link-default);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    z-index: 4;
+    transition: background 220ms ease, box-shadow 220ms ease;
+  }
+
+  .scopri-btn:hover,
+  .scopri-btn:focus-visible {
+    background: rgba(189, 255, 93, 0.08);
+  }
+
+  .scopri-btn:active {
+    background: var(--color-content-accent);
+    color: var(--color-content-body-black, #0e0e0e);
   }
 
   /* ═══════════════════════════════════════════════════════════
