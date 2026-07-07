@@ -1,238 +1,242 @@
 <script lang="ts">
-  import '../../../../lib/styles/tokens.css';
-  import { gsap } from 'gsap';
-  import { onDestroy, onMount } from 'svelte';
-  import { slide } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
-  import Icon from '$lib/components/buttons/Icon.svelte';
-  import { page } from '$app/state';
-  import { browser } from '$app/environment';
-  import { beforeNavigate } from '$app/navigation';
-  import { imagesRaw, slugify, type GalleryImage } from '$lib/data/gallery';
-  import SiteFooter from '$lib/components/SiteFooter.svelte';
-  import { buildGalleryHref, readGalleryContext } from '$lib/data/gallery-context';
-  import BackButton from '$lib/components/buttons/BackButton.svelte';
-  import VediTutteLeFoto from '$lib/components/buttons/VediTutteLeFoto.svelte';
-  import PhotoGalleryOverlay from '$lib/components/gallery/PhotoGalleryOverlay.svelte';
-  import { getImageUrls } from '$lib/data/volunteers';
-  import type { PageData } from './$types';
+  import "../../../../lib/styles/tokens.css";
+  import { gsap } from "gsap";
+  import { onDestroy, onMount } from "svelte";
+  import { slide } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import Icon from "$lib/components/buttons/Icon.svelte";
+  import { page } from "$app/state";
+  import { browser } from "$app/environment";
+  import { beforeNavigate } from "$app/navigation";
+  import { imagesRaw, slugify, type GalleryImage } from "$lib/data/gallery";
+  import SiteFooter from "$lib/components/SiteFooter.svelte";
+  import {
+    buildGalleryHref,
+    readGalleryContext,
+  } from "$lib/data/gallery-context";
+  import BackButton from "$lib/components/buttons/BackButton.svelte";
+  import VediTutteLeFoto from "$lib/components/buttons/VediTutteLeFoto.svelte";
+  import PhotoGalleryOverlay from "$lib/components/gallery/PhotoGalleryOverlay.svelte";
+  import { getImageUrls } from "$lib/data/volunteers";
+  import type { PageData } from "./$types";
 
-  /* ── Page data (dbVol pre-fetched by load function) ─────────── */
+  /* ── 1. DATI PAGINA E VOLONTARIO ───────────────────────────────
+     dbVol viene recuperato dalla funzione di load (ssr o client). 
+     Tutte le variabili usano $derived per aggiornarsi automaticamente
+     se la route o i dati cambiano. */
   let { data }: { data: PageData } = $props();
   const dbVol = $derived(data.dbVol);
 
-  /* ── Extended volunteer type (for Figma photo fallback only) ─── */
-  type Volunteer = GalleryImage & { dayDescription?: string; responses?: string[] };
+  /* ── Tipo esteso per il fallback (quando non c'è DB ma solo mockup Figma) ── */
+  type Volunteer = GalleryImage & {
+    dayDescription?: string;
+    responses?: string[];
+  };
 
-  /* ── Reactive slug / context ─────────────────────────────────── */
-  const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
+  /* ── 2. LOGICA DEL BOTTONE "INDIETRO" E CONTESTO ─────────────── */
+  const currentSlug = $derived(
+    (page.params as Record<string, string>).slug ?? "",
+  );
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
-  //Leggiamo e decidiamo dove deve tornare ──
-  const isFromAbout = $derived(page.url.searchParams.get('from') === 'about');
-  const backHref = $derived(isFromAbout ? '/about' : buildGalleryHref(currentContext));
-
-  // Figma image entry — used only as photo fallback when volunteer has no DB photos
-  const volunteer = $derived(
-    (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
+  // Leggiamo l'URL per capire se l'utente arriva dalla pagina "About" o dalla "Galleria".
+  // Se c'è '?from=about', il tasto indietro riporterà ad /about, altrimenti ricostruisce
+  // il link della galleria (mantenendo filtri e scroll).
+  const isFromAbout = $derived(page.url.searchParams.get("from") === "about");
+  const backHref = $derived(
+    isFromAbout ? "/about" : buildGalleryHref(currentContext),
   );
 
-  /* ── Display values — DB is the single source of truth ──────── */
+  // Fallback per cercare il volontario nei dati statici se manca nel DB
+  const volunteer = $derived(
+    (imagesRaw as Volunteer[]).find(
+      (img, i) => img.name && slugify(img.name, i) === currentSlug,
+    ) ?? null,
+  );
+
+  /* ── 3. VARIABILI DI VISUALIZZAZIONE (Il DB ha sempre priorità) ── */
   const volunteerTitle = $derived(
-    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : (volunteer?.name ?? '')
+    dbVol ? `${dbVol.cognome} ${dbVol.nome}` : (volunteer?.name ?? ""),
   );
 
   const volunteerRole = $derived(
-    dbVol ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? '').toUpperCase() : ''
+    dbVol
+      ? (dbVol.ruolo_specifico ?? dbVol.ruolo_generale ?? "").toUpperCase()
+      : "",
   );
 
-  const nameSurname = $derived(dbVol?.cognome.toUpperCase() ?? '');
-  const nameFirstname = $derived(dbVol?.nome.toUpperCase() ?? '');
+  // Separazione nome e cognome per l'impatto grafico (font gigante)
+  const nameSurname = $derived(dbVol?.cognome.toUpperCase() ?? "");
+  const nameFirstname = $derived(dbVol?.nome.toUpperCase() ?? "");
 
   const resolvedLocation = $derived(
-    dbVol ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? '').toUpperCase() : ''
+    dbVol
+      ? (dbVol.venue_montagna ?? dbVol.venue_milano ?? "").toUpperCase()
+      : "",
   );
 
   const resolvedDetail = $derived(
     dbVol
-      ? [dbVol.regione, dbVol.eta ? `${dbVol.eta} anni` : null].filter(Boolean).join(', ')
-      : ''
+      ? [dbVol.regione, dbVol.eta ? `${dbVol.eta} anni` : null]
+          .filter(Boolean)
+          .join(", ")
+      : "",
   );
 
   const resolvedQuote = $derived(
-    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : null
+    dbVol?.autorizzazione_risposte ? (dbVol.commento_positivo ?? null) : null,
+  );
+  const quoteText = $derived(
+    resolvedQuote ?? "Un’esperienza che non dimenticherò mai.",
   );
 
-  const quoteText = $derived(resolvedQuote ?? 'Un’esperienza che non dimenticherò mai.');
-
-  /* ── Photos: servono per sapere se mostrare il bottone
-     "VEDI TUTTE LE FOTO" e vengono passate alla galleria overlay
-     quando viene aperta. Niente più carosello inline qui — le foto
-     si vedono solo nell'overlay (PhotoGalleryOverlay). ──────────── */
+  /* ── 4. LOGICA FOTO E OVERLAY GALLERIA ─────────────────────────
+     Le foto del profilo ora si aprono ESCLUSIVAMENTE in overlay (schermo intero). 
+     Qui calcoliamo quante e quali foto passare al componente <PhotoGalleryOverlay>. */
   const dbPhotos = $derived(dbVol ? getImageUrls(dbVol) : []);
-
   const figmaPhotos = $derived(
     imagesRaw
-      .filter((img) => img.name && volunteer?.name && img.name === volunteer.name)
-      .map((img) => img.src)
+      .filter(
+        (img) => img.name && volunteer?.name && img.name === volunteer.name,
+      )
+      .map((img) => img.src),
   );
 
-  const volunteerPhotos = $derived(dbPhotos.length > 0 ? dbPhotos : figmaPhotos);
+  const volunteerPhotos = $derived(
+    dbPhotos.length > 0 ? dbPhotos : figmaPhotos,
+  );
   const photoCount = $derived(volunteerPhotos.length);
 
-  /* ── Stato apertura galleria foto a schermo intero (overlay) ──── */
+  /* ── Stato di apertura della galleria overlay ── */
   let galleryOpen = $state(false);
-
   function openGallery() {
     galleryOpen = true;
   }
-
   function closeGallery() {
     galleryOpen = false;
   }
 
-  /*
-    La pagina profilo deve scrollare sempre.
-    L'unico momento in cui blocchiamo lo scroll è quando è aperto
-    PhotoGalleryOverlay. Quando l'overlay si chiude o quando cambi pagina,
-    ripuliamo sia html sia body.
-  */
+  /* ── 5. GESTIONE SCROLL DELLA PAGINA (LOCK/UNLOCK) ───────────────
+     Quando si apre l'overlay delle foto, dobbiamo bloccare lo scroll del 
+     sito per non far scorrere la pagina profilo "sotto" le foto. 
+     Rimuoviamo attributi style inline e classi lenis (libreria smooth scroll). */
   function unlockProfileScroll() {
     if (!browser) return;
-
     const root = document.documentElement;
     const body = document.body;
 
-    root.style.removeProperty('overflow');
-    root.style.removeProperty('overflow-y');
-    root.style.removeProperty('height');
-    root.style.removeProperty('position');
+    root.style.removeProperty("overflow");
+    root.style.removeProperty("overflow-y");
+    root.style.removeProperty("height");
+    root.style.removeProperty("position");
 
-    body.style.removeProperty('overflow');
-    body.style.removeProperty('overflow-y');
-    body.style.removeProperty('height');
-    body.style.removeProperty('position');
-    body.style.removeProperty('padding-top');
+    body.style.removeProperty("overflow");
+    body.style.removeProperty("overflow-y");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("padding-top");
 
-    root.classList.remove('lenis-stopped');
-    body.classList.remove('lenis-stopped');
+    root.classList.remove("lenis-stopped");
+    body.classList.remove("lenis-stopped");
   }
 
   function unlockProfileScrollIfGalleryClosed() {
     if (galleryOpen) return;
-
     unlockProfileScroll();
   }
 
   function lockProfileGalleryScroll() {
     if (!browser) return;
-
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
   }
 
+  // Se l'utente cambia pagina col tasto indietro, assicurati di sbloccare lo scroll
   beforeNavigate(() => {
     unlockProfileScroll();
   });
 
+  /* ── 6. LIFECYCLE E LOGICA BOTTONE FLOTTANTE (onMount) ──────────── */
   onMount(() => {
     unlockProfileScroll();
 
+    // Trick per aggirare bug di calcolo in avvio: puliamo lo scroll in vari frame successivi
     let secondFrame = 0;
-
     const firstFrame = requestAnimationFrame(() => {
       unlockProfileScrollIfGalleryClosed();
-
       secondFrame = requestAnimationFrame(() => {
         unlockProfileScrollIfGalleryClosed();
       });
     });
-
     const unlockTimer = window.setTimeout(() => {
       unlockProfileScrollIfGalleryClosed();
     }, 120);
 
-    /* ── Bottone "ESPLORA FOTO": sale quanto basta per non finire sotto al
-       footer, e SOLO in risposta a uno scroll (o resize) reale ─────────────
-       Il bottone è position:fixed in basso a sinistra. Misuriamo la
-       posizione del footer "dal vivo" (getBoundingClientRect, sempre
-       accurata) ma SOLO dentro il gestore di scroll/resize: se l'utente non
-       scrolla, il bottone non si sposta di un pixel, anche se sopra cambia
-       altezza (es. apertura/chiusura di una domanda dell'accordion). Niente
-       ScrollTrigger: qui basta un semplice conto ad ogni scroll, throttlato
-       con requestAnimationFrame. */
-    const fotoBtn = document.getElementById('sticky-foto-btn');
-    const footerElement = document.querySelector('footer');
+    /* ── Logica Bottone "VEDI TUTTE LE FOTO" (Sticky) ─────────────
+       Il bottone è fisso in basso (position: fixed). Quando l'utente scorre 
+       e il footer entra nello schermo, calcoliamo la sovrapposizione e spingiamo 
+       il bottone verso l'alto (usando translate3d per accelerazione hardware) 
+       evitando che il footer lo copra. Eseguito solo allo scroll per performance. */
+    const fotoBtn = document.getElementById("sticky-foto-btn");
+    const footerElement = document.querySelector("footer");
 
     let scrollRaf = 0;
     let onScrollOrResize: (() => void) | null = null;
 
     if (fotoBtn && footerElement) {
-      /* Distanza minima tra il bottone e il bordo alto del footer, dal token
-         di spacing (--spacing-5 = 24px). */
       const FOOTER_GAP =
         parseFloat(
-          getComputedStyle(document.documentElement).getPropertyValue('--spacing-5')
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--spacing-5",
+          ),
         ) || 24;
 
       const updateStickyButton = () => {
         scrollRaf = 0;
+        const footerRect = (
+          footerElement as HTMLElement
+        ).getBoundingClientRect();
 
-        const footerRect = (footerElement as HTMLElement).getBoundingClientRect();
-
-        /* Posizione "naturale" del bottone (senza transform applicata): non
-           dipende dallo scroll — solo dal viewport e dal CSS — quindi il
-           calcolo non si "accumula" da un frame all'altro. */
+        // Calcola a che altezza si trova normalmente il bottone rispetto alla fine della finestra
         const btnHeight = (fotoBtn as HTMLElement).offsetHeight;
         const bottomCss =
           parseFloat(getComputedStyle(fotoBtn as HTMLElement).bottom) || 0;
         const naturalBottom = window.innerHeight - bottomCss;
 
+        // Se il footer entra nello spazio "vitale" del bottone, lo solleviamo del valore "lift"
         const overlap = naturalBottom + FOOTER_GAP - footerRect.top;
         const lift = Math.max(0, overlap);
 
-        // LA SOLUZIONE DEFINITIVA: 
-        // Zero animazioni. Posizionamento istantaneo e accelerato via hardware.
+        // Posizionamento istantaneo e performante senza lag/rimbalzi (Accelerato da GPU)
         fotoBtn.style.transform = `translate3d(0, -${lift}px, 0)`;
       };
 
       onScrollOrResize = () => {
         if (scrollRaf) return;
-
         scrollRaf = requestAnimationFrame(updateStickyButton);
       };
 
-      window.addEventListener('scroll', onScrollOrResize, { passive: true });
-      window.addEventListener('resize', onScrollOrResize);
+      window.addEventListener("scroll", onScrollOrResize, { passive: true });
+      window.addEventListener("resize", onScrollOrResize);
 
-      // Posizione corretta fin dal primo render.
       updateStickyButton();
 
-      /* Il footer usa un font display (FUORI CAMPO) caricato in modo
-         asincrono: la sua altezza reale è affidabile solo a font pronti. */
-      if (typeof document !== 'undefined' && document.fonts?.ready) {
+      // Il footer usa un WebFont asincrono, ri-calcoliamo quando il testo assume la sua altezza reale.
+      if (typeof document !== "undefined" && document.fonts?.ready) {
         document.fonts.ready.then(updateStickyButton);
       }
     }
 
     return () => {
       unlockProfileScroll();
-
       cancelAnimationFrame(firstFrame);
-
-      if (secondFrame) {
-        cancelAnimationFrame(secondFrame);
-      }
-
+      if (secondFrame) cancelAnimationFrame(secondFrame);
       window.clearTimeout(unlockTimer);
-
       if (onScrollOrResize) {
-        window.removeEventListener('scroll', onScrollOrResize);
-        window.removeEventListener('resize', onScrollOrResize);
+        window.removeEventListener("scroll", onScrollOrResize);
+        window.removeEventListener("resize", onScrollOrResize);
       }
-
       if (scrollRaf) cancelAnimationFrame(scrollRaf);
-
       if (fotoBtn) gsap.killTweensOf(fotoBtn);
     };
   });
@@ -241,22 +245,20 @@
     unlockProfileScroll();
   });
 
+  // Reagisce all'apertura/chiusura della galleria per gestire lo scroll lock
   $effect(() => {
     if (!browser) return;
-
     if (!galleryOpen) {
       unlockProfileScroll();
       return;
     }
-
     lockProfileGalleryScroll();
-
     return () => {
       unlockProfileScroll();
     };
   });
 
-  /* ── Q&A responses ───────────────────────────────────────────── */
+  /* ── 7. DOMANDE E RISPOSTE (Q&A Accordion) ───────────────────────── */
   const dbResponses = $derived(
     dbVol?.autorizzazione_risposte
       ? [
@@ -266,49 +268,52 @@
           dbVol.commento_negativo,
           dbVol.cosa_porti,
           dbVol.commenti_generali,
-          dbVol.rifai
+          dbVol.rifai,
         ]
-      : null
+      : null,
   );
 
   const questionTitles = [
-    'UNA GIORNATA TIPO DA VOLONTARIO',
-    'COME MI VEDEVANO GLI ALTRI',
-    'UN COMMENTO POSITIVO',
-    'E UNO NEGATIVO',
-    'COSA MI PORTO A CASA',
-    'COSA NON MI AVETE CHIESTO',
-    'LO RIFAREI E LO CONSIGLIEREI?'
+    "UNA GIORNATA TIPO DA VOLONTARIO",
+    "COME MI VEDEVANO GLI ALTRI",
+    "UN COMMENTO POSITIVO",
+    "E UNO NEGATIVO",
+    "COSA MI PORTO A CASA",
+    "COSA NON MI AVETE CHIESTO",
+    "LO RIFAREI E LO CONSIGLIEREI?",
   ];
 
+  // Stato per tenere traccia di quale domanda dell'accordion è aperta (-1 = nessuna)
   let openQ = $state(-1);
 
+  // Azzera la domanda aperta se navighiamo a un altro volontario
   $effect(() => {
     currentSlug;
     openQ = -1;
   });
 
   function answerFor(i: number): string {
-    if (dbResponses) return dbResponses[i] ?? 'Nessuna risposta disponibile.';
+    if (dbResponses) return dbResponses[i] ?? "Nessuna risposta disponibile.";
     if (i === 0 && volunteer?.dayDescription) return volunteer.dayDescription;
-
-    return volunteer?.responses?.[i] ?? 'Nessuna risposta disponibile.';
+    return volunteer?.responses?.[i] ?? "Nessuna risposta disponibile.";
   }
 
-  /* ── Transizioni risposta (apertura E chiusura) ───────────────────
-     Transizioni Svelte così l'animazione parte sia al mount (apertura) sia
-     allo smonto (chiusura): Svelte tiene l'elemento nel DOM finché l'uscita
-     non finisce. Il pannello lime usa `slide` (altezza), il testo si mette a
-     fuoco con blur→nitido. Reduced-motion → durata 0. */
+  /* ── Transizione personalizzata (Custom Svelte Transition) per il testo delle risposte.
+     Combina un effetto di fade in/out con una sfocatura decrescente.
+     Se l'utente ha impostato l'OS per ridurre i movimenti (prefers-reduced-motion), 
+     la durata è 0 (appare istantaneamente). */
   const prefersReduced = () =>
-    typeof matchMedia !== 'undefined'
-    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof matchMedia !== "undefined" &&
+    matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  function blurFade(_node: HTMLElement, { duration = 700 }: { duration?: number } = {}) {
+  function blurFade(
+    _node: HTMLElement,
+    { duration = 700 }: { duration?: number } = {},
+  ) {
     return {
       duration: prefersReduced() ? 0 : duration,
       easing: cubicOut,
-      css: (t: number) => `opacity: ${t}; filter: blur(${(1 - t) * 10}px);`
+      css: (t: number) => `opacity: ${t}; filter: blur(${(1 - t) * 10}px);`,
     };
   }
 </script>
@@ -318,47 +323,32 @@
 </svelte:head>
 
 <main class="profile" id="main-content">
-
-  <!-- ── Hero: back button, nome, quote, ruolo/location + Q&A, bottone foto ── -->
   <div class="hero">
-
-    <!-- ── INDIETRO button ────────────────────────────────────────── -->
     <div class="back-btn-wrapper">
       <BackButton href={backHref} />
     </div>
 
-    <!-- ── Header: hero name (left) + quote (top-right) ─────────────── -->
     <header class="head">
       <div class="name-hero" role="img" aria-label={volunteerTitle}>
         {#if nameSurname}
           <div class="name-surname" aria-hidden="true">{nameSurname}</div>
         {/if}
-
         <div class="name-firstname" aria-hidden="true">{nameFirstname}</div>
       </div>
 
       <blockquote class="vol-quote" class:vol-quote--dim={!resolvedQuote}>
-        <!-- Prima virgoletta estratta e resa indipendente -->
         <span class="qmark qmark--first" aria-hidden="true">&#8220;</span>
-
         <p class="quote-body">{quoteText}</p>
-
-        <!-- Seconda virgoletta -->
         <span class="qmark qmark--last" aria-hidden="true">&#8221;</span>
       </blockquote>
-
     </header>
 
-    <!-- ── Riga inferiore: ruolo/location (sx) + Q&A a 7 colonne (dx) ── -->
     <div class="hero-grid">
-
-      <!-- ── Volunteer info (role + location) ────────────────────── -->
       <div class="vol-info">
         <p class="info-role">{volunteerRole}</p>
         <p class="info-location">{resolvedLocation}<br />{resolvedDetail}</p>
       </div>
 
-      <!-- ── Q&A accordion ──────────────────────────────────────── -->
       <div class="qa-wrap" role="list">
         {#each questionTitles as q, i}
           <div class="qa-item" role="listitem">
@@ -372,8 +362,11 @@
               }}
             >
               <span class="qa-title">{q}</span>
-
-              <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">
+              <span
+                class="qa-icon"
+                class:qa-icon--open={openQ === i}
+                aria-hidden="true"
+              >
                 <Icon name="plus" />
               </span>
             </button>
@@ -387,17 +380,20 @@
                 out:slide={{ duration: 400, easing: cubicOut }}
               >
                 <div class="qa-answer" role="region" aria-live="polite">
-                  <p in:blurFade={{ duration: 900 }} out:blurFade={{ duration: 360 }}>{answerFor(i)}</p>
+                  <p
+                    in:blurFade={{ duration: 900 }}
+                    out:blurFade={{ duration: 360 }}
+                  >
+                    {answerFor(i)}
+                  </p>
                 </div>
               </div>
             {/if}
           </div>
         {/each}
       </div>
-
     </div>
 
-    <!-- ── VEDI TUTTE LE FOTO — fixed, sale col footer (commit 0da3185) ── -->
     {#if photoCount > 0}
       <div
         id="sticky-foto-btn"
@@ -407,14 +403,11 @@
         <VediTutteLeFoto onclick={openGallery} />
       </div>
     {/if}
-
   </div>
-
 </main>
 
 <SiteFooter />
 
-<!-- ── Galleria foto a schermo intero (overlay sfocato) ─────────── -->
 {#if galleryOpen && photoCount > 0}
   <PhotoGalleryOverlay
     photos={volunteerPhotos}
@@ -424,7 +417,7 @@
 {/if}
 
 <style>
-  /* ── Global ─────────────────────────────────────────────────────── */
+  /* ── Stili Generali ─────────────────────────────────────────────────────── */
   :global(html),
   :global(body) {
     margin: 0;
@@ -437,7 +430,7 @@
     font-family: var(--font-display);
   }
 
-  /* ── Page shell — scrolls vertically ────────────────────────────── */
+  /* ── Involucro Pagina ────────────────────────────────────────────── */
   .profile {
     --profile-side-offset: var(--spacing-11, 72px);
     --photo-button-bottom: var(--unit-48, 48px);
@@ -451,13 +444,12 @@
     overflow-x: hidden;
   }
 
-  /* ── Hero wrapper ───────────────────────────────────────────────── */
   .hero {
     position: relative;
     padding-bottom: 160px;
   }
 
-  /* ── INDIETRO button ─────────────────────────────────────────────── */
+  /* ── Bottone Indietro ─────────────────────────────────────────────── */
   .back-btn-wrapper {
     margin-left: var(--profile-side-offset);
   }
@@ -468,7 +460,7 @@
     }
   }
 
-  /* ── Header: name hero (left) + quote (top-right) ───────────────── */
+  /* ── Header: Nomi Giganti ────────────────────────────────────────── */
   .head {
     position: relative;
     margin-top: 28px;
@@ -494,16 +486,16 @@
     padding-left: var(--profile-side-offset);
     margin-bottom: -8px;
     color: var(--color-content-accent, #bdff5d);
-    
   }
 
   .name-firstname {
     padding-left: clamp(48px, 19vw, 340px);
     color: transparent;
-    -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: var(--stroke-mobile)
+      var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Quote ─────────────────────────────────────────────────────── */
+  /* ── Citazione (Quote) ──────────────────────────────────────────── */
   .vol-quote {
     position: absolute;
     right: var(--spacing-11, 72px);
@@ -521,7 +513,6 @@
     opacity: 1;
   }
 
-  /* ── STRUTTURA DELLE VIRGOLETTE ── */
   .qmark {
     display: flex;
     justify-content: flex-end;
@@ -565,7 +556,7 @@
     white-space: pre-wrap;
   }
 
-  /* ── Grid ───────────────────────────────────────────────────────── */
+  /* ── Griglia e Informazioni ────────────────────────────────────────── */
   .hero-grid {
     display: grid;
     grid-template-columns: 6fr 6fr;
@@ -575,7 +566,6 @@
     padding: 0 var(--profile-side-offset);
   }
 
-  /* ── Info ───────────────────────────────────────────────────────── */
   .vol-info {
     margin: 0;
     min-width: 0;
@@ -586,7 +576,7 @@
     margin: 0 0 8px;
     font-size: 36px;
     font-weight: 600;
-    line-height: 1.0;
+    line-height: 1;
     letter-spacing: 0%;
     color: var(--color-content-accent, #bdff5d);
   }
@@ -601,14 +591,12 @@
     color: var(--color-content-body);
   }
 
-  /* ── Q&A Accordion ──────────────────────────────────────────────── */
+  /* ── Accordion (Q&A) ──────────────────────────────────────────────── */
   .qa-wrap {
     width: 100%;
     margin: 0;
-    /* Compensa il padding-top della prima .qa-row (14px) così la baseline del
-       testo della prima domanda si allinea con la baseline di .info-role,
-       che invece non ha padding-top. Senza questo offset il blocco domande
-       parte visibilmente più in basso della colonna a sinistra. */
+    /* Compensa il padding-top della prima .qa-row per farla allineare visivamente 
+       con .info-role nella griglia */
     margin-top: -14px;
     display: flex;
     flex-direction: column;
@@ -632,7 +620,7 @@
     color: var(--color-content-body, #fafafa);
     font-size: 36px;
     font-weight: 500;
-    line-height: 1.0;
+    line-height: 1;
     text-transform: uppercase;
     letter-spacing: 1.44px;
     cursor: pointer;
@@ -662,10 +650,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      opacity 0.18s ease,
+      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  
   .qa-icon--open {
     opacity: 1;
     transform: rotate(45deg);
@@ -679,15 +668,10 @@
     transition: background 200ms ease;
   }
 
-  /* Riga sottile che si tinge di lime quando la domanda è aperta; il pannello
-     (.qa-panel) è un fratello separato così può collassare in chiusura senza
-     essere tagliato di netto dalla riga. */
   .qa-sep--open {
     background: var(--color-content-accent, #bdff5d);
   }
 
-  /* Pannello lime della risposta: monta/smonta con transition:slide (altezza).
-     overflow:hidden maschera il testo durante apertura/chiusura. */
   .qa-panel {
     background: var(--color-content-accent, #bdff5d);
     overflow: hidden;
@@ -714,23 +698,21 @@
     border-radius: 4px;
   }
 
-  /* ── FOTO BUTTON: fixed in basso a sinistra, sale col footer via ScrollTrigger ── */
+  /* ── Bottone per aprire foto ───────────────────────────────────────── */
   .vedi-foto-wrapper {
     position: fixed;
     left: var(--profile-side-offset, var(--spacing-11, 72px));
     bottom: var(--photo-button-bottom, var(--unit-48, 48px));
-    z-index: 9999 !important; /* Sopra a qualunque pezzo del footer */
+    z-index: 9999 !important;
     pointer-events: auto;
     will-change: transform;
   }
 
-  /* Nascosto mentre l'overlay galleria foto è aperto (resta nel DOM così lo
-     ScrollTrigger che lo aggancia al footer continua a funzionare alla chiusura). */
   .vedi-foto-wrapper--hidden {
     display: none;
   }
 
-  /* ── Responsive ─────────────────────────────────────────────────── */
+  /* ── Media Queries Responsive ──────────────────────────────────────── */
   @media (max-width: 1100px) {
     .vol-quote {
       right: var(--spacing-5, 24px);
@@ -748,9 +730,6 @@
     }
 
     .qa-wrap {
-      /* Su una sola colonna non c'è più bisogno di compensare l'allineamento
-         con .vol-info: la riga viene azzerata per non "mangiare" spazio sopra
-         la prima domanda. */
       margin-top: 0;
     }
 
@@ -763,7 +742,6 @@
     .profile {
       --profile-side-offset: var(--spacing-5, 24px);
       --photo-button-bottom: 32px;
-
       padding-top: calc(var(--navbar-height, 125px) + 8px);
     }
 
@@ -800,15 +778,15 @@
     }
 
     .info-location {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: 0%;
-  }
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0%;
+    }
 
     .qmark--last {
-    margin-top: 14px;
-  }
+      margin-top: 14px;
+    }
 
     .hero-grid {
       padding: 0 var(--profile-side-offset);
@@ -817,7 +795,6 @@
 
     .info-role {
       font-size: 21px;
-
     }
 
     .qa-row {
@@ -848,14 +825,11 @@
       bottom: 32px;
     }
 
-    /* INTERCETTAZIONE: Se la navbar ha la classe .menu-open, 
-       spegniamo istantaneamente il rendering del wrapper del bottone foto */
+    /* Intercettazione e override forzati su mobile */
     :global(.navbar.menu-open) ~ main .vedi-foto-wrapper {
       display: none !important;
     }
 
-    /* Sicurezza per iOS/Android: se il body ha l'overflow bloccato dal menu,
-       il bottone sparisce all'istante */
     :global(body[style*="overflow: hidden"]) .vedi-foto-wrapper {
       display: none !important;
     }
