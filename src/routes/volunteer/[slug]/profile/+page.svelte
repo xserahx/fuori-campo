@@ -28,6 +28,10 @@
   const currentSlug = $derived((page.params as Record<string, string>).slug ?? '');
   const currentContext = $derived(readGalleryContext(page.url.searchParams));
 
+  //Leggiamo e decidiamo dove deve tornare ──
+  const isFromAbout = $derived(page.url.searchParams.get('from') === 'about');
+  const backHref = $derived(isFromAbout ? '/about' : buildGalleryHref(currentContext));
+
   // Figma image entry — used only as photo fallback when volunteer has no DB photos
   const volunteer = $derived(
     (imagesRaw as Volunteer[]).find((img, i) => img.name && slugify(img.name, i) === currentSlug) ?? null
@@ -325,7 +329,7 @@
 
     <!-- ── INDIETRO button ────────────────────────────────────────── -->
     <div class="back-btn-wrapper">
-      <BackButton href={buildGalleryHref(currentContext)} />
+      <BackButton href={backHref} />
     </div>
 
     <!-- ── Header: hero name (left) + quote (top-right) ─────────────── -->

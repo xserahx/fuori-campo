@@ -71,10 +71,7 @@
     { id: 6, surname: 'MAGONI',   name: 'LAURA',         image: VOLUNTEER_6 },
   ];
 
-  let { volunteers = defaultVolunteers }: { volunteers?: Volunteer[] } = $props();
-
-  // ── NUOVO STATO: Array mescolato per l'ordine casuale ──
-  let shuffledVolunteers = $state(volunteers);
+  let shuffledVolunteers = $state([...defaultVolunteers]);
 
   // ═══════════════════════════════════════════════════════════
   // 3. STATO E LOGICA CAROSELLO
@@ -322,7 +319,7 @@
 
   onMount(() => {
     // ── SHUFFLE: Rimescoliamo l'array al caricamento della pagina sul client ──
-    let temp = [...volunteers];
+    let temp = [...defaultVolunteers];
     for (let i = temp.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [temp[i], temp[j]] = [temp[j], temp[i]];
@@ -422,7 +419,7 @@
       </div>
 
       {#if currentVol?.slug}
-        <a class="scopri-btn" href={`/volunteer/${currentVol.slug}/profile`} onclick={() => window.scrollTo(0, 0)}>SCOPRI DI PIÙ</a>
+        <a class="scopri-btn" href={`/volunteer/${currentVol.slug}/profile?from=about`} onclick={() => window.scrollTo(0, 0)}>SCOPRI DI PIÙ</a>
       {/if}
 
       <div class="mobile-nav-circles">
@@ -487,7 +484,7 @@
 
       {#if currentVol?.slug}
         <div class="desktop-scopri" role="presentation" onpointerdown={(e) => e.stopPropagation()} onclick={() => window.scrollTo(0, 0)}>
-          <ScopriDiPiuButton dark href="/volunteer/{currentVol.slug}/profile" />
+          <ScopriDiPiuButton dark href="/volunteer/{currentVol.slug}/profile?from=about" />
         </div>
       {/if}
     </section>
