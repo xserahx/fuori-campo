@@ -132,12 +132,16 @@
         }
     }
 
-    @media (max-width: 599px) {
+    @media (max-width: 700px) {
         .toggle-container {
             height: 50px;
             padding-left: var(--spacing-4-2);
             padding-right: var(--spacing-4-2);
-         
+            stroke-width: var(--stroke-mobile);
+        }
+
+        .toggle-pill {
+            stroke-width: var(--stroke-mobile);
         }
 
     }

@@ -80,11 +80,12 @@
         color: var(--color-content-accent);
     }
 
-    @media (max-width: 599px) {
+    @media (max-width: 700px) {
         .back-button {
             padding: var(--spacing-4);
             padding-right: var(--spacing-4-2);
             height: 50px;
+            stroke-width: var(--stroke-mobile);
         }
     }
 </style>

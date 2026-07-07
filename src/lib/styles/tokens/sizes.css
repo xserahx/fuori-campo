@@ -60,6 +60,7 @@
 
   /* ── Stroke  (Figma: Stroke/*) ──────────────────────────────── */
   --stroke-1: 2px;
+  --stroke-mobile: 1.5px;
 
   /* ── Layout & component tokens ──────────────────────────────── */
   --navbar-height:         125px;

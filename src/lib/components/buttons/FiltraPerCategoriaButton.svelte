@@ -171,7 +171,7 @@
         }
     }
 
-    @media (max-width: 599px) {
+    @media (max-width: 700px) {
         .desktop-only { display: none; }
         .mobile-only { display: inline-flex; }
 
@@ -179,6 +179,7 @@
             width: 50px !important;
             height: 50px !important;
             padding: 0 !important;
+            stroke-width: var(--stroke-mobile);
         }
 
         .filtra-button__icon {

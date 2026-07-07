@@ -83,11 +83,12 @@
         color: var(--color-content-accent);
     }
 
-    @media (max-width: 599px) {
+    @media (max-width: 700px) {
         .x-button {
             padding: var(--spacing-4);
             height: 50px;
             width: 50px;
+            stroke-width: var(--stroke-mobile);
         }
     }
 </style>

@@ -110,8 +110,8 @@
         }
     }
 
-    /* ── CONFIGURAZIONE RESPONSIVE MOBILE (< 600PX) ── */
-    @media (max-width: 599px) {
+    /* ── CONFIGURAZIONE RESPONSIVE MOBILE (< 700PX) ── */
+    @media (max-width: 700px) {
         .scopri-button {
             display: flex;
 
@@ -122,6 +122,7 @@
             height: 50px;
             padding: var(--spacing-4) 0;
             background-color: var(--color-background-primary);
+            stroke-width: var(--stroke-mobile);
         }
 
         .scopri-button:active {

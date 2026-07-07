@@ -114,12 +114,13 @@
         color: var(--color-content-accent);
     }
 
-    /* ── RESPONSIVE MOBILE (< 600PX) ── */
-    @media (max-width: 599px) {
+    /* ── RESPONSIVE MOBILE (< 700PX) ── */
+    @media (max-width: 699px) {
         .arrow-button {
             width: 50px;
             height: 50px;
             padding: 0; 
+            stroke-width: var(--stroke-mobile);
         }
     }
 </style>
