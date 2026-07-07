@@ -1,7 +1,6 @@
 <script lang="ts">
   import '../../../../lib/styles/tokens.css';
   import { gsap } from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import { onDestroy, onMount } from 'svelte';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -149,52 +148,71 @@
       unlockProfileScrollIfGalleryClosed();
     }, 120);
 
-    /* ── Bottone foto: sale insieme al footer (comportamento commit 0da3185) ──
-       Il bottone è position:fixed in basso a sinistra e ScrollTrigger lo trascina
-       su esattamente dell'altezza del footer man mano che questo entra, così si
-       "aggancia" al footer senza sovrapporsi. Stesso comportamento su desktop e
-       mobile. */
-    gsap.registerPlugin(ScrollTrigger);
-
+    /* ── Bottone "ESPLORA FOTO": sale quanto basta per non finire sotto al
+       footer, e SOLO in risposta a uno scroll (o resize) reale ─────────────
+       Il bottone è position:fixed in basso a sinistra. Misuriamo la
+       posizione del footer "dal vivo" (getBoundingClientRect, sempre
+       accurata) ma SOLO dentro il gestore di scroll/resize: se l'utente non
+       scrolla, il bottone non si sposta di un pixel, anche se sopra cambia
+       altezza (es. apertura/chiusura di una domanda dell'accordion). Niente
+       ScrollTrigger: qui basta un semplice conto ad ogni scroll, throttlato
+       con requestAnimationFrame. */
     const fotoBtn = document.getElementById('sticky-foto-btn');
     const footerElement = document.querySelector('footer');
 
+    let scrollRaf = 0;
+    let onScrollOrResize: (() => void) | null = null;
+
     if (fotoBtn && footerElement) {
-      /* Distanza minima tra il bottone e il bordo alto del footer al capolinea,
-         dal token di spacing (--spacing-5 = 24px). */
+      /* Distanza minima tra il bottone e il bordo alto del footer, dal token
+         di spacing (--spacing-5 = 24px). */
       const FOOTER_GAP =
         parseFloat(
           getComputedStyle(document.documentElement).getPropertyValue('--spacing-5')
         ) || 24;
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: footerElement,
-          start: 'top bottom-=48px',
-          end: 'bottom bottom',
-          scrub: 0,
-          invalidateOnRefresh: true
-        }
-      });
+      const updateStickyButton = () => {
+        scrollRaf = 0;
 
-      tl.to(fotoBtn, {
-        /* Il bottone sale al massimo fino a FOOTER_GAP px sopra la cima del
-           footer e non entra mai dentro. Calcolo su misure reali (altezza
-           footer + offset `bottom` del bottone) così vale desktop e mobile. */
-        y: () => {
-          const footerH = (footerElement as HTMLElement).offsetHeight;
-          const bottomOffset =
-            parseFloat(getComputedStyle(fotoBtn as HTMLElement).bottom) || 0;
-          return -Math.max(0, footerH - bottomOffset + FOOTER_GAP);
-        },
-        ease: 'none'
-      });
+        const footerRect = (footerElement as HTMLElement).getBoundingClientRect();
 
-      /* Il footer usa un font display (FUORI CAMPO): la sua altezza è affidabile
-         solo dopo il caricamento dei font, altrimenti su mobile il bottone si
-         aggancia alla quota sbagliata. Ricalcoliamo lo ScrollTrigger a font pronti. */
+        /* Posizione "naturale" del bottone (senza transform applicata): non
+           dipende dallo scroll — solo dal viewport e dal CSS — quindi il
+           calcolo non si "accumula" da un frame all'altro. */
+        const btnHeight = (fotoBtn as HTMLElement).offsetHeight;
+        const bottomCss =
+          parseFloat(getComputedStyle(fotoBtn as HTMLElement).bottom) || 0;
+        const naturalBottom = window.innerHeight - bottomCss;
+
+        /* Quanto il bottone, nella sua posizione naturale, sfonderebbe nel
+           footer (incluso il margine di sicurezza FOOTER_GAP). */
+        const overlap = naturalBottom + FOOTER_GAP - footerRect.top;
+        const lift = Math.max(0, overlap);
+
+        gsap.to(fotoBtn, {
+          y: -lift,
+          duration: 0.25,
+          ease: 'power2.out',
+          overwrite: true
+        });
+      };
+
+      onScrollOrResize = () => {
+        if (scrollRaf) return;
+
+        scrollRaf = requestAnimationFrame(updateStickyButton);
+      };
+
+      window.addEventListener('scroll', onScrollOrResize, { passive: true });
+      window.addEventListener('resize', onScrollOrResize);
+
+      // Posizione corretta fin dal primo render.
+      updateStickyButton();
+
+      /* Il footer usa un font display (FUORI CAMPO) caricato in modo
+         asincrono: la sua altezza reale è affidabile solo a font pronti. */
       if (typeof document !== 'undefined' && document.fonts?.ready) {
-        document.fonts.ready.then(() => ScrollTrigger.refresh());
+        document.fonts.ready.then(updateStickyButton);
       }
     }
 
@@ -209,7 +227,14 @@
 
       window.clearTimeout(unlockTimer);
 
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+      if (onScrollOrResize) {
+        window.removeEventListener('scroll', onScrollOrResize);
+        window.removeEventListener('resize', onScrollOrResize);
+      }
+
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+
+      if (fotoBtn) gsap.killTweensOf(fotoBtn);
     };
   });
 
