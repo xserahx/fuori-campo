@@ -922,7 +922,7 @@
   }
 
   .title {
-    font-family: "Forma DJR Display", sans-serif;
+    font-family: var(--font-display);
 
     /* Il font base usa un range calcolato su pagina zoom. Poi * var(--title-fit) 
        si assicura che un JS (fitCarouselTitle) possa rimpicciolirlo se la stringa

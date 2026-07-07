@@ -310,7 +310,9 @@
   function fitCarouselTitle() {
     const el = desktopTitleEl;
     if (!el || typeof window === "undefined") return;
-    if (window.innerWidth <= 700) {
+    // Fino a 1024px si usa il carosello mobile (il titolo desktop non è nemmeno
+    // in pagina), quindi disattiviamo il ridimensionamento matematico.
+    if (window.innerWidth <= 1024) {
       el.style.setProperty("--title-fit", "1");
       return;
     }
@@ -415,10 +417,37 @@
     }, 50);
 
     const checkMobile = () => {
-      isMobile = window.innerWidth < 600;
+      // Tablet inclusi: fino a 1024px si usa il carosello mobile a tutto schermo,
+      // il carosello 3D desktop resta solo sopra i 1024px.
+      isMobile = window.innerWidth <= 1024;
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
+
+    // ── Zoom locale della pagina ──────────────────────────────────────
+    // app.html rimpicciolisce tutto con `zoom` sopra i 700px, il che sui
+    // tablet fa diventare minuscolo il titolo del carosello. Qui teniamo
+    // zoom = 1 fino a 1024px (dove mostriamo il layout mobile a tutto schermo),
+    // così il titolo resta grande e coerente. Sopra i 1024px torna il
+    // comportamento globale. Lo scheduling via rAF fa vincere questo valore
+    // su quello di app.html (che gira anch'esso in rAF, ma registrato prima).
+    const TABLET_MAX = 1024;
+    const applyZoom = () => {
+      const w = window.innerWidth;
+      const v = w <= TABLET_MAX ? 1 : w / 1728;
+      document.documentElement.style.zoom = String(v);
+      document.documentElement.style.setProperty("--page-zoom", String(v));
+    };
+    let zoomRaf = 0;
+    const scheduleZoom = () => {
+      if (zoomRaf) return;
+      zoomRaf = requestAnimationFrame(() => {
+        zoomRaf = 0;
+        applyZoom();
+      });
+    };
+    applyZoom();
+    window.addEventListener("resize", scheduleZoom, { passive: true });
 
     if (carouselDesktopEl && !isMobile) {
       carouselDesktopEl.addEventListener("wheel", onWheel, { passive: false });
@@ -428,11 +457,18 @@
       cancelAnimationFrame(resetRaf);
       window.clearTimeout(resetTimer);
       window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", scheduleZoom);
+      cancelAnimationFrame(zoomRaf);
       if (carouselDesktopEl && !isMobile) {
         carouselDesktopEl.removeEventListener("wheel", onWheel);
       }
       clearTimeout(wheelStepTimer);
       clearTimeout(wheelIdleTimer);
+      // Ripristina lo zoom globale (soglia 700 di app.html) per la pagina dopo.
+      const w = window.innerWidth;
+      const v = w <= 700 ? 1 : w / 1728;
+      document.documentElement.style.zoom = String(v);
+      document.documentElement.style.setProperty("--page-zoom", String(v));
     };
   });
 </script>
@@ -1080,7 +1116,7 @@
   }
 
   .carousel-title-container {
-    font-family: "Forma DJR Display", sans-serif;
+    font-family: var(--font-display);
     font-size: calc(
       clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px) *
         var(--title-fit, 1)
@@ -1186,24 +1222,27 @@
   }
   .mobile-title .carousel-title-fill {
     font-family: var(--font-display);
-    font-size: 43px;
+    /* Font fluido: scala con la larghezza (7vw) e resta tra 28 e 64px, così
+       tiene su qualsiasi schermo, anche molto stretto, senza sbordare. */
+    font-size: clamp(28px, 7vw, 64px);
     font-weight: 800;
-    line-height: 36px;
+    line-height: 0.85; /* senza unità: segue il font-size a ogni dimensione */
     letter-spacing: 0;
     text-transform: uppercase;
     color: var(--color-content-accent);
     width: 352px;
     max-width: 100%;
     white-space: normal;
+    overflow-wrap: break-word; /* se una parola è più lunga della riga, va a capo invece di sbordare */
     hyphens: manual;
     -webkit-hyphens: manual;
     margin: 0;
   }
   .mobile-title .carousel-title-outline {
     font-family: var(--font-display);
-    font-size: 43px;
+    font-size: clamp(28px, 7vw, 64px);
     font-weight: 800;
-    line-height: 36px;
+    line-height: 0.85;
     letter-spacing: 0;
     text-transform: uppercase;
     color: transparent;
@@ -1212,6 +1251,7 @@
     width: 352px;
     max-width: 100%;
     white-space: pre-line;
+    overflow-wrap: break-word;
     hyphens: manual;
     -webkit-hyphens: manual;
     margin: 0;
@@ -1267,8 +1307,10 @@
     color: var(--color-content-body-black, #0e0e0e);
   }
 
-  /* Mobile ----------------------------- */
-  @media (max-width: 700px) {
+  /* Tablet incluso: fino a 1024px si passa al layout compatto (titolo a capo,
+     font fluidi) — sopra i 1024px torna il layout desktop con testo nowrap.
+     Stessa soglia usata per il carosello dei membri del team qui sotto. */
+  @media (max-width: 1024px) {
     .hero-mask {
       padding: 0;
       flex-grow: 0;
@@ -1295,8 +1337,11 @@
     .title-outline {
       display: block;
       white-space: normal;
-      font-size: var(--mobile-title-size, 43px);
-      line-height: 36px;
+      overflow-wrap: break-word; /* parole lunghe vanno a capo invece di sbordare */
+      /* Font fluido: scala con la larghezza (9vw) e resta tra 28 e 84px, così
+         tiene su qualsiasi schermo fino al tablet, senza mai sbordare. */
+      font-size: clamp(28px, 9vw, 84px);
+      line-height: 0.9; /* senza unità: segue il font-size a ogni dimensione */
       width: 100%;
       max-width: 100%;
       margin: 0;
@@ -1324,7 +1369,7 @@
     .carousel-title-fill,
     .carousel-title-outline {
       white-space: normal;
-      word-break: break-word;
+      overflow-wrap: break-word;
     }
     .carousel-title-outline {
       margin-left: var(--spacing-11);
