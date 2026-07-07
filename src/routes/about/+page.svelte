@@ -785,8 +785,8 @@
     margin-bottom: 10px;
   }
 
-  .mobile-blur { position: absolute; left: 0; right: 0; height: 44%; pointer-events: none; backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px); }
+  .mobile-blur { position: absolute; left: 0; right: 0; height: 44%; pointer-events: none; backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px); }
   .mobile-blur--top { top: 0; background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
     mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%); -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
   }
@@ -805,7 +805,7 @@
   }
   .mobile-title .carousel-title-outline {
     font-family: var(--font-display); font-size: 43px; font-weight: 800; line-height: 36px; letter-spacing: 0; text-transform: uppercase;
-    color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: var(--stroke-1) var(--color-content-accent); width: 352px; max-width: 100%; white-space: pre-line; hyphens: manual; -webkit-hyphens: manual; margin: 0;
+    color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent); width: 352px; max-width: 100%; white-space: pre-line; hyphens: manual; -webkit-hyphens: manual; margin: 0;
   }
 
   .mobile-nav-circles {
@@ -864,14 +864,14 @@
     .title-fill, .title-outline { display: block; white-space: normal;
     font-size: var(--mobile-title-size, 43px); line-height: 36px; width: 100%; max-width: 100%; margin: 0; overflow: visible;
     }
-    .title-outline { padding-left: 2px; }
+    .title-outline { padding-left: 2px; -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent);}
     .dot-frecce { width: 100%; margin-top: clamp(72px, 30dvh, 350px); }
     .dot-nav { max-width: calc(100% - 110px); gap: 6px; flex-wrap: wrap; }
     .dot, .dot::before { width: 12px; height: 12px; }
 
     .carousel-title-fill, .carousel-title-outline { white-space: normal;
     word-break: break-word; }
-    .carousel-title-outline { margin-left: var(--spacing-11); }
+    .carousel-title-outline { margin-left: var(--spacing-11); -webkit-text-stroke: var(--stroke-mobile); }
     
 
     /* 1. Diamo respiro alla maschera di animazione del carosello */

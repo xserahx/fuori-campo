@@ -236,10 +236,9 @@
       line-height: 1.4;
     }
 
-    .hero-fill,
-    .hero-outline  { font-size: clamp(40px, 13vw, 64px); }
+    .hero-fill  { font-size: clamp(40px, 13vw, 64px); }
 
-    .hero-outline { padding-left: 10px; stroke-width: var(--stroke-mobile); }
+    .hero-outline {font-size: clamp(40px, 13vw, 64px); padding-left: 10px; -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent, #bdff5d);}
 
     .footer-bottom { padding-top: var(--spacing-4); /* 16px */ }
 
