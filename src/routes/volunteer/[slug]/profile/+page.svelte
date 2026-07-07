@@ -523,7 +523,7 @@
     align-items: flex-start;
     height: 45px;
     line-height: 0.6;
-    margin-top: 16px;
+    margin-top: 20px;
   }
 
   .quote-body {
@@ -534,6 +534,7 @@
     font-style: normal;
     font-weight: 500;
     line-height: 32px;
+    text-wrap: balance;
     color: var(--color-content-body);
     text-align: right;
     white-space: pre-wrap;
@@ -755,7 +756,12 @@
     .quote-body {
       width: 100%;
       font-size: 18px;
+      line-height: 1.5;
     }
+
+    .qmark--last {
+    margin-top: 14px;
+  }
 
     .hero-grid {
       padding: 0 var(--profile-side-offset);
