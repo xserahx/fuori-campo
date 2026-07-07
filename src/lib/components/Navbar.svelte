@@ -256,7 +256,7 @@
   }
 
   /* ── Show hamburger on mobile only ──────────────────────────────── */
-  @media (max-width: 599px) {
+  @media (max-width: 700px) {
     .nav-burger { display: flex; }
 
     /* Float navbar above the overlay so the morphed X closes the menu */

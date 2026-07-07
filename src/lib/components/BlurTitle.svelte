@@ -175,7 +175,7 @@
     100% { opacity: 1; filter: blur(0px);  transform: translateY(0px) scale(1); }
   }
 
-  @media (max-width: 599px) {
+  @media (max-width: 700px) {
     .char {
       font-size:   75px;
       line-height: 62.5px;
@@ -189,6 +189,10 @@
     }
     .fuori,
     .campo { text-align: center; }
+
+    .campo {
+      -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent, #bdff5d);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

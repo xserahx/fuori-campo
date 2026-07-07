@@ -202,8 +202,8 @@
     .footer-nav-link { font-size: 20px; }
   }
 
-  /* ── Mobile (≤ 599px) ────────────────────────────────────────────── */
-  @media (max-width: 599px) {
+  /* ── Mobile (≤ 700px) ────────────────────────────────────────────── */
+  @media (max-width: 700px) {
     /* Glow: spread across full width on stacked layout */
     .footer-glow {
       mask-image:         linear-gradient(to right, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.8) 45%, rgba(0,0,0,1) 100%);
@@ -239,7 +239,7 @@
     .hero-fill,
     .hero-outline  { font-size: clamp(40px, 13vw, 64px); }
 
-    .hero-outline { padding-left: 10px; }
+    .hero-outline { padding-left: 10px; stroke-width: var(--stroke-mobile); }
 
     .footer-bottom { padding-top: var(--spacing-4); /* 16px */ }
 
