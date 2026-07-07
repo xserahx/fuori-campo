@@ -1,3 +1,21 @@
+body {
+  /* Ottimizzazione del rendering del testo */
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: none;
+
+  text-rendering: optimizeLegibility;
+  text-size-adjust: none;
+  text-wrap: pretty; /* Ottimizzazione dei paragrafi */
+}
+
+::selection {
+  background: var(--color-content-accent);
+  color: var(
+    --color-content-body-black
+  ); /* inverte i colori per il testo selezionato */
+}
+
 .site {
   min-height: 100dvh;
   background: var(--color-background-primary) !important;
