@@ -452,7 +452,7 @@
   .intro {
     display: flex;
     flex-direction: column;
-    padding-top: calc(var(--navbar-height, 125px));
+    padding-top: calc(var(--navbar-height, 125px) + var(--spacing-10, 64px));
     padding-bottom: clamp(24px, 4vh, 48px);
     overflow-x: hidden;
   }
@@ -582,16 +582,28 @@
     overflow: hidden;
   }
 
+  /* 1. I TUOI VALORI ORIGINALI INTATTI */
   .carousel {
     cursor: grab;
     user-select: none;
     touch-action: none;
+    
     --card-width: clamp(140px, 26vw, 200px);
     --card-height: calc(var(--card-width) * 1);
+    
     --ss: 2;
     --card-radius: calc(var(--card-width) * var(--ss) * -0.86);
     --camera-z: calc(var(--card-width) * var(--ss) * 2.8);
+
+    /* IL FIX MATEMATICO DEFINITIVO:
+       1. Calcoliamo la mezza altezza visiva della card esattamente al bordo (la giuntura),
+          dove per via del 3D la scala è circa 1.4x. */
+    --seam-half-height: calc(var(--card-height) * 0.7);
+    
+    /* 2. Calcoliamo lo spazio vuoto esatto tra il top dello schermo e la giuntura */
+    --seam-gap: calc(50% - var(--seam-half-height));
   }
+
   .carousel:active { cursor: grabbing; }
 
   .carousel::before {
@@ -601,16 +613,19 @@
   }
 
   .stage {
-    position: absolute; inset: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; margin: var(--spacing-9, 60px) 0; z-index: 1;
+    position: absolute; inset: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; margin: var(--spacing-5, 24px) 0; z-index: 1;
   }
 
+  /* 2. IL CONTENITORE USANDO LA TUA VARIABILE ALTEZZA */
   .container-3d {
     perspective: var(--camera-z);
     width: calc(var(--card-width) * var(--ss));
+    height: calc(var(--card-height) * var(--ss)); 
     transform: scale(calc(1 / var(--ss)));
     transform-origin: center center;
-    aspect-ratio: 1 / 1;
   }
+
+  
   .ring {
     width: 100%; height: 100%; transform-style: preserve-3d; transition: none;
   }
@@ -623,8 +638,14 @@
     transition: transform 0.85s ease, box-shadow 0.85s ease;
     pointer-events: none; 
   }
+  /* 3. IMMAGINE ORIGINALE (Nessuno zoom strano, foto intatta) */
   .card-image {
-    width: 100%; height: 100%; background-size: cover; opacity: 0; transition: opacity 0.5s ease;
+    width: 100%; 
+    height: 100%; 
+    background-size: cover; 
+    /* Rimosso l'ancoraggio, torna come la volevi tu */
+    opacity: 0; 
+    transition: opacity 0.5s ease;
   }
   .card-image.loaded { opacity: 1; }
   .card-overlay {
@@ -649,9 +670,16 @@
 
   .curve-frame { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
   .curve { position: absolute; left: 0; width: 100%; fill: var(--color-background-primary); }
-  .curve-top { top: 0; height: clamp(120px, 30vh, 260px); }
-  .curve-bottom { bottom: 0; height: clamp(110px, 28vh, 240px); }
-
+  /* 4. LE CURVE PERFETTAMENTE ELASTICHE */
+  .curve-top { 
+    top: 0; 
+    height: calc(var(--seam-gap) * 1.1); 
+  }
+  
+  .curve-bottom { 
+    bottom: 0; 
+    height: calc(var(--seam-gap) * 1.1); 
+  }
   .bottom-bar {
     position: absolute; bottom: 0; left: 0; right: 0;
     padding: var(--spacing-4-2) 0; display: flex; align-items: flex-end; justify-content: flex-start; z-index: 10; pointer-events: none;
