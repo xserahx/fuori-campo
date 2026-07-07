@@ -1,6 +1,14 @@
+<!-- Photo flight overlay for animating image transitions. Animazione delle immagini dopo il click sulla galleria foto versione desktop -->
+
 <script lang="ts">
-  import gsap from 'gsap';
-  import { photoFlight, resetFlight, FLIGHT_DURATION_MS, FLIGHT_REVEAL_MS, type FlightRect } from '$lib/stores/photoFlight';
+  import gsap from "gsap";
+  import {
+    photoFlight,
+    resetFlight,
+    FLIGHT_DURATION_MS,
+    FLIGHT_REVEAL_MS,
+    type FlightRect,
+  } from "$lib/stores/photoFlight";
 
   // The <img> is always mounted (hidden when idle) so `imgEl` stays a stable
   // ref across every flight — GSAP fully owns its transform/opacity;
@@ -10,16 +18,17 @@
   let src = $state<string | undefined>(undefined);
 
   const reduced = () =>
-    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let handledKey = '';
+  let handledKey = "";
   let holdTimeout: ReturnType<typeof setTimeout> | undefined;
 
   function stop() {
     clearTimeout(holdTimeout);
     if (imgEl) gsap.killTweensOf(imgEl);
     visible = false;
-    handledKey = '';
+    handledKey = "";
   }
 
   // The clone's real box (left/top/width/height) is set ONCE per flight —
@@ -46,9 +55,7 @@
     };
   }
 
-  // Gentle throughout — no fast burst at the start the way a `.out` ease
-  // gives, and no hard stop at the end either.
-  const EASE = 'power2.inOut';
+  const EASE = "power2.inOut";
 
   $effect(() => {
     const s = $photoFlight;
@@ -59,7 +66,7 @@
     }
     if (!imgEl) return;
 
-    const key = `${s.phase}|${s.src}|${s.from.left},${s.from.top}|${s.to ? `${s.to.left},${s.to.top}` : 'pending'}`;
+    const key = `${s.phase}|${s.src}|${s.from.left},${s.from.top}|${s.to ? `${s.to.left},${s.to.top}` : "pending"}`;
     if (key === handledKey) return;
     handledKey = key;
 
@@ -81,13 +88,21 @@
     // flight and drags it toward the top-left (a "wrong origin" that only shows
     // when zoom ≠ 1). Convert the rects back to CSS px by dividing out the zoom
     // so the clone renders exactly over the real thumbnail and frame.
-    const z = parseFloat(getComputedStyle(document.documentElement).zoom || '1') || 1;
+    const z =
+      parseFloat(getComputedStyle(document.documentElement).zoom || "1") || 1;
     const unzoom = (r: FlightRect): FlightRect =>
-      z === 1 ? r : { left: r.left / z, top: r.top / z, width: r.width / z, height: r.height / z };
+      z === 1
+        ? r
+        : {
+            left: r.left / z,
+            top: r.top / z,
+            width: r.width / z,
+            height: r.height / z,
+          };
     const from = unzoom(s.from);
     const to = s.to ? unzoom(s.to) : null;
 
-    if (s.phase === 'entering' && !to) {
+    if (s.phase === "entering" && !to) {
       // Gallery click landed; the zoom page hasn't reported its frame rect
       // yet — hold at the gallery rect (rendered at its real size, so crisp).
       // Safety timeout in case it never arrives (e.g. a failed navigation),
@@ -127,7 +142,7 @@
         gsap.to(imgEl, {
           opacity: 0,
           duration: FLIGHT_REVEAL_MS / 1000,
-          ease: 'sine.inOut',
+          ease: "sine.inOut",
           onComplete: stop,
         });
       },

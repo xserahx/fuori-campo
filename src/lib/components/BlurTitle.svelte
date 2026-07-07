@@ -1,3 +1,5 @@
+<!--Componente per il titolo con effetto di blur -->
+
 <script lang="ts">
   /* `quick` marks a logo return (the loader is skipped). The title is then
      revealed the same way it appears once the loader dissolves on first visit
@@ -7,9 +9,9 @@
 
   /* Split the two words into individual characters so each letter can enter
      independently with a staggered delay — far more cinematic than a single
-     block reveal.                                                            */
-  const fuoriChars = ['F', 'U', 'O', 'R', 'I'];
-  const campoChars = ['C', 'A', 'M', 'P', 'O'];
+     block reveal. */
+  const fuoriChars = ["F", "U", "O", "R", "I"];
+  const campoChars = ["C", "A", "M", "P", "O"];
 
   // Shrink the title so the widest word ("CAMPO") always fits its container.
   // The --page-zoom-compensated font grows as the window narrows and would
@@ -28,11 +30,13 @@
   let wrapEl = $state<HTMLElement | undefined>(undefined);
 
   function fitTitle() {
-    if (!wrapEl || typeof window === 'undefined') return;
+    if (!wrapEl || typeof window === "undefined") return;
 
-    wrapEl.style.setProperty('--title-fit', '1');   // measure at natural size
-    const words = Array.from(wrapEl.querySelectorAll<HTMLElement>('.fuori, .campo'));
-    const avail = wrapEl.clientWidth;                // respects width / max-width:100vw
+    wrapEl.style.setProperty("--title-fit", "1"); // measure at natural size
+    const words = Array.from(
+      wrapEl.querySelectorAll<HTMLElement>(".fuori, .campo"),
+    );
+    const avail = wrapEl.clientWidth; // respects width / max-width:100vw
     let widest = 0;
     for (const w of words) widest = Math.max(widest, w.scrollWidth);
     const widthScale = avail > 0 && widest > avail ? avail / widest : 1;
@@ -41,14 +45,20 @@
     // room top/bottom regardless of how tall/short the window is.
     const naturalHeight = wrapEl.scrollHeight;
     const availHeight = window.innerHeight * 0.9;
-    const heightScale = naturalHeight > 0 && naturalHeight > availHeight ? availHeight / naturalHeight : 1;
+    const heightScale =
+      naturalHeight > 0 && naturalHeight > availHeight
+        ? availHeight / naturalHeight
+        : 1;
 
     const scale = Math.min(widthScale, heightScale);
-    wrapEl.style.setProperty('--title-fit', scale < 1 ? String(scale * 0.99) : '1');
+    wrapEl.style.setProperty(
+      "--title-fit",
+      scale < 1 ? String(scale * 0.99) : "1",
+    );
   }
 
   $effect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     let raf = 0;
     const schedule = () => {
@@ -56,34 +66,49 @@
       raf = requestAnimationFrame(fitTitle);
     };
 
-    schedule();                                      // fit with whatever font is ready now
-    if (typeof document !== 'undefined' && document.fonts) {
-      document.fonts.ready.then(() => schedule());   // refit once the display font loads
+    schedule(); // fit with whatever font is ready now
+    if (typeof document !== "undefined" && document.fonts) {
+      document.fonts.ready.then(() => schedule()); // refit once the display font loads
     }
-    window.addEventListener('resize', schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('resize', schedule);
+      window.removeEventListener("resize", schedule);
     };
   });
 </script>
 
-<div bind:this={wrapEl} class="title-wrap" class:title-wrap--quick={quick} aria-label="FUORI CAMPO">
-  <span class="fuori" aria-hidden="true">{#each fuoriChars as char, i}<span class="char" style="--i:{i}">{char}</span>{/each}</span>
-  <span class="campo" aria-hidden="true">{#each campoChars as char, i}<span class="char" style="--i:{i}">{char}</span>{/each}</span>
+<div
+  bind:this={wrapEl}
+  class="title-wrap"
+  class:title-wrap--quick={quick}
+  aria-label="FUORI CAMPO"
+>
+  <span class="fuori" aria-hidden="true"
+    >{#each fuoriChars as char, i}<span class="char" style="--i:{i}"
+        >{char}</span
+      >{/each}</span
+  >
+  <span class="campo" aria-hidden="true"
+    >{#each campoChars as char, i}<span class="char" style="--i:{i}"
+        >{char}</span
+      >{/each}</span
+  >
 </div>
 
 <style>
   /* ── Scroll-driven parallax + fade ───────────────────────────────
      --hero-scroll-p is written every RAF frame by the homepage
-     spring loop (0 at hero top → 1 when hero is ~70 % scrolled past).    */
+     spring loop (0 at hero top → 1 when hero is ~70 % scrolled past). */
   .title-wrap {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform:
-      translate(-50%, calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)))
+    transform: translate(
+        -50%,
+        calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px))
+      )
       scale(calc(1 - var(--hero-scroll-p, 0) * 0.06));
     opacity: calc(1 - var(--hero-scroll-p, 0) * 1.6);
     display: flex;
@@ -117,12 +142,19 @@
   }
   .title-wrap--quick .fuori,
   .title-wrap--quick .campo {
-    animation: title-reveal 800ms var(--ease-cinema, cubic-bezier(0.16, 1, 0.3, 1)) 100ms both;
+    animation: title-reveal 800ms
+      var(--ease-cinema, cubic-bezier(0.16, 1, 0.3, 1)) 100ms both;
   }
 
   @keyframes title-reveal {
-    from { opacity: 0; filter: blur(8px); }
-    to   { opacity: 1; filter: blur(0); }
+    from {
+      opacity: 0;
+      filter: blur(8px);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+    }
   }
 
   /* ── Word wrappers — block display, font-size:0 collapses any
@@ -156,8 +188,14 @@
     font-family: var(--font-display);
     /* --title-fit (default 1) is set by fitTitle() to shrink the title so the
        widest word fits the container at any width — see the script. */
-    font-size:   calc(clamp(180px, calc(300px / max(var(--page-zoom, 1), 0.65)), 520px) * var(--title-fit, 1));
-    line-height: calc(clamp(150px, calc(250px / max(var(--page-zoom, 1), 0.65)), 430px) * var(--title-fit, 1));
+    font-size: calc(
+      clamp(180px, calc(300px / max(var(--page-zoom, 1), 0.65)), 520px) *
+        var(--title-fit, 1)
+    );
+    line-height: calc(
+      clamp(150px, calc(250px / max(var(--page-zoom, 1), 0.65)), 430px) *
+        var(--title-fit, 1)
+    );
     font-weight: 800;
     letter-spacing: -0.02em;
     text-transform: uppercase;
@@ -169,29 +207,50 @@
   /* ── Entrance: deep blur + vertical rise → overshoot → settle
      The 65% overshoot gives a spring-physics feel using pure CSS. */
   @keyframes char-in {
-    0%   { opacity: 0; filter: blur(28px); transform: translateY(36px) scale(1.14); }
-    65%  { opacity: 1; filter: blur(0px);  transform: translateY(-5px) scale(1.022); }
-    82%  { transform: translateY(1.5px) scale(0.9985); }
-    100% { opacity: 1; filter: blur(0px);  transform: translateY(0px) scale(1); }
+    0% {
+      opacity: 0;
+      filter: blur(28px);
+      transform: translateY(36px) scale(1.14);
+    }
+    65% {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(-5px) scale(1.022);
+    }
+    82% {
+      transform: translateY(1.5px) scale(0.9985);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0px) scale(1);
+    }
   }
 
   @media (max-width: 700px) {
     .char {
-      font-size:   75px;
+      font-size: 75px;
       line-height: 62.5px;
     }
     .title-wrap {
       left: 50%;
-      transform:
-        translate(-50%, calc(-50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)))
+      transform: translate(
+          -50%,
+          calc(
+            -50% - var(--hero-scroll-p, 0) * var(--hero-parallax-shift, 52px)
+          )
+        )
         scale(calc(1 - var(--hero-scroll-p, 0) * 0.06));
       width: auto;
     }
     .fuori,
-    .campo { text-align: center; }
+    .campo {
+      text-align: center;
+    }
 
     .campo {
-      -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent, #bdff5d);
+      -webkit-text-stroke: var(--stroke-mobile)
+        var(--color-content-accent, #bdff5d);
     }
   }
 
