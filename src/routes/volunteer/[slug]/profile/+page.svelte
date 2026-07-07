@@ -557,7 +557,7 @@
     font-family: var(--font-display);
     font-size: var(--ts-cat-size);
     font-style: normal;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 32px;
     text-wrap: balance;
     color: var(--color-content-body);
@@ -579,23 +579,24 @@
   .vol-info {
     margin: 0;
     min-width: 0;
+    max-width: 700px;
   }
 
   .info-role {
     margin: 0 0 8px;
     font-size: 36px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.0;
-    letter-spacing: 1.44px;
+    letter-spacing: 0%;
     color: var(--color-content-accent, #bdff5d);
   }
 
   .info-location {
     margin: 0;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 1.45;
-    letter-spacing: 1px;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0%;
     white-space: pre-wrap;
     color: var(--color-content-body);
   }
@@ -792,9 +793,18 @@
 
     .quote-body {
       width: 100%;
-      font-size: 18px;
-      line-height: 1.5;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0%;
     }
+
+    .info-location {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0%;
+  }
 
     .qmark--last {
     margin-top: 14px;
@@ -806,7 +816,8 @@
     }
 
     .info-role {
-      font-size: 26px;
+      font-size: 21px;
+
     }
 
     .qa-row {
