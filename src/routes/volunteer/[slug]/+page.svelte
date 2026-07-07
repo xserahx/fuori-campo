@@ -1040,20 +1040,7 @@
       top: 24px;
       right: 24px;
     }
-
-    /* INTERCETTAZIONE: Se l'header ha la classe .menu-open, 
-       nascondiamo immediatamente il contenitore del bottone indietro */
-    :global(.navbar.menu-open) ~ main .close-x-container,
-    :global(.navbar.menu-open) ~ #main-content .close-x-container {
-      display: none !important;
-    }
     
-    /* Alternativa infallibile basata sull'overflow del body:
-       Se il menu blocca l'overflow del body, il bottone sparisce. */
-    :global(body[style*="overflow: hidden"]) .close-x-container {
-      display: none !important;
-    }
-  
   }
 
   /* ── Touch target compensation ──────────────────────────────────── */
