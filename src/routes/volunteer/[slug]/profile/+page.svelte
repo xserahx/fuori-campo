@@ -188,17 +188,12 @@
           parseFloat(getComputedStyle(fotoBtn as HTMLElement).bottom) || 0;
         const naturalBottom = window.innerHeight - bottomCss;
 
-        /* Quanto il bottone, nella sua posizione naturale, sfonderebbe nel
-           footer (incluso il margine di sicurezza FOOTER_GAP). */
         const overlap = naturalBottom + FOOTER_GAP - footerRect.top;
         const lift = Math.max(0, overlap);
 
-        gsap.to(fotoBtn, {
-          y: -lift,
-          duration: 0.25,
-          ease: 'power2.out',
-          overwrite: true
-        });
+        // LA SOLUZIONE DEFINITIVA: 
+        // Zero animazioni. Posizionamento istantaneo e accelerato via hardware.
+        fotoBtn.style.transform = `translate3d(0, -${lift}px, 0)`;
       };
 
       onScrollOrResize = () => {
