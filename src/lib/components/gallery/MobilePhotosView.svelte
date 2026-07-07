@@ -41,11 +41,8 @@
   }
 
   // ── Centered-photo selection ─────────────────────────────────────
-  // The photo nearest the viewport centre grows to full width; the rest stay
-  // at 72vw. Card HEIGHT is fixed (its natural height at 72vw), so only the
-  // width flips — no vertical reflow, so scrolling stays fluid.
   let feedEl = $state<HTMLElement | null>(null);
-  let selectedSlug = $state<string | null>(null);
+  let selectedSlug = $state<string | null>(null); 
   let raf = 0;
 
   function updateSelected() {
@@ -75,9 +72,10 @@
   }
 
   $effect(() => {
-    void images;
     if (!feedEl || typeof window === 'undefined') return;
+    
     requestAnimationFrame(updateSelected);
+    
     window.addEventListener('resize', onScroll, { passive: true });
     return () => window.removeEventListener('resize', onScroll);
   });
@@ -96,9 +94,7 @@
       class:selected={selectedSlug === img.slug}
       data-slug={img.slug!}
       type="button"
-      
       style="--ratio: {ratios[img.slug!] ?? (img.width / img.height)};"
-      
       onclick={() => open(img)}
     >
       <img
@@ -123,20 +119,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    
-    /* Ho aumentato un po' il gap per dare respiro tra una foto e l'altra */
     gap: 32px; 
-    
-    /* 1. IL TRUCCO DEL PADDING FANTASMA */
-    /* 50dvh = esattamente metà schermo. Questo permette alla prima 
-       e all'ultima foto di arrivare perfettamente al centro. */
     padding-top: 50dvh;
     padding-bottom: 50dvh;
-    
     scrollbar-width: none;
-    
-    /* 2. IL MAGNETE (Nativo del Browser) */
-    /* Obbliga lo scroll a fermarsi in punti matematici precisi */
     scroll-snap-type: y mandatory; 
   }
 
@@ -147,12 +133,8 @@
   .feed-card {
     position: relative;
     flex-shrink: 0;
-    
-    /* 1. LARGHEZZA FLUTTUANTE, MA ALTEZZA BLOCCATA */
     width: 72vw;
-    /* L'altezza è calcolata sul 100vw, così quando la card si allarga non spinge giù le altre foto */
     height: calc(100vw / var(--ratio)); 
-    
     border: 0;
     padding: 0;
     margin: 0;
@@ -160,15 +142,12 @@
     border-radius: var(--radius-s, 4px);
     cursor: pointer;
     overflow: hidden;
-    
-    /* Per centrare l'immagine a riposo */
     display: flex;
     align-items: center;
     justify-content: center;
 
-    /* 2. MAGNETE RIGOROSO */
     scroll-snap-align: center;
-    scroll-snap-stop: always; /* Forza lo stop obbligatorio a ogni singola foto */
+    scroll-snap-stop: always; 
 
     filter: blur(7px) brightness(0.7);
     opacity: 0.7;
@@ -176,27 +155,18 @@
       width     0.35s cubic-bezier(0.2, 1, 0.4, 1),
       filter    0.3s ease,
       opacity   0.3s ease;
-    
     will-change: width, filter, opacity;
-    
-    /* Diciamo alla GPU di prepararsi ad animare anche il blur */
-    will-change: width, filter;
-    
-
   }
 
   .feed-card.selected {
     width: 100dvw;
     filter: blur(0px) brightness(1);
     opacity: 1;
-
     transition:
       width     0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
       filter    0.5s ease 0.1s,
       opacity   0.5s ease 0.1s;
-  
   }
-  
   
   .feed-img {
     width: 100%;
