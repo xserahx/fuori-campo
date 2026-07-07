@@ -535,8 +535,6 @@
   .card-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5); /* Scurisce le laterali */
-    transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   /* ─── STATO ATTIVO (Card Centrale) ─── */

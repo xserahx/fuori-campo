@@ -649,13 +649,9 @@
   }
   .card-image.loaded { opacity: 1; }
   .card-overlay {
-    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5);
-    transition: background 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    position: absolute; inset: 0; 
   }
 
-  .card-3d.active {
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5); z-index: 10;
-  }
   .card-3d.active .card-overlay { background: rgba(0, 0, 0, 0); }
 
   .progressive-blur-overlay {
