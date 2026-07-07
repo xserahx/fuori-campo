@@ -73,6 +73,9 @@
 
   let { volunteers = defaultVolunteers }: { volunteers?: Volunteer[] } = $props();
 
+  // ── NUOVO STATO: Array mescolato per l'ordine casuale ──
+  let shuffledVolunteers = $state(volunteers);
+
   // ═══════════════════════════════════════════════════════════
   // 3. STATO E LOGICA CAROSELLO
   // ═══════════════════════════════════════════════════════════
@@ -82,7 +85,7 @@
   let decoded   = $state<Record<string, boolean>>({});
 
   function preloadImages() {
-    for (const vol of volunteers) {
+    for (const vol of shuffledVolunteers) {
       if (decoded[vol.image]) continue;
       const img = new Image();
       img.src = vol.image;
@@ -91,7 +94,7 @@
     }
   }
 
-  const N = () => volunteers.length;
+  const N = () => shuffledVolunteers.length;
   function mod(n: number, m: number) { return ((n % m) + m) % m; }
 
   let currentCarouselIndex = $derived(mod(targetPos, N()));
@@ -148,7 +151,7 @@
     }
   }
 
-  let currentVol = $derived(volunteers[currentCarouselIndex]);
+  let currentVol = $derived(shuffledVolunteers[currentCarouselIndex]);
   let carouselTitleLines = $derived([currentVol?.surname ?? '', currentVol?.name ?? '']);
 
   let desktopTitleEl = $state<HTMLElement | null>(null);
@@ -159,6 +162,7 @@
   // 4. ANIMAZIONI GSAP CONDIVISE (MA ISOLATE)
   // ═══════════════════════════════════════════════════════════
   const DISPLAY_FONT = '800 1em "forma-djr-display"';
+
   function displayFontReady() {
     if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
     if (document.fonts.check(DISPLAY_FONT)) return Promise.resolve();
@@ -189,6 +193,7 @@
     let cancelled = false;
     displayFontReady().then(() => {
       if (cancelled) return;
+     
       if (titleLines.length) playTitleReveal(titleLines);
       if (copyLines.length) blurRevealIn(copyLines);
     });
@@ -209,6 +214,7 @@
       const observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
           playTitleReveal(lines);
+         
           observer.disconnect();
         }
       }, { threshold: 0.2 });
@@ -229,6 +235,7 @@
       playTitleReveal(lines);
       return;
     }
+    
     gsap.set(lines, { yPercent: 120 });           
     let cancelled = false;
     document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => {
@@ -241,7 +248,8 @@
   function fitCarouselTitle() {
     const el = desktopTitleEl;
     if (!el || typeof window === 'undefined') return;
-    if (window.innerWidth <= 700) { el.style.setProperty('--title-fit', '1'); return; }
+    if (window.innerWidth <= 700) { el.style.setProperty('--title-fit', '1'); return;
+    }
     el.style.setProperty('--title-fit', '1');
     const lines = Array.from(el.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
     let scale = 1;
@@ -261,7 +269,8 @@
     let cancelled = false;
     schedule();      
     if (typeof document !== 'undefined' && document.fonts) {
-      document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => { if (!cancelled) schedule(); });
+      document.fonts.load(DISPLAY_FONT).catch(() => 
+      {}).then(() => { if (!cancelled) schedule(); });
     }
     window.addEventListener('resize', schedule, { passive: true });
     return () => { cancelled = true; cancelAnimationFrame(raf); window.removeEventListener('resize', schedule); };
@@ -273,13 +282,16 @@
 
   /* ── Reset di stato layout su mount ──────────────────────────────────
      L'ABOUT deve calcolare il proprio offset da uno stato PULITO, a
-     prescindere dalla pagina di provenienza. La pagina di dettaglio
+     prescindere dalla pagina di provenienza.
+     La pagina di dettaglio
      Categorie (e la scheda volontario) girano come contenitori FIXED e
      non scrollabili, e impostano `--page-top-padding: 0px` sul body: se
      quel valore resta "appiccicato" quando si arriva qui, l'ABOUT perde
      l'offset della navbar e il contenuto sale troppo (sembra calcolato dal
-     margine superiore invece che dalla navbar). Qui azzeriamo ogni lock
-     ereditato e forziamo il padding-top al valore corretto. */
+     margine superiore invece che dalla navbar).
+     Qui azzeriamo ogni lock
+     ereditato e forziamo il padding-top al valore corretto.
+  */
   function resetLayoutState() {
     if (typeof document === 'undefined') return;
 
@@ -309,6 +321,14 @@
   }
 
   onMount(() => {
+    // ── SHUFFLE: Rimescoliamo l'array al caricamento della pagina sul client ──
+    let temp = [...volunteers];
+    for (let i = temp.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [temp[i], temp[j]] = [temp[j], temp[i]];
+    }
+    shuffledVolunteers = temp;
+
     resetLayoutState();
     const resetRaf = requestAnimationFrame(resetLayoutState);
     const resetTimer = window.setTimeout(resetLayoutState, 160);
@@ -325,6 +345,7 @@
     }
 
     return () => {
+      
       cancelAnimationFrame(resetRaf);
       window.clearTimeout(resetTimer);
       window.removeEventListener('resize', checkMobile);
@@ -347,7 +368,8 @@
             <span class="rise-mask"><span class="title-fill about-title-anim">{slide.titleTop}</span></span>
             <span class="rise-mask"><span class="title-outline about-title-anim">{slide.titleBottom}</span></span>
           </h1>
-          <div class="hero-mask">
+          <div 
+            class="hero-mask">
             <p class="hero-copy blur-reveal">{slide.body}</p>
           </div>
         </div>
@@ -358,6 +380,7 @@
       <div class="dot-nav" aria-label="Slide introduttive">
         {#each introSlides as _, i}
           <button type="button" class="dot" class:dot--active={i === activeIndex} aria-label={`Vai alla slide ${i + 1}`} aria-pressed={i === activeIndex} onclick={() => (activeIndex = i)}></button>
+   
         {/each}
       </div>
       <div class="frecce" aria-label="Navigazione slide">
@@ -375,9 +398,11 @@
   </section>
 
   {#if isMobile}
+  
     <section class="mobile-carousel" ontouchstart={onTouchStart} ontouchend={onTouchEnd} aria-label="Carousel team">
       {#key currentCarouselIndex}
-        <div class="mobile-bg" style="background-image: {decoded[volunteers[currentCarouselIndex]?.image] ? `url('${volunteers[currentCarouselIndex]?.image}')` : 'none'}" in:fade={{ duration: 500, delay: 80 }} out:fade={{ duration: 400 }}></div>
+        <div class="mobile-bg" style="background-image: {decoded[shuffledVolunteers[currentCarouselIndex]?.image] ?
+`url('${shuffledVolunteers[currentCarouselIndex]?.image}')` : 'none'}" in:fade={{ duration: 500, delay: 80 }} out:fade={{ duration: 400 }}></div>
       {/key}
 
       <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
@@ -387,7 +412,8 @@
         {#each carouselTitleLines as line, i}
           <span class="carousel-title-mask">
             {#if i === 0}
-              <span class="carousel-title-fill carousel-title-anim">{line}</span>
+              <span class="carousel-title-fill 
+                carousel-title-anim">{line}</span>
             {:else}
               <span class="carousel-title-outline carousel-title-anim">{line}</span>
             {/if}
@@ -395,10 +421,6 @@
         {/each}
       </div>
 
-      <!-- "Scopri di più" (bottom-left) — solo per i volontari con una pagina
-           dedicata (slug), come nel carosello mobile delle Categorie. Nel team
-           solo Claudia e Viola hanno uno slug, quindi solo loro mostrano il
-           bottone. -->
       {#if currentVol?.slug}
         <a class="scopri-btn" href={`/volunteer/${currentVol.slug}/profile`}>SCOPRI DI PIÙ</a>
       {/if}
@@ -413,11 +435,13 @@
     <section class="carousel" bind:this={carouselDesktopEl} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointerleave={onPointerUp} aria-label="Carousel team">
       <div class="stage">
         <div class="container-3d">
+  
           <div class="ring" class:ready={isReady} style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);">
-            {#each volunteers as vol, i}
+            {#each shuffledVolunteers as vol, i}
               {@const isActive = currentCarouselIndex === i}
               <div class="card-3d" class:active={isActive} style="transform: rotateY({i * -60}deg) translateZ(var(--card-radius));">
                 <div class="card-image" class:loaded={decoded[vol.image]} style="background-image: url('{vol.image}');"></div>
+           
                 <div class="card-overlay"></div>
               </div>
             {/each}
@@ -431,6 +455,7 @@
         <ArrowButton direction="left" onclick={(e) => onArrowClickCarousel(-1, e)} />
       </div>
 
+     
       <div class="arrow-right" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
         <ArrowButton direction="right" onclick={(e) => onArrowClickCarousel(1, e)} />
       </div>
@@ -440,6 +465,7 @@
           <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
         </svg>
         <svg class="curve curve-bottom" viewBox="0 0 1000 260" preserveAspectRatio="none">
+          
           <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
         </svg>
       </div>
@@ -449,6 +475,7 @@
           {#each carouselTitleLines as line, index}
             <span class="carousel-title-mask">
               {#if index === 0}
+                
                 <span class="carousel-title-fill carousel-title-anim">{line}</span>
               {:else}
                 <span class="carousel-title-outline carousel-title-anim">{line}</span>
@@ -458,9 +485,6 @@
         </div>
       </div>
 
-      <!-- "Scopri di più" (desktop) — solo per i volontari con una pagina
-           dedicata (slug): nel team solo Claudia e Viola. Codice bottone ripreso
-           dal commit 7b743d7. -->
       {#if currentVol?.slug}
         <div class="desktop-scopri" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
           <ScopriDiPiuButton dark href="/volunteer/{currentVol.slug}/profile" />
@@ -476,8 +500,10 @@
 <style>
   /* The ABOUT page owns its top offset in `.intro` (navbar height + spacing), so
      the layout's body padding-top must contribute nothing here — otherwise the
-     offset doubles. Scoped to while ABOUT is mounted; other routes keep the
-     layout's `--page-top-padding` behaviour. */
+     offset doubles.
+     Scoped to while ABOUT is mounted; other routes keep the
+     layout's `--page-top-padding` behaviour.
+  */
   :global(body) {
     padding-top: 0 !important;
   }
@@ -499,12 +525,15 @@
     display: flex;
     flex-direction: column;
     /* Self-contained top offset: navbar height + breathing room, computed here
-       from the token (125px desktop / 96px mobile). The ABOUT page no longer
+       from the token (125px desktop / 96px mobile).
+       The ABOUT page no longer
        relies on the layout's body `--page-top-padding` for the navbar offset —
        that variable is 0px on the Categories-detail / volunteer fixed routes and
        could leak in, dropping the offset and pulling the content up under the
-       navbar. Owning it here means the offset is always correct regardless of
-       which page you arrived from. (Body padding is zeroed below to avoid
+       navbar.
+       Owning it here means the offset is always correct regardless of
+       which page you arrived from.
+       (Body padding is zeroed below to avoid
        double-counting.) */
     padding-top: calc(var(--navbar-height, 125px) + var(--spacing-10, 64px));
     padding-bottom: clamp(24px, 4vh, 48px);
@@ -631,8 +660,10 @@
     background: rgba(189, 255, 93, 0.3); transition: background 220ms ease, box-shadow 220ms ease;
   }
   .dot:hover::before { background: rgba(189, 255, 93, 0.6); }
-  .dot.dot--active::before { background: var(--color-content-accent, #bdff5d); }
-  .frecce { display: flex; align-items: center; gap: var(--unit-20); }
+  .dot.dot--active::before { background: var(--color-content-accent, #bdff5d);
+  }
+  .frecce { display: flex; align-items: center; gap: var(--unit-20);
+  }
 
 
   /* ═══════════════════════════════════════════════════════════
@@ -662,7 +693,8 @@
     --seam-gap: calc(50% - var(--seam-half-height)*0.8);
   }
 
-  .carousel:active { cursor: grabbing; }
+  .carousel:active { cursor: grabbing;
+  }
 
   .carousel::before {
     content: ''; position: absolute; inset: 0;
@@ -698,22 +730,24 @@
 
   .card-image {
     width: 100%;
-    height: 100%; 
+    height: 100%;
     background-size: cover; 
     top: 0;
     opacity: 0;
     transition: opacity 0.5s ease;
   }
-  .card-image.loaded { opacity: 1; }
+  .card-image.loaded { opacity: 1;
+  }
   .card-overlay {
     position: absolute;
-    inset: 0; 
+    inset: 0;
   }
 
   .card-3d.active .card-overlay { background: rgba(0, 0, 0, 0); }
 
   .progressive-blur-overlay {
-    position: absolute; inset: 0; z-index: 5; pointer-events: none; 
+    position: absolute;
+    inset: 0; z-index: 5; pointer-events: none; 
     backdrop-filter: blur(15px) saturate(0.85);
     -webkit-backdrop-filter: blur(15px) saturate(0.85);
     mask-image: linear-gradient(to right, #000 0%, #000 calc(50% - var(--card-width) * 1.6), rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3), rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05), transparent calc(50% - var(--card-width) * 0.8), transparent calc(50% + var(--card-width) * 0.8), rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05), rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3), #000 calc(50% + var(--card-width) * 1.6), #000 100%);
@@ -724,12 +758,14 @@
   .arrow-right { position: absolute;
     top: 50%; transform: translateY(-50%); right: var(--spacing-5); z-index: 12; }
 
-  .curve-frame { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-  .curve { position: absolute; left: 0; width: 100%; fill: var(--color-background-primary); }
+  .curve-frame { position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  }
+  .curve { position: absolute; left: 0; width: 100%; fill: var(--color-background-primary);
+  }
 
   .curve-top { 
     top: 0;
-    height: calc(var(--seam-gap) * 1.1); 
+    height: calc(var(--seam-gap) * 1.1);
   }
   
   .curve-bottom { 
@@ -744,9 +780,11 @@
   }
 
   /* "Scopri di più" desktop — ancorato all'angolo in alto a destra della card
-     frontale. La card è centrata nel carosello e, per la prospettiva 3D, si
+     frontale.
+     La card è centrata nel carosello e, per la prospettiva 3D, si
      proietta a ~2.9× --card-width: la sua SEMI-dimensione visibile (card
-     quadrata) è ~1.45× --card-width. Dal centro (50%/50%) risaliamo al bordo
+     quadrata) è ~1.45× --card-width.
+     Dal centro (50%/50%) risaliamo al bordo
      alto/destro e insettiamo di 22px / 20px.
      Knob: 1.45 = fattore di semi-dimensione proiettata; 22px/20px = inset. */
   .desktop-scopri {
@@ -764,7 +802,8 @@
     line-height: 1; margin: 0; width: 100%; display: flex; flex-direction: column; gap: 0;
   }
 
-  .carousel-title-mask { display: block; overflow: hidden; }
+  .carousel-title-mask { display: block; overflow: hidden;
+  }
 
   .carousel-title-fill {
     color: var(--color-content-accent); display: block; white-space: nowrap;
@@ -785,9 +824,11 @@
     margin-bottom: 10px;
   }
 
-  .mobile-blur { position: absolute; left: 0; right: 0; height: 44%; pointer-events: none; backdrop-filter: blur(1px);
+  .mobile-blur { position: absolute; left: 0; right: 0; height: 44%; pointer-events: none;
+    backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px); }
-  .mobile-blur--top { top: 0; background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
+  .mobile-blur--top { top: 0;
+    background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
     mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%); -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
   }
   .mobile-blur--bottom { bottom: 0; background: linear-gradient(0deg, rgba(14, 14, 14, 1) 0%, rgba(14, 14, 14, 1) 28%, rgba(14, 14, 14, 0.7) 50%, rgba(14, 14, 14, 0) 100%);
@@ -856,27 +897,31 @@
      MEDIA QUERIES GLOBALI
   ═══════════════════════════════════════════════════════════ */
   @media (max-width: 700px) {
-    .hero-mask { padding: 0; flex-grow: 0; }
+    .hero-mask { padding: 0;
+      flex-grow: 0; }
     .hero-copy { margin: var(--spacing-8, 48px) 0 0 0; width: 100%; max-width: 100%; text-align: right;
-    font-size: clamp(22px, 7vw, 30px); line-height: 0.95; font-weight: 500; text-wrap: balance; }
+      font-size: clamp(22px, 7vw, 30px); line-height: 0.95; font-weight: 500; text-wrap: balance; }
     .title-mask { display: block; overflow: hidden;
-    padding-top: 15px; margin-top: -15px; padding-bottom: 12px; margin-bottom: -12px; }
+      padding-top: 15px; margin-top: -15px; padding-bottom: 12px; margin-bottom: -12px; }
     .title-fill, .title-outline { display: block; white-space: normal;
-    font-size: var(--mobile-title-size, 43px); line-height: 36px; width: 100%; max-width: 100%; margin: 0; overflow: visible;
+      font-size: var(--mobile-title-size, 43px); line-height: 36px; width: 100%; max-width: 100%; margin: 0; overflow: visible;
     }
     .title-outline { padding-left: 2px; -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent);}
-    .dot-frecce { width: 100%; margin-top: clamp(72px, 30dvh, 350px); }
-    .dot-nav { max-width: calc(100% - 110px); gap: 6px; flex-wrap: wrap; }
+    .dot-frecce { width: 100%;
+      margin-top: clamp(72px, 30dvh, 350px); }
+    .dot-nav { max-width: calc(100% - 110px); gap: 6px; flex-wrap: wrap;
+    }
     .dot, .dot::before { width: 12px; height: 12px; }
 
     .carousel-title-fill, .carousel-title-outline { white-space: normal;
-    word-break: break-word; }
-    .carousel-title-outline { margin-left: var(--spacing-11); -webkit-text-stroke: var(--stroke-mobile); }
+      word-break: break-word; }
+    .carousel-title-outline { margin-left: var(--spacing-11); -webkit-text-stroke: var(--stroke-mobile);
+    }
     
 
     /* 1. Diamo respiro alla maschera di animazione del carosello */
     .carousel-title-mask { 
-      padding-top: 15px; 
+      padding-top: 15px;
       margin-top: -15px; 
       padding-bottom: 15px; 
       margin-bottom: -15px; 
@@ -885,20 +930,23 @@
     /* 2. Assicuriamoci che i testi interni non si taglino da soli */
     .mobile-title .carousel-title-fill, 
     .mobile-title .carousel-title-outline { 
-      margin-left: 0; 
+      margin-left: 0;
       overflow: visible; 
     }
   }
 
   @media (min-width: 768px) {
-    .arrow-left  { left: var(--spacing-8); }
+    .arrow-left  { left: var(--spacing-8);
+    }
     .arrow-right { right: var(--spacing-8); }
   }
   @media (min-width: 1024px) {
-    .arrow-left  { left: var(--spacing-11); }
+    .arrow-left  { left: var(--spacing-11);
+    }
     .arrow-right { right: var(--spacing-11); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .title-fill, .title-outline, .carousel-title-fill, .carousel-title-outline { transition: none; }
+    .title-fill, .title-outline, .carousel-title-fill, .carousel-title-outline { transition: none;
+    }
   }
 </style>
