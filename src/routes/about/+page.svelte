@@ -10,6 +10,7 @@
   import '$lib/styles/base.css';
   import '$lib/styles/utilities.css';
 
+
   // ═══════════════════════════════════════════════════════════
   // 1. DATI ABOUT (INTATTI)
   // ═══════════════════════════════════════════════════════════
@@ -95,21 +96,17 @@
   let currentCarouselIndex = $derived(mod(targetPos, N()));
   let ringRotation = $derived(targetPos * 60);
 
-  function navigateCarousel(dir: number) {
-    targetPos += dir;
-  }
+  function navigateCarousel(dir: number) { targetPos += dir; }
 
   function onArrowClickCarousel(dir: number, e: MouseEvent) {
     e.stopPropagation();
     navigateCarousel(dir);
   }
 
-  // ── DRAG MAGNETICO ──
   let isDragging = false;
   let dragStartX = 0;
   function onPointerDown(e: PointerEvent) {
-    isDragging = true;
-    dragStartX = e.clientX;
+    isDragging = true; dragStartX = e.clientX;
     (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: PointerEvent) {}
@@ -117,22 +114,16 @@
     if (!isDragging) return;
     isDragging = false;
     const diff = dragStartX - e.clientX;
-    if (Math.abs(diff) > 50) { 
-      navigateCarousel(diff > 0 ? 1 : -1);
-    }
+    if (Math.abs(diff) > 50) navigateCarousel(diff > 0 ? 1 : -1);
   }
 
-  // ── TOUCH ──
   let touchStartY = 0;
-  function onTouchStart(e: TouchEvent) {
-    touchStartY = e.touches[0].clientY;
-  }
+  function onTouchStart(e: TouchEvent) { touchStartY = e.touches[0].clientY; }
   function onTouchEnd(e: TouchEvent) {
     const dy = touchStartY - e.changedTouches[0].clientY;
     if (Math.abs(dy) > 40) navigateCarousel(dy > 0 ? 1 : -1);
   }
 
-  // ── WHEEL (Ottimizzato per convivere con lo scroll di pagina) ──
   let wheelAccum = 0;
   let wheelLocked = false;
   let wheelStepTimer: ReturnType<typeof setTimeout> | undefined;
@@ -142,31 +133,26 @@
   let carouselDesktopEl: HTMLElement | null = $state(null);
 
   function onWheel(e: WheelEvent) {
-    // IMPORTANTE: Se l'utente scorre in verticale più che in orizzontale, 
-    // NON blocchiamo l'evento, lasciamo che la pagina scorra!
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) return;
-
-    e.preventDefault(); // Blocchiamo solo lo swipe orizzontale
+    e.preventDefault(); 
     if (wheelLocked) return;
-
     wheelAccum += e.deltaX;
     clearTimeout(wheelIdleTimer);
     wheelIdleTimer = setTimeout(() => { wheelAccum = 0; }, 140);
     if (Math.abs(wheelAccum) >= WHEEL_STEP) {
       navigateCarousel(wheelAccum > 0 ? 1 : -1);
-      wheelAccum  = 0;
-      wheelLocked = true;
+      wheelAccum  = 0; wheelLocked = true;
       clearTimeout(wheelStepTimer);
       wheelStepTimer = setTimeout(() => { wheelLocked = false; wheelAccum = 0; }, WHEEL_LOCK_MS);
     }
   }
 
-  // ── TITOLI CAROSELLO ──
   let currentVol = $derived(volunteers[currentCarouselIndex]);
   let carouselTitleLines = $derived([currentVol?.surname ?? '', currentVol?.name ?? '']);
 
   let desktopTitleEl = $state<HTMLElement | null>(null);
   let mobileTitleEl  = $state<HTMLElement | null>(null);
+  let teamTitleEl = $state<HTMLElement | null>(null);
 
   // ═══════════════════════════════════════════════════════════
   // 4. ANIMAZIONI GSAP CONDIVISE (MA ISOLATE)
@@ -208,6 +194,28 @@
     return () => { cancelled = true; };
   });
 
+  // Effect: Animazione Nuovo Titolone TEAM (Allo Scorrimento)
+  $effect(() => {
+    if (!teamTitleEl) return;
+    const lines = teamTitleEl.querySelectorAll<HTMLElement>('.team-title-anim');
+    if (!lines.length) return;
+
+    gsap.set(lines, { yPercent: 120 });
+    let cancelled = false;
+
+    displayFontReady().then(() => {
+      if (cancelled) return;
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          playTitleReveal(lines);
+          observer.disconnect();
+        }
+      }, { threshold: 0.2 });
+      observer.observe(teamTitleEl);
+    });
+    return () => { cancelled = true; };
+  });
+
   // Effect: Animazioni CAROSELLO
   $effect(() => {
     const _ = currentCarouselIndex;                       
@@ -220,7 +228,6 @@
       playTitleReveal(lines);
       return;
     }
-
     gsap.set(lines, { yPercent: 120 });           
     let cancelled = false;
     document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => {
@@ -233,10 +240,7 @@
   function fitCarouselTitle() {
     const el = desktopTitleEl;
     if (!el || typeof window === 'undefined') return;
-    if (window.innerWidth <= 700) {
-      el.style.setProperty('--title-fit', '1');
-      return;
-    }
+    if (window.innerWidth <= 700) { el.style.setProperty('--title-fit', '1'); return; }
     el.style.setProperty('--title-fit', '1');
     const lines = Array.from(el.querySelectorAll<HTMLElement>('.title-fill, .title-outline'));
     let scale = 1;
@@ -259,25 +263,13 @@
       document.fonts.load(DISPLAY_FONT).catch(() => {}).then(() => { if (!cancelled) schedule(); });
     }
     window.addEventListener('resize', schedule, { passive: true });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', schedule);
-    };
+    return () => { cancelled = true; cancelAnimationFrame(raf); window.removeEventListener('resize', schedule); };
   });
 
   // ═══════════════════════════════════════════════════════════
-  // 5. ONMOUNT
+  // 5. ONMOUNT (PULITO E SENZA ERRORI)
   // ═══════════════════════════════════════════════════════════
   onMount(() => {
-    // 1. Pulizia difensiva per scroll libero
-    document.documentElement.style.removeProperty('overflow');
-    document.documentElement.style.removeProperty('height');
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('height');
-    document.body.style.removeProperty('padding-top');
-
-    // 2. Preload carosello
     preloadImages();
     setTimeout(() => { isReady = true; }, 50);
 
@@ -285,7 +277,6 @@
     checkMobile();
     window.addEventListener('resize', checkMobile);
 
-    // Gestione Wheel sicura
     if (carouselDesktopEl && !isMobile) {
       carouselDesktopEl.addEventListener('wheel', onWheel, { passive: false });
     }
@@ -331,19 +322,17 @@
     </div>
   </section>
 
+  <section class="team-intro safe-area" bind:this={teamTitleEl}>
+    <h2 class="title-mask">
+      <span class="rise-mask"><span class="title-fill team-title-anim">CHI C’È DIETRO</span></span>
+      <span class="rise-mask"><span class="title-outline team-title-anim">FUORI CAMPO?</span></span>
+    </h2>
+  </section>
+
   {#if isMobile}
-    <section class="mobile-carousel"
-      ontouchstart={onTouchStart}
-      ontouchend={onTouchEnd}
-      aria-label="Carousel team"
-    >
+    <section class="mobile-carousel" ontouchstart={onTouchStart} ontouchend={onTouchEnd} aria-label="Carousel team">
       {#key currentCarouselIndex}
-        <div
-          class="mobile-bg"
-          style="background-image: {decoded[volunteers[currentCarouselIndex]?.image] ? `url('${volunteers[currentCarouselIndex]?.image}')` : 'none'}"
-          in:fade={{ duration: 500, delay: 80 }}
-          out:fade={{ duration: 400 }}
-        ></div>
+        <div class="mobile-bg" style="background-image: {decoded[volunteers[currentCarouselIndex]?.image] ? `url('${volunteers[currentCarouselIndex]?.image}')` : 'none'}" in:fade={{ duration: 500, delay: 80 }} out:fade={{ duration: 400 }}></div>
       {/key}
 
       <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
@@ -368,23 +357,13 @@
     </section>
 
   {:else}
-    <section class="carousel" bind:this={carouselDesktopEl}
-      onpointerdown={onPointerDown}
-      onpointermove={onPointerMove}
-      onpointerup={onPointerUp}
-      onpointerleave={onPointerUp}
-      aria-label="Carousel team"
-    >
+    <section class="carousel" bind:this={carouselDesktopEl} onpointerdown={onPointerDown} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointerleave={onPointerUp} aria-label="Carousel team">
       <div class="stage">
         <div class="container-3d">
           <div class="ring" class:ready={isReady} style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);">
             {#each volunteers as vol, i}
               {@const isActive = currentCarouselIndex === i}
-              <div 
-                class="card-3d" 
-                class:active={isActive}
-                style="transform: rotateY({i * -60}deg) translateZ(var(--card-radius));"
-              >
+              <div class="card-3d" class:active={isActive} style="transform: rotateY({i * -60}deg) translateZ(var(--card-radius));">
                 <div class="card-image" class:loaded={decoded[vol.image]} style="background-image: url('{vol.image}');"></div>
                 <div class="card-overlay"></div>
               </div>
@@ -433,10 +412,7 @@
 <SiteFooter />
 
 <style>
-  :global(body) {
-    margin: 0;
-    background: var(--color-background-primary, #0e0e0e);
-  }
+  
 
   .about-page {
     background: var(--color-background-primary, #0e0e0e);
@@ -446,15 +422,26 @@
     overflow-x: hidden;
   }
 
+  
+
   /* ═══════════════════════════════════════════════════════════
-     STILI ABOUT (DOMANDE INIZIALI - INTATTI)
+     STILI ABOUT (DOMANDE INIZIALI E PADDING)
   ═══════════════════════════════════════════════════════════ */
   .intro {
     display: flex;
     flex-direction: column;
-    padding-top: calc(var(--navbar-height, 125px) + var(--spacing-10, 64px));
+    padding-top: var(--spacing-10, 64px); 
     padding-bottom: clamp(24px, 4vh, 48px);
     overflow-x: hidden;
+  }
+
+  .team-intro {
+    display: flex;
+    flex-direction: column;
+    padding-top: clamp(60px, 10vh, 120px);
+    padding-bottom: var(--spacing-8, 48px);
+    position: relative;
+    z-index: 10;
   }
 
   .ghost-grid {
@@ -540,7 +527,7 @@
     font-weight: 500;
     line-height: 1.05; 
     color: var(--color-content-body);
-    font-size: clamp(25px, 6vh, 45px); 
+    font-size: clamp(25px, 6vh, 45px);
   }
 
   .dot-frecce {
@@ -559,10 +546,12 @@
 
   .dot {
     appearance: none; border: 0; padding: 0; background: transparent; cursor: pointer;
-    width: var(--unit-16); height: var(--unit-16); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: var(--unit-16);
+    height: var(--unit-16); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .dot::before {
-    content: ''; display: block; width: var(--unit-16); height: var(--unit-16); border-radius: 50%;
+    content: '';
+    display: block; width: var(--unit-16); height: var(--unit-16); border-radius: 50%;
     background: rgba(189, 255, 93, 0.3); transition: background 220ms ease, box-shadow 220ms ease;
   }
   .dot:hover::before { background: rgba(189, 255, 93, 0.6); }
@@ -571,18 +560,16 @@
 
 
   /* ═══════════════════════════════════════════════════════════
-     STILI CAROSELLO (MODIFICATI PER ESSERE RELATIVE)
+     STILI CAROSELLO
   ═══════════════════════════════════════════════════════════ */
   .carousel, .mobile-carousel {
-    /* LA MAGIA CHE CHIEDEVI: Non è più fixed, ma relativo al flusso della pagina */
     position: relative;
     width: 100%;
-    height: 100svh; /* Occupa uno schermo intero durante lo scroll */
+    height: 100svh;
     background: var(--color-background-primary);
     overflow: hidden;
   }
 
-  /* 1. I TUOI VALORI ORIGINALI INTATTI */
   .carousel {
     cursor: grab;
     user-select: none;
@@ -595,12 +582,7 @@
     --card-radius: calc(var(--card-width) * var(--ss) * -0.86);
     --camera-z: calc(var(--card-width) * var(--ss) * 2.5);
 
-    /* IL FIX MATEMATICO DEFINITIVO:
-       1. Calcoliamo la mezza altezza visiva della card esattamente al bordo (la giuntura),
-          dove per via del 3D la scala è circa 1.4x. */
     --seam-half-height: calc(var(--card-height) * 0.7);
-    
-    /* 2. Calcoliamo lo spazio vuoto esatto tra il top dello schermo e la giuntura */
     --seam-gap: calc(50% - var(--seam-half-height)*0.8);
   }
 
@@ -613,10 +595,10 @@
   }
 
   .stage {
-    position: absolute; inset: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; margin: var(--spacing-5, 24px) 0; z-index: 1;
+    position: absolute; inset: 0; overflow: hidden; display: flex;
+    align-items: center; justify-content: center; margin: var(--spacing-5, 24px) 0; z-index: 1;
   }
 
-  /* 2. IL CONTENITORE USANDO LA TUA VARIABILE ALTEZZA */
   .container-3d {
     perspective: var(--camera-z);
     width: calc(var(--card-width) * var(--ss));
@@ -625,7 +607,6 @@
     transform-origin: center center;
   }
 
-  
   .ring {
     width: 100%; height: 100%; transform-style: preserve-3d; transition: none;
   }
@@ -638,90 +619,108 @@
     transition: transform 0.85s ease, box-shadow 0.85s ease;
     pointer-events: none; 
   }
-  /* 3. IMMAGINE ORIGINALE (Nessuno zoom strano, foto intatta) */
+
   .card-image {
-    width: 100%; 
+    width: 100%;
     height: 100%; 
     background-size: cover; 
-    /* Rimosso l'ancoraggio, torna come la volevi tu */
     top: 0;
-    opacity: 0; 
+    opacity: 0;
     transition: opacity 0.5s ease;
   }
   .card-image.loaded { opacity: 1; }
   .card-overlay {
-    position: absolute; inset: 0; 
+    position: absolute;
+    inset: 0; 
   }
 
   .card-3d.active .card-overlay { background: rgba(0, 0, 0, 0); }
 
   .progressive-blur-overlay {
     position: absolute; inset: 0; z-index: 5; pointer-events: none; 
-    backdrop-filter: blur(15px) saturate(0.85); -webkit-backdrop-filter: blur(15px) saturate(0.85);
+    backdrop-filter: blur(15px) saturate(0.85);
+    -webkit-backdrop-filter: blur(15px) saturate(0.85);
     mask-image: linear-gradient(to right, #000 0%, #000 calc(50% - var(--card-width) * 1.6), rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3), rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05), transparent calc(50% - var(--card-width) * 0.8), transparent calc(50% + var(--card-width) * 0.8), rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05), rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3), #000 calc(50% + var(--card-width) * 1.6), #000 100%);
     -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(50% - var(--card-width) * 1.6), rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3), rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05), transparent calc(50% - var(--card-width) * 0.8), transparent calc(50% + var(--card-width) * 0.8), rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05), rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3), #000 calc(50% + var(--card-width) * 1.6), #000 100%);
   }
 
   .arrow-left { position: absolute; top: 50%; transform: translateY(-50%); left: var(--spacing-5); z-index: 12; }
-  .arrow-right { position: absolute; top: 50%; transform: translateY(-50%); right: var(--spacing-5); z-index: 12; }
+  .arrow-right { position: absolute;
+    top: 50%; transform: translateY(-50%); right: var(--spacing-5); z-index: 12; }
 
   .curve-frame { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
   .curve { position: absolute; left: 0; width: 100%; fill: var(--color-background-primary); }
-  /* 4. LE CURVE PERFETTAMENTE ELASTICHE */
+
   .curve-top { 
-    top: 0; 
+    top: 0;
     height: calc(var(--seam-gap) * 1.1); 
   }
   
   .curve-bottom { 
     bottom: 0; 
-    height: calc(var(--seam-gap) * 1.1); 
-  }
-  .bottom-bar {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: var(--spacing-4-2) 0; display: flex; align-items: flex-end; justify-content: flex-start; z-index: 10; pointer-events: none;
+    height: calc(var(--seam-gap) * 1.1);
   }
 
-  /* Titoli Carosello */
+  .bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: var(--spacing-4-2) 0; display: flex;
+    align-items: flex-end; justify-content: flex-start; z-index: 10; pointer-events: none;
+  }
+
   .carousel-title-container {
     font-family: 'Forma DJR Display', sans-serif;
     font-size: calc(clamp(48px, calc(116px / max(var(--page-zoom, 1), 0.65)), 200px) * var(--title-fit, 1));
-    font-weight: 800; font-style: normal; text-transform: uppercase; letter-spacing: 0; line-height: 1; margin: 0; width: 100%; display: flex; flex-direction: column; gap: 0;
+    font-weight: 800; font-style: normal; text-transform: uppercase; letter-spacing: 0;
+    line-height: 1; margin: 0; width: 100%; display: flex; flex-direction: column; gap: 0;
   }
 
   .carousel-title-mask { display: block; overflow: hidden; }
 
   .carousel-title-fill {
     color: var(--color-content-accent); display: block; white-space: nowrap;
-    margin-left: var(--spacing-11); margin-bottom: -8px; max-width: calc(100% - var(--spacing-11) - var(--spacing-11)); overflow: hidden; min-width: 0;
+    margin-left: var(--spacing-11); margin-bottom: -8px;
+    max-width: calc(100% - var(--spacing-11) - var(--spacing-11)); overflow: hidden; min-width: 0;
   }
 
   .carousel-title-outline {
-    color: transparent; -webkit-text-stroke: var(--stroke-1) var(--color-content-accent); display: block; white-space: nowrap;
+    color: transparent;
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent); display: block; white-space: nowrap;
     margin-left: clamp(var(--spacing-11), calc(var(--spacing-17) / max(var(--page-zoom, 1), 0.65)), 580px);
   }
 
   /* ── CAROSELLO MOBILE ── */
   .mobile-bg {
-    position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat;
+    position: absolute; inset: 0; background-size: cover;
+    background-position: center; background-repeat: no-repeat;
+    margin-bottom: 10px;
   }
 
-  .mobile-blur { position: absolute; left: 0; right: 0; height: 44%; pointer-events: none; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-  .mobile-blur--top { top: 0; background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%); mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%); -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%); }
-  .mobile-blur--bottom { bottom: 0; background: linear-gradient(0deg, rgba(14, 14, 14, 1) 0%, rgba(14, 14, 14, 1) 28%, rgba(14, 14, 14, 0.7) 50%, rgba(14, 14, 14, 0) 100%); mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%); -webkit-mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%); }
+  .mobile-blur { position: absolute; left: 0; right: 0; height: 44%; pointer-events: none; backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px); }
+  .mobile-blur--top { top: 0; background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%); -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+  }
+  .mobile-blur--bottom { bottom: 0; background: linear-gradient(0deg, rgba(14, 14, 14, 1) 0%, rgba(14, 14, 14, 1) 28%, rgba(14, 14, 14, 0.7) 50%, rgba(14, 14, 14, 0) 100%);
+    mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%); }
 
   .mobile-title {
-    position: absolute; left: 0; right: 0; bottom: calc(var(--unit-36) + var(--spacing-9)); padding: var(--spacing-6) var(--spacing-5); display: flex; flex-direction: column; gap: 0; pointer-events: none; z-index: 3;
+    position: absolute;
+    left: 0; right: 0; bottom: calc(var(--unit-36) + var(--spacing-9)); padding: var(--spacing-6) var(--spacing-5); display: flex; flex-direction: column; gap: 0; pointer-events: none;
+    z-index: 3;
   }
   .mobile-title .carousel-title-fill {
-    font-family: var(--font-display); font-size: 43px; font-weight: 800; line-height: 36px; letter-spacing: 0; text-transform: uppercase; color: var(--color-content-accent); width: 352px; max-width: 100%; white-space: normal; hyphens: manual; -webkit-hyphens: manual; margin: 0;
+    font-family: var(--font-display); font-size: 43px; font-weight: 800; line-height: 36px; letter-spacing: 0;
+    text-transform: uppercase; color: var(--color-content-accent); width: 352px; max-width: 100%; white-space: normal; hyphens: manual; -webkit-hyphens: manual; margin: 0;
   }
   .mobile-title .carousel-title-outline {
-    font-family: var(--font-display); font-size: 43px; font-weight: 800; line-height: 36px; letter-spacing: 0; text-transform: uppercase; color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: var(--stroke-1) var(--color-content-accent); width: 352px; max-width: 100%; white-space: pre-line; hyphens: manual; -webkit-hyphens: manual; margin: 0;
+    font-family: var(--font-display); font-size: 43px; font-weight: 800; line-height: 36px; letter-spacing: 0; text-transform: uppercase;
+    color: transparent; -webkit-text-fill-color: transparent; -webkit-text-stroke: var(--stroke-1) var(--color-content-accent); width: 352px; max-width: 100%; white-space: pre-line; hyphens: manual; -webkit-hyphens: manual; margin: 0;
   }
 
   .mobile-nav-circles {
-    position: absolute; right: var(--spacing-5); bottom: var(--unit-36); display: flex; flex-direction: column; gap: var(--spacing-5); z-index: 4;
+    position: absolute; right: var(--spacing-5); bottom: var(--unit-36); display: flex; flex-direction: column; gap: var(--spacing-5);
+    z-index: 4;
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -729,18 +728,37 @@
   ═══════════════════════════════════════════════════════════ */
   @media (max-width: 700px) {
     .hero-mask { padding: 0; flex-grow: 0; }
-    .hero-copy { margin: var(--spacing-8, 48px) 0 0 0; width: 100%; max-width: 100%; text-align: right; font-size: clamp(22px, 7vw, 30px); line-height: 0.95; font-weight: 500; text-wrap: balance; }
-    .title-mask { display: block; overflow: hidden; padding-top: 15px; margin-top: -15px; padding-bottom: 12px; margin-bottom: -12px; }
-    .title-fill, .title-outline { display: block; white-space: normal; font-size: var(--mobile-title-size, 43px); line-height: 36px; width: 100%; max-width: 100%; margin: 0; overflow: visible; }
+    .hero-copy { margin: var(--spacing-8, 48px) 0 0 0; width: 100%; max-width: 100%; text-align: right;
+    font-size: clamp(22px, 7vw, 30px); line-height: 0.95; font-weight: 500; text-wrap: balance; }
+    .title-mask { display: block; overflow: hidden;
+    padding-top: 15px; margin-top: -15px; padding-bottom: 12px; margin-bottom: -12px; }
+    .title-fill, .title-outline { display: block; white-space: normal;
+    font-size: var(--mobile-title-size, 43px); line-height: 36px; width: 100%; max-width: 100%; margin: 0; overflow: visible;
+    }
     .title-outline { padding-left: 2px; }
     .dot-frecce { width: 100%; margin-top: clamp(72px, 30dvh, 350px); }
     .dot-nav { max-width: calc(100% - 110px); gap: 6px; flex-wrap: wrap; }
     .dot, .dot::before { width: 12px; height: 12px; }
 
-    /* Fix titoli carosello desktop (se scendono sotto i 700px) */
-    .carousel-title-fill, .carousel-title-outline { white-space: normal; word-break: break-word; }
+    .carousel-title-fill, .carousel-title-outline { white-space: normal;
+    word-break: break-word; }
     .carousel-title-outline { margin-left: var(--spacing-11); }
-    .mobile-title .carousel-title-fill, .mobile-title .carousel-title-outline { margin-left: 0; }
+    
+
+    /* 1. Diamo respiro alla maschera di animazione del carosello */
+    .carousel-title-mask { 
+      padding-top: 15px; 
+      margin-top: -15px; 
+      padding-bottom: 15px; 
+      margin-bottom: -15px; 
+    }
+
+    /* 2. Assicuriamoci che i testi interni non si taglino da soli */
+    .mobile-title .carousel-title-fill, 
+    .mobile-title .carousel-title-outline { 
+      margin-left: 0; 
+      overflow: visible; 
+    }
   }
 
   @media (min-width: 768px) {
