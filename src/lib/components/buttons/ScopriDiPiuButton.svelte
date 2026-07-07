@@ -131,6 +131,7 @@
     /* Dark variant on mobile: full-width (fills wrapper)*/
     .scopri-button--dark {
       height: auto;
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
   }
 </style>

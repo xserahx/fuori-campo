@@ -1178,7 +1178,7 @@
     align-items: center;
     justify-content: center;
     padding: var(--spacing-4) 0;
-    border: 2px solid var(--color-content-accent);
+    border: var(--stroke-mobile) solid var(--color-content-accent);
     border-radius: var(--radius-rounded-pill, 999px);
     background: var(--color-background-primary);
     color: var(--color-link-default);
