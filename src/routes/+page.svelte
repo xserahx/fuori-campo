@@ -308,7 +308,7 @@
         <h2 use:scrollReveal>
           <span class="accent">NE È VALSA </span><br class="br-mobile" />
           <span class="accent">LA PENA?</span><br />
-          <span class="ghost-lime">LO RIFAREBBERO</span><span class="accent">?</span>
+          <span class="ghost-lime">LO RIFAREBBERO?</span>
         </h2>
       </section>
 
