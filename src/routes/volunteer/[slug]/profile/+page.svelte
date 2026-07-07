@@ -5,6 +5,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
+  import Icon from '$lib/components/buttons/Icon.svelte';
   import { page } from '$app/state';
   import { browser } from '$app/environment';
   import { beforeNavigate } from '$app/navigation';
@@ -349,14 +350,7 @@
               <span class="qa-title">{q}</span>
 
               <span class="qa-icon" class:qa-icon--open={openQ === i} aria-hidden="true">
-                <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-                  <path
-                    d="M26 14V38M14 26H38"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
+                <Icon name="plus" />
               </span>
             </button>
 
@@ -639,11 +633,7 @@
     transition: opacity 0.18s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .qa-icon svg {
-    width: 100%;
-    height: 100%;
-  }
-
+  
   .qa-icon--open {
     opacity: 1;
     transform: rotate(45deg);
