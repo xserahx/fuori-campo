@@ -1,11 +1,5 @@
 /* ───────────────────────────────────────────────────────────────────────────
-   Local volunteer data layer (fully static — no Supabase, no network).
-
-   Replaces the former `$lib/supabase` module. All volunteer rows are bundled
-   from ./volunteers.json (exported once from the database) and all photos are
-   served as static assets under /volunteer_images/volontari (full) and
-   /volunteer_images/galleria (teasers). The public API is unchanged so the rest of
-   the app keeps working without modification.
+   Local volunteer data layer (fully static — no network).
    ─────────────────────────────────────────────────────────────────────────── */
 import type { GalleryImage } from '$lib/data/gallery';
 import volunteersData from './volunteers.json';
@@ -37,12 +31,9 @@ export type VolunteerRow = {
 	image_paths: string[] | null;
 };
 
-/* Static asset roots — formerly the Supabase Storage bucket + render endpoint. */
 const IMG_ROOT = '/volunteer_images/volontari';
 const THUMB_ROOT = '/volunteer_images/galleria';
 
-/* Storage paths can contain spaces and other characters; encode each segment
-   (keeping the slashes) so the static host resolves them to the real files. */
 function encodePath(path: string): string {
 	return path.split('/').map(encodeURIComponent).join('/');
 }
@@ -52,9 +43,6 @@ export function getImageUrl(imagePath: string | null | undefined): string | null
 	return `${IMG_ROOT}/${encodePath(imagePath)}`;
 }
 
-/* Pre-baked teaser thumbnail (≤460px webp), generated at export time to replace
-   the old on-the-fly Supabase resize endpoint. The width/quality options are
-   accepted for API compatibility but the size is now fixed. */
 export function getOptimizedImageUrl(
 	imagePath: string | null | undefined,
 	_opts?: { width: number; quality?: number; resize?: 'cover' | 'contain' }
@@ -74,7 +62,7 @@ export function getImageUrls(vol: { ha_immagini?: boolean | null; image_paths?: 
 	return [];
 }
 
-/* The full table, bundled at build time (ordered cognome.asc, nome.asc). */
+/* The full table of volunteers ordered cognome.asc, nome.asc). */
 export const volunteers: VolunteerRow[] = volunteersData as VolunteerRow[];
 const bySlug = new Map(volunteers.map((v) => [v.slug, v]));
 
@@ -137,7 +125,7 @@ const GALLERY_ASPECT_RATIOS = [
 	{ w: 3, h: 4  },  // 3:4
 ];
 
-// Volunteers not in the DB — photos exist as static assets, appear in gallery but open no zoom view.
+// Volunteers who contact us by email — photos exist as static assets, appear in gallery but open no zoom view.
 const STATIC_GALLERY_EXTRAS: { name: string; tag: null; paths: string[]; noClick: true }[] = [
 	{
 		name: 'Robin Christine',

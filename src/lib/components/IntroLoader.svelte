@@ -203,7 +203,7 @@
     width: auto;
     margin: 10px clamp(10px, 1.4vw, 24px);
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: var(--radius-s);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     user-select: none;
     -webkit-user-drag: none;
@@ -213,8 +213,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 16px 0 22px;
+    gap: var(--spacing-1);
+    padding: var(--spacing-4) 0 22px;
   }
   .bottom-line {
     display: block;

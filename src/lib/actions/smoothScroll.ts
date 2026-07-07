@@ -28,11 +28,10 @@ export interface WindowSmoothScroll {
   destroy: () => void;
 }
 
-// Window-scoped smooth scroll for normal document-flow pages (home, about,
-// category, volunteer profile, ...). Not a Svelte action — there's no single
-// element to bind to — call from a `$effect` and run the returned cleanup.
-// `lenis` is null under reduced-motion (native scroll applies instead); check
-// for it before using it for programmatic scrolling (e.g. reset-to-top).
+// Smooth scroll a livello di window per le pagine a flusso normale (home, about,
+// category, profilo volontario, ...). Non è una action Svelte — non c'è un
+// singolo elemento a cui agganciarsi — viene richiamato da un `$effect` 
+// Sotto reduced-motion `lenis` è null (subentra lo scroll nativo)
 export function initWindowSmoothScroll(): WindowSmoothScroll {
   if (typeof window === 'undefined' || prefersReducedMotion()) {
     return { lenis: null, destroy() {} };
@@ -50,10 +49,9 @@ export interface SmoothScrollContainerOptions {
   onReady?: (lenis: Lenis) => void;
 }
 
-// Container-scoped smooth scroll for internal overflow areas (gallery's
-// mobile photo feed, names list, ...). Expects the node it's attached to to
-// have exactly one direct child wrapping all scrollable content — Lenis
-// measures that child to know the scrollable extent.
+// Smooth scroll a livello di container per le aree con overflow interno (il
+// feed foto mobile della gallery, la lista dei nomi, ...).
+// Serve a lenis per agganciarsi a un container specifico invece che a window, così lo scroll resta limitato a quell'area.
 export function smoothScrollContainer(node: HTMLElement, options: SmoothScrollContainerOptions = {}) {
   if (typeof window === 'undefined' || prefersReducedMotion()) return { destroy() {} };
 

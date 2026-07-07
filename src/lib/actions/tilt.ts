@@ -1,35 +1,37 @@
 import gsap from 'gsap';
 
-/* ── Spring-driven 3D card tilt ──────────────────────────────────────
-   A faithful port of ReactBits' TiltedCard feel
+/* ── Tilt 3D della card guidato da uno spring ────────────────────────
+   Una riproduzione simile alla TiltedCard di ReactBits
    (https://www.reactbits.dev/components/tilted-card):
 
-   • pointer position maps *linearly* from the card centre — no dead
-     zone, so the response is continuous and buttery from the first px;
-   • rotation / scale are integrated by a real spring (motion/react's
-     useSpring: stiffness 100, damping 30, mass 2) rather than fixed
-     duration tweens, giving a heavy, silky settle that never snaps;
-   • a single rAF loop drives every live card (usually just the hovered
-     one + whatever is springing back), so it stays cheap at 60fps.   */
+   • la posizione del puntatore mappa in modo *lineare* dal centro della
+     card — niente zona morta, così la risposta è continua e morbida fin
+     dal primo px;
+   • rotazione e scala sono integrate da uno spring vero (lo useSpring di
+     motion/react: stiffness 100, damping 30, mass 2), non da tween a
+     durata fissa: si assesta pesante e morbido, senza mai scattare;
+   • un unico loop rAF muove tutte le card vive (di solito solo quella
+     sotto il mouse + quelle che stanno tornando a posto), così resta
+     leggero a 60fps. */
 
 const STIFFNESS = 100;
 const DAMPING = 30;
 const MASS = 2;
 
 export interface TiltOptions {
-  /** Max rotation in degrees at the card edge (ReactBits rotateAmplitude). */
+  /** Rotazione massima in gradi sul bordo della card (rotateAmplitude di ReactBits). */
   max?: number;
-  /** Vertical-axis tilt scaled relative to `max` (tames portrait over-tilt). */
+  /** Tilt sull'asse verticale scalato rispetto a `max` (limita l'over-tilt in verticale). */
   tiltXFactor?: number;
-  /** CSS perspective applied to the transform. */
+  /** Prospettiva CSS applicata al transform. */
   perspective?: number;
-  /** Scale on hover (ReactBits scaleOnHover). */
+  /** Scala all'hover (scaleOnHover di ReactBits). */
   scale?: number;
-  /** translateZ (px) at full hover — eases in with the scale spring. */
+  /** translateZ (px) all'hover pieno — entra in dolcezza insieme allo spring della scala. */
   lift?: number;
-  /** Live box-shadow from current rotation + hover progress (0..1). */
+  /** box-shadow dal vivo, calcolata da rotazione corrente + avanzamento dell'hover (0..1). */
   shadow?: (rotX: number, rotY: number, hover: number) => string;
-  /** When true, tilt is suppressed and the card springs back (e.g. mid-drag). */
+  /** Se true, il tilt è disattivato e la card torna a riposo (es. durante un drag). */
   disabled?: () => boolean;
 }
 
@@ -54,7 +56,7 @@ interface TiltState {
   hovering: boolean;
 }
 
-/* Shared loop — one rAF drives all cards currently in motion. */
+/* Loop condiviso — un solo rAF muove tutte le card che in quel momento sono in movimento. */
 const live = new Set<TiltState>();
 let rafId = 0;
 let lastT = 0;
@@ -79,7 +81,7 @@ function frame(now: number) {
     integrate(s.sc, dt);
 
     if (!s.hovering && atRest(s.rx) && atRest(s.ry) && atRest(s.sc)) {
-      /* Fully returned — hand the element back to its CSS resting state. */
+      /* Tornata del tutto a posto — ridò l'elemento al suo stato di riposo CSS. */
       gsap.set(s.node, { clearProps: 'transform,boxShadow' });
       s.rx.value = 0;
       s.ry.value = 0;

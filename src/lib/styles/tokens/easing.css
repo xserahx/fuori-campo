@@ -12,9 +12,4 @@
   --dur-mid:       360ms;
   --dur-slow:      640ms;
   --dur-cinematic: 960ms;
-
-  /* ── Glow shadows ────────────────────────────────────────────── queste le ho tolte !!!
-  --glow-accent:    0 0 16px var(--primitive-lime-alpha-32);
-  --glow-accent-lg: 0 0 32px var(--primitive-lime-alpha-22);
-  */ 
 } 

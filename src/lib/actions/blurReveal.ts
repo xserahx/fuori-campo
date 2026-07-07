@@ -10,11 +10,11 @@ export interface BlurRevealOptions {
   variant?: BlurRevealVariant;
 }
 
-/* ── Easing curves ─────────────────────────────────────────────────
-   SPRING  — true expo-out: a long, silky settle that never abruptly stops.
-   EASE_IN — sharp fade-out so elements leave quickly on scroll-back. */
-const SPRING  = "cubic-bezier(0.16, 1, 0.3, 1)";
-const EASE_IN = "cubic-bezier(0.55, 0, 1, 0.45)";
+/* ── Curve di easing ───────────────────────────────────────────────
+   SPRING  — è la nostra --ease-cinema: un expo-out lungo e morbido, che si assesta piano senza mai fermarsi di colpo.
+   EASE_IN — uscita più secca, così gli elementi spariscono in fretta quando si torna indietro con lo scroll. */
+const SPRING  = "var(--ease-cinema)";
+const EASE_IN = "var(--ease-in)";
 
 function buildTransition(
   duration: number,
@@ -37,7 +37,7 @@ function buildTransition(
   if (variant === "letterspace") {
     base.push(`letter-spacing ${Math.round(dur * 1.1)}ms ${ease}`);
   }
-  /* cinema uses the base triple — no extra properties needed */
+  /* cinema si accontenta della tripletta base — non gli serve altro */
 
   return base.join(", ");
 }
@@ -50,11 +50,11 @@ function getHiddenStyles(
 ): Partial<CSSStyleDeclaration> {
   const tx = direction === "left" ? -translateX : translateX;
 
-  /* Base: horizontal slide + upward drift + scale-down for depth. */
+  /* Base: scorre in orizzontale, sale un po' e si rimpicciolisce per dare profondità. */
   const base: Partial<CSSStyleDeclaration> = {
     opacity:   "0",
     filter:    `blur(${blur}px)`,
-    transform: `translateX(${tx}px) translateY(20px) scale(0.94)`,
+    transform: `translateX(${tx}px) translateY(var(--unit-20)) scale(0.94)`,
   };
 
   if (variant === "skew") {
@@ -71,21 +71,21 @@ function getHiddenStyles(
 
   if (variant === "letterspace") {
     base.filter        = `blur(${blur}px)`;
-    base.transform     = `translateX(${tx}px) translateY(16px) scale(0.97)`;
+    base.transform     = `translateX(${tx}px) translateY(var(--unit-16)) scale(0.97)`;
     base.letterSpacing = "0.45em";
   }
 
   if (variant === "fade") {
     base.filter    = `blur(${blur}px)`;
-    base.transform = "translateY(32px) scale(0.96)";
+    base.transform = "translateY(var(--unit-32)) scale(0.96)";
   }
 
-  /* cinema — deep blur + strong vertical rise + notable scale-down.
-     Used for sections that follow a horizontal zone, signaling the
-     return to vertical narrative with cinematic weight.            */
+  /* cinema — blur carico, salita verticale decisa e rimpicciolita.
+     Lo usiamo sulle sezioni che vengono dopo una zona orizzontale: serve a
+     segnare il ritorno alla narrazione verticale in modo quasi cinematografico. */
   if (variant === "cinema") {
     base.filter    = `blur(${blur}px)`;
-    base.transform = `translateX(${tx * 0.15}px) translateY(72px) scale(0.91)`;
+    base.transform = `translateX(${tx * 0.15}px) translateY(var(--unit-72)) scale(0.91)`;
   }
 
   return base;
@@ -94,8 +94,8 @@ function getHiddenStyles(
 function getVisibleStyles(
   variant: BlurRevealVariant,
 ): Partial<CSSStyleDeclaration> {
-  /* Explicit zero-values prevent browsers from interpolating from
-     a missing property, which can cause transform flicker.         */
+  /* Metto gli zeri in modo esplicito: se una proprietà manca il browser
+     interpola dal nulla e il transform rischia di sbagliare */
   const base: Partial<CSSStyleDeclaration> = {
     opacity:   "1",
     filter:    "blur(0px)",
@@ -147,8 +147,9 @@ export function blurReveal(node: HTMLElement, options: BlurRevealOptions = {}) {
     variant    = "slide",
   } = options;
 
-  /* Reduced-motion: reveal with a plain crossfade — no blur, slide or scale —
-     so content still appears (never gated blank) but without motion. */
+  /* Reduced-motion: rivelo con un semplice crossfade — niente blur, scorrimento
+     o scale — così il contenuto compare comunque (mai una schermata vuota),
+     ma senza movimento. */
   const reduce =
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&
@@ -176,14 +177,13 @@ export function blurReveal(node: HTMLElement, options: BlurRevealOptions = {}) {
 
   const enter = () => {
     visible = true;
-    /* data-br="visible" lets CSS child selectors trigger accent animations
-       (e.g. .story[data-br="visible"] .accent { animation: accent-bloom ... }) */
+    /* data-br="visible" fa da aggancio per i selettori CSS figli, che così possono far partire le animazioni degli accent
+    (es. .story[data-br="visible"] .accent { animation: accent-bloom ... }) */
     node.dataset.br = "visible";
     node.style.willChange = liveWillChange;
     node.style.transition = transitionFor(true);
     applyStyles(node, visibleStyles());
-    /* Drop the compositor layer once the entrance settles, so the page isn't
-       left holding dozens of permanent GPU layers — keeps scrolling buttery. */
+    /* Una volta che l'entrata si è assestata mollo il layer del compositor, così la pagina non si ritrova decine di layer GPU fissi — lo scroll resta smooth */
     if (settleTimer) clearTimeout(settleTimer);
     settleTimer = setTimeout(() => { node.style.willChange = "auto"; }, (reduce ? 320 : duration) + 80);
   };

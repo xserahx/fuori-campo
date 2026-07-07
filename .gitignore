@@ -12,6 +12,9 @@ node_modules
 .DS_Store
 Thumbs.db
 
+# Impeccable (cache dell'hook, generata localmente)
+.impeccable/
+
 # Env
 .env
 .env.*

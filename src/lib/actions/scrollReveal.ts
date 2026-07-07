@@ -2,20 +2,21 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export interface ScrollRevealOptions {
-  start?: string;       // ScrollTrigger start (default: 'top 85%')
-  end?: string;         // ScrollTrigger end   (default: 'top 40%')
-  blur?: number;        // px of blur at rest (default 6)
-  dimOpacity?: number;  // opacity at rest (default 0.18)
-  media?: string;       // matchMedia query gating when this runs (default mobile-only)
+  start?: string;       // punto di start dello ScrollTrigger (default: 'top 85%')
+  end?: string;         // punto di end dello ScrollTrigger   (default: 'top 40%')
+  blur?: number;        // px di blur a riposo (default 6)
+  dimOpacity?: number;  // opacità a riposo (default 0.18)
+  media?: string;       // query matchMedia che decide quando gira (default: solo mobile)
 }
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Mobile-only, scroll-scrubbed word reveal: each word starts dim + blurred
-// and sharpens to full opacity as the element scrolls through `start`→`end`,
-// tracking scroll position/velocity directly (scrub) rather than firing once.
-// Desktop keeps its existing static accent/ghost split untouched — this
-// action no-ops outside the `media` query so it never touches that markup.
+// Reveal delle parole solo su mobile, agganciata allo scroll: ogni parola
+// parte spenta e sfocata e si mette a fuoco fino alla piena opacità man mano che
+// l'elemento scorre da `start` a `end`, seguendo direttamente posizione/velocità
+// dello scroll (scrub) invece di scattare una volta sola.
+// Su desktop lo split statico accent/ghost resta com'è — fuori dalla query
+// `media` questa action non fa niente, quindi non tocca affatto quel markup.
 export function scrollReveal(node: HTMLElement, options: ScrollRevealOptions = {}) {
   const {
     start = 'top 85%',
@@ -32,8 +33,9 @@ export function scrollReveal(node: HTMLElement, options: ScrollRevealOptions = {
 
   if (!active || reduce) return { destroy() {} };
 
-  // Walk all text nodes, splitting into per-word spans while preserving the
-  // existing element structure (accent/ghost-* wrappers keep inherited color).
+  // Giro su tutti i nodi di testo spezzandoli in span parola per parola, ma
+  // tenendo intatta la struttura esistente (i wrapper accent/ghost-* così si
+  // portano dietro il colore ereditato).
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
   let cur: Node | null;

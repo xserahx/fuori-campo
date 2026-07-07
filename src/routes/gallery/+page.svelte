@@ -12,7 +12,7 @@
   import ToggleFotoNomi from '$lib/components/buttons/ToggleFotoNomi.svelte';
   import IconButton from '$lib/components/buttons/IconButton.svelte';
 
-  // Pre-seed from cache so returning users see photos instantly (no loading flash).
+  // Pre-carico dalla cache, così chi torna vede subito le foto (niente flash di caricamento).
   let dbVolunteers = $state<VolunteerSummary[]>(getCachedVolunteers());
 
   beforeNavigate(() => {
@@ -24,8 +24,8 @@
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 
-    // Cached data is already the full bundled set; only swap if a different
-    // reference comes back, so the layout never recomputes/reshuffles on entry.
+    // I dati in cache sono già completi: sostituisco solo se un riferimento cambia, così al rientro il layout non si
+    // ricalcola né si rimescola.
     fetchAllVolunteers().then(vols => { if (vols !== dbVolunteers) dbVolunteers = vols; });
 
     const t = setTimeout(() => { delete document.documentElement.dataset.galleryEntry; }, 1200);
@@ -42,8 +42,8 @@
   let activeFilters = $state<string[]>(initialContext.filters);
   let isMobile = $state(false);
 
-  // Persist the active view in the URL so a reload restores the same tab
-  // (NOMI stays on NOMI) instead of falling back to the photos default.
+  // Salvo la vista attiva nell'URL, così un reload riapre la stessa scheda
+  // (NOMI resta su NOMI) invece di tornare alla vista foto di default.
   $effect(() => {
     const url = new URL(page.url);
     const current = url.searchParams.get('view') === 'names' ? 'names' : 'photos';
@@ -60,14 +60,14 @@
     return () => window.removeEventListener('resize', check);
   });
 
-  // ── Gallery zoom ──────────────────────────────────────────────────
-  // MIN: ~2× more photos on screen, still comfortably readable.
-  // MAX: pleasantly enlarged before the optimized images soften.
+  // ── Zoom della galleria ───────────────────────────────────────────
+  // MIN: circa 2× foto in più a schermo, comunque leggibili senza sforzo.
+  // MAX: ingrandimento gradevole, prima che le immagini ottimizzate perdano nitidezza.
   const MIN_ZOOM     = 0.5;
   const MAX_ZOOM     = 1.8;
   const ZOOM_STEP    = 1.25;
-  // Open in a neutral, slightly-out overview so several photos are visible at
-  // once and the gallery never feels pre-zoomed-in on arrival.
+  // Parte da una panoramica neutra e un po' arretrata, così si vedono più foto
+  // insieme e all'arrivo la galleria non sembra mai già zoomata.
   const INITIAL_ZOOM = 0.72;
   let zoom = $state(INITIAL_ZOOM);
 
@@ -78,7 +78,7 @@
   const zoomIn  = () => { zoom = clampZoom(zoom * ZOOM_STEP); };
   const zoomOut = () => { zoom = clampZoom(zoom / ZOOM_STEP); };
 
-  // Reset to the overview level whenever the photo collage isn't the active view.
+  // Torno al livello panoramico ogni volta che il collage di foto non è la vista attiva.
   $effect(() => { if (activeToggle !== 'photos') zoom = INITIAL_ZOOM; });
 
 </script>
@@ -113,7 +113,7 @@
     <NamesView {activeFilters} volunteers={dbVolunteers} />
   {/if}
 
-  <!-- Edge fades -->
+  <!-- Sfumature ai bordi -->
   <div class="edge-fade edge-fade--top"></div>
   <div class="edge-fade edge-fade--bottom"></div>
   <div class="edge-fade edge-fade--left"></div>
@@ -122,7 +122,7 @@
 </main>
 
 <style>
-  /* ── Global resets ─────────────────────────────────────────────── */
+  /* ── Reset globali ─────────────────────────────────────────────── */
   :global(html), :global(body) {
     margin: 0;
     background: #0e0e0e;
@@ -133,7 +133,7 @@
     box-sizing: border-box;
   }
 
-  /* ── Page shell ─────────────────────────────────────────────────── */
+  /* ── Contenitore della pagina ───────────────────────────────────── */
   .gallery-page {
     position: fixed;
     inset: 0;
@@ -141,7 +141,7 @@
     background: var(--gallery-background, #0e0e0e);
   }
 
-  /* ── Film-grain noise ───────────────────────────────────────────── */
+  /* ── Grana stile pellicola ───────────────────────────────────────── */
   .bg-noise {
     position: fixed;
     inset: 0;
@@ -152,7 +152,7 @@
     background-size: 256px 256px;
   }
 
-  /* ── Edge fades ─────────────────────────────────────────────────── */
+  /* ── Sfumature ai bordi ─────────────────────────────────────────── */
   .edge-fade {
     position: fixed;
     pointer-events: none;
@@ -184,7 +184,7 @@
     background: linear-gradient(to left, var(--gallery-background, #0e0e0e), transparent);
   }
 
-  /* ── FOTO / NOMI toggle ─────────────────────────────────────────── */
+  /* ── Toggle FOTO / NOMI ─────────────────────────────────────────── */
   .toggle {
     position: fixed;
 
@@ -195,10 +195,11 @@
     pointer-events: auto;
   }
 
-  /* ── Zoom controls (desktop, photos view only) ──────────────────────
-     Anchored top-left under the logo: left edge aligns with the logo
-     (navbar inline padding = --spacing-11), top clears the navbar.
-     + on top, − below; grouped for functional coherence. */
+  /* ── Controlli zoom (desktop, solo vista foto) ──────────────────────
+     Ancorati in alto a sinistra sotto il logo: il bordo sinistro si allinea
+     al logo (padding orizzontale della navbar = --spacing-11) e in alto
+     restano sotto la navbar.
+     + sopra, − sotto; raggruppati per coerenza funzionale. */
   .zoom {
     position: fixed;
     align-items: center;
@@ -225,7 +226,7 @@
     z-index: 5;
     pointer-events: none;
 
-    /* 1. BACKGROUND: Easing morbido del colore scuro */
+    /* 1. SFONDO: sfumatura morbida verso lo scuro */
     background: linear-gradient(
       to bottom,
       rgba(14, 14, 14, 1) 0%,
@@ -235,11 +236,11 @@
       transparent 100%
     );
 
-    /* 2. BACKDROP FILTER: Ridotto a 8px (su mobile 12px con easing lineare impasta troppo) */
+    /* 2. BACKDROP FILTER: disattivato — su mobile il blur con easing lineare impastava troppo */
     /* backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px); */
 
-    /* 3. MASK IMAGE: Dissolve il blur in modo fotografico e impercettibile */
+    /* 3. MASK IMAGE: dissolve la sfumatura in modo fotografico e impercettibile */
     mask-image: linear-gradient(
       to bottom,
       #000 0%,
@@ -265,7 +266,7 @@
     z-index: 5;
     pointer-events: none;
 
-    /* 1. BACKGROUND: Speculare per il fondo */
+    /* 1. SFONDO: speculare, per il bordo inferiore */
     background: linear-gradient(
       to top,
       rgba(14, 14, 14, 1) 0%,
@@ -275,11 +276,11 @@
       transparent 100%
     );
 
-    /* 2. BACKDROP FILTER */
+    /* 2. BACKDROP FILTER: disattivato (come sopra) */
     /* backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px); */
 
-    /* 3. MASK IMAGE Speculare */
+    /* 3. MASK IMAGE: speculare */
     mask-image: linear-gradient(
       to top,
       #000 0%,

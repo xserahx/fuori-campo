@@ -1,7 +1,7 @@
 export interface BlurTextOptions {
-  delay?: number;      // ms stagger between each word (default 60)
-  duration?: number;   // animation duration per word (default 650)
-  threshold?: number;  // IntersectionObserver threshold (default 0.18)
+  delay?: number;      // ms di sfasamento tra una parola e l'altra (default 60)
+  duration?: number;   // durata dell'animazione per ogni parola (default 650)
+  threshold?: number;  // soglia dell'IntersectionObserver (default 0.18)
 }
 
 export function blurText(node: HTMLElement, options: BlurTextOptions = {}) {
@@ -13,8 +13,8 @@ export function blurText(node: HTMLElement, options: BlurTextOptions = {}) {
 
   if (reduce) return { destroy() {} };
 
-  // Walk all text nodes in the element, preserving the element structure
-  // (accent spans, links, etc.) so inherited styles still apply.
+  // Giro su tutti i nodi di testo dentro l'elemento tenendo intatta la sua
+  // struttura (span degli accenti, link, ecc.), così gli stili ereditati continuano a valere.
   const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
   let cur: Node | null;
@@ -31,7 +31,7 @@ export function blurText(node: HTMLElement, options: BlurTextOptions = {}) {
 
     for (const part of parts) {
       if (/^\s+$/.test(part)) {
-        // Preserve whitespace as-is (keeps natural spacing)
+        // Lascio gli spazi così come sono (mantiene la spaziatura naturale)
         frag.appendChild(document.createTextNode(part));
       } else if (part) {
         const span       = document.createElement('span');
@@ -51,7 +51,7 @@ export function blurText(node: HTMLElement, options: BlurTextOptions = {}) {
       if (!entry?.isIntersecting) return;
       allSpans.forEach((span, i) => {
         span.style.animation =
-          `blur-text-word-in ${duration}ms cubic-bezier(0.22,1,0.36,1) ${i * delay}ms both`;
+          `blur-text-word-in ${duration}ms var(--ease-spring) ${i * delay}ms both`;
       });
       observer.disconnect();
     },

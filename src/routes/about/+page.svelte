@@ -949,7 +949,7 @@
   .card-3d {
     position: absolute;
     inset: 0;
-    border-radius: 4px;
+    border-radius: var(--radius-s);
     overflow: hidden;
     transition:
       transform 0.85s ease,
@@ -1317,8 +1317,8 @@
     }
     .dot,
     .dot::before {
-      width: 12px;
-      height: 12px;
+      width: var(--unit-12);
+      height: var(--unit-12);
     }
 
     .carousel-title-fill,
