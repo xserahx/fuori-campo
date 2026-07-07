@@ -99,10 +99,10 @@
         position: absolute;
         top: 0;
         right: 0;
-        transform: translate(35%, -35%);
-        min-width: 22px;
-        height: 22px;
-        padding: 0 6px;
+        transform: translate(20%, -35%);
+        min-width: 25px;
+        height: 25px;
+        padding-bottom: 2px;
         box-sizing: border-box;
         display: inline-flex;
         align-items: center;
@@ -113,8 +113,8 @@
         color: var(--color-content-accent);
         font-family: var(--font-display);
         /* Tokenised — was 13px, incoherent with the rest of the type scale. */
-        font-size: var(--ts-navigation-size, 16px);
-        font-weight: var(--ts-navigation-weight, 700);
+        font-size: var(--ts-navigation-size, 14px);
+        font-weight: var(--ts-navigation-weight, 500);
         line-height: 1;
         pointer-events: none;
     }
@@ -198,6 +198,13 @@
 
         .filtra-button:active {
             opacity: 0.8;
+        }
+
+        .filtra-button__badge {
+            transform: translate(35%, -35%);
+            min-width: 22px;
+            height: 22px;
+            border: var(--stroke-mobile) solid var(--color-content-accent);
         }
     }
 </style>

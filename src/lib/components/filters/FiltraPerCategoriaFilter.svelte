@@ -413,7 +413,7 @@
     }
 
     /* ── Mobile (< 600px) ───────────────────────────────────────────── */
-    @media (max-width: 599px) {
+    @media (max-width: 700px) {
         .filter-panel__backdrop {
             /* Nearly opaque on the left on narrow screens so text
                stays readable across the full width of the viewport */
