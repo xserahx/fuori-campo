@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
   import { gsap } from 'gsap';
@@ -23,7 +24,7 @@
       titleTop: 'COM’È NATO',
       titleBottom: 'FUORI CAMPO?',
       body: 'Fuori Campo è un progetto nato dal Laboratorio di Web e Digital Design del secondo anno triennale del corso di Design della Comunicazione al Politecnico di Milano.'
-    },
+    }
   ];
 
   let activeIndex = $state(0);
@@ -37,46 +38,32 @@
     activeIndex = (activeIndex - 1 + introSlides.length) % introSlides.length;
   }
 
-  // ── ANIMAZIONE TITOLO ──
-  function playTitleReveal(lines: NodeListOf<HTMLElement>) {
-    gsap.fromTo(
-      lines,
-      { yPercent: 120 },
-      {
-        yPercent: 0,
-        duration: 0.9,
-        ease: 'power4.out',
-        force3D: false,
-        overwrite: true,
-        stagger: { each: 0.08, from: 'start' }
-      }
-    );
-  }
+  // ── PROTEZIONE STRUTTURALE ──
+  onMount(() => {
+    // Rimuoviamo qualsiasi regola bloccante lasciata in giro dalle altre pagine
+    document.documentElement.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('height');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('height');
+    
+    // Rimuoviamo il padding globale: ora se lo gestisce da sola la classe .intro!
+    document.body.style.removeProperty('padding-top');
+  });
 
-  // ── L'ANIMAZIONE SFUMATA RECUPERATA DALLA REFERENCE ──
-  function blurRevealIn(els: NodeListOf<HTMLElement>, delay = 0.22) {
-    gsap.fromTo(
-      els,
-      { y: 16, opacity: 0, filter: 'blur(10px)' },
-      {
-        y: 0,
-        opacity: 1,
-        filter: 'blur(0px)',
-        duration: 0.9,
-        ease: 'power2.out',
-        overwrite: true,
-        delay
-      }
-    );
-  }
-
-  // ── CONTROLLO CARICAMENTO FONT ──
+  // ── ANIMAZIONI GSAP PURE ──
   const DISPLAY_FONT = '800 1em "forma-djr-display"';
-  
   function displayFontReady() {
     if (typeof document === 'undefined' || !document.fonts) return Promise.resolve();
     if (document.fonts.check(DISPLAY_FONT)) return Promise.resolve();
     return document.fonts.load(DISPLAY_FONT).catch(() => {});
+  }
+
+  function playTitleReveal(lines: NodeListOf<HTMLElement>) {
+    gsap.fromTo(lines, { yPercent: 120 }, { yPercent: 0, duration: 0.9, ease: 'power4.out', force3D: false, overwrite: true, stagger: { each: 0.08, from: 'start' } });
+  }
+
+  function blurRevealIn(els: NodeListOf<HTMLElement>, delay = 0.22) {
+    gsap.fromTo(els, { y: 16, opacity: 0, filter: 'blur(10px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.9, ease: 'power2.out', overwrite: true, delay });
   }
 
   $effect(() => {
@@ -90,14 +77,10 @@
     const titleLines = activeSlide.querySelectorAll<HTMLElement>('.title-anim');
     const copyLines = activeSlide.querySelectorAll<HTMLElement>('.blur-reveal');
 
-    // 1. Congeliamo istantaneamente gli elementi nella loro posizione nascosta 
-    // ancor prima che il font sia pronto, evitando flash visivi
     if (titleLines.length) gsap.set(titleLines, { yPercent: 120 });
     if (copyLines.length) gsap.set(copyLines, { y: 16, opacity: 0, filter: 'blur(10px)' });
 
     let cancelled = false;
-
-    // 2. Aspettiamo che il font sia perfettamente renderizzato, poi facciamo partire il motore GSAP
     displayFontReady().then(() => {
       if (cancelled) return;
       if (titleLines.length) playTitleReveal(titleLines);
@@ -177,7 +160,11 @@
   .intro {
     display: flex;
     flex-direction: column;
-    padding-top: var(--spacing-10, 64px);
+    
+    /* LA VERA SOLUZIONE: Sommiamo l'altezza della navbar allo spazio che vogliamo.
+       Così il testo non finirà MAI in alto, indipendentemente dal body. */
+    padding-top: calc(var(--navbar-height, 125px) + var(--spacing-10, 64px));
+    
     padding-bottom: clamp(24px, 4vh, 48px);
     overflow-x: hidden;
   }
