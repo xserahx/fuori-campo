@@ -115,7 +115,7 @@
     }
 
     /* ── RESPONSIVE MOBILE (< 700PX) ── */
-    @media (max-width: 699px) {
+    @media (max-width: 700px) {
         .arrow-button {
             width: 50px;
             height: 50px;
