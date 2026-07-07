@@ -384,8 +384,8 @@
     color: var(--color-content-accent, #bdff5d);
   }
 
-  /* ── Responsive Mobile (< 600px) ── */
-  @media (max-width: 599px) {
+  /* ── Responsive Mobile (< 700px) ── */
+  @media (max-width: 700px) {
     .names-interaction {
       left: 24px;
       right: 42px;
@@ -398,7 +398,7 @@
 
     .names-interaction__item {
       min-height: 28px;
-      font-size: 45px;
+      font-size: 40px;
       line-height: 45px;
       padding: 0 0 8px 0;
       white-space: normal;

@@ -519,7 +519,7 @@
   }
 
   .vol-quote--dim {
-    opacity: 0.55;
+    opacity: 1;
   }
 
   /* ── STRUTTURA DELLE VIRGOLETTE ── */
