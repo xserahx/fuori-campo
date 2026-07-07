@@ -1,42 +1,43 @@
+<!-- Label generica da inserire nei bottoni con il testo (vedi BackButton, FiltraPerCategoria, ScopriDiPiu, ToggleFotoNomi, VediTutteLeFoto) -->
 <script lang="ts">
-    import type { Snippet } from 'svelte';
+  import type { Snippet } from "svelte";
 
-    let { children, class: className = '' } = $props<{
-        children: Snippet;
-        class?: string;
-    }>();
+  let { children, class: className = "" } = $props<{
+    children: Snippet;
+    class?: string;
+  }>();
 </script>
 
 <span class="button-label {className}">
-    {@render children()}
+  {@render children()}
 </span>
 
 <style>
+  .button-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    text-box: trim-both cap alphabetic;
+
+    font-family: var(--font-display);
+    font-size: var(--ts-nav-link-size, 24px);
+    font-weight: var(--ts-nav-link-weight, 500);
+
+    line-height: 1;
+    transform: translateY(-1.6px);
+    /*traslazione fatta ad occhio per bilanciare il testo dentro ai bottoni. Dato che text-box non è supportato in tutti i browser */
+
+    color: inherit;
+    transition: color 150ms ease;
+  }
+
+  @media (max-width: 599px) {
     .button-label {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-
-        text-align: center;
-        text-box: trim-both cap alphabetic;
-
-        font-family: var(--font-display);
-        font-size: var(--ts-nav-link-size, 24px);
-        font-weight: var(--ts-nav-link-weight, 500);
-
-        line-height: 1;
-        transform: translateY(-1.6px);
-
-        color: inherit;
-        transition: color 150ms ease;
+      font-size: var(--ts-navigation-size, 16px);
+      font-weight: var(--ts-navigation-weight, 700);
+      transform: translateY(-1.2px);
     }
-
-    @media (max-width: 599px) {
-        .button-label {
-            font-size: var(--ts-navigation-size, 16px);
-            font-weight: var(--ts-navigation-weight, 700);
-            transform: translateY(-1.2px);
-
-        }
-    }
+  }
 </style>

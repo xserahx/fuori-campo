@@ -1,148 +1,148 @@
+<!-- Toggle button for switching between photos and names views 
+ versione desktop e mobile-->
+
 <script lang="ts">
-    import ButtonLabel from './ButtonLabel.svelte';
+  import ButtonLabel from "./ButtonLabel.svelte";
 
-    let {
-        view = $bindable('photos'),
-        onchange
-    } = $props<{
-        view?: 'photos' | 'names';
-        onchange?: (selected: 'photos' | 'names') => void;
-    }>();
+  let { view = $bindable("photos"), onchange } = $props<{
+    view?: "photos" | "names";
+    onchange?: (selected: "photos" | "names") => void;
+  }>();
 
-    function setToggle(selected: 'photos' | 'names') {
-        if (view === selected) return;
-        view = selected;
-        if (onchange) onchange(selected);
-    }
+  function setToggle(selected: "photos" | "names") {
+    if (view === selected) return;
+    view = selected;
+    if (onchange) onchange(selected);
+  }
 </script>
 
 <div class="toggle-container">
-    <!-- 1. LA PILLOLA MOBILE ANIMATA -->
-    <div class="toggle-pill" class:is-right={view === 'names'}></div>
+  <!-- bottone mobile animato-->
+  <div class="toggle-pill" class:is-right={view === "names"}></div>
 
-    <!-- 2. I TESTI CLICCABILI -->
-    <button
-        class="toggle-option"
-        type="button"
-        class:is-active={view === 'photos'}
-        onclick={() => setToggle('photos')}
-    >
-        <span class="toggle-text-wrapper">
-            <ButtonLabel>FOTO</ButtonLabel>
-        </span>
-    </button>
+  <!-- testo -->
+  <button
+    class="toggle-option"
+    type="button"
+    class:is-active={view === "photos"}
+    onclick={() => setToggle("photos")}
+  >
+    <span class="toggle-text-wrapper">
+      <ButtonLabel>FOTO</ButtonLabel>
+    </span>
+  </button>
 
-    <button
-        class="toggle-option"
-        type="button"
-        class:is-active={view === 'names'}
-        onclick={() => setToggle('names')}
-    >
-        <span class="toggle-text-wrapper">
-            <ButtonLabel>NOMI</ButtonLabel>
-        </span>
-    </button>
+  <button
+    class="toggle-option"
+    type="button"
+    class:is-active={view === "names"}
+    onclick={() => setToggle("names")}
+  >
+    <span class="toggle-text-wrapper">
+      <ButtonLabel>NOMI</ButtonLabel>
+    </span>
+  </button>
 </div>
 
 <style>
+  .toggle-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    background-color: var(--color-background-primary);
+    border: var(--stroke-1) solid var(--color-content-accent);
+    border-radius: var(--radius-rounded-pill);
+
+    height: 60px;
+    padding-top: var(--spacing-3);
+    padding-bottom: var(--spacing-3);
+
+    padding-left: var(--spacing-4-2);
+    padding-right: var(--spacing-4-2);
+    gap: var(--spacing-6-2);
+
+    box-sizing: border-box;
+    overflow: visible;
+  }
+
+  .toggle-pill {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: calc(50% - (var(--spacing-6-2) / 2) + var(--spacing-4-2));
+    height: 100%;
+
+    border: var(--stroke-1) solid var(--color-content-accent);
+    border-radius: var(--radius-rounded-pill);
+    background-color: var(--color-content-accent);
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 1;
+
+    /* Un'ombra solida che sborda leggermente per riempire il gap nero di anti-aliasing --> 
+        NON AUMENTARE LA GRANDEZZA */
+    box-shadow: 0 0 0 1.5px var(--color-content-accent);
+
+    transition: transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .toggle-pill.is-right {
+    transform: translateX(
+      calc(100% + var(--spacing-6-2) - (var(--spacing-4-2) * 2))
+    );
+  }
+
+  .toggle-option {
+    position: relative;
+    z-index: 2;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+  }
+
+  .toggle-text-wrapper {
+    display: inline-flex;
+    justify-content: center;
+
+    pointer-events: none;
+    color: var(--color-content-body);
+    transition: color 150ms ease;
+  }
+
+  /* Gestione dello stato attivo (toggle selezionato) */
+  .toggle-option.is-active {
+    cursor: default;
+  }
+
+  .toggle-option.is-active .toggle-text-wrapper {
+    color: var(--color-content-body-black);
+  }
+
+  /* Si può fare hover sul testo solo se il bottone padre non è attivo */
+  @media (hover: hover) {
+    .toggle-option:not(.is-active):hover .toggle-text-wrapper {
+      color: var(--color-content-accent) !important;
+    }
+  }
+
+  @media (max-width: 700px) {
     .toggle-container {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        
-        background-color: var(--color-background-primary);
-        border: var(--stroke-1) solid var(--color-content-accent);
-        border-radius: var(--radius-rounded-pill);
-        
-        height: 60px;
-        padding-top: var(--spacing-3);
-        padding-bottom: var(--spacing-3);
-        
-        padding-left: var(--spacing-4-2);
-        padding-right: var(--spacing-4-2);
-        gap: var(--spacing-6-2);
-        
-        box-sizing: border-box;
-        overflow: visible;
+      height: 50px;
+      padding-left: var(--spacing-4-2);
+      padding-right: var(--spacing-4-2);
+      stroke-width: var(--stroke-mobile);
     }
 
     .toggle-pill {
-        position: absolute;
-        top: 0;
-        left: 0;
-        
-        width: calc(50% - (var(--spacing-6-2) / 2) + var(--spacing-4-2));
-        height: 100%;
-        
-        border: var(--stroke-1) solid var(--color-content-accent);
-        border-radius: var(--radius-rounded-pill);
-        background-color: var(--color-content-accent);
-        box-sizing: border-box;
-        pointer-events: none;
-        z-index: 1;
-
-        /* Un'ombra solida che sborda leggermente per riempire il gap nero di anti-aliasing --> 
-        per chi correggerà il codice non mettere 2px se no si sminchia tutto */
-        box-shadow: 0 0 0 1.5px var(--color-content-accent);
-        
-        transition: transform 300ms cubic-bezier(0.25, 1, 0.5, 1);
+      stroke-width: var(--stroke-mobile);
     }
-
-    .toggle-pill.is-right {
-        transform: translateX(calc(100% + var(--spacing-6-2) - (var(--spacing-4-2) * 2)));
-    }
-
-    .toggle-option {
-        position: relative;
-        z-index: 2;
-        background: transparent;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1; 
-        height: 100%;
-    }
-
-    .toggle-text-wrapper {
-        display: inline-flex;
-        justify-content: center;
-
-        pointer-events: none;
-        color: var(--color-content-body);
-        transition: color 150ms ease;
-    }
-
-    /* Gestione dello stato attivo */
-    .toggle-option.is-active {
-        cursor: default; 
-    }
-
-    .toggle-option.is-active .toggle-text-wrapper {
-        color: var(--color-content-body-black); 
-    }
-
-    /* HOVER SELETTIVO CORRETTO */
-    /* Penetriamo nel wrapper del testo solo se il bottone padre non è attivo */
-    @media (hover: hover) {
-        .toggle-option:not(.is-active):hover .toggle-text-wrapper {
-            color: var(--color-content-accent) !important;
-        }
-    }
-
-    @media (max-width: 700px) {
-        .toggle-container {
-            height: 50px;
-            padding-left: var(--spacing-4-2);
-            padding-right: var(--spacing-4-2);
-            stroke-width: var(--stroke-mobile);
-        }
-
-        .toggle-pill {
-            stroke-width: var(--stroke-mobile);
-        }
-
-    }
-</style> 
+  }
+</style>
