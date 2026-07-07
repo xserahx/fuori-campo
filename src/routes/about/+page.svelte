@@ -1,10 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
-  import { goto, beforeNavigate } from '$app/navigation';
-  import { fade } from 'svelte/transition';
-  import { gsap } from 'gsap';
   import ArrowButton from '$lib/components/buttons/ArrowButton.svelte';
-  import ScopriDiPiuButton from '$lib/components/buttons/ScopriDiPiuButton.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
 
   import '$lib/styles/reset.css';
@@ -12,587 +7,82 @@
   import '$lib/styles/base.css';
   import '$lib/styles/utilities.css';
 
-  type Volunteer = {
-    id: number;
-    name: string;
-    role: string;
-    subtitle: string;
-    image: string;
-    slug?: string;
-  };
-
-  const VOLUNTEER_1 = '/volunteer_images/foto_team/claudia.png';
-  const VOLUNTEER_2 = '/volunteer_images/foto_team/serena.png';
-  const VOLUNTEER_3 = '/volunteer_images/foto_team/greta.png';
-  const VOLUNTEER_4 = '/volunteer_images/foto_team/matilde.png';
-  const VOLUNTEER_5 = '/volunteer_images/foto_team/viola.png';
-  const VOLUNTEER_6 = '/volunteer_images/foto_team/laura.png';
-
-  const defaultVolunteers: Volunteer[] = [
-    {
-      id: 1,
-      name: 'SOLIDORO CLAUDIA IRENE',
-      role: 'UX – UI DESIGNER E CODE REVIEWER',
-      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_1,
-      slug: 'solidoro-claudia-irene'
-    },
-    {
-      id: 2,
-      name: 'SERENA SERAFINI',
-      role: 'FRONTEND DEVELOPER',
-      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_2
-    },
-    {
-      id: 3,
-      name: 'GRETA FRANCO',
-      role: 'UX – UI DESIGNER E CONCEPT DESIGNER',
-      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_3
-    },
-    {
-      id: 4,
-      name: 'MATILDE CURINO',
-      role: 'UX – UI DESIGNER E CODE REVIEWER',
-      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_4
-    },
-    {
-      id: 5,
-      name: 'VIOLA NALDI',
-      role: 'UX – UI DESIGNER E FIELD RESEARCHER',
-      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_5,
-      slug: 'naldi-viola'
-    },
-    {
-      id: 6,
-      name: 'LAURA MAGONI',
-      role: 'UX – UI DESIGNER E CONCEPT DESIGNER',
-      subtitle: 'STUDENTESSA IN DESIGN DELLA COMUNICAZIONE',
-      image: VOLUNTEER_6
-    },
-  ];
-
-  let { volunteers = defaultVolunteers }: { volunteers?: Volunteer[] } = $props();
-
-  // ── Intro: carosello testuale (COS'È FUORI CAMPO? …) ──────────────
+  // ── Contenuti Oggettivi e Fattuali ──────────────
   const introSlides = [
     {
       titleTop: 'COS’È',
       titleBottom: 'FUORI CAMPO?',
-      body: 'Fuori Campo è un archivio delle esperienze dei volontari di Milano Cortina 2026: un invito a scoprire il loro lavoro, spesso nascosto o dato per scontato, i ricordi e le fotografie che hanno scelto di condividere.'
+      body: 'Fuori Campo è un archivio delle esperienze dei volontari di Milano Cortina 2026: un invito a scoprire il loro lavoro, spesso nascosto o dato per scontato, le fotografie e i ricordi che hanno scelto di condividere.'
     },
     {
       titleTop: 'QUAL È',
-      titleBottom: 'L’OBBIETTIVO?',
+      titleBottom: 'L’OBIETTIVO?',
       body: 'Raccontare le Olimpiadi e le Paralimpiadi attraverso gli occhi dei volontari e sensibilizzare il pubblico sul tema, ispirando chiunque desideri, in futuro, vivere l’esperienza del volontariato sportivo.'
     },
     {
-      titleTop: 'COME È NATO',
-      titleBottom: 'FUORICAMPO?',
+      titleTop: 'COM’È NATO',
+      titleBottom: 'FUORI CAMPO?',
       body: 'Fuori Campo è un progetto nato dal Laboratorio di Web e Digital Design del secondo anno triennale del corso di Design della Comunicazione al Politecnico di Milano.'
-    }
+    },
   ];
 
-  let introIndex = $state(0);
-  let currentSlide = $derived(introSlides[introIndex]);
+  let activeIndex = $state(0);
 
-  function introNext() {
-    introIndex = (introIndex + 1) % introSlides.length;
+  function next() {
+    activeIndex = (activeIndex + 1) % introSlides.length;
   }
 
-  function introPrev() {
-    introIndex = (introIndex - 1 + introSlides.length) % introSlides.length;
+  function prev() {
+    activeIndex = (activeIndex - 1 + introSlides.length) % introSlides.length;
   }
-
-  // ── Element refs for the "rise from bottom" reveals ───────────────
-  let introSlideEl:   HTMLElement | null = $state(null);
-  let chiTitleEl:     HTMLElement | null = $state(null);
-  let volInfoBlockEl: HTMLElement | null = $state(null);
-  let mobileInfoEl:   HTMLElement | null = $state(null);
-
-  // ── Carosello volontari (stesso motore CSS-3D della pagina categoria) ──
-  let isMobile  = $state(false);
-  let targetPos = $state(0);
-  let isReady   = $state(false);
-  let carouselEl: HTMLElement | null = $state(null);
-
-  const N = () => volunteers.length;
-  function mod(n: number, m: number) { return ((n % m) + m) % m; }
-
-  let currentIndex = $derived(mod(targetPos, N()));
-  let currentVolunteer = $derived(volunteers[currentIndex]);
-
-  // Coverflow: offset con segno della card i rispetto a quella attiva, avvolto
-  // su [-N/2, N/2]. 0 = centrale, ±1 = vicine (che sbucano dai bordi), oltre =
-  // fuori scena. Le card mantengono la STESSA dimensione (nessuno scorcio da
-  // ring): la vicina è la foto piena e sfocata, come da Figma. Il "salto" del
-  // wrap avviene solo sulle card lontane (±3), fuori schermo → invisibile.
-  function relOffset(i: number): number {
-    const n = N();
-    let r = mod(i - currentIndex, n);
-    if (r > n / 2) r -= n;
-    return r;
-  }
-  // Nome su massimo due righe: cognome sopra, nomi sotto (es. SOLIDORO / CLAUDIA IRENE).
-  let nameLines = $derived.by(() => {
-    const words = currentVolunteer?.name?.split(' ').filter(Boolean) ?? [];
-    if (words.length <= 1) return words;
-    return [words[0], words.slice(1).join(' ')];
-  });
-  // Ruolo su due righe: spezza sulla congiunzione " E " (es. UX – UI DESIGNER / E CODE REVIEWER).
-  let roleLines = $derived.by(() => {
-    const role = currentVolunteer?.role ?? '';
-    const idx = role.indexOf(' E ');
-    if (idx === -1) return role ? [role] : [];
-    return [role.slice(0, idx), role.slice(idx + 1)];
-  });
-
-  // ── Preload immagini a piena qualità (come categoria) ─────────────
-  let decoded = $state<Record<string, boolean>>({});
-
-  function preloadImages() {
-    for (const vol of volunteers) {
-      if (decoded[vol.image]) continue;
-      const img = new Image();
-      img.src = vol.image;
-      const done = () => { decoded[vol.image] = true; };
-      (img.decode ? img.decode() : Promise.reject()).then(done).catch(done);
-    }
-  }
-
-  // ── Navigazione ───────────────────────────────────────────────────
-  function navigate(dir: number) {
-    targetPos += dir;
-  }
-
-  function onArrowClick(dir: number, e: MouseEvent) {
-    e.stopPropagation();
-    navigate(dir);
-  }
-
-  // ── Drag "magnetico" (CSS 3D) ─────────────────────────────────────
-  let isDragging = false;
-  let dragStartX = 0;
-
-  function onPointerDown(e: PointerEvent) {
-    isDragging = true;
-    dragStartX = e.clientX;
-    (e.currentTarget as HTMLElement)?.setPointerCapture(e.pointerId);
-  }
-
-  function onPointerMove(_e: PointerEvent) {
-    // Volutamente vuoto: lo scatto avviene al rilascio (effetto magnetico).
-  }
-
-  function onPointerUp(e: PointerEvent) {
-    if (!isDragging) return;
-    isDragging = false;
-
-    const diff = dragStartX - e.clientX;
-    if (Math.abs(diff) > 50) {
-      navigate(diff > 0 ? 1 : -1);
-    } else if (Math.abs(diff) < 10) {
-      handleTitleClick();
-    }
-  }
-
-  // ── Touch (mobile) ────────────────────────────────────────────────
-  let touchStartY = 0;
-
-  function onTouchStart(e: TouchEvent) {
-    touchStartY = e.touches[0].clientY;
-  }
-
-  function onTouchEnd(e: TouchEvent) {
-    const dy = touchStartY - e.changedTouches[0].clientY;
-    if (Math.abs(dy) > 40) navigate(dy > 0 ? 1 : -1);
-  }
-
-  async function handleTitleClick() {
-    const volunteer = volunteers[currentIndex];
-    if (volunteer?.slug) {
-      await goto(`/volunteer/${volunteer.slug}/profile`);
-    }
-  }
-
-  // ── Scroll lock: solo su mobile (il carosello è fixed fullscreen) ──
-  // Guard SSR: onDestroy gira anche sul server (dopo il render) e lì `document`
-  // non esiste → senza guardia la pagina /about va in errore 500 al load diretto.
-  function unlockAboutPageScroll() {
-    if (typeof document === 'undefined') return;
-    document.documentElement.style.removeProperty('overflow');
-    document.documentElement.style.removeProperty('overflow-y');
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('overflow-y');
-    document.body.style.removeProperty('padding-top');
-  }
-
-  function lockAboutMobileScroll() {
-    if (typeof document === 'undefined') return;
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    document.body.style.paddingTop = '0';
-  }
-
-  beforeNavigate(() => {
-    unlockAboutPageScroll();
-  });
-
-  onMount(() => {
-    preloadImages();
-
-    const checkMobile = () => { isMobile = window.innerWidth < 600; };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    unlockAboutPageScroll();
-    document.body.style.paddingTop = '0';
-
-    // Mobile: carosello fixed fullscreen → blocca lo scroll.
-    // Desktop: la pagina scorre (intro + titolo), il carosello è sticky.
-    if (isMobile) {
-      lockAboutMobileScroll();
-    }
-
-    // Attiva la transizione del ring solo dopo il primo paint statico.
-    setTimeout(() => { isReady = true; }, 50);
-
-    return () => {
-      unlockAboutPageScroll();
-      window.removeEventListener('resize', checkMobile);
-    };
-  });
-
-  onDestroy(() => {
-    unlockAboutPageScroll();
-  });
-
-  // ── Helper: entrata "dal basso" da dietro la maschera (overflow:hidden).
-  //    yPercent 120 → 0 con power4.out: risale netto e si ferma senza coda.
-  function riseIn(els: ArrayLike<Element>, delay = 0) {
-    const list = Array.from(els);
-    if (!list.length) return;
-    // Rise + una leggera sfocatura in entrata: il titolo e il corpo risalgono
-    // da dietro la maschera mentre passano da blur(8px) a nitido. Si termina a
-    // blur(0px) SENZA clearProps — rimuovere il filtro ri-rasterizza e fa
-    // "saltare" il testo di ~1px (stesso accorgimento del reveal dell'hero).
-    gsap.fromTo(
-      list,
-      { yPercent: 120, filter: 'blur(8px)' },
-      {
-        yPercent: 0,
-        filter: 'blur(0px)',
-        duration: 0.9,
-        ease: 'power4.out',
-        force3D: false,
-        overwrite: true,
-        delay,
-        stagger: { each: 0.08, from: 'start' }
-      }
-    );
-  }
-
-  // Reveal "dal basso" del titolo CHI C'È DIETRO (una volta, prima del paint).
-  $effect(() => {
-    if (!chiTitleEl) return;
-    riseIn(chiTitleEl.querySelectorAll('.rise'), 0.12);
-  });
-
-  // Blur-reveal puro (senza risalita): il testo compare passando da
-  // blur(10px)/opacity 0 a nitido. Usato per il corpo dell'intro.
-  function blurRevealIn(els: ArrayLike<Element>, delay = 0.12) {
-    const list = Array.from(els);
-    if (!list.length) return;
-    gsap.fromTo(
-      list,
-      { opacity: 0, filter: 'blur(10px)' },
-      {
-        opacity: 1,
-        filter: 'blur(0px)',
-        duration: 0.9,
-        ease: 'power2.out',
-        overwrite: true,
-        delay
-      }
-    );
-  }
-
-  // Reveal dell'intro ad ogni cambio slide: titolo "dal basso", corpo in blur.
-  $effect(() => {
-    const _trigger = introIndex;
-    if (!introSlideEl) return;
-    riseIn(introSlideEl.querySelectorAll('.rise'));
-    blurRevealIn(introSlideEl.querySelectorAll('.blur-reveal'));
-  });
-
-  // Reveal delle info volontario ad ogni cambio card.
-  $effect(() => {
-    const _trigger = currentIndex;
-    const root = volInfoBlockEl ?? mobileInfoEl;
-    if (!root) return;
-    riseIn(root.querySelectorAll('.rise'));
-  });
-
-  // ── Aggancio del riquadro info alla card centrale 3D ──────────────
-  // La prospettiva ingrandisce la card centrale di un fattore che dipende da
-  // camera/raggio (~3,26×). Invece di fidarci del solo valore analitico
-  // (--card-projection), misuriamo la card attiva già proiettata a schermo
-  // (getBoundingClientRect tiene conto delle trasformazioni 3D) e portiamo
-  // esattamente quelle dimensioni in --center-w/--center-h, così il testo resta
-  // agganciato all'angolo in basso a sinistra dell'immagine a ogni larghezza.
-  // ── Dimensione responsiva delle card (foto MAI tagliata) ──────────
-  // Coverflow con card a dimensione REALE (no scorcio prospettico): la card è
-  // verticale (558×583) → il vincolo stringente è l'ALTEZZA. Calcoliamo la
-  // dimensione VISIVA che entra nel viewport, poi la riportiamo a px CSS
-  // dividendo per lo zoom globale di <html> (=innerWidth/1728). Così a ogni
-  // larghezza la card centrale è intera (gradiente e testo dentro) e le vicine
-  // — stessa dimensione — sbucano dai bordi. --peek è la distanza a cui la card
-  // vicina è traslata: ricalcolata dal viewport, mai fissa su una risoluzione.
-  const CARD_RATIO_HW = 583 / 558;     // altezza/larghezza della foto team
-  function sizeCarousel() {
-    if (typeof window === 'undefined' || !carouselEl || isMobile) return;
-    const zoom = window.matchMedia('(max-width: 700px)').matches ? 1 : window.innerWidth / 1728;
-    // Card centrale a piena altezza (con margine) o limitata in larghezza.
-    let visH = window.innerHeight * 0.82;
-    let visW = visH / CARD_RATIO_HW;
-    const maxVisW = window.innerWidth * 0.44;
-    if (visW > maxVisW) { visW = maxVisW; visH = visW * CARD_RATIO_HW; }
-
-    const cardW = visW / zoom;
-    const cardH = visH / zoom;
-    carouselEl.style.setProperty('--card-w', `${cardW}px`);
-    carouselEl.style.setProperty('--card-h', `${cardH}px`);
-    // L'overlay info (bottone/gradiente/testo) è agganciato a --center-w/h:
-    // qui coincidono con la card, che è piatta (dimensione reale = CSS).
-    carouselEl.style.setProperty('--center-w', `${cardW}px`);
-    carouselEl.style.setProperty('--center-h', `${cardH}px`);
-    // Traslazione della card vicina: il suo bordo interno sbuca ~18% dal bordo
-    // del viewport. centro-vicina (dal centro viewport) = 0.32·vw + visW/2.
-    const peekVis = window.innerWidth * 0.32 + visW * 0.5;
-    carouselEl.style.setProperty('--peek', `${peekVis / zoom}px`);
-  }
-
-  $effect(() => {
-    // Ricalcola le dimensioni al mount (desktop) e a ogni resize. Le card sono
-    // piatte (dimensione reale = CSS), quindi basta sizeCarousel(): niente
-    // misura del getBoundingClientRect proiettato.
-    if (isMobile || !carouselEl) return;
-
-    let raf = 0;
-    const schedule = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(sizeCarousel);
-    };
-    sizeCarousel();
-    schedule();
-    window.addEventListener('resize', schedule, { passive: true });
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', schedule);
-    };
-  });
 </script>
 
-<svelte:head>
-  <link rel="preload" as="image" href={VOLUNTEER_1} />
-  <link rel="preload" as="image" href={VOLUNTEER_2} />
-  <link rel="preload" as="image" href={VOLUNTEER_6} />
-</svelte:head>
-
 <main class="about-page">
-
-  <!-- ══════════════════════════════════════════════════════════════
-       INTRO — carosello testuale (COS'È FUORI CAMPO? …)
-  ══════════════════════════════════════════════════════════════ -->
   <section class="intro safe-area">
-    {#key introIndex}
-      <div class="intro-slide" bind:this={introSlideEl}>
-        <h1 class="section-title">
-          <span class="rise-mask"><span class="title-outline rise">{currentSlide.titleTop}</span></span>
-          <span class="rise-mask"><span class="title-fill rise">{currentSlide.titleBottom}</span></span>
-        </h1>
+    
+    <div class="ghost-grid">
+      {#each introSlides as slide, i}
+        <div class="slide-content" class:active={i === activeIndex} aria-hidden={i !== activeIndex}>
+          
+          <h1 class="section-title">
+            <span class="rise-mask"><span class="title-fill">{slide.titleTop}</span></span>
+            <span class="rise-mask"><span class="title-outline">{slide.titleBottom}</span></span>
+          </h1>
 
-        <div class="intro-body-mask">
-          <p class="intro-body blur-reveal">{currentSlide.body}</p>
+          <div class="intro-body-mask">
+            <p class="intro-body">{slide.body}</p>
+          </div>
+
         </div>
-      </div>
-    {/key}
+      {/each}
+    </div>
 
     <div class="dot-frecce">
       <div class="dot-nav" aria-label="Slide introduttive">
-        {#each introSlides as _slide, i}
+        {#each introSlides as _, i}
           <button
             type="button"
             class="dot"
-            class:dot--active={i === introIndex}
+            class:dot--active={i === activeIndex}
             aria-label={`Vai alla slide ${i + 1}`}
-            aria-pressed={i === introIndex}
-            onclick={() => (introIndex = i)}
+            aria-pressed={i === activeIndex}
+            onclick={() => (activeIndex = i)}
           ></button>
         {/each}
       </div>
 
       <div class="frecce" aria-label="Navigazione slide">
-        <ArrowButton direction="left" ariaLabel="Slide precedente" onclick={introPrev} />
-        <ArrowButton direction="right" ariaLabel="Slide successiva" onclick={introNext} />
+        <ArrowButton direction="left" ariaLabel="Slide precedente" onclick={prev} />
+        <ArrowButton direction="right" ariaLabel="Slide successiva" onclick={next} />
       </div>
     </div>
+    
   </section>
 
-  <!-- ══════════════════════════════════════════════════════════════
-       CHI C'È DIETRO FUORICAMPO?
-  ══════════════════════════════════════════════════════════════ -->
-  <section class="chi-section safe-area">
-    <h2 class="section-title" bind:this={chiTitleEl}>
-      <span class="rise-mask"><span class="title-outline rise">CHI C’È DIETRO</span></span>
-      <span class="rise-mask"><span class="title-fill rise">FUORICAMPO?</span></span>
-    </h2>
+  <section class="test-scroll safe-area">
+    <h2>ZONA CAROSELLO</h2>
+    <p>ANCORA DA FARE.</p>
   </section>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       MOBILE — carosello a schermo intero
-  ══════════════════════════════════════════════════════════════ -->
-  {#if isMobile}
-    <section
-      class="mobile-carousel"
-      id="main-content"
-      ontouchstart={onTouchStart}
-      ontouchend={onTouchEnd}
-      aria-label="Volunteer carousel"
-    >
-      {#key currentIndex}
-        <div
-          class="mobile-bg"
-          style="background-image: url('{volunteers[currentIndex]?.image}')"
-          in:fade={{ duration: 500, delay: 80 }}
-          out:fade={{ duration: 400 }}
-        ></div>
-      {/key}
-
-      <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
-      <div class="mobile-blur mobile-blur--bottom" aria-hidden="true"></div>
-
-      <div class="mobile-info" bind:this={mobileInfoEl}>
-        <span class="rise-mask"><span class="vol-subtitle rise">{currentVolunteer?.subtitle}</span></span>
-
-        <div class="vol-role-lines">
-          {#each roleLines as rline}
-            <span class="rise-mask"><span class="vol-role rise">{rline}</span></span>
-          {/each}
-        </div>
-
-        <div class="vol-name-lines">
-          {#each nameLines as line}
-            <span class="rise-mask"><span class="vol-name-word rise">{line}</span></span>
-          {/each}
-        </div>
-      </div>
-
-      <div class="scopri-mobile-wrap">
-        <ScopriDiPiuButton dark onclick={handleTitleClick} />
-      </div>
-
-      <div class="mobile-nav-circles">
-        <ArrowButton direction="up" onclick={() => navigate(-1)} />
-        <ArrowButton direction="down" onclick={() => navigate(1)} />
-      </div>
-    </section>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       DESKTOP — carosello ad anello CSS-3D (come categoria)
-  ══════════════════════════════════════════════════════════════ -->
-  {:else}
-    <section
-      class="carousel"
-      id="main-content"
-      bind:this={carouselEl}
-      onpointerdown={onPointerDown}
-      onpointermove={onPointerMove}
-      onpointerup={onPointerUp}
-      onpointerleave={onPointerUp}
-      aria-label="Volunteer carousel"
-    >
-      <div class="stage">
-        <div class="coverflow" class:ready={isReady}>
-          {#each volunteers as vol, i}
-            {@const rel = relOffset(i)}
-            {@const isActive = rel === 0}
-            <div
-              class="cover-card"
-              class:active={isActive}
-              class:offscreen={Math.abs(rel) > 1}
-              style="transform: translate(-50%, -50%) translateX(calc({rel} * var(--peek))) rotateY(calc({rel} * var(--cover-tilt) * -1)); z-index: {10 - Math.abs(rel)};"
-              role="button"
-              tabindex={isActive ? 0 : -1}
-              aria-current={isActive ? 'true' : undefined}
-              onclick={() => { if (isActive) handleTitleClick(); }}
-              onkeydown={(e) => { if (e.key === 'Enter' && isActive) handleTitleClick(); }}
-            >
-              <div class="card-image" class:loaded={decoded[vol.image]} style="background-image: url('{vol.image}');"></div>
-            </div>
-          {/each}
-        </div>
-      </div>
-
-      <div class="arrow-left" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
-        <ArrowButton direction="left" onclick={(e) => onArrowClick(-1, e)} />
-      </div>
-
-      <div class="arrow-right" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
-        <ArrowButton direction="right" onclick={(e) => onArrowClick(1, e)} />
-      </div>
-
-      <div class="curve-frame" aria-hidden="true">
-        <svg class="curve curve-top" viewBox="0 0 1000 260" preserveAspectRatio="none">
-          <path d="M0,0 H1000 V115 C780,175 220,175 0,115 Z" />
-        </svg>
-        <svg class="curve curve-bottom" viewBox="0 0 1000 260" preserveAspectRatio="none">
-          <path d="M0,145 C220,85 780,85 1000,145 V260 H0 Z" />
-        </svg>
-      </div>
-
-      <!-- Info volontario sovrapposte alla card centrale (layout Figma) -->
-      <div class="vol-overlay" aria-live="polite">
-        <div class="vol-card">
-          {#if currentVolunteer?.slug}
-            <div class="vol-scopri" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
-              <ScopriDiPiuButton dark href="/volunteer/{currentVolunteer.slug}/profile" />
-            </div>
-          {/if}
-
-          <div class="vol-card-fade" aria-hidden="true"></div>
-
-          <div
-            class="vol-info-block"
-            bind:this={volInfoBlockEl}
-            role="button"
-            tabindex="0"
-            onpointerdown={(e) => e.stopPropagation()}
-            onclick={handleTitleClick}
-            onkeydown={(e) => { if (e.key === 'Enter') handleTitleClick(); }}
-          >
-            <span class="rise-mask"><span class="vol-subtitle rise">{currentVolunteer?.subtitle}</span></span>
-
-            <div class="vol-role-lines">
-              {#each roleLines as rline}
-                <span class="rise-mask"><span class="vol-role rise">{rline}</span></span>
-              {/each}
-            </div>
-
-            <div class="vol-name-lines">
-              {#each nameLines as line}
-                <span class="rise-mask"><span class="vol-name-word rise">{line}</span></span>
-              {/each}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  {/if}
 
 </main>
 
@@ -613,7 +103,40 @@
     overflow-x: hidden;
   }
 
-  /* ── Section titles (COS'È… / CHI C'È DIETRO…) ─────────────────── */
+  /* ── Sezione Intro ────────────────────────────────────────────── */
+  .intro {
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--spacing-10, 64px);
+    padding-bottom: clamp(24px, 4vh, 48px);
+    overflow-x: hidden;
+  }
+
+  /* ── Il trucco della Ghost Grid ───────────────────────────────── */
+  .ghost-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    width: 100%;
+  }
+
+  .slide-content {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+  }
+
+  .slide-content.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Titoli (ESTRATTI ESATTAMENTE DAL RIFERIMENTO) ────────────── */
   .section-title {
     margin: 0;
     display: flex;
@@ -621,21 +144,34 @@
     align-items: flex-start;
   }
 
-  .title-outline,
-  .title-fill {
+  .title-fill,
+  .title-outline {
     font-family: var(--font-display);
-    font-size: var(--ts-scrollitelling-size);
-    font-weight: var(--ts-scrollitelling-weight);
-    line-height: var(--ts-scrollitelling-line-height);
-    letter-spacing: var(--ts-scrollitelling-letter-spacing);
+    /* --title-fit (default 1) is set by fitTitle() in JS to shrink the
+       one-line (nowrap) title just enough that the longest line fits its
+       container at any desktop width — otherwise the --page-zoom-compensated
+       size overflows and gets clipped by `overflow: hidden` (e.g. "GESTIONE
+       OPERATIVA" at ~995px). */
+    font-size: calc(clamp(
+      var(--unit-56),
+      calc(var(--unit-116) / max(var(--page-zoom, 1), 0.65)),
+      var(--unit-200)
+    ) * var(--title-fit, 1));
+    font-weight: 800;
     text-transform: uppercase;
-    display: block;
+    letter-spacing: 0;
+    line-height: 1;
     white-space: nowrap;
   }
 
   .title-outline {
     color: transparent;
-    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent, #bdff5d);
+    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
+    margin-left: var(--spacing-14);
+    margin-top: 0;
+    max-width: calc(100% - var(--spacing-17) - var(--spacing-11));
+    overflow: hidden;
+    min-width: 0;
   }
 
   .title-fill {
@@ -643,53 +179,48 @@
     margin-top: -0.05em;
   }
 
-  /* Maschera per l'entrata "dal basso": la riga risale da dietro il clip. */
   .rise-mask {
     display: block;
     overflow: hidden;
-    padding-top: 0.06em; /* spazio per gli ascendenti mentre risalgono */
+    padding-top: 0.06em;
   }
 
-  /* ── Intro: sezione carosello testuale ─────────────────────────── */
-  .intro {
-    display: flex;
-    flex-direction: column;
-    padding-top: 170px;
-    padding-bottom: clamp(24px, 4vh, 48px);
-    overflow-x: hidden;
-  }
-
-  .intro-slide {
-    display: flex;
-    flex-direction: column;
-  }
-
+  /* ── Paragrafo descrittivo (ESTRATTO ESATTAMENTE) ─────────────── */
   .intro-body-mask {
-    margin-top: clamp(24px, 3.5vh, 47px);
-    margin-left: auto;
-    width: min(78%, 1290px);
+    width: 100%; 
+    position: relative;
+    z-index: 5;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none; /* Lascia passare i click alla card sotto */
   }
 
   .intro-body {
-    margin: 0;
-    padding-top: 47px;
-    font-family: var(--font-display);
-    font-size: clamp(28px, 3.9vw, 56px);
-    font-weight: 500;
-    line-height: 1;
+    margin-top: clamp(10px, 4vh, var(--unit-36)); 
+    margin-left: auto; 
+    padding: 0;
+    width: 100%;
+    max-width: min(70dvw, 1100px); 
     text-align: right;
-    color: var(--color-content-body, #fafafa);
+    text-wrap: balance;
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.05; 
+    color: var(--color-content-body);
+    
+    /* 2. LA MAGIA: Il testo ora guarda l'altezza (vh), non solo la larghezza (vw) */
+    /* Parte da un minimo di 20px e si ferma a 45px. Nel mezzo, usa il 4% dell'altezza dello schermo */
+    font-size: clamp(25px, 6vh, 45px); 
   }
 
-  /* ── Controlli carosello testuale: dot a sinistra, frecce a destra.
-     Stessa struttura/stile della pagina categoria per coerenza. ─── */
+  /* ── Dot e Frecce (ESTRATTI ESATTAMENTE) ──────────────────────── */
   .dot-frecce {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--spacing-6);
-    width: min(100%, 782px);
-    margin-top: clamp(24px, 3.5vh, 40px);
+    width: min(40dvw, 600px);
+    margin-top: clamp(32px, 30dvh, 80px);
   }
 
   .dot-nav {
@@ -727,7 +258,7 @@
   }
 
   .dot.dot--active::before {
-    background: var(--color-content-accent);
+    background: var(--color-content-accent, #bdff5d);
   }
 
   .frecce {
@@ -736,401 +267,15 @@
     gap: var(--unit-20);
   }
 
-  /* ── Sezione "CHI C'È DIETRO FUORICAMPO?" ──────────────────────── */
-  .chi-section {
-    padding-top: clamp(48px, 9vh, 78px);
-    padding-bottom: clamp(24px, 4vh, 50px);
-    overflow-x: hidden;
-  }
-
-  /* ══════════════════════════════════════════════════════════════════
-     CAROSELLO TEAM — anello CSS-3D (stesso motore di /category)
-  ══════════════════════════════════════════════════════════════════ */
-  .carousel {
-    /* Desktop: la pagina scorre, il carosello si "aggancia" a schermo intero */
-    position: sticky;
-    top: 0;
-    width: 100%;
-    height: 100vh;
-    flex-shrink: 0;
-    background: var(--color-background-primary);
-    overflow: hidden;
-    cursor: grab;
-    user-select: none;
-    touch-action: none;
-
-    /* ── Coverflow (come da Figma): card a DIMENSIONE REALE, uguale per tutte.
-       La centrale è nitida, le vicine sono le foto piene sfocate che sbucano
-       dai bordi (niente scorcio prospettico che le rimpicciolisce). Dimensioni
-       e --peek sono calcolati in JS (sizeCarousel) da viewport + zoom → sempre
-       responsive, foto mai tagliata. --cover-tilt dà la leggera curva/inclinaz.
-       delle vicine; --center-w/h (= card) ancorano l'overlay info. Valori
-       INIZIALI di fallback prima che il JS subentri: */
-    --card-w: clamp(220px, 44vh, 460px);
-    --card-h: calc(var(--card-w) * 583 / 558);
-    --center-w: var(--card-w);
-    --center-h: var(--card-h);
-    --peek: 42vw;
-    --cover-tilt: 22deg;
-  }
-  
-  .carousel:active { cursor: grabbing; }
-
-  .carousel::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.01) 5%,
-      rgba(0, 0, 0, 0) 18%,
-      rgba(0, 0, 0, 0.18) 100%
-    );
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .stage {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
+  /* ── Area Test Scroll ─────────────────────────────────────────── */
+  .test-scroll {
+    min-height: 100vh; 
+    background: #111;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 1;
-  }
-
-  /* ── Coverflow: piano con prospettiva per la leggera inclinazione ── */
-  .coverflow {
-    position: absolute;
-    inset: 0;
-    perspective: 2400px;      /* prospettiva debole → vicine appena inclinate, non scorciate */
-    transform-style: preserve-3d;
-  }
-
-  .cover-card {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: var(--card-w);
-    height: var(--card-h);
-    /* barrel distortion: bordi alto/basso curvi (effetto "stondato" pannello) */
-    border-radius: 50% / 4% 4% 3.6% 3.6%;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-    /* vicine sfocate; la centrale torna nitida (regola .active) */
-    filter: blur(9px);
-    transition:
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      filter 0.6s ease;
-    pointer-events: none;
-    cursor: pointer;
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-
-  .coverflow:not(.ready) .cover-card {
-    transition: none;      /* nessuna animazione al primo paint statico */
-  }
-
-  .cover-card.active {
-    filter: blur(0px);
-    pointer-events: auto;
-    z-index: 10;
-  }
-
-  .cover-card.offscreen {
-    opacity: 0;            /* card lontane: nascoste (e il wrap avviene qui, invisibile) */
-    pointer-events: none;
-  }
-
-  .card-image {
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    background-color: var(--color-background-primary, #0e0e0e);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-
-  .card-image.loaded {
-    opacity: 1;
-  }
-
-  /* ── Frecce laterali ── */
-  .arrow-left {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    left: var(--spacing-5);
-    z-index: 12;
-  }
-  .arrow-right {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    right: var(--spacing-5);
-    z-index: 12;
-  }
-
-  @media (min-width: 768px) {
-    .arrow-left  { left:  var(--spacing-8); }
-    .arrow-right { right: var(--spacing-8); }
-  }
-  @media (min-width: 1024px) {
-    .arrow-left  { left:  var(--spacing-11); }
-    .arrow-right { right: var(--spacing-11); }
-  }
-
-  /* ── Maschere curve alto/basso ── */
-  .curve-frame {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  .curve {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    fill: var(--color-background-primary);
-  }
-
- .curve-top {
-    top: 0;
-    height: clamp(140px, 35vh, 280px);
-  }
-
-  .curve-bottom {
-    bottom: 0;
-    height: clamp(130px, 32vh, 260px);
-  }
-
-  /* ── Info volontario sovrapposte alla card centrale ── */
-  .vol-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .vol-card {
-    position: relative;
-    width: var(--center-w);
-    height: var(--center-h);
-  }
-
-  /* ── Overlay fedele al Figura (frame card 558×561) ─────────────────
-     Ogni misura è una frazione della card proiettata (--center-w /
-     --center-h), così testo, gradiente e bottone scalano con la card. */
-
-  /* Bottone "SCOPRI DI PIÙ" — Figma 6447:7869: top 0, ~20px dal bordo dx (20/558) */
-  .vol-scopri {
-    position: absolute;
-    top: 22px;
-    right: calc(var(--center-w) * 0.0358);
-    font-size: calc(var(--center-w) * 0.043); /* 24/558 */
-    pointer-events: auto;
-    z-index: 2;
-  }
-
-  /* Gradiente — Figma 6447:7867: ancorato in basso, altezza 326/561, to-top 0.91→0 */
-  .vol-card-fade {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: calc(var(--center-h) * 0.5811); /* 326 / 561 */
-    background: linear-gradient(
-      0deg,
-      rgba(14, 14, 14, 0.91) 0%,
-      rgba(14, 14, 14, 0) 100%
-    );
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  /* Testo — Figma 6447:7868: left 20/558, ancorato in basso, width 346/558 */
-  .vol-info-block {
-    position: absolute;
-    left: calc(var(--center-w) * 0.0358); /* 20 / 558 */
-    bottom: 11px;
-    width: calc(var(--center-w) * 0.62);  /* 346 / 558 */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    cursor: pointer;
-    pointer-events: auto;
-    z-index: 2;
-  }
-
-  /* Le altezze di riga (line-height) del Figura creano la spaziatura verticale
-     tra sottotitolo, ruolo e nome — niente margini extra. */
-  .vol-subtitle {
-    display: block;
-    font-family: var(--font-display, sans-serif);
-    font-size: calc(var(--center-w) * 0.0197);  /* 11.015 / 558 */
-    line-height: calc(var(--center-w) * 0.0812); /* 45.311 / 558 */
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--color-content-body, #fafafa);
-    white-space: nowrap;
-  }
-
-  .vol-role-lines {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .vol-role {
-    display: block;
-    font-family: var(--font-display, sans-serif);
-    font-size: calc(var(--center-w) * 0.0474);  /* 26.436 / 558 */
-    line-height: calc(var(--center-w) * 0.0513); /* 28.639 / 558 */
-    font-weight: 500;
-    text-transform: uppercase;
-    color: var(--color-content-body, #fafafa);
-    white-space: nowrap;
-  }
-
-  .vol-name-lines {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .vol-name-word {
-    display: block;
-    font-family: var(--font-display, sans-serif);
-    font-size: calc(var(--center-w) * 0.079);   /* 44.06 / 558 */
-    line-height: calc(var(--center-w) * 0.0812); /* 45.311 / 558 */
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--color-content-accent, #bdff5d);
-    white-space: nowrap;
-  }
-
-  /* ══════════════════════════════════════════════════════════════════
-     MOBILE
-  ══════════════════════════════════════════════════════════════════ */
-
-  /* Sul mobile il carosello è fixed fullscreen: nascondi le sezioni intro */
-  @media (max-width: 599px) {
-    .intro,
-    .chi-section {
-      display: none;
-    }
-  }
-
-  .mobile-carousel {
-    position: fixed;
-    inset: 0;
-    background: var(--color-background-primary, #0e0e0e);
-    overflow: hidden;
-  }
-
-  .mobile-bg {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
-  .mobile-blur {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 44%;
-    pointer-events: none;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-
-  .mobile-blur--top {
-    top: 0;
-    background: linear-gradient(180deg, rgba(14, 14, 14, 0.35) 0%, rgba(14, 14, 14, 0) 100%);
-    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
-    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
-  }
-
-  .mobile-blur--bottom {
-    bottom: 0;
-    background: linear-gradient(0deg,
-      rgba(14, 14, 14, 1)   0%,
-      rgba(14, 14, 14, 1)   28%,
-      rgba(14, 14, 14, 0.7) 50%,
-      rgba(14, 14, 14, 0)   100%
-    );
-    mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
-    -webkit-mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
-  }
-
-  .mobile-info {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 100px;
-    padding: var(--spacing-6, 24px) var(--spacing-5, 20px);
-    display: flex;
-    flex-direction: column;
-    pointer-events: none;
-    z-index: 3;
-  }
-
-  /* Mobile: valori fissi (--center-w non è definito qui) — line-height
-     esplicite per non ereditare quelle desktop, ormai in calc(). */
-  .mobile-info .vol-subtitle {
-    font-size: 9px;
-    line-height: normal;
-    margin-bottom: 4px;
-  }
-
-  .mobile-info .vol-role-lines {
-    margin-bottom: 6px;
-  }
-
-  .mobile-info .vol-role {
-    font-size: 14px;
-    line-height: 1.15;
-  }
-
-  .mobile-info .vol-name-lines {
-    line-height: 0.88;
-  }
-
-  .mobile-info .vol-name-word {
-    font-size: 43px;
-  }
-
-  .scopri-mobile-wrap {
-    position: absolute;
-    left: var(--spacing-5, 24px);
-    bottom: 36px;
-    width: 238px;
-    z-index: 4;
-  }
-
-  .mobile-nav-circles {
-    position: absolute;
-    right: var(--spacing-5, 20px);
-    bottom: 36px;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-5, 20px);
-    z-index: 4;
-  }
-
-  /* ── Reduced motion ───────────────────────────────────────────── */
-  @media (prefers-reduced-motion: reduce) {
-    .ring.ready,
-    .card-3d,
-    .card-overlay { transition: none; }
+    border-top: 1px solid #333;
+    padding: 40px;
   }
 </style>
