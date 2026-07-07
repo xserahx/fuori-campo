@@ -134,9 +134,22 @@
   // trails the target smoothly (weighty, never snappy).
   const FRICTION    = 0.94;
   const LERP        = 0.055;
-  // Wheel / trackpad → vertical navigation. Kept low so a scroll notch nudges
+  // Wheel / trackpad → free 2-D navigation. Kept low so a scroll notch nudges
   // the gallery gently; the eased loop below smooths it into a glide.
   const WHEEL_SPEED = 0.75;
+  // Fraction of each wheel nudge that is also poured into the momentum, so a
+  // flick keeps coasting after the gesture ends and eases to rest (the same
+  // floaty inertia as a drag release) instead of stopping the instant you lift
+  // your fingers — this is what makes the scroll feel smooth, not stepped.
+  const WHEEL_GLIDE = 0.18;
+  // Ceiling on wheel-driven momentum so fast, continuous scrolling can't build
+  // up a runaway glide that overshoots.
+  const WHEEL_MAX_VEL = 90;
+  // deltaMode normalisation → pixels. Pixel-precise trackpads report mode 0;
+  // some mouse wheels report lines (1) or pages (2). Converting to px keeps the
+  // glide rate consistent across macOS trackpads and Windows mice.
+  const WHEEL_LINE_PX = 16;
+  const WHEEL_PAGE_PX = 800;
   // Off-screen buffer (screen px) rendered around the viewport on every side, so
   // tiles are already mounted — and their images already decoded (see the
   // up-front measure/preload) — before you scroll to them. Generous so photos
@@ -299,15 +312,32 @@
     return typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
   }
 
-  // Wheel / trackpad scrolls the gallery VERTICALLY; the ← / → arrow keys move
-  // horizontally (drag still moves in every direction). Feeding the target lets
-  // the eased loop glide the motion smoothly.
+  // Wheel / trackpad → free movement in EVERY direction. macOS trackpads emit a
+  // combined deltaX + deltaY on a diagonal swipe; Windows trackpads/mice tend to
+  // send cleaner single-axis deltas. Feeding BOTH raw axes into the eased loop
+  // (never overriding or clamping one when both are present) makes horizontal,
+  // vertical AND diagonal gestures move proportionally, so the gallery reads as a
+  // free 2-D space rather than an axis-locked list. Drag still moves in every
+  // direction too; the ← / → / ↑ / ↓ keys step the axes discretely.
   function onWheel(e: WheelEvent) {
     if (isDragging) return;
     e.preventDefault();
-    targetY -= e.deltaY * WHEEL_SPEED;
-    velX = 0;
-    velY = 0;
+
+    const unit =
+      e.deltaMode === 1 ? WHEEL_LINE_PX :
+      e.deltaMode === 2 ? WHEEL_PAGE_PX : 1;
+
+    const dx = -e.deltaX * unit * WHEEL_SPEED;
+    const dy = -e.deltaY * unit * WHEEL_SPEED;
+
+    // Immediate nudge → the gallery responds the instant you scroll…
+    targetX += dx;
+    targetY += dy;
+
+    // …plus a little momentum so it keeps gliding and eases to rest. Clamped so
+    // a fast continuous swipe can't accumulate a runaway velocity.
+    velX = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velX + dx * WHEEL_GLIDE));
+    velY = Math.max(-WHEEL_MAX_VEL, Math.min(WHEEL_MAX_VEL, velY + dy * WHEEL_GLIDE));
   }
 
   // Keyboard: ← / → pan horizontally, ↑ / ↓ vertically. Auto-repeat while a key
