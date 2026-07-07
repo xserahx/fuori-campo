@@ -124,7 +124,7 @@
       width: 50px;
       height: 50px;
       padding: 0;
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
   }
 </style>

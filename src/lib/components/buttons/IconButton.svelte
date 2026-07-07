@@ -106,7 +106,7 @@
       padding: var(--spacing-4);
       height: 50px;
       width: 50px;
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
   }
 </style>

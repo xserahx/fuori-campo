@@ -120,7 +120,7 @@
       height: 50px;
       padding: var(--spacing-4) 0;
       background-color: var(--color-background-primary);
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
 
     .scopri-button:active {

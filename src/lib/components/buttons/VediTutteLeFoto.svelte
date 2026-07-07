@@ -95,7 +95,7 @@
       padding: var(--spacing-4);
       padding-right: var(--spacing-4-2);
       height: 50px;
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
   }
 </style>

@@ -1177,7 +1177,7 @@
     }
 
     .title-outline {
-      -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
+      -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent);
       padding-left: 2px; /* Margine di sicurezza ottico */
     }
 

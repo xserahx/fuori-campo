@@ -138,11 +138,11 @@
       height: 50px;
       padding-left: var(--spacing-4-2);
       padding-right: var(--spacing-4-2);
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
 
     .toggle-pill {
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-mobile) solid var(--color-content-accent);
     }
   }
 </style>

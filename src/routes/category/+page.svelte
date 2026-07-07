@@ -1113,7 +1113,7 @@
     text-transform: uppercase;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
+    -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent);
     width: 352px;
     max-width: 100%;
     white-space: pre-line;

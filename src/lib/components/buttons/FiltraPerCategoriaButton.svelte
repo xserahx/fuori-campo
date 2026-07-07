@@ -194,7 +194,7 @@
       width: 50px !important;
       height: 50px !important;
       padding: 0 !important;
-      stroke-width: var(--stroke-mobile);
+      border: var(--stroke-1) solid var(--color-content-accent);
     }
 
     .filtra-button__icon {
