@@ -422,7 +422,7 @@
       </div>
 
       {#if currentVol?.slug}
-        <a class="scopri-btn" href={`/volunteer/${currentVol.slug}/profile`}>SCOPRI DI PIÙ</a>
+        <a class="scopri-btn" href={`/volunteer/${currentVol.slug}/profile`} onclick={() => window.scrollTo(0, 0)}>SCOPRI DI PIÙ</a>
       {/if}
 
       <div class="mobile-nav-circles">
@@ -486,7 +486,7 @@
       </div>
 
       {#if currentVol?.slug}
-        <div class="desktop-scopri" role="presentation" onpointerdown={(e) => e.stopPropagation()}>
+        <div class="desktop-scopri" role="presentation" onpointerdown={(e) => e.stopPropagation()} onclick={() => window.scrollTo(0, 0)}>
           <ScopriDiPiuButton dark href="/volunteer/{currentVol.slug}/profile" />
         </div>
       {/if}
