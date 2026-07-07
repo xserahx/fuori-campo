@@ -398,8 +398,9 @@
 
     .names-interaction__item {
       min-height: 28px;
-      font-size: 40px;
+      font-size: 24px;
       line-height: 45px;
+      font-weight: 600;
       padding: 0 0 8px 0;
       white-space: normal;
       appearance: none;
@@ -414,7 +415,7 @@
     
     .letter-label {
       font-family: var(--font-display);
-      font-size: 45px;
+      font-size: 24px;
       color: var(--color-content-accent, #bdff5d);
       font-weight: 500;
     }
