@@ -176,6 +176,24 @@
     currentVol?.name ?? "",
   ]);
 
+  // Su mobile il nome sta accanto alle frecce su/giù: un nome composto lungo
+  // (es. "CLAUDIA IRENE") può arrivare a sfiorarle. Un trattino invisibile
+  // (soft hyphen) dentro la parola dà al browser un punto dove spezzarla,
+  // così va a capo prima di infilarsi sotto al bottone invece di sovrapporsi.
+  const SHY = "­"; // soft hyphen — appare solo se la parola va davvero a capo
+  const SOFT_HYPHENATE: Record<string, string> = {
+    IRENE: "IRE" + SHY + "NE",
+  };
+
+  function softHyphenate(text: string) {
+    return text.replace(
+      /[\p{L}]+/gu,
+      (w) => SOFT_HYPHENATE[w.toUpperCase()] ?? w,
+    );
+  }
+
+  let mobileCarouselTitleLines = $derived(carouselTitleLines.map(softHyphenate));
+
   let desktopTitleEl = $state<HTMLElement | null>(null);
   let mobileTitleEl = $state<HTMLElement | null>(null);
   let teamTitleEl = $state<HTMLElement | null>(null);
@@ -568,7 +586,7 @@
         aria-live="polite"
         lang="it"
       >
-        {#each carouselTitleLines as line, i}
+        {#each mobileCarouselTitleLines as line, i}
           <span class="carousel-title-mask">
             {#if i === 0}
               <span
@@ -1222,9 +1240,11 @@
   }
   .mobile-title .carousel-title-fill {
     font-family: var(--font-display);
-    /* Font fluido: scala con la larghezza (7vw) e resta tra 28 e 64px, così
-       tiene su qualsiasi schermo, anche molto stretto, senza sbordare. */
-    font-size: clamp(28px, 7vw, 64px);
+    /* Il minimo (43px) è la dimensione originale su telefono, invariata: sotto
+       ai ~614px il clamp resta piantato lì. Solo da lì in su (tablet, fino al
+       breakpoint 1024px) il 7vw prende il sopravvento e lo fa crescere fino a
+       64px, senza mai sbordare. */
+    font-size: clamp(43px, 7vw, 64px);
     font-weight: 800;
     line-height: 0.85; /* senza unità: segue il font-size a ogni dimensione */
     letter-spacing: 0;
@@ -1240,7 +1260,7 @@
   }
   .mobile-title .carousel-title-outline {
     font-family: var(--font-display);
-    font-size: clamp(28px, 7vw, 64px);
+    font-size: clamp(43px, 7vw, 64px);
     font-weight: 800;
     line-height: 0.85;
     letter-spacing: 0;
@@ -1265,6 +1285,17 @@
     flex-direction: column;
     gap: var(--spacing-5);
     z-index: 4;
+  }
+
+  /* Solo sui telefoni più stretti (≤400px, es. iPhone SE) un nome composto
+     lungo (es. "CLAUDIA IRENE") arriva davvero a sfiorare le frecce su/giù.
+     Riserviamo spazio a destra solo qui: sopra i 400px c'è già margine a
+     sufficienza e il nome deve restare su due righe senza andare a capo
+     inutilmente (vedi anche il soft hyphen in softHyphenate() più sopra). */
+  @media (max-width: 400px) {
+    .mobile-title {
+      padding-right: 90px;
+    }
   }
 
   /* ── Scopri di più bottone */
@@ -1338,9 +1369,11 @@
       display: block;
       white-space: normal;
       overflow-wrap: break-word; /* parole lunghe vanno a capo invece di sbordare */
-      /* Font fluido: scala con la larghezza (9vw) e resta tra 28 e 84px, così
-         tiene su qualsiasi schermo fino al tablet, senza mai sbordare. */
-      font-size: clamp(28px, 9vw, 84px);
+      /* Il minimo (43px) è la dimensione originale su telefono, invariata: sotto
+         ai ~478px il clamp resta piantato lì. Solo da lì in su (tablet, fino al
+         breakpoint 1024px) il 9vw prende il sopravvento e lo fa crescere fino a
+         84px, senza mai sbordare. */
+      font-size: clamp(43px, 9vw, 84px);
       line-height: 0.9; /* senza unità: segue il font-size a ogni dimensione */
       width: 100%;
       max-width: 100%;
