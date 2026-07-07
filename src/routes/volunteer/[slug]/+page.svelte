@@ -247,14 +247,15 @@
 
   const XFADE_EASE = 'power2.inOut';
   const XFADE_DUR  = 0.85;
-  const CAP_PARK_Y = 60;
+
 
   function parkCaption() {
     gsap.killTweensOf('.cap-line');
-
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    gsap.set('.cap-line', { y: CAP_PARK_Y });
+    
+    // LA SOLUZIONE: yPercent scende del 150% rispetto alla VERA altezza del testo, 
+    // azzerando contemporaneamente la vecchia 'y' in pixel.
+    gsap.set('.cap-line', { yPercent: 150, y: 0 });
   }
 
   // Il testo della caption usa il font display di Adobe Fonts (async, pesi 500 e
@@ -269,17 +270,18 @@
     return CAPTION_FONTS.every((f) => document.fonts.check(f));
   }
 
+  // 2. Aggiorna il ripristino in revealCaption
   function revealCaption(delay = 0) {
     gsap.killTweensOf('.cap-line');
-
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      gsap.set('.cap-line', { y: 0 });
+      gsap.set('.cap-line', { yPercent: 0, y: 0 });
       return;
     }
 
     const play = () =>
       gsap.to('.cap-line', {
-        y: 0,
+        yPercent: 0,   // Torna alla posizione naturale (0%)
+        y: 0,          // Assicura che i pixel siano a zero
         duration: 0.9,
         ease: 'power2.out',
         force3D: false,
@@ -291,9 +293,6 @@
       return;
     }
 
-    // Cache fredda: le righe restano parcheggiate (parkCaption le ha già messe a
-    // y = CAP_PARK_Y) finché il font non è pronto, poi entrano con le metriche
-    // definitive → nessuno spostamento dopo l'animazione.
     Promise.all(CAPTION_FONTS.map((f) => document.fonts.load(f)))
       .catch(() => {})
       .then(play);
@@ -885,22 +884,38 @@
   /* ── Caption ────────────────────────────────────────────────────── */
   .photo-caption {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0; /* Copre tutta la card, permettendoci di usare le percentuali */
     z-index: 2;
     pointer-events: none;
-    padding-top: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Spinge naturalmente il testo verso il basso */
   }
 
   .caption-grad {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, #0e0e0e 0%, rgba(14,14,14,0.9) 45%, transparent 100%);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%; 
+    
+    /* Gradiente iper-sfumato senza scalini */
+    background: linear-gradient(
+      to top,
+      rgba(14, 14, 14, 0.98) 0%,
+      rgba(14, 14, 14, 0.88) 15%,
+      rgba(14, 14, 14, 0.73) 30%,
+      rgba(14, 14, 14, 0.55) 45%,
+      rgba(14, 14, 14, 0.36) 60%,
+      rgba(14, 14, 14, 0.18) 75%,
+      rgba(14, 14, 14, 0.06) 88%,
+      rgba(14, 14, 14, 0) 100%
+    );
   }
 
   .caption-text {
     position: relative;
+    z-index: 1; /* Assicura che il testo resti sopra la sfumatura */
     padding-left: var(--spacing-4-2);
     padding-bottom: var(--spacing-4-2);
     display: flex;
