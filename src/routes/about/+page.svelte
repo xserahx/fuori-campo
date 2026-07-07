@@ -37,7 +37,6 @@
     activeIndex = (activeIndex - 1 + introSlides.length) % introSlides.length;
   }
 
-  // ── ANIMAZIONE TITOLO DAL CAROSELLO ──
   function playTitleReveal(lines: NodeListOf<HTMLElement>) {
     gsap.fromTo(
       lines,
@@ -53,7 +52,6 @@
     );
   }
 
-  // Eseguiamo l'animazione ESATTAMENTE come nel carosello ad ogni cambio slide
   $effect(() => {
     const _trigger = activeIndex; 
     
@@ -62,16 +60,12 @@
     const activeSlide = introSlideEl.querySelector('.slide-content.active');
     if (!activeSlide) return;
 
-    // Selezioniamo solo i frammenti del titolo
     const lines = activeSlide.querySelectorAll<HTMLElement>('.title-anim');
     if (!lines.length) return;
 
-    // Se non siamo al primo render globale (dove la pagina ha già la sua animazione d'ingresso), facciamo salire il titolo.
-    // Usiamo gsap.set per azzerare prima, così evitiamo sfarfallii
     gsap.set(lines, { yPercent: 120 });
     playTitleReveal(lines);
   });
-
 </script>
 
 <main class="about-page">
@@ -147,7 +141,6 @@
     overflow-x: hidden;
   }
 
-  /* ── Il trucco della Ghost Grid SENZA le transition di opacity iniziali ── */
   .ghost-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -161,8 +154,6 @@
     flex-direction: column;
     visibility: hidden;
     pointer-events: none;
-    /* Rimosso l'effetto di transizione CSS. Tutto avviene istantaneamente,
-       il titolo si anima tramite GSAP, il testo laterale scatta di netto (come le sottocategorie). */
   }
 
   .slide-content.active {
@@ -170,7 +161,7 @@
     pointer-events: auto;
   }
 
-  /* ── Titoli ── */
+  /* ── Titoli */
   .title-mask {
     margin: 0;
     display: flex;
@@ -191,8 +182,6 @@
     letter-spacing: 0;
     line-height: 1;
     white-space: nowrap;
-    
-    /* FIX GSAP: Serve block per l'animazione yPercent */
     display: block; 
   }
 
@@ -210,16 +199,17 @@
     margin-top: -0.05em;
   }
 
-  /* La maschera essenziale per il taglio GSAP */
+  /* FIX ACCENTI TAGLIATI: Aumentato il margine di manovra sopra e sotto */
   .rise-mask {
     display: block;
     overflow: hidden;
-    padding-top: 0.06em;
-    padding-bottom: 0.1em; 
-    margin-bottom: -0.1em; 
+    padding-top: 0.25em;    /* Crea spazio a sufficienza per gli accenti superiori (È, À) */
+    margin-top: -0.25em;   /* Annulla lo spostamento verticale mantenendo intatta la grafica */
+    padding-bottom: 0.15em; /* Salva le code delle lettere in basso */
+    margin-bottom: -0.15em;/* Annulla lo spostamento inferiore */
   }
 
-  /* ── Paragrafo descrittivo ── */
+  /* ── Paragrafo descrittivo */
   .hero-mask {
     width: 100%; 
     position: relative;
@@ -245,7 +235,7 @@
     font-size: clamp(25px, 6vh, 45px); 
   }
 
-  /* ── Dot e Frecce ── */
+  /* ── Dot e Frecce */
   .dot-frecce {
     display: flex;
     align-items: flex-end;
@@ -310,7 +300,6 @@
   }
 
   @media (max-width: 700px) {
-
     .hero-mask {
       padding: 0;
       flex-grow: 0; 
@@ -333,6 +322,12 @@
     .title-mask {
       display: block;
       overflow: hidden; 
+      
+      
+      padding-top: 15px;
+      margin-top: -15px;
+      
+      
       padding-bottom: 12px; 
       margin-bottom: -12px;
     }
