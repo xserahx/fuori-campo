@@ -183,7 +183,9 @@
     );
   }
 
-  let mobileCarouselTitleLines = $derived(carouselTitleLines.map(softHyphenate));
+  let mobileCarouselTitleLines = $derived(
+    carouselTitleLines.map(softHyphenate),
+  );
 
   let desktopTitleEl = $state<HTMLElement | null>(null);
   let mobileTitleEl = $state<HTMLElement | null>(null);
@@ -549,10 +551,7 @@
   </section>
 
   {#if isMobile}
-    <section
-      class="mobile-carousel"
-      aria-label="Carousel team"
-    >
+    <section class="mobile-carousel" aria-label="Carousel team">
       {#key currentCarouselIndex}
         <div
           class="mobile-bg"
@@ -563,20 +562,6 @@
             : 'none'}"
           in:fade={{ duration: 500, delay: 80 }}
           out:fade={{ duration: 400 }}
-        ></div>
-        <!-- Copia sfocata della stessa foto, visibile solo nelle bande alto/basso
-             tramite mask-image: sostituisce il backdrop-filter (che la build di
-             produzione rompe) con un filter: blur() diretto, immune al problema. -->
-        <div
-          class="mobile-bg mobile-bg-blur"
-          style="background-image: {decoded[
-            shuffledVolunteers[currentCarouselIndex]?.image
-          ]
-            ? `url('${shuffledVolunteers[currentCarouselIndex]?.image}')`
-            : 'none'}"
-          in:fade={{ duration: 500, delay: 80 }}
-          out:fade={{ duration: 400 }}
-          aria-hidden="true"
         ></div>
       {/key}
 
@@ -656,34 +641,7 @@
         </div>
       </div>
 
-      <!-- Clone sfocato dell'intero anello, sovrapposto e mascherato: sostituisce
-           il vecchio backdrop-filter (che sfocava "quello che c'è dietro" e che la
-           build di produzione perdeva) con un filter: blur() applicato a questa
-           copia — stesso identico effetto "nitido al centro, sfocato ai lati",
-           stessa maschera, ma immune al problema di minificazione. -->
-      <div class="stage stage-blur" aria-hidden="true">
-        <div class="container-3d">
-          <div
-            class="ring"
-            class:ready={isReady}
-            style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);"
-          >
-            {#each shuffledVolunteers as vol, i}
-              <div
-                class="card-3d"
-                style="transform: rotateY({i *
-                  -60}deg) translateZ(var(--card-radius));"
-              >
-                <div
-                  class="card-image"
-                  class:loaded={decoded[vol.image]}
-                  style="background-image: url('{vol.image}');"
-                ></div>
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
+      <div class="progressive-blur-overlay" aria-hidden="true"></div>
 
       <div
         class="arrow-left"
@@ -1011,36 +969,41 @@
     margin: var(--spacing-5, 24px) 0;
     z-index: 1;
   }
-
-  /* Clone sfocato dell'anello (vedi markup): sfocato per intero con filter, poi
-     mascherato con lo stesso identico gradiente orizzontale usato prima dal
-     backdrop-filter — nitido (maschera nera → invisibile) nella zona centrale
-     larga quanto la card attiva, sfocato (maschera bianca → visibile) ai lati. */
-  .stage-blur {
-    z-index: 2;
+  /* ─── MASCHERA E SFOCATURA LATERALE DESKTOP (LENTE OPACO) ─── */
+  .progressive-blur-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
     pointer-events: none;
-    filter: blur(15px) saturate(0.85);
-    mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(50% - var(--card-width) * 1.6),
-      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
-      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
-      transparent calc(50% - var(--card-width) * 0.8),
-      transparent calc(50% + var(--card-width) * 0.8),
-      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
-      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
-      #000 calc(50% + var(--card-width) * 1.6),
-      #000 100%
-    );
+
+    /* Forza accelerazione hardware GPU */
+    transform: translateZ(0);
+
+    /* Prefisso Webkit rigorosamente PRIMA della proprietà standard */
+    -webkit-backdrop-filter: blur(20px) saturate(0.85);
+    backdrop-filter: blur(20px) saturate(0.85);
+
     -webkit-mask-image: linear-gradient(
       to right,
       #000 0%,
       #000 calc(50% - var(--card-width) * 1.6),
       rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
       rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
-      transparent calc(50% - var(--card-width) * 0.8),
-      transparent calc(50% + var(--card-width) * 0.8),
+      transparent calc(50% - var(--card-width) * 0.6),
+      transparent calc(50% + var(--card-width) * 0.6),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.6),
+      transparent calc(50% + var(--card-width) * 0.6),
       rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
       rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
       #000 calc(50% + var(--card-width) * 1.6),
@@ -1220,39 +1183,22 @@
     margin-bottom: 10px;
   }
 
-  /* Copia sfocata della stessa foto (stessa dimensione/posizione di .mobile-bg,
-     quindi si allinea perfettamente): la mask-image la rende visibile solo
-     nelle bande alto/basso, trasparente al centro. Sostituisce il vecchio
-     backdrop-filter sulle bande — qui sfochiamo l'immagine stessa invece di
-     "quello che c'è dietro", quindi niente proprietà persa in build. */
-  .mobile-bg-blur {
-    filter: blur(1px);
-    pointer-events: none;
-    mask-image: linear-gradient(
-      180deg,
-      #000 0%,
-      rgba(0, 0, 0, 0) 44%,
-      rgba(0, 0, 0, 0) 56%,
-      #000 86%,
-      #000 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      #000 0%,
-      rgba(0, 0, 0, 0) 44%,
-      rgba(0, 0, 0, 0) 56%,
-      #000 86%,
-      #000 100%
-    );
-  }
-
+  /* ── BLUR EFFECT MOBILE ────── */
   .mobile-blur {
     position: absolute;
     left: 0;
     right: 0;
     height: 44%;
     pointer-events: none;
+
+    /* Forza accelerazione hardware GPU */
+    transform: translateZ(0);
+
+    /* Prefisso Webkit rigorosamente PRIMA della proprietà standard */
+    -webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(1px);
   }
+
   .mobile-blur--top {
     top: 0;
     background: linear-gradient(
@@ -1260,9 +1206,10 @@
       rgba(14, 14, 14, 0.35) 0%,
       rgba(14, 14, 14, 0) 100%
     );
-    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0) 100%);
   }
+
   .mobile-blur--bottom {
     bottom: 0;
     background: linear-gradient(
@@ -1272,13 +1219,13 @@
       rgba(14, 14, 14, 0.7) 50%,
       rgba(14, 14, 14, 0) 100%
     );
-    mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
     -webkit-mask-image: linear-gradient(
       0deg,
       #000 0%,
       #000 32%,
       rgba(0, 0, 0, 0) 100%
     );
+    mask-image: linear-gradient(0deg, #000 0%, #000 32%, rgba(0, 0, 0, 0) 100%);
   }
 
   .mobile-title {
