@@ -1165,12 +1165,8 @@
     color: transparent;
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     display: block;
-    /* Permette al testo di andare a capo */
-    white-space: normal;
-    /* Spezza le parole se sono singole e troppo lunghe per lo schermo */
-    overflow-wrap: break-word;
-    /* Imposta il margine destro di 24px per non far toccare il bordo */
-    padding-right: var(--spacing-5, 24px);
+    white-space: nowrap;
+
     margin-left: clamp(
       var(--spacing-11),
       calc(var(--spacing-17) / max(var(--page-zoom, 1), 0.65)),
@@ -1277,12 +1273,21 @@
     -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent);
     width: 352px;
     max-width: 100%;
-    white-space: pre-line;
+    
+    /* 1. Manteniamo il ritorno a capo normale */
+    white-space: normal;
+    
+    /* 2. FORZIAMO LA ROTTURA SENZA TRATTINI */
     overflow-wrap: break-word;
-    hyphens: manual;
-    -webkit-hyphens: manual;
+    word-break: break-word;
+    
+    /* 3. DISABILITIAMO TASSATIVAMENTE OGNI SILLABAZIONE */
+    -webkit-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none;
+    
     margin: 0;
-  }
+}
 
   .mobile-nav-circles {
     position: absolute;
