@@ -540,6 +540,18 @@
         in:fade={{ duration: 500, delay: 80 }}
         out:fade={{ duration: 400 }}
       ></div>
+      <!-- Copia sfocata della stessa foto, visibile solo nelle bande alto/basso
+           tramite mask-image: sostituisce il backdrop-filter (che la build di
+           produzione rompe) con un filter: blur() diretto, immune al problema. -->
+      <div
+        class="mobile-bg mobile-bg-blur"
+        style="background-image: {decoded[categories[currentIndex]?.image]
+          ? `url('${categories[currentIndex]?.image}')`
+          : 'none'}"
+        in:fade={{ duration: 500, delay: 80 }}
+        out:fade={{ duration: 400 }}
+        aria-hidden="true"
+      ></div>
     {/key}
 
     <div class="mobile-blur mobile-blur--top" aria-hidden="true"></div>
@@ -617,7 +629,34 @@
       </div>
     </div>
 
-    <div class="progressive-blur-overlay" aria-hidden="true"></div>
+    <!-- Clone sfocato dell'intero anello, sovrapposto e mascherato: sostituisce
+         il vecchio backdrop-filter (che sfocava "quello che c'è dietro" e che la
+         build di produzione perdeva) con un filter: blur() applicato a questa
+         copia — stesso identico effetto "nitido al centro, sfocato ai lati",
+         stessa maschera, ma immune al problema di minificazione. -->
+    <div class="stage stage-blur" aria-hidden="true">
+      <div class="container-3d">
+        <div
+          class="ring"
+          class:ready={isReady}
+          style="transform: translateZ(var(--camera-z)) rotateY({ringRotation}deg);"
+        >
+          {#each categories as cat, i}
+            <div
+              class="card-3d"
+              style="transform: rotateY({i *
+                -60}deg) translateZ(var(--card-radius));"
+            >
+              <div
+                class="card-image"
+                class:loaded={decoded[cat.image]}
+                style="background-image: url('{cat.image}');"
+              ></div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
 
     <div
       class="arrow-left"
@@ -701,6 +740,42 @@
     z-index: 1;
   }
 
+  /* Clone sfocato dell'anello (vedi markup): sfocato per intero con filter, poi
+     mascherato con lo stesso identico gradiente orizzontale usato prima dal
+     backdrop-filter — nitido (maschera nera → invisibile) nella zona centrale
+     larga quanto la card attiva, sfocato (maschera bianca → visibile) ai lati. */
+  .stage-blur {
+    z-index: 2;
+    pointer-events: none;
+    filter: blur(15px) saturate(0.85);
+    mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.8),
+      transparent calc(50% + var(--card-width) * 0.8),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0%,
+      #000 calc(50% - var(--card-width) * 1.6),
+      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
+      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
+      transparent calc(50% - var(--card-width) * 0.8),
+      transparent calc(50% + var(--card-width) * 0.8),
+      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
+      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
+      #000 calc(50% + var(--card-width) * 1.6),
+      #000 100%
+    );
+  }
+
   .container-3d {
     perspective: var(--camera-z);
 
@@ -738,11 +813,8 @@
     border-radius: 4px;
     overflow: hidden;
 
-    /* Nessun filtro CSS qui per non incrinare la resa GPU (no blur/grayscale).
-       La card laterale non selezionata viene scurita da div.card-overlay */
-    transition:
-      transform 0.85s ease,
-      box-shadow 0.85s ease;
+    /* La card laterale non selezionata viene scurita da div.card-overlay */
+    transition: transform 0.85s ease;
 
     pointer-events: none;
     cursor: pointer;
@@ -754,7 +826,7 @@
     background-size: cover;
 
     /* Nascosto (opacity 0) finché il JS (preloadImages) non decreta
-       che la decode() asincrona in memoria è completata, in questo modo 
+       che la decode() asincrona in memoria è completata, in questo modo
        la prima transizione fadeIn è a piena qualità senza l'effetto sgranato "a blocchi". */
     opacity: 0;
     transition: opacity 0.5s ease;
@@ -772,7 +844,6 @@
   /* ─── STATO ATTIVO (Card Centrale) ─── */
   .card-3d.active {
     pointer-events: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     z-index: 10;
   }
 
@@ -780,46 +851,6 @@
     background: rgba(0, 0, 0, 0);
   }
 
-  /* ─── MASCHERA E SFOCATURA LATERALE (LENTE OPACO) ─── */
-  .progressive-blur-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    pointer-events: none;
-
-    backdrop-filter: blur(15px) saturate(0.85);
-    -webkit-backdrop-filter: blur(15px) saturate(0.85);
-
-    /* Applica una maschera lineare orizzontale in cui solo i bordi sono 100% 
-       sfocati mentre il centro (che coincide con la card .active) 
-       si dissolve dolcemente in trasparenza totale. */
-    mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(50% - var(--card-width) * 1.6),
-      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
-      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
-      transparent calc(50% - var(--card-width) * 0.8),
-      transparent calc(50% + var(--card-width) * 0.8),
-      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
-      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
-      #000 calc(50% + var(--card-width) * 1.6),
-      #000 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(50% - var(--card-width) * 1.6),
-      rgba(0, 0, 0, 0.8) calc(50% - var(--card-width) * 1.3),
-      rgba(0, 0, 0, 0.3) calc(50% - var(--card-width) * 1.05),
-      transparent calc(50% - var(--card-width) * 0.8),
-      transparent calc(50% + var(--card-width) * 0.8),
-      rgba(0, 0, 0, 0.3) calc(50% + var(--card-width) * 1.05),
-      rgba(0, 0, 0, 0.8) calc(50% + var(--card-width) * 1.3),
-      #000 calc(50% + var(--card-width) * 1.6),
-      #000 100%
-    );
-  }
 
   /*------------------*/
 
@@ -1056,9 +1087,35 @@
     background-repeat: no-repeat;
   }
 
+  /* Copia sfocata della stessa foto (stessa dimensione/posizione di .mobile-bg,
+     quindi si allinea perfettamente): la mask-image la rende visibile solo
+     nelle bande alto/basso, trasparente al centro. Sostituisce il vecchio
+     backdrop-filter sulle bande — qui sfochiamo l'immagine stessa invece di
+     "quello che c'è dietro", quindi niente proprietà persa in build. */
+  .mobile-bg-blur {
+    filter: blur(6px);
+    pointer-events: none;
+    mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      rgba(0, 0, 0, 0) 44%,
+      rgba(0, 0, 0, 0) 56%,
+      #000 86%,
+      #000 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      #000 0%,
+      rgba(0, 0, 0, 0) 44%,
+      rgba(0, 0, 0, 0) 56%,
+      #000 86%,
+      #000 100%
+    );
+  }
+
   /* ── Figma "BLUR EFFECT" MOBILE ──────
-     Due rettangoli gradienti oscuranti agli estremi. La maschera lineare 
-     assicura che il passaggio verso il centro sia invisibile ed esente da 
+     Due rettangoli gradienti oscuranti agli estremi. La maschera lineare
+     assicura che il passaggio verso il centro sia invisibile ed esente da
      artefatti scalettati. */
   .mobile-blur {
     position: absolute;
@@ -1066,8 +1123,6 @@
     right: 0;
     height: 44%;
     pointer-events: none;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
   }
 
   .mobile-blur--top {
@@ -1127,17 +1182,24 @@
     display: block;
     /* Obbligatorio per rispettare il line-height su elementi span su iOS safari */
     font-family: var(--font-display);
-    /* Font fluido: scala con la larghezza (11vw) e resta tra 20 e 46px, così
-       tiene su qualsiasi schermo, anche molto stretto, senza sbordare. */
-    font-size: clamp(28px, 7vw, 64px);
+    /* Il minimo (43px) è la dimensione originale su telefono, invariata: sotto
+       ai ~614px il clamp resta piantato lì. Solo da lì in su (tablet, fino al
+       breakpoint 1024px) il 7vw prende il sopravvento e lo fa crescere fino a
+       64px, senza mai sbordare. */
+    font-size: clamp(43px, 7vw, 64px);
     font-style: normal;
     font-weight: 800;
     line-height: 0.85; /* senza unità: segue il font-size a ogni dimensione */
     letter-spacing: 0;
     text-transform: uppercase;
     color: var(--color-content-accent);
-    width: 352px;
-    max-width: 100%;
+    /* Non più una larghezza fissa (352px): quel valore andava bene finché il
+       ramo mobile copriva solo i telefoni, ma ora arriva fino a 1024px, dove il
+       font (che scala con 7vw) può superare i 352px con tutto lo spazio libero
+       intorno — risultato: andava a capo/si spezzava con lo shy anche quando
+       non serviva. Con width:100% usa tutto lo spazio del genitore e va a capo
+       solo se davvero non ci sta. */
+    width: 100%;
     white-space: normal;
     overflow-wrap: break-word; /* se una parola è più lunga della riga, va a capo invece di sbordare */
     hyphens: manual;
@@ -1149,7 +1211,7 @@
     display: block;
     /* Obbligatorio per rispettare il line-height su elementi span su iOS safari */
     font-family: var(--font-display);
-    font-size: clamp(28px, 7vw, 64px);
+    font-size: clamp(43px, 7vw, 64px);
     font-style: normal;
     font-weight: 800;
     line-height: 0.85;
@@ -1158,8 +1220,7 @@
     color: transparent;
     -webkit-text-fill-color: transparent;
     -webkit-text-stroke: var(--stroke-mobile) var(--color-content-accent);
-    width: 352px;
-    max-width: 100%;
+    width: 100%;
     white-space: pre-line;
     overflow-wrap: break-word;
     hyphens: manual;
