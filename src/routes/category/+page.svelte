@@ -287,14 +287,19 @@
 
   // Processo di formattazione extra per il Mobile
   let mobileTitleLines = $derived.by(() => {
+    // 1. Cerchiamo SEMPRE la "E" (in maiuscolo, con spazi attorno)
     const match = currentLabel.match(/^(.*?)(?:\s+E\s+)(.+)$/);
-    if (!match) return titleLines.map(processFill).filter(Boolean);
-    const beforeE = match[1].trim();
-    const afterE = match[2].trim();
-    const isSingleLongWord = !afterE.includes(" ") && afterE.length > 12;
-    return isSingleLongWord
-      ? [processFill(`${beforeE} E`), processOutline(afterE)]
-      : [processFill(beforeE), processOutline(`E ${afterE}`)];
+
+    // 2. Se troviamo la "E", spezziamo forzatamente in due righe
+    if (match) {
+      return [
+        processFill(match[1].trim()),
+        processOutline("E " + match[2].trim()),
+      ];
+    }
+
+    // 3. Se non c'è la "E", usiamo la logica standard di sillabazione
+    return titleLines.map(processFill).filter(Boolean);
   });
 
   let currentCat = $derived(categories[currentIndex]);

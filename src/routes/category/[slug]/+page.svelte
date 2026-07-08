@@ -22,7 +22,7 @@
   const CATEGORIES: CategoryInfo[] = [
     {
       label: "RELAZIONI E COMUNICAZIONE",
-      titleLines: ["RELAZIONI E", "COMUNICAZIONE"],
+      titleLines: ["RELAZIONI", "E COMUNICAZIONE"],
       image:
         "/volunteer_images/carosello_categorie/Relazioni_e_comunicazione.png",
       tag: "relazioni",
