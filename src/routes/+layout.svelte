@@ -267,7 +267,7 @@
 		const ptMobile =
 			typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches;
 		const PT = ptMobile
-			? { overlayIn: 0.55, cover: 2.6, reveal: 2.6, overlayOut: 0.8, overlayOutAt: 2.1 }
+			? { overlayIn: 0.45, cover: 2.1, reveal: 2.1, overlayOut: 0.7, overlayOutAt: 1.7 }
 			: { overlayIn: 0.4, cover: 1.8, reveal: 1.8, overlayOut: 0.6, overlayOutAt: 1.4 };
 
 		gsap.killTweensOf([overlay, path]);
