@@ -193,6 +193,13 @@
 
       const updateStickyButton = () => {
         scrollRaf = 0;
+
+        // Su mobile disabilitiamo l'effetto sticky e la rincorsa GSAP
+        if (window.innerWidth <= 700) {
+          fotoBtn.style.transform = ''; // Pulisce lo stile inline
+          return; // Blocca l'esecuzione del resto della funzione
+        }
+
         const footerRect = (
           footerElement as HTMLElement
         ).getBoundingClientRect();
@@ -821,8 +828,19 @@
     }
 
     .vedi-foto-wrapper {
-      left: var(--profile-side-offset, var(--spacing-5, 24px));
-      bottom: 32px;
+      position: relative;
+      left: auto;
+      bottom: auto;
+      
+      /* ── NUOVO: Centratura perfetta ── */
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      
+      /* Margine: 24px in alto, 0 a destra, 0 in basso, 0 a sinistra */
+      margin: var(--spacing-9, 60px) 0 0 0;
+      
+      transform: none !important;
     }
 
     /* Intercettazione e override forzati su mobile */
