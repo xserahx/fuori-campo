@@ -751,15 +751,27 @@
       --photo-button-bottom: 32px;
       padding-top: calc(var(--navbar-height, 125px) + 8px);
     }
-
+    
     .name-surname {
       padding-left: var(--profile-side-offset);
       font-size: clamp(44px, 13vw, 80px);
+      margin-bottom: 0px;
     }
 
     .name-firstname {
       padding-left: 40px;
       font-size: clamp(44px, 13vw, 80px);
+    }
+
+    .name-surname,
+    .name-firstname {
+      /* Permette al testo di andare a capo */
+      white-space: normal;
+      /* Spezza le parole se sono singole e troppo lunghe per lo schermo */
+      overflow-wrap: break-word;
+      /* Imposta il margine destro di 24px per non far toccare il bordo */
+      padding-right: var(--spacing-5, 24px);
+      line-height: 0.85;
     }
 
     .head {

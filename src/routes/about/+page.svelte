@@ -1165,7 +1165,12 @@
     color: transparent;
     -webkit-text-stroke: var(--stroke-1) var(--color-content-accent);
     display: block;
-    white-space: nowrap;
+    /* Permette al testo di andare a capo */
+    white-space: normal;
+    /* Spezza le parole se sono singole e troppo lunghe per lo schermo */
+    overflow-wrap: break-word;
+    /* Imposta il margine destro di 24px per non far toccare il bordo */
+    padding-right: var(--spacing-5, 24px);
     margin-left: clamp(
       var(--spacing-11),
       calc(var(--spacing-17) / max(var(--page-zoom, 1), 0.65)),
