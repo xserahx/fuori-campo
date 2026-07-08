@@ -474,7 +474,7 @@
          reserve clears the FOTO/NOMI toggle + filter button at the bottom. */
       bottom: 96px;
       flex-wrap: nowrap;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     .alpha-sidebar__btn {

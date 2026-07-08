@@ -1383,16 +1383,6 @@
       box-shadow 220ms ease;
   }
 
-  .scopri-btn:hover,
-  .scopri-btn:focus-visible {
-    background: rgba(189, 255, 93, 0.08);
-  }
-
-  .scopri-btn:active {
-    background: var(--color-content-accent);
-    color: var(--color-content-body-black, #0e0e0e);
-  }
-
   /* Tablet incluso: fino a 1024px si passa al layout compatto (titolo a capo,
      font fluidi) — sopra i 1024px torna il layout desktop con testo nowrap.
      Stessa soglia usata per il carosello dei membri del team qui sotto. */
